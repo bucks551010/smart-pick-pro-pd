@@ -8,6 +8,8 @@ import streamlit as st
 import base64
 import pathlib
 import html as _html
+import datetime
+import time as _time
 
 st.set_page_config(
     page_title="Smart Money Bets — SmartBetPro NBA",
@@ -38,6 +40,25 @@ from tracking.bet_tracker import log_new_bet
 # ── Thresholds ────────────────────────────────────────────────
 _EASY_MONEY_MIN_DEV = 50.0    # Goblin: line_vs_avg_pct <= -50%
 _SMART_RISK_MIN_DEV = 30.0    # Demon:  line_vs_avg_pct <= -30%
+_SM_MIN_SEASON_MINUTES = 14.0
+_SM_MAX_PICKS_PER_PLAYER = 2
+_SM_MAX_PICKS_PER_TEAM = 4
+_SM_MIN_STAT_AVG = {
+    "points": 6.0,
+    "rebounds": 3.0,
+    "assists": 2.0,
+    "turnovers": 1.2,
+    "steals": 0.9,
+    "blocks": 0.7,
+    "blocks_steals": 1.2,
+    "points_assists": 8.0,
+    "points_rebounds": 10.0,
+    "points_rebounds_assists": 14.0,
+    "rebounds_assists": 5.0,
+    "fta": 1.0,
+    "ftm": 0.8,
+    "fantasy_score_pp": 18.0,
+}
 
 
 # ============================================================
@@ -1672,6 +1693,78 @@ div[data-testid="stTabs"] > div[data-testid="stTabContent"] {
 # SECTION: Filtering helpers
 # ============================================================
 
+
+def _extract_iso_date(value) -> str:
+    """Best-effort YYYY-MM-DD extraction from date/datetime-like values."""
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    raw = raw.replace("/", "-")
+    if "T" in raw:
+        raw = raw.split("T", 1)[0]
+    if " " in raw:
+        raw = raw.split(" ", 1)[0]
+    try:
+        return datetime.date.fromisoformat(raw[:10]).isoformat()
+    except ValueError:
+        return ""
+
+
+def _is_today_game_prop(prop: dict, today_iso: str) -> bool:
+    """True when a prop belongs to today's NBA/ET game slate."""
+    game_iso = _extract_iso_date(prop.get("game_date") or prop.get("start_date") or prop.get("date"))
+    return game_iso == today_iso
+
+
+def _stat_season_avg(enriched: dict, stat_type: str) -> float:
+    _pts = float(enriched.get("season_pts_avg", 0) or 0)
+    _reb = float(enriched.get("season_reb_avg", 0) or 0)
+    _ast = float(enriched.get("season_ast_avg", 0) or 0)
+    _blk = float(enriched.get("season_blk_avg", 0) or 0)
+    _stl = float(enriched.get("season_stl_avg", 0) or 0)
+    _base = {
+        "points": _pts,
+        "rebounds": _reb,
+        "assists": _ast,
+        "threes": float(enriched.get("season_threes_avg", 0) or 0),
+        "steals": _stl,
+        "blocks": _blk,
+        "turnovers": float(enriched.get("season_tov_avg", 0) or 0),
+        "minutes": float(enriched.get("season_minutes_avg", 0) or 0),
+        "ftm": float(enriched.get("season_ftm_avg", 0) or 0),
+        "fga": float(enriched.get("season_fga_avg", 0) or 0),
+        "fgm": float(enriched.get("season_fgm_avg", 0) or 0),
+        "fta": float(enriched.get("season_fta_avg", 0) or 0),
+        "offensive_rebounds": float(enriched.get("season_oreb_avg", 0) or 0),
+        "defensive_rebounds": float(enriched.get("season_dreb_avg", 0) or 0),
+        "personal_fouls": float(enriched.get("season_pf_avg", 0) or 0),
+        "points_rebounds": _pts + _reb,
+        "points_assists": _pts + _ast,
+        "rebounds_assists": _reb + _ast,
+        "points_rebounds_assists": _pts + _reb + _ast,
+        "blocks_steals": _blk + _stl,
+        "fantasy_score_pp": (
+            _pts
+            + 1.2 * _reb
+            + 1.5 * _ast
+            + 3.0 * (_stl + _blk)
+            - float(enriched.get("season_tov_avg", 0) or 0)
+        ),
+    }
+    return float(_base.get(stat_type, 0) or 0)
+
+
+def _passes_smart_money_quality_gate(enriched: dict) -> bool:
+    stat_type = str(enriched.get("stat_type", "") or "").lower().replace(" ", "_")
+    season_minutes = float(enriched.get("season_minutes_avg", 0) or 0)
+    if season_minutes < _SM_MIN_SEASON_MINUTES:
+        return False
+    season_avg = _stat_season_avg(enriched, stat_type)
+    min_avg = float(_SM_MIN_STAT_AVG.get(stat_type, 0.0) or 0.0)
+    if min_avg > 0 and season_avg < min_avg:
+        return False
+    return True
+
 def _filter_zone_picks(all_props: list, players_data: dict,
                        odds_type: str, min_dev: float) -> list:
     """Filter props by odds_type and line_vs_avg_pct deviation.
@@ -1695,9 +1788,24 @@ def _filter_zone_picks(all_props: list, players_data: dict,
                 "odds_type": p.get("odds_type", ""),
                 "line_vs_avg_pct": dev,
             })
+            if not _passes_smart_money_quality_gate(enriched):
+                continue
             results.append(enriched)
     results.sort(key=lambda x: x.get("line_vs_avg_pct", 0))
-    return results
+    limited = []
+    by_player = {}
+    by_team = {}
+    for pick in results:
+        p_name = str(pick.get("player_name", "") or "").strip().lower()
+        p_team = str(pick.get("player_team", pick.get("team", "")) or "").strip().upper()
+        if by_player.get(p_name, 0) >= _SM_MAX_PICKS_PER_PLAYER:
+            continue
+        if by_team.get(p_team, 0) >= _SM_MAX_PICKS_PER_TEAM:
+            continue
+        limited.append(pick)
+        by_player[p_name] = by_player.get(p_name, 0) + 1
+        by_team[p_team] = by_team.get(p_team, 0) + 1
+    return limited
 
 
 # ============================================================
@@ -1978,6 +2086,14 @@ with st.spinner("Fetching live PrizePicks props…"):
     all_props = fetch_prizepicks_props()
     players_data = load_players_data()
 
+try:
+    from tracking.bet_tracker import _nba_today_et
+    _today_str = _nba_today_et().isoformat()
+except Exception:
+    _today_str = datetime.date.today().isoformat()
+
+all_props = [p for p in all_props if _is_today_game_prop(p, _today_str)]
+
 total_goblin = sum(1 for p in all_props if p.get("odds_type") == "goblin")
 total_demon = sum(1 for p in all_props if p.get("odds_type") == "demon")
 
@@ -1996,16 +2112,37 @@ easy_money_picks = _filter_zone_picks(all_props, players_data, "goblin", _EASY_M
 smart_risk_picks = _filter_zone_picks(all_props, players_data, "demon", _SMART_RISK_MIN_DEV)
 
 # ── Auto-log Smart Money picks to Bet Tracker ─────────────────
-_SM_LOG_KEY = "_s15_smart_money_logged"
-if not st.session_state.get(_SM_LOG_KEY):
-    import sqlite3 as _sqlite3
-    from tracking.database import DB_FILE_PATH as _DB_PATH
-    from tracking.bet_tracker import _nba_today_et
+# Sync every page load so today's tracker rows always mirror today's slate.
+import sqlite3 as _sqlite3
+from tracking.database import DB_FILE_PATH as _DB_PATH
 
-    _today_str = _nba_today_et().isoformat()
-    _existing: set = set()
+# Keep Smart Money auto-logs synced to today's slate only.
+# This clears stale pending rows (including future-game leftovers logged as today)
+# and then rehydrates from the current today-only slate.
+_sync_ok = False
+for _attempt in range(3):
     try:
-        with _sqlite3.connect(str(_DB_PATH)) as _conn:
+        with _sqlite3.connect(str(_DB_PATH), timeout=30) as _conn:
+            _conn.execute("PRAGMA journal_mode=WAL")
+            _conn.execute(
+                "DELETE FROM bets "
+                "WHERE bet_date = ? "
+                "AND auto_logged = 1 "
+                "AND platform = 'Smart Money' "
+                "AND (bet_type IN ('goblin', 'demon') OR notes LIKE 'Smart Money %') "
+                "AND (result IS NULL OR result = '')",
+                (_today_str,),
+            )
+            _conn.commit()
+        _sync_ok = True
+        break
+    except Exception:
+        _time.sleep(0.25 * (2 ** _attempt))
+
+_existing: set = set()
+if _sync_ok:
+    try:
+        with _sqlite3.connect(str(_DB_PATH), timeout=30) as _conn:
             _rows = _conn.execute(
                 "SELECT player_name, stat_type, prop_line, direction "
                 "FROM bets WHERE bet_date = ?",
@@ -2015,42 +2152,44 @@ if not st.session_state.get(_SM_LOG_KEY):
             (r[0].lower(), r[1], float(r[2] or 0), r[3]) for r in _rows
         }
     except Exception:
-        pass
+        _existing = set()
 
-    _sm_logged = 0
-    for _pick in easy_money_picks + smart_risk_picks:
-        _p_name = _pick.get("player_name", "")
-        _p_stat = (_pick.get("stat_type", "") or "").lower().replace(" ", "_")
-        _p_line = float(_pick.get("line", 0))
-        _p_dir = "OVER"
-        _dk = (_p_name.lower(), _p_stat, _p_line, _p_dir)
-        if _dk in _existing:
-            continue
-        _dev = abs(_pick.get("line_vs_avg_pct", 0))
-        _bt = _pick.get("odds_type", "goblin")
-        _tier = "Platinum" if _dev >= 80 else "Gold" if _dev >= 65 else "Silver" if _dev >= 50 else "Bronze"
-        _conf = min(99.0, 50 + _dev * 0.5)
-        _prob = min(0.99, 0.5 + _dev / 200)
-        ok, _ = log_new_bet(
-            player_name=_p_name,
-            stat_type=_p_stat,
-            prop_line=_p_line,
-            direction=_p_dir,
-            platform="Smart Money",
-            confidence_score=_conf,
-            probability_over=_prob,
-            edge_percentage=_dev,
-            tier=_tier,
-            team=str(_pick.get("player_team", _pick.get("team", ""))),
-            notes=f"Smart Money {_bt.title()} | GAP: -{_dev:.1f}%",
-            auto_logged=1,
-            bet_type=_bt,
-            std_devs_from_line=_dev / 15.0,
-        )
-        if ok:
-            _existing.add(_dk)
-            _sm_logged += 1
-    st.session_state[_SM_LOG_KEY] = True
+_sm_logged = 0
+for _pick in easy_money_picks + smart_risk_picks:
+    # Safety gate: never log Smart Money props for non-today game dates.
+    if not _is_today_game_prop(_pick, _today_str):
+        continue
+    _p_name = _pick.get("player_name", "")
+    _p_stat = (_pick.get("stat_type", "") or "").lower().replace(" ", "_")
+    _p_line = float(_pick.get("line", 0))
+    _p_dir = "OVER"
+    _dk = (_p_name.lower(), _p_stat, _p_line, _p_dir)
+    if _dk in _existing:
+        continue
+    _dev = abs(_pick.get("line_vs_avg_pct", 0))
+    _bt = _pick.get("odds_type", "goblin")
+    _tier = "Platinum" if _dev >= 80 else "Gold" if _dev >= 65 else "Silver" if _dev >= 50 else "Bronze"
+    _conf = min(99.0, 50 + _dev * 0.5)
+    _prob = min(0.99, 0.5 + _dev / 200)
+    ok, _ = log_new_bet(
+        player_name=_p_name,
+        stat_type=_p_stat,
+        prop_line=_p_line,
+        direction=_p_dir,
+        platform="Smart Money",
+        confidence_score=_conf,
+        probability_over=_prob,
+        edge_percentage=_dev,
+        tier=_tier,
+        team=str(_pick.get("player_team", _pick.get("team", ""))),
+        notes=f"Smart Money {_bt.title()} | GAP: -{_dev:.1f}%",
+        auto_logged=1,
+        bet_type=_bt,
+        std_devs_from_line=_dev / 15.0,
+    )
+    if ok:
+        _existing.add(_dk)
+        _sm_logged += 1
 
 
 # ============================================================

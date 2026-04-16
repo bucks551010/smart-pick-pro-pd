@@ -13,6 +13,7 @@ import html as _html
 import logging
 import math
 import random
+import datetime as _dt
 
 
 def _safe_float(val, default=0.0):
@@ -1778,31 +1779,92 @@ def _render_track_record_section():
             key="studio_track_record_range",
         )
 
+    # Build stats directly from bet rows so the selected time range applies.
     try:
-        track = joseph_get_track_record()
+        from tracking.database import load_all_bets as _load_all_bets
+        _all_bets = _load_all_bets(limit=5000, exclude_linked=False)
     except Exception as exc:
-        _logger.warning("joseph_get_track_record failed: %s", exc)
-        track = {}
+        _logger.warning("Studio track record load failed: %s", exc)
+        _all_bets = []
 
-    total = track.get("total", 0)
-    wins = track.get("wins", 0)
-    losses = track.get("losses", 0)
-    pending = track.get("pending", 0)
-    win_rate = track.get("win_rate", 0)
-    streak = track.get("streak", 0)
+    def _is_joseph_bet_local(_bet: dict) -> bool:
+        _notes = str(_bet.get("notes", ""))
+        _platform = str(_bet.get("platform", ""))
+        return "Joseph M. Smith" in _notes or _platform == "Joseph M. Smith"
 
-    # Accuracy by verdict
-    try:
-        by_verdict = joseph_get_accuracy_by_verdict()
-    except Exception:
-        by_verdict = {}
+    def _cutoff_for_range(_range_label: str):
+        _today = _dt.date.today()
+        if _range_label == "Last 7 Days":
+            return _today - _dt.timedelta(days=6)
+        if _range_label == "Last 30 Days":
+            return _today - _dt.timedelta(days=29)
+        if _range_label == "This Season":
+            _season_year = _today.year if _today.month >= 10 else (_today.year - 1)
+            return _dt.date(_season_year, 10, 1)
+        return None
 
-    smash_pct = by_verdict.get("SMASH", {}).get("pct", 0)
-    lean_pct = by_verdict.get("LEAN", {}).get("pct", 0)
-    lock_pct = by_verdict.get("LOCK", {}).get("pct", 0)
+    _range_cutoff = _cutoff_for_range(_tr_range)
+    _joseph_rows = []
+    for _b in _all_bets:
+        if not _is_joseph_bet_local(_b):
+            continue
+        if _range_cutoff is not None:
+            _bd = str(_b.get("bet_date") or "")[:10]
+            try:
+                _bdate = _dt.date.fromisoformat(_bd)
+            except ValueError:
+                continue
+            if _bdate < _range_cutoff:
+                continue
+        _joseph_rows.append(_b)
+
+    total = len(_joseph_rows)
+    wins = sum(1 for _b in _joseph_rows if str(_b.get("result", "")).upper() in ("WIN", "W"))
+    losses = sum(1 for _b in _joseph_rows if str(_b.get("result", "")).upper() in ("LOSS", "L"))
+    pending = total - wins - losses
+    decided = wins + losses
+    win_rate_pct = (wins / decided * 100.0) if decided > 0 else 0.0
+
+    # Streak (most recent first)
+    _sorted_rows = sorted(
+        _joseph_rows,
+        key=lambda _b: (str(_b.get("created_at", "")), int(_b.get("bet_id", 0))),
+        reverse=True,
+    )
+    _results_seq = []
+    for _b in _sorted_rows:
+        _r = str(_b.get("result", "")).upper()
+        if _r in ("WIN", "W"):
+            _results_seq.append("W")
+        elif _r in ("LOSS", "L"):
+            _results_seq.append("L")
+    streak = 0
+    if _results_seq:
+        _first = _results_seq[0]
+        for _r in _results_seq:
+            if _r == _first:
+                streak += 1
+            else:
+                break
+        if _first == "L":
+            streak = -streak
+
+    # Accuracy by verdict (decision-only denominator)
+    def _verdict_pct(_verdict: str) -> float:
+        _subset = [
+            _b for _b in _joseph_rows
+            if str(_b.get("tier", "")).upper() == _verdict
+        ]
+        _vw = sum(1 for _b in _subset if str(_b.get("result", "")).upper() in ("WIN", "W"))
+        _vd = sum(1 for _b in _subset if str(_b.get("result", "")).upper() in ("WIN", "W", "LOSS", "L"))
+        return (_vw / _vd * 100.0) if _vd > 0 else 0.0
+
+    lock_pct = _verdict_pct("LOCK")
+    smash_pct = _verdict_pct("SMASH")
+    lean_pct = _verdict_pct("LEAN")
 
     # Enhancement 6: Win-rate sparkline SVG + LOCK/SMASH/LEAN pie chart
-    _wr_pct = max(0, min(100, win_rate * 100)) if win_rate <= 1 else win_rate
+    _wr_pct = max(0, min(100, win_rate_pct))
     _lock_pct_100 = max(0, min(100, lock_pct * 100)) if lock_pct <= 1 else lock_pct
     _smash_pct_100 = max(0, min(100, smash_pct * 100)) if smash_pct <= 1 else smash_pct
     _lean_pct_100 = max(0, min(100, lean_pct * 100)) if lean_pct <= 1 else lean_pct
@@ -1836,20 +1898,20 @@ def _render_track_record_section():
         f'<div class="studio-metric-value">{total}</div>'
         f'<div class="studio-metric-label">Total Bets</div></div>'
         f'<div class="studio-metric-card">'
-        f'<div class="studio-metric-value">{win_rate:.1%}</div>'
+        f'<div class="studio-metric-value">{win_rate_pct:.1f}%</div>'
         f'<div class="studio-metric-label">Win Rate</div>'
         # win-rate progress bar
         f'<div style="margin-top:6px;height:4px;background:#1e293b;border-radius:2px">'
         f'<div style="height:4px;width:{_wr_pct:.0f}%;background:var(--studio-green);border-radius:2px"></div></div>'
         f'</div>'
         f'<div class="studio-metric-card">'
-        f'<div class="studio-metric-value" style="color:#a855f7">{lock_pct:.1%}</div>'
+        f'<div class="studio-metric-value" style="color:#a855f7">{lock_pct:.1f}%</div>'
         f'<div class="studio-metric-label">LOCK Accuracy</div></div>'
         f'<div class="studio-metric-card">'
-        f'<div class="studio-metric-value">{smash_pct:.1%}</div>'
+        f'<div class="studio-metric-value">{smash_pct:.1f}%</div>'
         f'<div class="studio-metric-label">SMASH Accuracy</div></div>'
         f'<div class="studio-metric-card">'
-        f'<div class="studio-metric-value">{lean_pct:.1%}</div>'
+        f'<div class="studio-metric-value">{lean_pct:.1f}%</div>'
         f'<div class="studio-metric-label">LEAN Accuracy</div></div>'
         f'<div class="studio-metric-card">'
         f'{_pie_svg}'
@@ -1885,7 +1947,7 @@ def _render_track_record_section():
             st.markdown(
                 f'<div style="color:var(--studio-cyan);font-size:0.88rem;margin:8px 0">'
                 f'🔄 <strong>Override Accuracy:</strong> '
-                f'{override_acc.get("override_accuracy", 0):.1%} '
+                f'{override_acc.get("override_accuracy", 0):.1f}% '
                 f'({override_acc.get("overrides_correct", 0)}/'
                 f'{override_acc.get("overrides_total", 0)} correct)</div>',
                 unsafe_allow_html=True,

@@ -441,8 +441,12 @@ if not all_available_bets:
     )
     st.stop()
 
+# Load live box scores first so selector can filter bets by live matchup.
+live_games = get_live_boxscores()
+all_live_players = get_all_live_players(live_games)
+
 # ── Bet Selector ──────────────────────────────────────────────
-# Build human-readable labels for multiselect
+# Build human-readable labels for game + bet multiselect
 
 def _bet_label(b: dict) -> str:
     name = b.get("player_name", "Unknown")
@@ -454,10 +458,59 @@ def _bet_label(b: dict) -> str:
     return f"{name} — {stat} {direction} {line}{source_tag}"
 
 
-_bet_labels = [_bet_label(b) for b in all_available_bets]
-_label_to_bet = dict(zip(_bet_labels, all_available_bets))
+def _game_label_for_bet(b: dict) -> str:
+    player_name = str(b.get("player_name", "") or "").strip()
+    if not player_name:
+        return "Unmapped / Not Live Yet"
+    game = get_game_for_player(player_name, live_games)
+    if not game:
+        return "Unmapped / Not Live Yet"
+    away = str(game.get("away_team", "?") or "?")
+    home = str(game.get("home_team", "?") or "?")
+    status = str(game.get("status", "Live") or "Live")
+    period = str(game.get("period", "") or "").strip()
+    period_tag = f" • Q{period}" if period and period.isdigit() else ""
+    return f"{away} @ {home} ({status}{period_tag})"
+
+
+_bet_records = [
+    {
+        "label": _bet_label(b),
+        "bet": b,
+        "game_label": _game_label_for_bet(b),
+    }
+    for b in all_available_bets
+]
+
+_game_options = sorted({r["game_label"] for r in _bet_records})
 
 st.markdown("### 🎯 Select Bets to Sweat")
+selected_game_labels = st.multiselect(
+    "Filter by Game (shows players currently in selected matchup)",
+    options=_game_options,
+    default=_game_options,
+    key="sweat_game_selector",
+)
+
+if not selected_game_labels:
+    st.warning("⬆ Select at least one game above to choose player bets.")
+    st.stop()
+
+_filtered_records = [
+    r for r in _bet_records
+    if r["game_label"] in selected_game_labels
+]
+
+if not _filtered_records:
+    st.warning("No player bets found for the selected game(s).")
+    st.stop()
+
+_label_to_bets: dict[str, list[dict]] = {}
+for _rec in _filtered_records:
+    _label_to_bets.setdefault(_rec["label"], []).append(_rec["bet"])
+
+_bet_labels = list(_label_to_bets.keys())
+
 selected_labels = st.multiselect(
     "Choose which bets to track live (all selected by default)",
     options=_bet_labels,
@@ -465,15 +518,13 @@ selected_labels = st.multiselect(
     key="sweat_bet_selector",
 )
 
-active_bets = [_label_to_bet[lbl] for lbl in selected_labels if lbl in _label_to_bet]
+active_bets: list[dict] = []
+for _lbl in selected_labels:
+    active_bets.extend(_label_to_bets.get(_lbl, []))
 
 if not active_bets:
     st.warning("⬆ Select at least one bet above to start sweating!")
     st.stop()
-
-# Load live box scores (API-firewalled: cached 120 s)
-live_games = get_live_boxscores()
-all_live_players = get_all_live_players(live_games)
 
 # ============================================================
 # SECTION: Live Scoreboard — ESPN-Style Ticker with Leaders
@@ -726,9 +777,16 @@ if not live_games:
         "Cards will populate once tonight's games tip off."
     )
 
+
+def _is_final_game_status(status_text: str) -> bool:
+    """Return True when a live-game status string indicates final."""
+    s = str(status_text or "").strip().lower()
+    return s.startswith("final") or s in {"ft", "end"}
+
 # ── Metrics Row ───────────────────────────────────────────────
 
 cashed_count = 0
+lost_count = 0
 tracking_count = 0
 risk_count = 0
 waiting_count = 0
@@ -787,6 +845,7 @@ for bet in active_bets:
     if game:
         score_diff = abs(game.get("home_score", 0) - game.get("away_score", 0))
         period = game.get("period", "")
+    _is_final = _is_final_game_status(game.get("status", "") if game else "")
 
     current_stat_val = _resolve_current_stat(matched, stat_type)
     if current_stat_val is None:
@@ -804,10 +863,22 @@ for bet in active_bets:
     )
 
     color = pace_color_tier(pace["pct_of_target"], direction)
+
+    # Explicit loss detection for live sweat state:
+    # - UNDER loses the moment it goes over the line.
+    # - OVER loses only when game is final below the line.
+    _current = float(pace.get("current_stat", 0) or 0)
+    _target = float(pace.get("target_stat", 0) or 0)
+    _is_under = direction == "UNDER"
+    _lost = (_is_under and _current >= _target) or ((not _is_under) and _is_final and _current < _target)
+    pace["lost"] = _lost
+
     all_pace_results.append(pace)
 
     if pace["cashed"]:
         cashed_count += 1
+    if _lost:
+        lost_count += 1
     if pace["blowout_risk"] or pace["foul_trouble"]:
         risk_count += 1
 
@@ -855,6 +926,7 @@ for bet in active_bets:
         blowout_risk=pace["blowout_risk"],
         foul_trouble=pace["foul_trouble"],
         cashed=pace["cashed"],
+        lost=_lost,
         minutes_played=pace["minutes_played"],
         direction=direction,
         minutes_remaining=pace["minutes_remaining"],
@@ -871,12 +943,13 @@ cards_html = "".join(cards_html_parts)
 # ── Sticky Top-Level Metrics ──────────────────────────────────
 
 st.markdown('<div class="sticky-metrics-bar">', unsafe_allow_html=True)
-c1, c2, c3, c4, c5 = st.columns(5)
+c1, c2, c3, c4, c5, c6 = st.columns(6)
 c1.metric("🎯 Active Bets", len(active_bets))
 c2.metric("📡 Tracking Live", tracking_count)
 c3.metric("✅ Cashed", cashed_count)
-c4.metric("🚨 At Risk", risk_count)
-c5.metric("🕐 Awaiting", waiting_count)
+c4.metric("❌ Lost", lost_count)
+c5.metric("🚨 At Risk", risk_count)
+c6.metric("🕐 Awaiting", waiting_count)
 st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
@@ -929,7 +1002,13 @@ if cards_html:
                 st.session_state.setdefault("sweat_removed_bets", set()).add(rm_key)
                 st.rerun()
         with col_card:
-            with st.expander(f"📊 {player_name} — Details", expanded=pace.get("cashed", False)):
+            with st.expander(
+                f"📊 {player_name} — Details",
+                expanded=pace.get("cashed", False) or pace.get("lost", False),
+            ):
+                if pace.get("lost", False):
+                    st.error("❌ This bet is currently graded as LOST in live sweat.")
+
                 # Per-quarter pace breakdown
                 period_num = pace.get("period_num", 0)
                 if period_num >= 1 and pace["current_stat"] > 0:

@@ -52,6 +52,30 @@ _WRITE_RETRY_ATTEMPTS = 3
 _WRITE_RETRY_DELAY = 0.25  # seconds between retries (doubles each attempt)
 
 
+def _get_eastern_tz():
+    """Return America/New_York timezone, with UTC-5 fallback."""
+    try:
+        from zoneinfo import ZoneInfo
+        return ZoneInfo("America/New_York")
+    except ImportError:
+        return datetime.timezone(datetime.timedelta(hours=-5))
+
+
+def _nba_today_iso() -> str:
+    """Return today's date anchored to NBA's ET day boundary."""
+    return datetime.datetime.now(_get_eastern_tz()).date().isoformat()
+
+
+def _extract_iso_date(value) -> str:
+    """Best-effort YYYY-MM-DD extraction from a timestamp/date value."""
+    if not value:
+        return ""
+    text = str(value).strip()
+    if len(text) >= 10 and text[4:5] == "-" and text[7:8] == "-":
+        return text[:10]
+    return ""
+
+
 def _execute_write(sql, params=(), *, caller="write"):
     """Execute a single INSERT / UPDATE with locked-database retry.
 
@@ -497,12 +521,20 @@ def initialize_database():
             except sqlite3.OperationalError:
                 pass  # Column already exists â€” safe to ignore
 
-            # Remap old "demon" bet_type records (conflicting-forces picks under
-            # the old system) to "50_50" â€” they were standard-line uncertain picks,
-            # not true Demon bets (line above standard O/U).
+            # Preserve true Goblin / Demon bet types. Earlier builds rewrote every
+            # demon row to 50_50, which also erased legitimate Smart Money demon
+            # picks on subsequent app starts. Only do best-effort restoration when
+            # notes clearly identify the intended classification.
             try:
                 cursor.execute(
-                    "UPDATE bets SET bet_type = '50_50' WHERE bet_type = 'demon'"
+                    "UPDATE bets SET bet_type = 'demon' "
+                    "WHERE lower(COALESCE(notes, '')) LIKE '%smart money demon%' "
+                    "AND COALESCE(lower(bet_type), '') <> 'demon'"
+                )
+                cursor.execute(
+                    "UPDATE bets SET bet_type = 'goblin' "
+                    "WHERE lower(COALESCE(notes, '')) LIKE '%smart money goblin%' "
+                    "AND COALESCE(lower(bet_type), '') <> 'goblin'"
                 )
             except sqlite3.OperationalError:
                 pass
@@ -539,18 +571,17 @@ def initialize_database():
                 pass  # Column already renamed or doesn't exist
 
             # â”€â”€ Unique index on all_analysis_picks to prevent duplicate rows â”€â”€
-            # Covers the natural key (pick_date, player_name, stat_type,
-            # prop_line, direction) that insert_analysis_picks already
-            # deduplicates in application code.  The index makes the DB
-            # enforce uniqueness even if the app-level check is bypassed.
+            # v2 key includes platform so distinct platform props do not collapse
+            # into one row when player/stat/line/direction match.
             try:
+                cursor.execute("DROP INDEX IF EXISTS idx_aap_unique_pick")
                 cursor.execute(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS idx_aap_unique_pick "
+                    "CREATE UNIQUE INDEX IF NOT EXISTS idx_aap_unique_pick_v2 "
                     "ON all_analysis_picks "
-                    "(pick_date, player_name, stat_type, prop_line, direction)"
+                    "(pick_date, lower(player_name), stat_type, prop_line, direction, COALESCE(platform, ''))"
                 )
             except sqlite3.OperationalError:
-                # May fail if existing data already has duplicates.
+                # May fail if existing data already has duplicates on the v2 key.
                 # Clean up duplicates first, then retry.
                 try:
                     cursor.execute(
@@ -559,14 +590,14 @@ def initialize_database():
                         WHERE pick_id NOT IN (
                             SELECT MIN(pick_id)
                             FROM all_analysis_picks
-                            GROUP BY pick_date, player_name, stat_type, prop_line, direction
+                            GROUP BY pick_date, lower(player_name), stat_type, prop_line, direction, COALESCE(platform, '')
                         )
                         """
                     )
                     cursor.execute(
-                        "CREATE UNIQUE INDEX IF NOT EXISTS idx_aap_unique_pick "
+                        "CREATE UNIQUE INDEX IF NOT EXISTS idx_aap_unique_pick_v2 "
                         "ON all_analysis_picks "
-                        "(pick_date, player_name, stat_type, prop_line, direction)"
+                        "(pick_date, lower(player_name), stat_type, prop_line, direction, COALESCE(platform, ''))"
                     )
                 except sqlite3.OperationalError:
                     pass  # Best-effort â€” app-level dedup still protects
@@ -2171,9 +2202,9 @@ def insert_analysis_picks(analysis_results):
     """
     Persist all Neural Analysis output picks to the all_analysis_picks table.
 
-    Deduplicates by (pick_date, player_name, stat_type, direction) — prop_line
-    is excluded so that line movements UPDATE the existing row instead of
-    creating phantom duplicates.
+    Deduplicates by (pick_date, player_name, stat_type, prop_line, direction,
+    platform) so re-runs do not duplicate the same pick while still preserving
+    distinct platform variants.
 
     Args:
         analysis_results (list[dict]): Full list of analysis result dicts from
@@ -2185,52 +2216,63 @@ def insert_analysis_picks(analysis_results):
     if not analysis_results:
         return 0
 
-    import datetime as _dt
-    today_str = _dt.date.today().isoformat()
+    today_str = _nba_today_iso()
     inserted = 0
 
     for _attempt in range(_WRITE_RETRY_ATTEMPTS):
         try:
             with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
                 conn.execute("PRAGMA journal_mode=WAL")
-                # Dedup key excludes prop_line so line movements update rather than duplicate
+                # Dedup key includes line + platform to preserve distinct props.
                 existing = {}  # key → pick_id for update
                 for row in conn.execute(
-                    "SELECT pick_id, lower(player_name), stat_type, direction "
+                    "SELECT pick_id, lower(player_name), stat_type, prop_line, direction, COALESCE(platform, '') "
                     "FROM all_analysis_picks WHERE pick_date = ?",
                     (today_str,),
                 ).fetchall():
-                    existing[(row[1], row[2], row[3])] = row[0]
+                    _k = (
+                        row[1],
+                        row[2],
+                        round(float(row[3] or 0), 2),
+                        str(row[4] or "OVER").upper(),
+                        str(row[5] or "").strip().lower(),
+                    )
+                    existing[_k] = row[0]
 
                 for r in analysis_results:
+                    _line = round(float(r.get("line", 0) or 0), 2)
+                    _platform = str(r.get("platform", "") or "").strip().lower()
                     key = (
                         r.get("player_name", "").lower(),
                         r.get("stat_type", ""),
-                        r.get("direction", "OVER"),
+                        _line,
+                        str(r.get("direction", "OVER") or "OVER").upper(),
+                        _platform,
                     )
                     if key in existing:
-                        # Line may have moved — update the existing row
+                        # Refresh the existing identical pick row.
                         conn.execute(
                             """UPDATE all_analysis_picks
                                SET prop_line = ?, confidence_score = ?,
                                    probability_over = ?, edge_percentage = ?,
-                                   tier = ?, notes = ?, bet_type = ?,
+                                   tier = ?, notes = ?, bet_type = ?, platform = ?,
                                    std_devs_from_line = ?
                                WHERE pick_id = ?""",
                             (
-                                float(r.get("line", 0) or 0),
+                                _line,
                                 float(r.get("confidence_score", 0) or 0),
                                 float(r.get("probability_over", 0.5) or 0.5),
                                 float(r.get("edge_percentage", 0) or 0),
                                 r.get("tier", "Bronze"),
                                 f"Auto-stored by Smart Pick Pro. SAFE Score: {r.get('confidence_score', 0):.0f}",
                                 r.get("bet_type", "normal"),
+                                r.get("platform", ""),
                                 float(r.get("std_devs_from_line", 0.0)),
                                 existing[key],
                             ),
                         )
                         continue
-                    conn.execute(
+                    _cursor = conn.execute(
                         """
                         INSERT OR IGNORE INTO all_analysis_picks
                             (pick_date, player_name, team, stat_type, prop_line,
@@ -2244,7 +2286,7 @@ def insert_analysis_picks(analysis_results):
                             r.get("player_name", ""),
                             r.get("player_team", r.get("team", "")),
                             r.get("stat_type", ""),
-                            float(r.get("line", 0) or 0),
+                            _line,
                             r.get("direction", "OVER"),
                             r.get("platform", ""),
                             float(r.get("confidence_score", 0) or 0),
@@ -2256,8 +2298,9 @@ def insert_analysis_picks(analysis_results):
                             float(r.get("std_devs_from_line", 0.0)),
                         ),
                     )
-                    existing.add(key)
-                    inserted += 1
+                    if _cursor.rowcount > 0:
+                        existing[key] = _cursor.lastrowid
+                        inserted += 1
                 conn.commit()
             break  # success â€” exit retry loop
         except sqlite3.OperationalError as op_err:
@@ -2290,7 +2333,9 @@ def load_all_analysis_picks(days=30):
         list[dict]: List of pick dicts with columns as keys.
     """
     import datetime as _dt
-    cutoff = (_dt.date.today() - _dt.timedelta(days=days)).isoformat()
+    cutoff = (
+        datetime.date.fromisoformat(_nba_today_iso()) - _dt.timedelta(days=days)
+    ).isoformat()
     rows = []
     try:
         with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
@@ -2398,7 +2443,9 @@ def get_analysis_pick_dates(days=30):
         list[str]: ISO date strings, e.g. ["2026-03-13", "2026-03-12", ...].
     """
     import datetime as _dt
-    cutoff = (_dt.date.today() - _dt.timedelta(days=days)).isoformat()
+    cutoff = (
+        datetime.date.fromisoformat(_nba_today_iso()) - _dt.timedelta(days=days)
+    ).isoformat()
     dates = []
     try:
         with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
@@ -2946,6 +2993,8 @@ def save_page_state(session_dict):
         # that aren't present in this render are preserved.
         existing = load_page_state()
         merged = {**existing, **filtered}
+        # Stamp the saved payload so stale daily state can be dropped next day.
+        merged["__saved_for_date"] = _nba_today_iso()
         _state_json = json.dumps(merged, default=str)
         _execute_write(
             """INSERT OR REPLACE INTO page_state (state_id, state_json, updated_at)
@@ -2977,6 +3026,29 @@ def load_page_state():
             if not row or not row[0]:
                 return {}
             raw = json.loads(row[0])
+
+            # Drop day-scoped state when crossing into a new NBA day.
+            _saved_for = _extract_iso_date(raw.get("__saved_for_date"))
+            _analysis_day = _extract_iso_date(raw.get("analysis_timestamp"))
+            if not _saved_for:
+                _saved_for = _analysis_day
+            _today = _nba_today_iso()
+            _is_stale_day = (_saved_for and _saved_for != _today) or (
+                _analysis_day and _analysis_day != _today
+            )
+            if _is_stale_day:
+                for _k in (
+                    "analysis_results",
+                    "selected_picks",
+                    "todays_games",
+                    "current_props",
+                    "session_props",
+                    "loaded_live_picks",
+                    "analysis_timestamp",
+                    "line_snapshots",
+                ):
+                    raw.pop(_k, None)
+
             # Only return recognised keys to avoid injecting stale/unknown state
             return {
                 k: v for k, v in raw.items()

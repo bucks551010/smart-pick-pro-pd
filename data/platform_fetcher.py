@@ -823,6 +823,26 @@ def fetch_prizepicks_props(league="NBA"):
                 "team": attrs.get("team", attrs.get("team_name", "")),
             }
 
+    # Build game lookup so each prop can carry its real game start date.
+    # This is required to prevent future games from being mislabeled as "today".
+    game_lookup = {}
+    for item in included:
+        if item.get("type") == "game":
+            game_lookup[item.get("id", "")] = item.get("attributes", {}) or {}
+
+    def _game_date_from_start(start_value):
+        raw = str(start_value or "").strip()
+        if not raw:
+            return ""
+        if "T" in raw:
+            raw = raw.split("T", 1)[0]
+        if " " in raw:
+            raw = raw.split(" ", 1)[0]
+        try:
+            return datetime.date.fromisoformat(raw[:10]).isoformat()
+        except ValueError:
+            return ""
+
     # Parse each projection into our standard prop format
     props = []
     today = _today_str()
@@ -879,13 +899,21 @@ def fetch_prizepicks_props(league="NBA"):
         # Goblin = lower/easier line; Demon = higher/harder line.
         odds_type = str(attrs.get("odds_type", "standard")).lower()
 
+        # Prefer relationship game.start_time; fallback to projection start_time.
+        _game_rel = relationships.get("game", {}).get("data", {})
+        _game_rel_id = _game_rel.get("id", "") if isinstance(_game_rel, dict) else ""
+        _game_start = (game_lookup.get(_game_rel_id, {}) or {}).get("start_time")
+        _proj_start = attrs.get("start_time")
+        _resolved_game_date = _game_date_from_start(_game_start) or _game_date_from_start(_proj_start) or today
+
         props.append({
             "player_name": player_name,
             "team": team,
             "stat_type": stat_type,
             "line": true_line,
             "platform": "PrizePicks",
-            "game_date": today,
+            "game_date": _resolved_game_date,
+            "start_time": _game_start or _proj_start or "",
             "fetched_at": fetched_at,
             "over_odds": attrs.get("price", attrs.get("over_price", _DEFAULT_AMERICAN_ODDS)),
             "under_odds": attrs.get("under_price", _DEFAULT_AMERICAN_ODDS),

@@ -183,6 +183,15 @@ def render_live_desk_css() -> str:
         0 0 120px rgba(0,198,255,0.04),
         inset 0 1px 0 rgba(255,158,0,0.15),
         inset 0 -1px 0 rgba(0,198,255,0.06);
+    width:100%;
+    max-width:100%;
+    box-sizing:border-box;
+}
+.joseph-live-desk,
+.joseph-live-desk *,
+.joseph-live-desk *::before,
+.joseph-live-desk *::after{
+    box-sizing:border-box;
 }
 /* Top broadcast bar — enhanced gradient shimmer */
 .joseph-live-desk::before{
@@ -282,6 +291,8 @@ def render_live_desk_css() -> str:
 .joseph-header{
     display:flex;flex-direction:column;gap:6px;
     position:relative;z-index:1;
+    min-width:0;
+    flex:1 1 0;
 }
 .joseph-header-text{
     font-family:'Orbitron',sans-serif;font-size:1.35rem;
@@ -290,6 +301,8 @@ def render_live_desk_css() -> str:
     display:flex;align-items:center;gap:10px;
     flex-wrap:wrap;
     line-height:1.3;
+    min-width:0;
+    overflow-wrap:anywhere;
 }
 .joseph-header-text .joseph-name-accent{
     color:#ff5e00;
@@ -298,6 +311,9 @@ def render_live_desk_css() -> str:
     color:#94a3b8;font-size:0.82rem;margin-top:2px;
     font-family:'Montserrat',sans-serif;letter-spacing:0.3px;
     display:flex;align-items:center;gap:8px;
+    flex-wrap:wrap;
+    min-width:0;
+    overflow-wrap:anywhere;
 }
 
 /* ── Desk Content Body ────────────────────────────────────── */
@@ -389,6 +405,7 @@ def render_live_desk_css() -> str:
 .joseph-segment-body{
     color:#e2e8f0;font-size:0.9rem;
     line-height:1.7;font-family:'Montserrat',sans-serif;
+    overflow-wrap:anywhere;
 }
 .joseph-segment-body strong{color:#ff9e00}
 
@@ -418,10 +435,12 @@ def render_live_desk_css() -> str:
 .joseph-pick-content{
     flex:1;padding:16px 18px 14px 0;
     display:flex;flex-direction:column;gap:6px;
+    min-width:0;
 }
 .joseph-pick-player{
     font-family:'Montserrat',sans-serif;font-size:1.05rem;
     font-weight:700;color:#ffffff;
+    overflow-wrap:anywhere;
 }
 .joseph-pick-prop{
     font-family:'Montserrat',sans-serif;font-size:0.88rem;
@@ -439,6 +458,7 @@ def render_live_desk_css() -> str:
 .joseph-pick-rant{
     color:#cbd5e1;font-size:0.88rem;line-height:1.6;
     font-family:'Montserrat',sans-serif;margin-top:4px;
+    overflow-wrap:anywhere;
 }
 
 /* ── Section Header ───────────────────────────────────────── */
@@ -501,10 +521,19 @@ def render_live_desk_css() -> str:
 }
 
 /* ── Dawg Board Table ─────────────────────────────────────── */
+.joseph-table-wrap{
+    width:100%;
+    max-width:100%;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    margin-bottom:10px;
+}
 .joseph-dawg-table{
     width:100%;border-collapse:separate;border-spacing:0;
     font-family:'Montserrat',sans-serif;font-size:0.85rem;
     border-radius:10px;overflow:hidden;
+    min-width:640px;
 }
 .joseph-dawg-table th{
     background:rgba(255,94,0,0.12);color:#ff5e00;
@@ -524,6 +553,7 @@ def render_live_desk_css() -> str:
     width:100%;border-collapse:separate;border-spacing:0;
     font-family:'Montserrat',sans-serif;font-size:0.85rem;
     border-radius:10px;overflow:hidden;
+    min-width:680px;
 }
 .joseph-override-table th{
     background:rgba(0,240,255,0.08);color:#00f0ff;
@@ -601,6 +631,7 @@ def render_live_desk_css() -> str:
     .joseph-override-table{font-size:0.78rem}
     .joseph-override-table th{padding:8px 10px;font-size:0.66rem}
     .joseph-override-table td{padding:6px 10px}
+    .joseph-table-wrap{margin-left:-2px;margin-right:-2px;padding-bottom:2px}
 }
 @media (max-width: 480px){
     .joseph-hero{padding:12px 10px;gap:10px;flex-direction:column;align-items:center;text-align:center}
@@ -609,12 +640,16 @@ def render_live_desk_css() -> str:
     .joseph-subtitle{font-size:0.68rem;justify-content:center;flex-wrap:wrap}
     .joseph-desk-body{padding:10px 10px 14px}
     .joseph-monologue{padding:10px 12px}
+    .joseph-kpi-bar{flex-direction:column;align-items:stretch}
     .joseph-kpi{padding:4px 8px;font-size:0.72rem}
     .joseph-segment{padding:10px 12px}
+    .joseph-pick-card{gap:0;flex-direction:column}
+    .joseph-pick-rank{min-width:100%;min-height:34px;border-right:none;border-bottom:1px solid rgba(255,94,0,0.2)}
     .joseph-pick-rank{min-width:36px;font-size:0.9rem}
-    .joseph-pick-content{padding:10px 10px 8px 0}
+    .joseph-pick-content{padding:10px 10px 8px 10px}
     .joseph-pick-player{font-size:0.85rem}
     .joseph-pick-prop{font-size:0.76rem;flex-direction:column;align-items:flex-start}
+    .joseph-monologue-text,.joseph-segment-body,.joseph-signoff-text{font-size:0.8rem;line-height:1.55}
 }
 </style>"""
 
@@ -739,12 +774,14 @@ def _build_dawg_board_html(joseph_results: list) -> str:
         )
 
     return (
+        '<div class="joseph-table-wrap">'
         '<table class="joseph-dawg-table">'
         '<thead><tr>'
         '<th>Rank</th><th>Player</th><th>Bet</th><th>Dawg Factor</th><th>Tags</th><th>Archetype</th>'
         '</tr></thead>'
         f'<tbody>{rows_html}</tbody>'
         '</table>'
+        '</div>'
     )
 
 
@@ -801,6 +838,7 @@ def render_override_report(joseph_results: list) -> None:
         )
 
     html = (
+        '<div class="joseph-table-wrap">'
         '<table class="joseph-override-table">'
         '<thead><tr>'
         '<th>Player</th><th>Prop</th><th>QME Edge</th><th>Joseph Edge</th>'
@@ -808,6 +846,7 @@ def render_override_report(joseph_results: list) -> None:
         '</tr></thead>'
         f'<tbody>{rows_html}</tbody>'
         '</table>'
+        '</div>'
     )
     st.markdown(html, unsafe_allow_html=True)
 
@@ -1482,6 +1521,7 @@ def render_joseph_live_desk(
                     f'</tr>'
                 )
             override_table = (
+                '<div class="joseph-table-wrap">'
                 '<table class="joseph-override-table">'
                 '<thead><tr>'
                 '<th>Player</th><th>Prop</th><th>QME Edge</th><th>Joseph Edge</th>'
@@ -1489,6 +1529,7 @@ def render_joseph_live_desk(
                 '</tr></thead>'
                 f'<tbody>{rows_html}</tbody>'
                 '</table>'
+                '</div>'
             )
             st.markdown(
                 '<div class="joseph-divider"></div>'

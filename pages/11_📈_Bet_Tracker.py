@@ -35,6 +35,7 @@ from tracking.bet_tracker import (
     auto_resolve_bet_results,
     resolve_all_pending_bets,
     resolve_all_analysis_picks,
+    regrade_bets_for_date,
     get_model_performance_stats,
     log_new_bet,
     log_props_to_tracker,
@@ -166,6 +167,253 @@ def _reload_bets():
     """Clear the bet cache so the next access returns fresh data."""
     _cached_load_all_bets.clear()
 
+
+def _tracker_today_date() -> datetime.date:
+    """Return today's date using Bet Tracker's NBA (ET) day boundary."""
+    try:
+        from tracking.bet_tracker import _nba_today_et
+        return _nba_today_et()
+    except Exception:
+        return datetime.date.today()
+
+
+def _tracker_today_iso() -> str:
+    """Return today's Bet Tracker date as YYYY-MM-DD."""
+    return _tracker_today_date().isoformat()
+
+
+def _date_window_start(scope_label: str):
+    """Return inclusive start date for a scope label, or None for all-time."""
+    _today = _tracker_today_date()
+    if scope_label == "Today":
+        return _today
+    if scope_label == "Last 7 Days":
+        return _today - datetime.timedelta(days=6)
+    if scope_label == "Last 30 Days":
+        return _today - datetime.timedelta(days=29)
+    return None
+
+
+def _in_bet_date_window(row: dict, scope_label: str, date_key: str = "bet_date") -> bool:
+    """Return True when row[date_key] is within the selected scope."""
+    _start = _date_window_start(scope_label)
+    _today = _tracker_today_date()
+    if _start is None:
+        return True
+    _raw = str(row.get(date_key) or "")[:10]
+    try:
+        _d = datetime.date.fromisoformat(_raw)
+    except ValueError:
+        return False
+    return _start <= _d <= _today
+
+
+def _is_ai_auto_bet(row: dict) -> bool:
+    """True for Smart Pick Pro auto-logged picks (excludes Joseph/manual)."""
+    _source = str(row.get("source") or "").strip().lower()
+    _platform = str(row.get("platform") or "").strip().lower()
+    _notes = str(row.get("notes") or "").strip().lower()
+    _auto = int(row.get("auto_logged", 0) or 0) == 1
+
+    # Hard exclusions first: never classify Joseph or Smart Money rows here.
+    if _source == "joseph" or "joseph" in _platform or "joseph" in _notes:
+        return False
+    if "smart money" in _platform or "smart money" in _notes:
+        return False
+
+    if _source in {"qeg_auto", "smart_pick_pro", "smart_pick_pro_platform", "smartpickpro_auto"}:
+        return True
+    if _platform in {"smartai-auto", "smartauto-ai", "smart pick pro", "smart pick pro platform picks", "smart pick pro platform"}:
+        return True
+    if (
+        _notes.startswith("auto-logged by smartai")
+        or _notes.startswith("auto-logged by smart pick pro")
+        or _notes.startswith("auto-stored by smart pick pro")
+        or _notes.startswith("auto-stored by smartai")
+    ):
+        return True
+    if _notes.startswith("added from platform props"):
+        return True
+
+    # Legacy fallback: auto_logged rows that are clearly NOT Joseph/Smart Money.
+    # This includes Platform Bets added from sportsbook feeds, which are
+    # frequently tagged with source='manual' but still belong in this bucket.
+    if _auto:
+        return True
+    return False
+
+
+def _is_joseph_bet(row: dict) -> bool:
+    """True for Joseph-authored picks across legacy/new tagging."""
+    _source = str(row.get("source") or "").strip().lower()
+    _platform = str(row.get("platform") or "").strip().lower()
+    _notes = str(row.get("notes") or "").strip().lower()
+    return (
+        _source == "joseph"
+        or "joseph" in _platform
+        or "joseph" in _notes
+    )
+
+
+def _platform_display_name(platform_value: str) -> str:
+    """Normalize platform labels for consistent Bet Tracker naming."""
+    _plat = str(platform_value or "").strip()
+    _norm = _plat.lower()
+    if _norm in {"smartai-auto", "smartauto-ai", "smart pick pro", "smart pick pro platform picks", "smart pick pro platform"}:
+        return "Smart Pick Pro Platform Picks"
+    return _plat
+
+
+def _is_pipeline_bet_for_all_picks(row: dict) -> bool:
+    """True for bets that should be represented in All Picks."""
+    _platform = str(row.get("platform") or "").strip().lower()
+    _source = str(row.get("source") or "").strip().lower()
+    _auto = int(row.get("auto_logged", 0) or 0) == 1
+    return (
+        _is_ai_auto_bet(row)
+        or _is_joseph_bet(row)
+        or (_platform == "smart money" and _auto)
+        or (_source in {"qeg_auto", "joseph"})
+    )
+
+
+def _canonical_pick_date(row: dict) -> str:
+    return str(row.get("pick_date") or row.get("bet_date") or _tracker_today_iso())[:10]
+
+
+def _canonical_pick_key(row: dict, *, include_platform: bool = True):
+    try:
+        _line = str(round(float(row.get("prop_line") or row.get("line") or 0), 2))
+    except (TypeError, ValueError):
+        _line = "0"
+
+    _base = (
+        str(row.get("player_name") or "").strip().lower(),
+        str(row.get("stat_type") or "").strip().lower(),
+        _line,
+        str(row.get("direction") or "").strip().upper(),
+        _canonical_pick_date(row),
+    )
+    if include_platform:
+        return _base + (str(row.get("platform") or "").strip().lower(),)
+    return _base
+
+
+def _normalized_bet_type(row: dict) -> str:
+    _raw = str(row.get("bet_type") or "").strip().lower()
+    _line_category = str(row.get("line_category") or "").strip().lower()
+    _notes = str(row.get("notes") or "").strip().lower()
+
+    if "smart money demon" in _notes:
+        return "demon"
+    if "smart money goblin" in _notes:
+        return "goblin"
+
+    if _raw in {"goblin", "demon", "50_50", "standard", "normal", "fantasy", "joseph_pick"}:
+        return _raw
+    if _line_category in {"goblin", "demon", "50_50"}:
+        return _line_category
+    if _raw:
+        return _raw
+    return "standard"
+
+
+def _bet_type_display_name(bet_type: str) -> str:
+    _bt = str(bet_type or "standard").strip().lower()
+    return {
+        "50_50": "50/50",
+        "joseph_pick": "Joseph Pick",
+    }.get(_bt, _bt.title())
+
+
+def _bet_type_sort_key(bet_type: str):
+    _order = {
+        "goblin": 0,
+        "demon": 1,
+        "50_50": 2,
+        "standard": 3,
+        "normal": 4,
+        "fantasy": 5,
+        "joseph_pick": 6,
+    }
+    _bt = str(bet_type or "standard").strip().lower()
+    return (_order.get(_bt, 99), _bt)
+
+
+def _scope_history_days(scope_label: str) -> int:
+    """Return how much history should be loaded for a scope label."""
+    if scope_label == "Today":
+        return 1
+    if scope_label == "Last 7 Days":
+        return 7
+    if scope_label == "Last 30 Days":
+        return 30
+    return 3650
+
+
+def _build_merged_pick_universe(scope_label: str) -> dict:
+    """Build the shared merged pick universe used by Health and All Picks."""
+    _history_days = _scope_history_days(scope_label)
+    _analysis_all = load_all_analysis_picks(days=_history_days)
+    _analysis_scope = [p for p in _analysis_all if _in_bet_date_window(p, scope_label, "pick_date")]
+
+    _all_bets = _cached_load_all_bets(limit=50000)
+    _health_side_bets = [b for b in _all_bets if _in_bet_date_window(b, scope_label, "bet_date")]
+    _pipeline_candidates = [b for b in _health_side_bets if _is_pipeline_bet_for_all_picks(b)]
+
+    _analysis_identity_keys = {
+        _canonical_pick_key(_p, include_platform=False)
+        for _p in _analysis_scope
+    }
+
+    _pipeline_added = []
+    _pipeline_skip_ai_overlap = 0
+    for _b in _pipeline_candidates:
+        _mapped = dict(_b)
+        _mapped["pick_date"] = _mapped.get("pick_date") or _mapped.get("bet_date")
+        _mapped["prop_line"] = _mapped.get("prop_line", _mapped.get("line"))
+        if _is_ai_auto_bet(_mapped) and _canonical_pick_key(_mapped, include_platform=False) in _analysis_identity_keys:
+            _pipeline_skip_ai_overlap += 1
+            continue
+        _pipeline_added.append(_mapped)
+
+    _combined_like = list(_analysis_scope) + _pipeline_added
+    _combined_pre_dedup_count = len(_combined_like)
+    _seen_keys: set = set()
+    _combined: list = []
+    for _pick in _combined_like:
+        try:
+            _line_key = str(round(float(_pick.get("prop_line") or _pick.get("line") or 0), 2))
+        except (TypeError, ValueError):
+            _line_key = "0"
+        _key = (
+            (str(_pick.get("player_name") or "")).strip().lower(),
+            (str(_pick.get("stat_type") or "")).strip().lower(),
+            _line_key,
+            (str(_pick.get("direction") or "")).strip().upper(),
+            _canonical_pick_date(_pick),
+            (str(_pick.get("platform") or "")).strip().lower(),
+            (str(_pick.get("source") or "")).strip().lower(),
+            (str(_pick.get("tier") or "")).strip().lower(),
+        )
+        if _key in _seen_keys:
+            continue
+        _seen_keys.add(_key)
+        _combined.append(_pick)
+
+    _dedup_removed = max(0, _combined_pre_dedup_count - len(_combined))
+
+    return {
+        "analysis_rows": _analysis_scope,
+        "health_side_bets": _health_side_bets,
+        "pipeline_candidates": _pipeline_candidates,
+        "pipeline_added": _pipeline_added,
+        "pipeline_skip_ai_overlap": _pipeline_skip_ai_overlap,
+        "combined_pre_dedup_count": _combined_pre_dedup_count,
+        "dedup_removed": _dedup_removed,
+        "combined": _combined,
+    }
+
 # Auto-resolve past bets AND today's completed bets on page load (best-effort, silent).
 # Guarded by a session-state flag so this runs at most once per browser session,
 # preventing repeated blocking API calls on every Streamlit rerun.
@@ -180,7 +428,7 @@ def _background_auto_resolve():
     """
     _messages = []
     try:
-        _today_str = datetime.date.today().isoformat()
+        _today_str = _tracker_today_iso()
         _all_bets_check = load_all_bets(exclude_linked=False)
 
         # Resolve past pending bets (yesterday and older)
@@ -250,8 +498,9 @@ def _background_auto_resolve():
     st.session_state["_auto_resolve_messages"] = _messages
     st.session_state["_auto_resolve_done"] = True
 
-if not st.session_state.get("_bet_tracker_auto_resolved", False):
-    st.session_state["_bet_tracker_auto_resolved"] = True
+_auto_resolve_today = _tracker_today_iso()
+if st.session_state.get("_bet_tracker_auto_resolved_date") != _auto_resolve_today:
+    st.session_state["_bet_tracker_auto_resolved_date"] = _auto_resolve_today
     st.session_state["_auto_resolve_done"] = False
     _resolve_thread = _threading.Thread(target=_background_auto_resolve, daemon=True)
     _resolve_thread.start()
@@ -357,7 +606,7 @@ _filter_col1, _filter_col2, _filter_col3, _filter_col4 = st.columns([2, 2, 2, 1]
 with _filter_col1:
     platform_filter_selections = st.multiselect(
         "Filter by Platform",
-        ["🟢 PrizePicks", "🟣 Underdog Fantasy", "🔵 DraftKings Pick6"],
+        ["🟢 PrizePicks", "🟣 Underdog Fantasy", "🔵 DraftKings Pick6", "🤖 Smart Pick Pro Platform Picks"],
         default=[],
         key="platform_multi_filter",
         help="Select platforms to filter. Leave empty for all platforms.",
@@ -400,6 +649,10 @@ def _platform_filter_fn(bet):
         elif sel == "🟣 Underdog Fantasy" and "underdog" in plat:
             return True
         elif sel == "🔵 DraftKings Pick6" and ("draftkings" in plat or "pick6" in plat or plat == "dk"):
+            return True
+        elif sel == "🤖 Smart Pick Pro Platform Picks" and (
+            _is_ai_auto_bet(bet) or "smartai-auto" in plat or "smartauto-ai" in plat or "smart pick pro" in plat
+        ):
             return True
     return False
 
@@ -445,7 +698,7 @@ st.divider()
     tab_achievements,
 ) = st.tabs([
     "📊 Health",
-    "🤖 AI Picks",
+    "🤖 Platform Picks",
     "📋 All Picks",
     "🎙️ Joseph",
     "⚡ Resolve",
@@ -474,6 +727,7 @@ _BREAKEVEN_WIN_RATE = 52.38
 # ============================================================
 
 with tab_model_health:
+    st.subheader("📊 Health — Shared Pick Universe")
     st.markdown(get_education_box_html(
         "📖 What is Model Health?",
         """
@@ -489,8 +743,24 @@ with tab_model_health:
         """
     ), unsafe_allow_html=True)
 
-    all_bets_for_health = _cached_load_all_bets()
-    filtered_health = _apply_global_filters([b for b in all_bets_for_health if _platform_filter_fn(b)])
+    _health_scope_col1, _health_scope_col2 = st.columns([2, 5])
+    if not st.session_state.get("_health_scope_default_migrated", False):
+        if st.session_state.get("health_scope_filter") in (None, "Today"):
+            st.session_state["health_scope_filter"] = "All Time"
+        st.session_state["_health_scope_default_migrated"] = True
+    with _health_scope_col1:
+        _health_scope = st.selectbox(
+            "Health Scope",
+            ["Today", "Last 7 Days", "All Time"],
+            index=2,
+            key="health_scope_filter",
+            help="Choose which date window feeds Model Health stats.",
+        )
+    with _health_scope_col2:
+        st.caption("Health now uses the same merged pick universe as All Picks for matching totals under the same scope.")
+
+    _health_universe = _build_merged_pick_universe(_health_scope)
+    filtered_health = _apply_global_filters([p for p in _health_universe["combined"] if _platform_filter_fn(p)])
     resolved_health = [b for b in filtered_health if b.get("result") in ("WIN", "LOSS", "EVEN")]
     wins_h   = sum(1 for b in resolved_health if b.get("result") == "WIN")
     losses_h = sum(1 for b in resolved_health if b.get("result") == "LOSS")
@@ -499,9 +769,21 @@ with tab_model_health:
     win_rate_h = round(wins_h / max(wins_h + losses_h, 1) * 100, 1)
     pending_h = sum(1 for b in filtered_health if not b.get("result"))
 
-    # Rolling stats for streak
-    rolling = get_rolling_stats(days=14)
-    streak_val = rolling.get("streak", 0)
+    # Compute streak from the same merged source used for Health totals.
+    streak_val = 0
+    _health_resolved_sorted = sorted(
+        [b for b in filtered_health if b.get("result") in ("WIN", "LOSS")],
+        key=lambda b: _canonical_pick_date(b),
+        reverse=True,
+    )
+    if _health_resolved_sorted:
+        _health_first_result = _health_resolved_sorted[0].get("result")
+        streak_val = 1 if _health_first_result == "WIN" else -1
+        for _hb in _health_resolved_sorted[1:]:
+            if _hb.get("result") == _health_first_result:
+                streak_val += 1 if _health_first_result == "WIN" else -1
+            else:
+                break
 
     # Best platform
     _plat_wins: dict = {}
@@ -533,14 +815,25 @@ with tab_model_health:
             win_rate=win_rate_h,
             streak=streak_val,
             best_platform=best_platform,
+            total_label="Total Picks",
         ),
         unsafe_allow_html=True,
+    )
+    st.caption(
+        "What this count means: Health uses the same merged pick universe as All Picks. "
+        f"Scope source = {len(_health_universe['analysis_rows'])} persisted analysis rows + "
+        f"{len(_health_universe['pipeline_added'])} pipeline/tracker rows "
+        f"(-{_health_universe['pipeline_skip_ai_overlap']} SmartAI overlaps) "
+        f"= {_health_universe.get('combined_pre_dedup_count', len(_health_universe['combined']))} pre-dedup rows "
+        f"(-{_health_universe.get('dedup_removed', 0)} duplicate merge key collisions) "
+        f"= {len(_health_universe['combined'])} merged picks before current platform/search/date/direction filters; "
+        f"{len(filtered_health)} currently shown."
     )
 
     if total_h == 0:
         st.info(
-            "📝 No resolved bets found. Use **➕ Log a Bet** to start tracking your picks! "
-            "After logging bets and recording results you'll see performance stats here."
+            "📝 No resolved picks found in the shared Health view. Use **➕ Log a Bet** or run analysis, "
+            "then record results to see performance stats here."
         )
 
     # ── Notifications & Alerts (B11) ──────────────────────────────────
@@ -590,7 +883,7 @@ with tab_model_health:
     if total_h > 0:
         st.divider()
 
-        performance_stats = get_model_performance_stats()
+        performance_stats = get_model_performance_stats(bets_list=filtered_health)
 
         # Win rate by tier
         with st.expander("🏆 Win Rate by Tier", expanded=True):
@@ -706,18 +999,38 @@ with tab_model_health:
                 st.caption("No stat type data yet.")
 
         # Win rate by bet classification
-        bet_type_perf = performance_stats.get("by_bet_type", {})
-        if bet_type_perf:
+        _health_bt_perf: dict = {}
+        for _hb in resolved_health:
+            _bt = _normalized_bet_type(_hb)
+            if _bt not in _health_bt_perf:
+                _health_bt_perf[_bt] = {"wins": 0, "losses": 0, "total": 0}
+            _health_bt_perf[_bt]["total"] += 1
+            if _hb.get("result") == "WIN":
+                _health_bt_perf[_bt]["wins"] += 1
+            elif _hb.get("result") == "LOSS":
+                _health_bt_perf[_bt]["losses"] += 1
+
+        if _health_bt_perf:
             with st.expander("Win Rate by Bet Classification", expanded=True):
                 bt_rows = [
                     {
-                        "Bet Type":  bt.title(),
+                        "Bet Type":  _bet_type_display_name(bt),
                         "Total":     d.get("total", 0),
                         "Wins":      d.get("wins", 0),
                         "Losses":    d.get("losses", 0),
                         "Win Rate":  f"{d.get('win_rate', 0):.1f}%",
                     }
-                    for bt, d in sorted(bet_type_perf.items())
+                    for bt, d in sorted(
+                        {
+                            _bt: {
+                                **_d,
+                                "win_rate": round(_d["wins"] / max(_d["wins"] + _d["losses"], 1) * 100, 1)
+                                if (_d["wins"] + _d["losses"]) > 0 else 0.0,
+                            }
+                            for _bt, _d in _health_bt_perf.items()
+                        }.items(),
+                        key=lambda item: _bet_type_sort_key(item[0]),
+                    )
                 ]
                 st.markdown(
                     get_styled_stats_table_html(
@@ -740,7 +1053,7 @@ with tab_model_health:
                 "Joseph M Smith": {"wins": 0, "losses": 0, "total": 0},
                 "Goblins": {"wins": 0, "losses": 0, "total": 0},
                 "Smart Money": {"wins": 0, "losses": 0, "total": 0},
-                "AI Picks (All)": {"wins": 0, "losses": 0, "total": 0},
+                "Smart Pick Pro Platform Picks": {"wins": 0, "losses": 0, "total": 0},
             }
             for _pb in _ps_resolved:
                 _pb_auto = int(_pb.get("auto_logged", 0) or 0) == 1
@@ -753,11 +1066,12 @@ with tab_model_health:
                 _pb_result = _pb.get("result", "")
 
                 def _ps_incr(bucket):
-                    bucket["total"] += 1
                     if _pb_result == "WIN":
                         bucket["wins"] += 1
+                        bucket["total"] += 1
                     elif _pb_result == "LOSS":
                         bucket["losses"] += 1
+                        bucket["total"] += 1
 
                 # QEG = auto-logged picks that are NOT Joseph and NOT Smart Money
                 if _pb_auto and not _pb_is_joseph and not _pb_is_smart_money:
@@ -771,9 +1085,9 @@ with tab_model_health:
                 # Smart Money (page 15 auto-logged picks)
                 if _pb_is_smart_money:
                     _ps_incr(_ps_sources["Smart Money"])
-                # AI Picks (All) = every auto-logged pick
+                # Smart Pick Pro Platform Picks = every auto-logged Smart Pick Pro pick
                 if _pb_auto:
-                    _ps_incr(_ps_sources["AI Picks (All)"])
+                    _ps_incr(_ps_sources["Smart Pick Pro Platform Picks"])
 
             # Remove empty categories
             _ps_sources = {k: v for k, v in _ps_sources.items() if v["total"] > 0}
@@ -810,7 +1124,7 @@ with tab_model_health:
                         "Joseph M Smith": "🎙️",
                         "Goblins": "👺",
                         "Smart Money": "💰",
-                        "AI Picks (All)": "🤖",
+                        "Smart Pick Pro Platform Picks": "🤖",
                     }
                     _ps_cols = st.columns(len(_ps_sources))
                     for _pi, (src, d) in enumerate(_ps_sources.items()):
@@ -911,23 +1225,35 @@ with tab_model_health:
 
 
 # ============================================================
-# SECTION: AI Picks Tab
+# SECTION: Platform Picks Tab
 # ============================================================
 
 with tab_ai_picks:
-    st.subheader("📊 AI Picks — Auto-Logged by SmartAI")
+    st.subheader("📊 Platform Picks — Smart Pick Pro Platform Picks")
     st.markdown(
-        "These bets were automatically logged by the Neural Analysis engine "
-        "or the Platform Props & Analyze pipeline."
+        "These bets were automatically logged by the Smart Pick Pro platform pipeline "
+        "(formerly shown as SmartAI Auto)."
     )
 
+    _ai_scope_col1, _ai_scope_col2 = st.columns([2, 5])
+    if not st.session_state.get("_ai_scope_default_migrated", False):
+        if st.session_state.get("ai_picks_scope") in (None, "Today"):
+            st.session_state["ai_picks_scope"] = "All Time"
+        st.session_state["_ai_scope_default_migrated"] = True
+    with _ai_scope_col1:
+        _ai_scope = st.selectbox(
+            "Platform Picks Scope",
+            ["Today", "Last 7 Days", "Last 30 Days", "All Time"],
+            index=3,
+            key="ai_picks_scope",
+            help="Date window for Smart Pick Pro auto-logged picks.",
+        )
+    with _ai_scope_col2:
+        st.caption("Platform Picks uses strict Smart Pick Pro source tagging to avoid mixing Joseph/manual bets.")
+
     all_bets_for_ai = _cached_load_all_bets()
-    ai_bets_raw = [
-        b for b in all_bets_for_ai
-        if b.get("platform", "") in ("SmartAI-Auto", "PrizePicks", "Underdog Fantasy", "DraftKings Pick6")
-        or str(b.get("notes", "")).startswith("Auto-logged")
-        or int(b.get("auto_logged", 0) or 0) == 1
-    ]
+    ai_bets_raw = [b for b in all_bets_for_ai if _is_ai_auto_bet(b)]
+    ai_bets_raw = [b for b in ai_bets_raw if _in_bet_date_window(b, _ai_scope, "bet_date")]
     ai_bets = _apply_global_filters([b for b in ai_bets_raw if _platform_filter_fn(b)])
 
     # ── Tier Filter & Bet Classification Filter ───────────────────────────
@@ -957,7 +1283,7 @@ with tab_ai_picks:
 
     if not ai_bets:
         st.info(
-            "📭 No AI-auto-logged picks yet. "
+            "📭 No Smart Pick Pro platform picks yet. "
             "Run **⚡ Neural Analysis** or click **📊 Get Platform Props & Analyze** on the Live Games page."
         )
     else:
@@ -965,7 +1291,7 @@ with tab_ai_picks:
         ai_wins   = sum(1 for b in ai_resolved if b.get("result") == "WIN")
         ai_losses = sum(1 for b in ai_resolved if b.get("result") == "LOSS")
         ai_evens = sum(1 for b in ai_resolved if b.get("result") == "EVEN")
-        ai_total  = len(ai_resolved)
+        ai_decided = ai_wins + ai_losses
         ai_rate   = round(ai_wins / max(ai_wins + ai_losses, 1) * 100, 1)
 
         st.markdown(
@@ -980,10 +1306,11 @@ with tab_ai_picks:
             ),
             unsafe_allow_html=True,
         )
+        st.caption("What this count means: Platform Picks counts only Smart Pick Pro platform auto-logged tracker bets from the bets table. It is a subset of Health.")
 
-        if ai_total > 0:
+        if ai_decided > 0:
             st.success(
-                f"🎯 **Model accuracy:** Predicted **{ai_wins}/{ai_total}** correctly "
+                f"🎯 **Model accuracy:** Predicted **{ai_wins}/{ai_decided}** correctly "
                 f"(**{ai_rate:.1f}%**) — {ai_evens} even(s)"
             )
 
@@ -998,23 +1325,28 @@ with tab_ai_picks:
             _day_bets  = _by_date[_date]
             _day_res   = [b for b in _day_bets if b.get("result") in ("WIN", "LOSS", "EVEN")]
             _day_wins  = sum(1 for b in _day_res if b.get("result") == "WIN")
-            _day_total = len(_day_res)
-            _day_rate  = round(_day_wins / max(_day_wins + (_day_total - _day_wins), 1) * 100, 1) if _day_total > 0 else None
+            _day_losses = sum(1 for b in _day_res if b.get("result") == "LOSS")
+            _day_evens = sum(1 for b in _day_res if b.get("result") == "EVEN")
+            _day_decided = _day_wins + _day_losses
+            _day_rate  = round(_day_wins / max(_day_decided, 1) * 100, 1) if _day_decided > 0 else None
 
             _day_label = (
                 f"📅 {_date} — {len(_day_bets)} picks"
-                + (f" · {_day_wins}/{_day_total} correct ({_day_rate:.0f}%)"
+                + (f" · {_day_wins}/{_day_decided} correct ({_day_rate:.0f}%)"
                    if _day_rate is not None else " · pending")
+                + (f" · {_day_evens} even" if _day_evens else "")
             )
             with st.expander(_day_label, expanded=(_date == max(_by_date.keys()))):
                 _col_a, _col_b = st.columns(2)
                 for _idx, _b in enumerate(_day_bets):
                     _col = _col_a if _idx % 2 == 0 else _col_b
                     with _col:
-                        st.markdown(get_bet_card_html(_b), unsafe_allow_html=True)
+                        _b_display = dict(_b)
+                        _b_display["platform"] = _platform_display_name(_b_display.get("platform"))
+                        st.markdown(get_bet_card_html(_b_display), unsafe_allow_html=True)
 
 # ============================================================
-# END SECTION: AI Picks Tab
+# END SECTION: Platform Picks Tab
 # ============================================================
 
 
@@ -1023,11 +1355,23 @@ with tab_ai_picks:
 # ============================================================
 
 with tab_all_picks:
-    st.subheader("📋 All Picks — Complete App Output Performance Record")
+    st.subheader("📋 All Picks — Shared Pick Universe")
     st.markdown(
-        "Every pick the Neural Analysis engine outputs — not just the AI-auto-logged ones. "
-        "Track the **complete** performance record of every prediction the app makes."
+        "Every pick the app outputs across persisted analysis rows and tracked pipeline bets. "
+        "This tab now uses the same merged source as Health so totals align under the same scope."
     )
+
+    _ap_scope_col1, _ap_scope_col2 = st.columns([2, 5])
+    with _ap_scope_col1:
+        _all_picks_scope = st.selectbox(
+            "All Picks Scope",
+            ["Today", "Last 7 Days", "Last 30 Days", "All Time"],
+            index=0,
+            key="all_picks_scope",
+            help="Date window for all analysis picks.",
+        )
+    with _ap_scope_col2:
+        st.caption("All Picks and Health now share the same merged pick universe inside the selected date window.")
 
     # ── 🔄 Resolve All Picks button ───────────────────────────────────
     _rap_col1, _rap_col2 = st.columns([1, 3])
@@ -1108,6 +1452,11 @@ with tab_all_picks:
     )
 
     _rbd_available_dates = get_analysis_pick_dates(days=30)
+    _rbd_today = _tracker_today_iso()
+    if _rbd_today not in _rbd_available_dates:
+        _rbd_has_today = bool(load_analysis_picks_for_date(_rbd_today)) or bool(st.session_state.get("analysis_results"))
+        if _rbd_has_today:
+            _rbd_available_dates = [_rbd_today] + _rbd_available_dates
 
     if not _rbd_available_dates:
         st.info("ℹ️ No pick history found in the last 30 days. Run Neural Analysis to log picks.")
@@ -1221,13 +1570,14 @@ with tab_all_picks:
 
     st.divider()
 
-    # ── Historical picks from DB (single source of truth) ──────────────
-    db_all_picks = load_all_analysis_picks(days=30)
-
-    # ── Deduplicate DB picks by full key ──────────────────────────────
-    _today_str = datetime.date.today().isoformat()
-    _seen_keys: set = set()
-    _combined_picks: list = []
+    # ── Shared merged pick universe (same source as Health) ───────────
+    _all_picks_universe = _build_merged_pick_universe(_all_picks_scope)
+    db_all_picks = list(_all_picks_universe["analysis_rows"])
+    _pipeline_as_picks = list(_all_picks_universe["pipeline_added"])
+    _pipeline_bets_raw = list(_all_picks_universe["health_side_bets"])
+    _pipeline_skip_ai_overlap = _all_picks_universe["pipeline_skip_ai_overlap"]
+    _combined_picks = list(_all_picks_universe["combined"])
+    _today_str = _tracker_today_iso()
 
     def _safe_line_str(pick):
         """Normalise prop_line / line to a rounded string for dedup keys."""
@@ -1242,14 +1592,11 @@ with tab_all_picks:
             (pick.get("stat_type") or "").strip().lower(),
             _safe_line_str(pick),
             (pick.get("direction") or "").strip().upper(),
-            pick.get("pick_date") or _today_str,
+            _canonical_pick_date(pick),
+            (pick.get("platform") or "").strip().lower(),
+            (pick.get("source") or "").strip().lower(),
+            (pick.get("tier") or "").strip().lower(),
         )
-
-    for _cp in db_all_picks:
-        _key = _dedup_key(_cp)
-        if _key not in _seen_keys:
-            _seen_keys.add(_key)
-            _combined_picks.append(_cp)
 
     # ── Tier Filter & Bet Classification Filter ───────────────────────────
     _ap_filter_col1, _ap_filter_col2 = st.columns(2)
@@ -1264,20 +1611,52 @@ with tab_all_picks:
     with _ap_filter_col2:
         _ap_bet_type_filter = st.multiselect(
             "Bet Classification",
-            ["Standard", "Goblin", "Normal", "Fantasy"],
+            ["Goblin", "Demon", "50/50", "Standard", "Normal", "Fantasy", "Joseph Pick"],
             default=[],
             key="ap_bet_type_filter",
             help="Filter by bet classification. Leave empty to show all.",
         )
 
+    _ap_bt_values = {
+        "50_50" if bt == "50/50" else "joseph_pick" if bt == "Joseph Pick" else bt.lower()
+        for bt in _ap_bet_type_filter
+    }
+
     # Apply filters to the combined dataset used for aggregate metrics
-    all_picks_data = _apply_global_filters(list(_combined_picks))
+    all_picks_data = _apply_global_filters([p for p in _combined_picks if _platform_filter_fn(p)])
     if _ap_tier_filter:
         _ap_tier_names = [t.split(" ")[0] for t in _ap_tier_filter]
         all_picks_data = [p for p in all_picks_data if p.get("tier") in _ap_tier_names]
     if _ap_bet_type_filter:
-        _ap_bt_filter_set = {bt.lower() for bt in _ap_bet_type_filter}
-        all_picks_data = [p for p in all_picks_data if (p.get("bet_type") or "standard").lower() in _ap_bt_filter_set]
+        _ap_bt_filter_set = set(_ap_bt_values)
+        all_picks_data = [p for p in all_picks_data if _normalized_bet_type(p) in _ap_bt_filter_set]
+
+    # Build today's live-session picks from current analysis results.
+    session_picks = []
+    for _r in st.session_state.get("analysis_results", []) or []:
+        session_picks.append(
+            {
+                "player_name": _r.get("player_name", ""),
+                "team": _r.get("player_team", _r.get("team", "")),
+                "stat_type": _r.get("stat_type", ""),
+                "prop_line": float(_r.get("line", 0) or 0),
+                "direction": _r.get("direction", "OVER"),
+                "platform": _r.get("platform", "SmartAI-Auto"),
+                "confidence_score": float(_r.get("confidence_score", 0) or 0),
+                "edge_percentage": float(_r.get("edge_percentage", 0) or 0),
+                "tier": _r.get("tier", "Bronze"),
+                "bet_type": _r.get("bet_type", "normal"),
+                "pick_date": _today_str,
+                "bet_date": _today_str,
+                "result": None,
+                "notes": "Live session pick (not yet persisted).",
+            }
+        )
+
+    session_picks = [
+        p for p in session_picks
+        if _in_bet_date_window(p, _all_picks_scope, "pick_date")
+    ]
 
     if not all_picks_data:
         st.info(
@@ -1301,6 +1680,21 @@ with tab_all_picks:
             sum(float(p.get("confidence_score", 0) or 0) for p in all_picks_data) / _ap_total
             if _ap_total > 0 else 0.0
         )
+
+        # Reconciliation diagnostics for source-count discrepancies.
+        _dbg_db_scope = list(db_all_picks)
+        _dbg_pipeline_scope = list(_pipeline_as_picks)
+        _dbg_health_scope = list(_pipeline_bets_raw)
+        with st.expander("🔎 Count Reconciliation", expanded=False):
+            _c1, _c2, _c3, _c4 = st.columns(4)
+            _c1.metric("Health-side Bets", len(_dbg_health_scope))
+            _c2.metric("Analysis Rows", len(_dbg_db_scope))
+            _c3.metric("Pipeline Added", len(_dbg_pipeline_scope))
+            _c4.metric("Final All Picks", _ap_total)
+            st.caption(
+                "Final All Picks = deduplicated union of analysis rows + pipeline rows; "
+                f"{_pipeline_skip_ai_overlap} SmartAI tracker rows were skipped because matching analysis rows already exist."
+            )
 
         # Streak: walk most-recent resolved picks to find consecutive W/L run
         _ap_streak = 0
@@ -1352,6 +1746,12 @@ with tab_all_picks:
             ),
             unsafe_allow_html=True,
         )
+        st.caption(
+            "What this count means: All Picks uses the same merged pick universe as Health. "
+            f"Scope source = {len(_dbg_db_scope)} persisted analysis rows + {len(_dbg_pipeline_scope)} pipeline/tracker rows "
+            f"(-{_pipeline_skip_ai_overlap} SmartAI overlaps) = {len(_combined_picks)} merged picks before current platform/search/date/direction filters; "
+            f"{_ap_total} currently shown."
+        )
 
         # Model accuracy banner
         if _ap_resolved > 0:
@@ -1372,7 +1772,7 @@ with tab_all_picks:
                 st.download_button(
                     "📥 Export CSV",
                     data=_csv_picks,
-                    file_name=f"smartai_all_picks_{datetime.date.today().isoformat()}.csv",
+                    file_name=f"smartai_all_picks_{_tracker_today_iso()}.csv",
                     mime="text/csv",
                     key="export_all_picks_csv",
                     help="Download all picks as a CSV file.",
@@ -1392,7 +1792,7 @@ with tab_all_picks:
                 _t_res = _t_w + _t_l
                 _tier_rows.append({
                     "Tier": _tn,
-                    "Total": len(_t_picks),
+                    "Total": _t_res,
                     "Wins": _t_w,
                     "Losses": _t_l,
                     "Win Rate": f"{_t_w / max(_t_res, 1) * 100:.1f}%" if _t_res > 0 else "—",
@@ -1421,15 +1821,20 @@ with tab_all_picks:
         # ── Win Rate by Platform ──────────────────────────────────────
         _ap_plat_data: dict = {}
         for _p in all_picks_data:
-            _plat = str(_p.get("platform") or "Unknown")
+            _plat = (
+                "Smart Pick Pro Platform Picks"
+                if _is_ai_auto_bet(_p)
+                else _platform_display_name(_p.get("platform") or "Unknown")
+            )
             _res  = _p.get("result")
             if _plat not in _ap_plat_data:
                 _ap_plat_data[_plat] = {"wins": 0, "losses": 0, "total": 0}
-            _ap_plat_data[_plat]["total"] += 1
             if _res == "WIN":
                 _ap_plat_data[_plat]["wins"] += 1
+                _ap_plat_data[_plat]["total"] += 1
             elif _res == "LOSS":
                 _ap_plat_data[_plat]["losses"] += 1
+                _ap_plat_data[_plat]["total"] += 1
         if _ap_plat_data:
             with st.expander("🎰 Win Rate by Platform", expanded=True):
                 _plat_rows = [
@@ -1461,10 +1866,11 @@ with tab_all_picks:
             for _stype in sorted({p.get("stat_type", "unknown") for p in all_picks_data}):
                 _s_picks = [p for p in all_picks_data if p.get("stat_type") == _stype]
                 _s_w = sum(1 for p in _s_picks if p.get("result") == "WIN")
+                _s_l = sum(1 for p in _s_picks if p.get("result") == "LOSS")
                 _s_res = sum(1 for p in _s_picks if p.get("result") in ("WIN", "LOSS"))
                 _stat_rows.append({
                     "Stat Type": _stype.replace("_", " ").title(),
-                    "Total": len(_s_picks),
+                    "Total": _s_w + _s_l,
                     "Wins": _s_w,
                     "Win Rate": f"{_s_w / max(_s_res, 1) * 100:.1f}%" if _s_res > 0 else "—",
                 })
@@ -1482,20 +1888,21 @@ with tab_all_picks:
         # ── Win Rate by Bet Classification ────────────────────────────
         _ap_bt_data: dict = {}
         for _p in all_picks_data:
-            _bt = str(_p.get("bet_type") or "standard")
+            _bt = _normalized_bet_type(_p)
             _res = _p.get("result")
             if _bt not in _ap_bt_data:
                 _ap_bt_data[_bt] = {"wins": 0, "losses": 0, "total": 0}
-            _ap_bt_data[_bt]["total"] += 1
             if _res == "WIN":
                 _ap_bt_data[_bt]["wins"] += 1
+                _ap_bt_data[_bt]["total"] += 1
             elif _res == "LOSS":
                 _ap_bt_data[_bt]["losses"] += 1
+                _ap_bt_data[_bt]["total"] += 1
         if _ap_bt_data:
             with st.expander("Win Rate by Bet Classification", expanded=True):
                 _bt_rows = [
                     {
-                        "Bet Type": _bt.title(),
+                        "Bet Type": _bet_type_display_name(_bt),
                         "Total": d["total"],
                         "Wins": d["wins"],
                         "Losses": d["losses"],
@@ -1504,7 +1911,7 @@ with tab_all_picks:
                             if d["wins"] + d["losses"] > 0 else "—"
                         ),
                     }
-                    for _bt, d in sorted(_ap_bt_data.items())
+                    for _bt, d in sorted(_ap_bt_data.items(), key=lambda item: _bet_type_sort_key(item[0]))
                 ]
                 st.markdown(
                     get_styled_stats_table_html(
@@ -1534,11 +1941,18 @@ with tab_all_picks:
         # ── Per-day sections ──────────────────────────────────────────
         if ap_source_radio == "30-Day History (database)":
             # Group DB picks by date
-            _detail_picks = db_all_picks
+            _detail_picks = list(_combined_picks)
+            _detail_picks = [
+                p for p in _detail_picks
+                if _in_bet_date_window(p, _all_picks_scope, "pick_date")
+            ]
             if _ap_tier_filter:
                 _detail_picks = [p for p in _detail_picks if p.get("tier") in _ap_tier_names]
             if _ap_bet_type_filter:
-                _detail_picks = [p for p in _detail_picks if p.get("bet_type", "normal") in _ap_bt_values]
+                _detail_picks = [
+                    p for p in _detail_picks
+                    if _normalized_bet_type(p) in _ap_bt_values
+                ]
             if _detail_picks:
                 _by_date_ap: dict = {}
                 for _p in _detail_picks:
@@ -1573,7 +1987,10 @@ with tab_all_picks:
             if _ap_tier_filter:
                 _session_detail = [p for p in _session_detail if p.get("tier") in _ap_tier_names]
             if _ap_bet_type_filter:
-                _session_detail = [p for p in _session_detail if p.get("bet_type", "normal") in _ap_bt_values]
+                _session_detail = [
+                    p for p in _session_detail
+                    if _normalized_bet_type(p) in _ap_bt_values
+                ]
             if _session_detail:
                 _col_a, _col_b = st.columns(2)
                 for _idx, _pick in enumerate(_session_detail):
@@ -1595,20 +2012,28 @@ with tab_all_picks:
 # ============================================================
 
 with tab_joseph_bets:
-    st.subheader("🎙️ Joseph M. Smith's Bets")
+    st.subheader("🎙️ Joseph M. Smith's Bets — Tracker Subset")
     st.markdown(
         "Track all bets placed by Joseph M. Smith — filtered from your bet database. "
         "Joseph's picks are auto-logged from **The Studio** page when he makes SMASH or LEAN calls."
     )
 
+    _j_scope_col1, _j_scope_col2 = st.columns([2, 5])
+    with _j_scope_col1:
+        _joseph_scope = st.selectbox(
+            "Joseph Scope",
+            ["Today", "Last 7 Days", "Last 30 Days", "All Time"],
+            index=0,
+            key="joseph_scope_filter",
+            help="Date window for Joseph picks.",
+        )
+    with _j_scope_col2:
+        st.caption("Joseph tab only includes bets tagged as Joseph via source/platform/notes.")
+
     try:
         _jbt_all = _cached_load_all_bets()
-        _jbt_joseph = []
-        for b in _jbt_all:
-            _plat = b.get("platform", "").lower()
-            _notes = b.get("notes", "").lower()
-            if _plat in ("joseph m. smith", "joseph") or "joseph" in _notes:
-                _jbt_joseph.append(b)
+        _jbt_joseph = [b for b in _jbt_all if _is_joseph_bet(b)]
+        _jbt_joseph = [b for b in _jbt_joseph if _in_bet_date_window(b, _joseph_scope, "bet_date")]
 
         if _jbt_joseph:
             # Summary metrics
@@ -1623,6 +2048,7 @@ with tab_joseph_bets:
             _jbt_m2.metric("Win Rate", f"{_jbt_wr:.1%}" if (_jbt_wins + _jbt_losses) > 0 else "—")
             _jbt_m3.metric("Wins / Losses", f"{_jbt_wins}W / {_jbt_losses}L")
             _jbt_m4.metric("Pending", _jbt_pending)
+            st.caption("What this count means: Joseph counts only Joseph-tagged tracker bets from the bets table. It is a subset of Health.")
 
             st.markdown("---")
 
@@ -1672,11 +2098,18 @@ with tab_auto_resolve:
     st.markdown("### ⚡ Resolve Today's Bets")
     st.caption("Checks live scores for Final games and resolves today's pending bets immediately.")
 
-    resolve_today_btn = st.button(
-        "⚡ Resolve Now",
-        type="primary",
-        help="Get live game status and resolve today's bets where games are Final",
-    )
+    _rt_col1, _rt_col2 = st.columns([1, 1])
+    with _rt_col1:
+        resolve_today_btn = st.button(
+            "⚡ Resolve Now",
+            type="primary",
+            help="Get live game status and resolve today's bets where games are Final",
+        )
+    with _rt_col2:
+        regrade_today_btn = st.button(
+            "🩹 Regrade Today's Results",
+            help="Recompute already graded bets from final stats and fix incorrect WIN/LOSS/EVEN results.",
+        )
 
     if resolve_today_btn:
         _jl_loader_today = None
@@ -1710,12 +2143,55 @@ with tab_auto_resolve:
                 _jl_loader_today.empty()
             st.error(f"❌ Resolve failed: {_err}")
 
+    if regrade_today_btn:
+        _jl_loader_regrade = None
+        if _JOSEPH_LOADING_AVAILABLE:
+            _jl_loader_regrade = joseph_loading_placeholder("Regrading today's resolved bets against final box scores")
+        try:
+            _rg = regrade_bets_for_date(_tracker_today_iso())
+            if _jl_loader_regrade is not None:
+                _jl_loader_regrade.empty()
+
+            if _rg.get("corrected", 0) > 0:
+                st.success(
+                    f"✅ Regraded **{_rg['checked']}** bet(s); corrected **{_rg['corrected']}**. "
+                    f"Unchanged: {_rg.get('unchanged', 0)} · Skipped: {_rg.get('skipped', 0)}"
+                )
+                if _rg.get("changes"):
+                    with st.expander(f"View {len(_rg['changes'])} correction(s)"):
+                        for _chg in _rg["changes"][:100]:
+                            st.markdown(
+                                f"- #{_chg.get('bet_id')} {_chg.get('player')}: "
+                                f"{_chg.get('old_result')} → {_chg.get('new_result')} "
+                                f"({float(_chg.get('old_actual', 0)):.2f} → {float(_chg.get('new_actual', 0)):.2f})"
+                            )
+                _reload_bets()
+                st.rerun()
+            elif _rg.get("checked", 0) > 0:
+                st.info(
+                    f"ℹ️ Regrade checked **{_rg['checked']}** bet(s). "
+                    "No corrections were needed."
+                )
+            else:
+                st.warning(
+                    "⚠️ No graded bets could be rechecked yet (likely waiting for final box scores)."
+                )
+
+            if _rg.get("errors"):
+                with st.expander(f"⚠️ {len(_rg['errors'])} regrade issue(s)"):
+                    for _err in _rg["errors"][:100]:
+                        st.markdown(f"- {_err}")
+        except Exception as _err:
+            if _jl_loader_regrade is not None:
+                _jl_loader_regrade.empty()
+            st.error(f"❌ Regrade failed: {_err}")
+
     st.divider()
 
     # ── Live Status Section ────────────────────────────────────────────
     st.markdown("### 🔄 Live Bet Status — Today's Picks")
     _today_bets_all = load_all_bets(exclude_linked=False)
-    _today_str_ar = datetime.date.today().isoformat()
+    _today_str_ar = _tracker_today_iso()
     _today_bets = [
         b for b in _today_bets_all
         if b.get("bet_date") == _today_str_ar and _platform_filter_fn(b)
@@ -1812,7 +2288,7 @@ with tab_auto_resolve:
 
     col_date, col_btn = st.columns([2, 1])
     with col_date:
-        yesterday_dt = datetime.date.today() - datetime.timedelta(days=1)
+        yesterday_dt = _tracker_today_date() - datetime.timedelta(days=1)
         resolve_date = st.date_input(
             "Date to resolve",
             value=yesterday_dt,
@@ -1940,6 +2416,8 @@ with tab_bets:
             _platform_terms.append("underdog")
         elif _sel == "🔵 DraftKings Pick6":
             _platform_terms.extend(["draftkings", "pick6", "dk"])
+        elif _sel == "🤖 Smart Pick Pro Platform Picks":
+            _platform_terms.extend(["smartai-auto", "smart pick pro"])
 
     _start_date = None
     _end_date = None
@@ -2056,7 +2534,7 @@ with tab_bets:
                 st.download_button(
                     "📥 Export Page to CSV",
                     data=_csv_data,
-                    file_name=f"smartai_bets_page_{_current_page}_{datetime.date.today().isoformat()}.csv",
+                    file_name=f"smartai_bets_page_{_current_page}_{_tracker_today_iso()}.csv",
                     mime="text/csv",
                     key="export_my_bets_csv",
                     help="Download currently visible page bets as a CSV file.",
@@ -2171,7 +2649,7 @@ with tab_bets:
         if not filtered_bets:
             st.info(f"No bets match the '{filter_choice}' filter on this page.")
         else:
-            _today_str = datetime.date.today().isoformat()
+            _today_str = _tracker_today_iso()
             _today_bets = [b for b in filtered_bets if b.get("bet_date", "") == _today_str]
             _past_bets_by_date: dict = {}
             for _b in filtered_bets:
@@ -2412,7 +2890,7 @@ with tab_parlays:
             _parlay_cols = st.columns([1, 1, 1])
             with _parlay_cols[0]:
                 _parlay_date = st.date_input(
-                    "Entry Date", value=datetime.date.today(),
+                    "Entry Date", value=_tracker_today_date(),
                     key="parlay_date_input",
                 )
             with _parlay_cols[1]:

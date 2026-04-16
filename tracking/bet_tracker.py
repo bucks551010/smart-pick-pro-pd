@@ -25,6 +25,7 @@ from tracking.database import (
     load_all_bets,
     get_performance_summary,
     initialize_database,
+    save_daily_snapshot,
 )
 
 # Import shared constants from the engine package
@@ -404,7 +405,28 @@ def _fetch_all_boxscores_nba_api(date_str: str) -> dict:
         if game_header.empty:
             return {}
 
-        game_ids = game_header["gameId"].tolist()
+        # Resolve accuracy guard: only include FINAL games.
+        # ScoreboardV3 commonly marks final as 3 in gameStatus/gameStatusId.
+        _final_df = game_header
+        try:
+            if "gameStatusId" in _final_df.columns:
+                _final_df = _final_df[_final_df["gameStatusId"].astype(str) == "3"]
+            elif "gameStatus" in _final_df.columns:
+                _final_df = _final_df[_final_df["gameStatus"].astype(str) == "3"]
+            elif "gameStatusText" in _final_df.columns:
+                _final_df = _final_df[
+                    _final_df["gameStatusText"].astype(str).str.lower().str.contains("final", na=False)
+                ]
+        except Exception as _status_exc:
+            _logger.debug(
+                "[BetTracker] Tier 1 final-game filtering fallback on %s: %s",
+                date_str,
+                _status_exc,
+            )
+
+        game_ids = _final_df["gameId"].tolist() if not _final_df.empty else []
+        if not game_ids:
+            return {}
         lookup: dict = {}
 
         for game_id in game_ids:
@@ -988,7 +1010,7 @@ def record_bet_result(bet_id, result, actual_value):
 # SECTION: Performance Analytics
 # ============================================================
 
-def get_model_performance_stats():
+def get_model_performance_stats(bets_list=None):
     """
     Get comprehensive model performance statistics.
 
@@ -997,11 +1019,25 @@ def get_model_performance_stats():
     Returns:
         dict: Performance data with multiple breakdowns
     """
-    # Get all bets from the database
-    all_bets = load_all_bets()
+    # Get all bets from the database unless a scoped list was provided.
+    all_bets = list(bets_list) if bets_list is not None else load_all_bets()
 
-    # Overall summary
-    overall_summary = get_performance_summary()
+    # Overall summary (scoped when bets_list is provided)
+    if bets_list is None:
+        overall_summary = get_performance_summary()
+    else:
+        _resolved = [b for b in all_bets if b.get("result") in ("WIN", "LOSS", "EVEN")]
+        _wins = sum(1 for b in _resolved if b.get("result") == "WIN")
+        _losses = sum(1 for b in _resolved if b.get("result") == "LOSS")
+        _pushes = sum(1 for b in _resolved if b.get("result") == "EVEN")
+        _den = _wins + _losses
+        overall_summary = {
+            "total_bets": len(_resolved),
+            "wins": _wins,
+            "losses": _losses,
+            "pushes": _pushes,
+            "win_rate": round((_wins / _den) * 100, 1) if _den > 0 else 0.0,
+        }
 
     # Break down win rate by tier
     tier_performance = _calculate_win_rate_by_field(all_bets, "tier")
@@ -1029,6 +1065,46 @@ def get_model_performance_stats():
     }
 
 
+def _normalize_platform_for_stats(platform_value) -> str:
+    """Normalize platform naming so equivalent SmartAI/SPP labels aggregate together."""
+    _plat = str(platform_value or "Unknown").strip()
+    _norm = _plat.lower()
+    if _norm in {"smartai-auto", "smartauto-ai", "smart pick pro", "smart pick pro platform", "smart pick pro platform picks"}:
+        return "Smart Pick Pro Platform Picks"
+    return _plat
+
+
+def _is_smart_pick_pro_platform_pick_for_stats(bet_row: dict) -> bool:
+    """Return True when a row should count as Smart Pick Pro Platform Picks."""
+    _source = str(bet_row.get("source") or "").strip().lower()
+    _platform = str(bet_row.get("platform") or "").strip().lower()
+    _notes = str(bet_row.get("notes") or "").strip().lower()
+    _auto = int(bet_row.get("auto_logged", 0) or 0) == 1
+
+    # Hard exclusions first: never classify Joseph or Smart Money rows here.
+    if _source == "joseph" or "joseph" in _platform or "joseph" in _notes:
+        return False
+    if "smart money" in _platform or "smart money" in _notes:
+        return False
+
+    if _source in {"qeg_auto", "smart_pick_pro", "smart_pick_pro_platform", "smartpickpro_auto"}:
+        return True
+    if _platform in {"smartai-auto", "smartauto-ai", "smart pick pro", "smart pick pro platform", "smart pick pro platform picks"}:
+        return True
+    if (
+        _notes.startswith("auto-logged by smartai")
+        or _notes.startswith("auto-logged by smart pick pro")
+        or _notes.startswith("auto-stored by smart pick pro")
+        or _notes.startswith("auto-stored by smartai")
+    ):
+        return True
+    if _notes.startswith("added from platform props"):
+        return True
+    if _auto:
+        return True
+    return False
+
+
 def _calculate_win_rate_by_field(bets_list, field_name):
     """
     Calculate win rate broken down by a specific field.
@@ -1052,17 +1128,23 @@ def _calculate_win_rate_by_field(bets_list, field_name):
 
     for bet in bets_with_results:
         field_value = bet.get(field_name, "Unknown")
+        if field_name == "platform":
+            if _is_smart_pick_pro_platform_pick_for_stats(bet):
+                field_value = "Smart Pick Pro Platform Picks"
+            else:
+                field_value = _normalize_platform_for_stats(field_value)
 
-        # Initialize this group if we haven't seen it
+        # Initialize this group if we haven't seen it.
         if field_value not in performance_by_group:
             performance_by_group[field_value] = {"wins": 0, "losses": 0, "total": 0}
 
-        performance_by_group[field_value]["total"] += 1
-
+        # Keep "total" aligned with win-rate denominator: decided bets only.
         if bet["result"] == "WIN":
             performance_by_group[field_value]["wins"] += 1
+            performance_by_group[field_value]["total"] += 1
         elif bet["result"] == "LOSS":
             performance_by_group[field_value]["losses"] += 1
+            performance_by_group[field_value]["total"] += 1
 
     # Calculate win rates for each group
     # Use wins / (wins + losses) Ã¢â‚¬â€ evens should NOT deflate the rate
@@ -1729,7 +1811,7 @@ def resolve_todays_bets():
                     result = "WIN" if actual_value > prop_line else "LOSS"
                 else:  # UNDER
                     result = "WIN" if actual_value < prop_line else "LOSS"
-                success, _msg = update_bet_result(bet_id, result, actual_value)
+                success = update_bet_result(bet_id, result, actual_value)
                 if success:
                     summary["resolved"] += 1
                     _tier12_resolved += 1
@@ -1740,7 +1822,7 @@ def resolve_todays_bets():
                     else:
                         summary["evens"] += 1
                 else:
-                    summary["errors"].append(f"#{bet_id} {player_name}: DB update failed Ã¢â‚¬â€ {_msg}")
+                    summary["errors"].append(f"#{bet_id} {player_name}: DB update failed")
                     summary["pending"] += 1
                 continue  # Skip Tier 3 for this bet
 
@@ -1755,7 +1837,7 @@ def resolve_todays_bets():
             if not logs:
                 # DNP: if bulk boxscores exist but player has no logs → VOID
                 if _bulk_lookup:
-                    ok, _msg = update_bet_result(bet_id, "VOID", 0.0)
+                    ok = update_bet_result(bet_id, "VOID", 0.0)
                     if ok:
                         summary["resolved"] += 1
                     else:
@@ -1776,7 +1858,7 @@ def resolve_todays_bets():
             if latest is None:
                 # DNP: bulk boxscores exist but player not found → VOID
                 if _bulk_lookup:
-                    ok, _msg = update_bet_result(bet_id, "VOID", 0.0)
+                    ok = update_bet_result(bet_id, "VOID", 0.0)
                     if ok:
                         summary["resolved"] += 1
                     else:
@@ -1816,7 +1898,7 @@ def resolve_todays_bets():
             else:  # UNDER
                 result = "WIN" if actual_value < prop_line else "LOSS"
 
-            success, _msg = update_bet_result(bet_id, result, actual_value)
+            success = update_bet_result(bet_id, result, actual_value)
             if success:
                 summary["resolved"] += 1
                 if result == "WIN":
@@ -1826,7 +1908,7 @@ def resolve_todays_bets():
                 else:
                     summary["evens"] += 1
             else:
-                summary["errors"].append(f"#{bet_id} {player_name}: DB update failed Ã¢â‚¬â€ {_msg}")
+                summary["errors"].append(f"#{bet_id} {player_name}: DB update failed")
                 summary["pending"] += 1
 
         except Exception as exc:
@@ -1855,6 +1937,273 @@ def resolve_todays_bets():
         )
     except Exception as _exc:
         logging.getLogger(__name__).warning(f"[BetTracker] Unexpected error: {_exc}")
+
+    return summary
+
+
+def regrade_bets_for_date(date_str=None):
+    """
+    Recompute results for already-graded bets on a date using final box scores.
+
+    This is a corrective pass for cases where a bet may have been graded with
+    in-progress stats. Only bets currently marked WIN/LOSS/EVEN are considered.
+
+    Args:
+        date_str (str|None): ISO date string YYYY-MM-DD. Defaults to today (ET).
+
+    Returns:
+        dict: {
+            "date": str,
+            "total_candidates": int,
+            "checked": int,
+            "corrected": int,
+            "unchanged": int,
+            "skipped": int,
+            "errors": list[str],
+            "changes": list[dict],
+        }
+    """
+    import datetime as _dt
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    if date_str is None:
+        date_str = _nba_today_et().isoformat()
+
+    summary = {
+        "date": date_str,
+        "total_candidates": 0,
+        "checked": 0,
+        "corrected": 0,
+        "unchanged": 0,
+        "skipped": 0,
+        "errors": [],
+        "changes": [],
+    }
+
+    try:
+        target_date = _dt.datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        summary["errors"].append(f"Invalid date format: {date_str}")
+        return summary
+
+    all_bets = load_all_bets(exclude_linked=False)
+    candidates = [
+        b for b in all_bets
+        if b.get("bet_date") == date_str and b.get("result") in ("WIN", "LOSS", "EVEN")
+    ]
+    summary["total_candidates"] = len(candidates)
+    if not candidates:
+        return summary
+
+    try:
+        from data.platform_mappings import COMBO_STATS, FANTASY_SCORING, normalize_stat_type as _norm_stat_type
+    except ImportError:
+        COMBO_STATS = {}
+        FANTASY_SCORING = {}
+        _norm_stat_type = None
+
+    try:
+        from data.data_manager import normalize_player_name as _normalize_name
+    except ImportError:
+        def _normalize_name(n):
+            return str(n).lower().strip()
+
+    try:
+        from data.player_profile_service import get_player_id as _lookup_pid
+    except ImportError:
+        _lookup_pid = None
+
+    _bulk_lookup = _fetch_bulk_boxscores(date_str)
+
+    _names_to_load: set[str] = set()
+    _bet_prep = []  # (bet, bet_id, player_name, stat_type, stat_col, is_combo, is_fantasy, is_computed, direction, prop_line, old_result, old_actual)
+
+    for bet in candidates:
+        bet_id = bet.get("bet_id") or bet.get("id")
+        player_name = str(bet.get("player_name") or "").strip()
+        stat_type = str(bet.get("stat_type") or "").lower().strip()
+        direction = str(bet.get("direction") or "OVER").upper().strip()
+        old_result = str(bet.get("result") or "").upper().strip()
+        try:
+            prop_line = float(bet.get("prop_line") or 0)
+        except (TypeError, ValueError):
+            prop_line = 0.0
+        try:
+            old_actual = float(bet.get("actual_value") or 0)
+        except (TypeError, ValueError):
+            old_actual = 0.0
+
+        is_combo = stat_type in COMBO_STATS
+        is_fantasy = stat_type in FANTASY_SCORING
+        is_computed = stat_type in _COMPUTED_STATS
+        stat_col = _STAT_COL.get(stat_type)
+
+        if not stat_col and not is_combo and not is_fantasy and not is_computed and _norm_stat_type is not None:
+            normalized = _norm_stat_type(stat_type)
+            stat_col = _STAT_COL.get(normalized)
+            if stat_col:
+                stat_type = normalized
+            elif normalized in _COMPUTED_STATS:
+                is_computed = True
+                stat_type = normalized
+
+        if not stat_col and not is_combo and not is_fantasy and not is_computed:
+            summary["errors"].append(f"#{bet_id} {player_name}: unknown stat '{stat_type}'")
+            summary["skipped"] += 1
+            continue
+
+        _bet_prep.append((
+            bet,
+            bet_id,
+            player_name,
+            stat_type,
+            stat_col,
+            is_combo,
+            is_fantasy,
+            is_computed,
+            direction,
+            prop_line,
+            old_result,
+            old_actual,
+        ))
+        _names_to_load.add(player_name)
+
+    _name_to_pid: dict = {}
+    for pname in _names_to_load:
+        pid = None
+        if _lookup_pid is not None:
+            pid = _lookup_pid(pname) or _lookup_pid(_normalize_name(pname))
+        _name_to_pid[pname] = pid
+
+    _ids_to_load = {pid for pid in _name_to_pid.values() if pid}
+    _game_log_cache: dict = {}
+
+    def _get_player_log(pid):
+        for _attempt in range(RESOLVE_MAX_RETRIES):
+            try:
+                if _attempt > 0:
+                    time.sleep(_BACKOFF_BASE + _attempt * _BACKOFF_INCREMENT)
+                logs = _fetch_resolve_game_log(pid, last_n=10)
+                return pid, logs
+            except Exception:
+                if _attempt == RESOLVE_MAX_RETRIES - 1:
+                    return pid, []
+        return pid, []
+
+    _unique_ids = list(_ids_to_load)
+    if _unique_ids:
+        with ThreadPoolExecutor(max_workers=min(8, len(_unique_ids))) as executor:
+            futures = {executor.submit(_get_player_log, pid): pid for pid in _unique_ids}
+            for future in as_completed(futures):
+                pid = futures[future]
+                try:
+                    _, logs = future.result()
+                    _game_log_cache[pid] = logs or []
+                except Exception:
+                    _game_log_cache[pid] = []
+
+    for (
+        _bet,
+        bet_id,
+        player_name,
+        stat_type,
+        stat_col,
+        is_combo,
+        is_fantasy,
+        is_computed,
+        direction,
+        prop_line,
+        old_result,
+        old_actual,
+    ) in _bet_prep:
+        actual_value = None
+
+        try:
+            bulk_row = _lookup_bulk_row(_bulk_lookup, player_name, _normalize_name)
+            if bulk_row is not None:
+                actual_value = _compute_actual_value_from_row(
+                    bulk_row,
+                    stat_type,
+                    stat_col,
+                    is_combo,
+                    is_fantasy,
+                    COMBO_STATS,
+                    FANTASY_SCORING,
+                    is_computed=is_computed,
+                )
+            else:
+                pid = _name_to_pid.get(player_name)
+                logs = _game_log_cache.get(pid, []) if pid else []
+                matching_log = None
+                for log_row in logs:
+                    log_date = _parse_game_date(log_row.get("game_date", ""))
+                    if log_date == target_date:
+                        matching_log = log_row
+                        break
+
+                if matching_log is not None:
+                    if is_combo:
+                        actual_value = sum(
+                            float(matching_log.get(_STAT_COL.get(c, c), 0) or 0)
+                            for c in COMBO_STATS.get(stat_type, [])
+                            if _STAT_COL.get(c)
+                        )
+                    elif is_fantasy:
+                        actual_value = round(
+                            sum(
+                                float(matching_log.get(_STAT_COL.get(c, c), 0) or 0) * w
+                                for c, w in FANTASY_SCORING.get(stat_type, {}).items()
+                                if _STAT_COL.get(c)
+                            ),
+                            2,
+                        )
+                    elif is_computed:
+                        add_cols, sub_cols = _COMPUTED_STATS[stat_type]
+                        actual_value = sum(float(matching_log.get(c, 0) or 0) for c in add_cols)
+                        actual_value -= sum(float(matching_log.get(c, 0) or 0) for c in sub_cols)
+                    else:
+                        actual_value = float(matching_log.get(stat_col, 0) or 0)
+
+            if actual_value is None:
+                summary["skipped"] += 1
+                continue
+
+            summary["checked"] += 1
+
+            if abs(actual_value - prop_line) < EVEN_THRESHOLD_EPSILON:
+                new_result = "EVEN"
+            elif direction == "OVER":
+                new_result = "WIN" if actual_value > prop_line else "LOSS"
+            else:
+                new_result = "WIN" if actual_value < prop_line else "LOSS"
+
+            changed = (new_result != old_result) or (abs(float(actual_value) - float(old_actual)) > 1e-6)
+            if not changed:
+                summary["unchanged"] += 1
+                continue
+
+            success, msg = record_bet_result(bet_id, new_result, float(actual_value))
+            if success:
+                summary["corrected"] += 1
+                summary["changes"].append({
+                    "bet_id": bet_id,
+                    "player": player_name,
+                    "old_result": old_result,
+                    "new_result": new_result,
+                    "old_actual": round(float(old_actual), 2),
+                    "new_actual": round(float(actual_value), 2),
+                })
+            else:
+                summary["errors"].append(f"#{bet_id} {player_name}: DB update failed — {msg}")
+
+        except Exception as exc:
+            summary["errors"].append(f"#{bet_id} {player_name}: {exc}")
+
+    if summary["corrected"] > 0:
+        try:
+            save_daily_snapshot(date_str)
+        except Exception as _exc:
+            _logger.warning("regrade_bets_for_date snapshot failed for %s: %s", date_str, _exc)
 
     return summary
 
@@ -2889,6 +3238,7 @@ def log_props_to_tracker(props_list, direction="OVER"):
                 auto_logged=1,
                 bet_type="normal",
                 std_devs_from_line=0.0,
+                source="smart_pick_pro_platform",
             )
             if ok:
                 existing_keys.add(dup_key)

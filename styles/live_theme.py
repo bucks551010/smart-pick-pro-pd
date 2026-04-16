@@ -630,6 +630,16 @@ def get_live_sweat_css() -> str:
     font-size: 0.72rem;
     font-weight: 700;
 }
+.sweat-badge-lost {
+    display: inline-block;
+    background: rgba(239, 68, 68, 0.22);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
 .sweat-badge-ot {
     display: inline-block;
     background: rgba(245, 158, 11, 0.2);
@@ -646,6 +656,11 @@ def get_live_sweat_css() -> str:
 .sweat-card-cashed {
     background: rgba(34, 197, 94, 0.12);
     border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.sweat-card-lost {
+    background: rgba(239, 68, 68, 0.10);
+    border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
 /* ── Awaiting tipoff card ────────────────────────────────── */
@@ -1011,6 +1026,7 @@ def render_sweat_card(
     blowout_risk: bool = False,
     foul_trouble: bool = False,
     cashed: bool = False,
+    lost: bool = False,
     minutes_played: float = 0.0,
     direction: str = "OVER",
     minutes_remaining: float = 0.0,
@@ -1041,6 +1057,8 @@ def render_sweat_card(
     glow = ""
     if cashed:
         glow = "glow-gold"
+    elif lost:
+        glow = "glow-red"
     elif color_tier == "green":
         glow = "glow-green"
     elif color_tier in ("red", "orange"):
@@ -1049,6 +1067,8 @@ def render_sweat_card(
     card_class = "sweat-card"
     if cashed:
         card_class += " sweat-card-cashed"
+    elif lost:
+        card_class += " sweat-card-lost"
     if glow:
         card_class += f" {glow}"
     if is_bet_of_night:
@@ -1082,6 +1102,8 @@ def render_sweat_card(
     badges = ""
     if cashed:
         badges += '<span class="sweat-badge-cashed">✅ CASHED</span>'
+    elif lost:
+        badges += '<span class="sweat-badge-lost">❌ LOST</span>'
     if is_overtime:
         badges += '<span class="sweat-badge-ot">⏱️ OT</span>'
     if blowout_risk:

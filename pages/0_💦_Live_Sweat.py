@@ -26,6 +26,11 @@ st.set_page_config(
     layout="wide",
 )
 
+# ── Login Gate ─────────────────────────────────────────────────
+from utils.auth_gate import require_login as _require_login
+if not _require_login():
+    st.stop()
+
 # ── Global CSS ────────────────────────────────────────────────
 
 from styles.theme import get_global_css

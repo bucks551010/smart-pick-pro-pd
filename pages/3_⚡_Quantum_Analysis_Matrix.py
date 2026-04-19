@@ -273,6 +273,11 @@ st.set_page_config(
     layout="wide",
 )
 
+# ── Login Gate ─────────────────────────────────────────────────
+from utils.auth_gate import require_login as _require_login
+if not _require_login():
+    st.stop()
+
 # Inject global CSS + QDS CSS
 st.markdown(get_global_css(), unsafe_allow_html=True)
 st.markdown(get_qds_css(), unsafe_allow_html=True)

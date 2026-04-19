@@ -42,6 +42,11 @@ st.set_page_config(
     layout="wide",
 )
 
+# ── Login Gate ─────────────────────────────────────────────────
+from utils.auth_gate import require_login as _require_login
+if not _require_login():
+    st.stop()
+
 # ─── Inject Global CSS Theme ──────────────────────────────────
 from styles.theme import get_global_css, get_education_box_html, get_logo_img_tag, GOLD_LOGO_PATH
 st.markdown(get_global_css(), unsafe_allow_html=True)

@@ -245,6 +245,20 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 );
 """
 
+# SQL to create the users table.
+# Stores registered user accounts for the signup/login gate.
+# Passwords are stored as bcrypt hashes (never plaintext).
+CREATE_USERS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    password_hash TEXT NOT NULL,
+    display_name TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    last_login_at TEXT
+);
+"""
+
 # SQL to create the analysis_sessions table.
 # Persists Neural Analysis results so users never lose their analysis
 # after inactivity. On page load, session state is rehydrated from here.
@@ -415,6 +429,7 @@ def initialize_database():
             cursor.execute(CREATE_DAILY_SNAPSHOTS_TABLE_SQL)      # daily performance tracking
             cursor.execute(CREATE_ALL_ANALYSIS_PICKS_TABLE_SQL)   # all Neural Analysis outputs
             cursor.execute(CREATE_SUBSCRIPTIONS_TABLE_SQL)        # Stripe subscription records
+            cursor.execute(CREATE_USERS_TABLE_SQL)                    # User account records
             cursor.execute(CREATE_ANALYSIS_SESSIONS_TABLE_SQL)    # analysis session persistence
             cursor.execute(CREATE_BACKTEST_RESULTS_TABLE_SQL)     # historical backtesting results
             cursor.execute(CREATE_PLAYER_GAME_LOGS_TABLE_SQL)     # Feature 12: game log persistence

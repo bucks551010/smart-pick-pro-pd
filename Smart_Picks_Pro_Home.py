@@ -36,6 +36,11 @@ st.set_page_config(
     initial_sidebar_state="auto",
 )
 
+# ─── Login / Signup Gate — must be before ANY content ─────────
+from utils.auth_gate import require_login as _require_login
+if not _require_login():
+    st.stop()
+
 # ─── Inject Global CSS Theme ──────────────────────────────────
 st.markdown(get_global_css(), unsafe_allow_html=True)
 
@@ -910,6 +915,21 @@ except Exception:
     TIER_FREE = "free"
 
 with st.sidebar:
+    # ── Logged-in user + logout button ────────────────────────
+    from utils.auth_gate import get_logged_in_email, logout_user, is_logged_in
+    if is_logged_in():
+        _auth_email = get_logged_in_email() or ""
+        st.markdown(
+            f'<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);'
+            f'border-radius:10px;padding:8px 14px;text-align:center;margin-bottom:8px;">'
+            f'<span style="color:#a0b4d0;font-size:0.78rem;">👤 {_auth_email}</span>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+        if st.button("🚪 Log Out", key="_sidebar_logout", use_container_width=True):
+            logout_user()
+            st.rerun()
+
     if _user_tier != TIER_FREE:
         st.markdown(
             f'<div style="background:rgba(0,213,89,0.08);border:1px solid rgba(0,213,89,0.28);'

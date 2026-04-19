@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/14_💎_Subscription_Level.py
 # PURPOSE: SmartBetPro NBA subscription management page.
 #          Shows pricing, feature comparison, and handles
@@ -35,21 +35,21 @@ st.markdown("""
 /* ── Hero Section ─────────────────────────────────────── */
 .premium-hero {
     background: linear-gradient(135deg, #0a1428 0%, #0d1f3c 50%, #0a1428 100%);
-    border: 1px solid rgba(0, 240, 255, 0.25);
+    border: 1px solid rgba(0, 213, 89, 0.25);
     border-radius: 18px;
     padding: 40px 48px;
     text-align: center;
     position: relative;
     overflow: hidden;
     margin-bottom: 32px;
-    box-shadow: 0 0 60px rgba(0,240,255,0.08), 0 8px 40px rgba(0,0,0,0.6);
+    box-shadow: 0 0 60px rgba(0,213,89,0.07), 0 8px 40px rgba(0,0,0,0.6);
 }
 .premium-hero::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; height: 3px;
     background: linear-gradient(90deg,
-        #00f0ff 0%, #00ffd5 25%, #ff5e00 60%, #c800ff 100%);
+        #00D559 0%, #00D559 25%, #F9C62B 60%, #2D9EFF 100%);
     background-size: 200% 100%;
     animation: heroShimmer 4s ease infinite;
 }
@@ -68,17 +68,17 @@ st.markdown("""
     50%       { transform: translateY(-8px); }
 }
 .hero-title {
-    font-family: 'Orbitron', 'Courier New', monospace;
+    font-family: 'Inter', 'Courier New', monospace;
     font-size: 2.4rem;
     font-weight: 900;
-    background: linear-gradient(90deg, #00f0ff, #00ffd5);
+    background: linear-gradient(90deg, #00D559, #00D559);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     margin: 0 0 8px;
 }
 .hero-subtitle {
-    color: #a0b4d0;
+    color: #A0AABE;
     font-size: 1.1rem;
     max-width: 560px;
     margin: 0 auto 24px;
@@ -88,7 +88,7 @@ st.markdown("""
     display: inline-block;
     background: rgba(255, 94, 0, 0.18);
     border: 1px solid rgba(255, 94, 0, 0.45);
-    color: #ff5e00;
+    color: #F9C62B;
     border-radius: 20px;
     padding: 4px 18px;
     font-size: 0.83rem;
@@ -100,13 +100,13 @@ st.markdown("""
 /* ── Pricing Card ─────────────────────────────────────── */
 .pricing-card {
     background: rgba(14, 20, 40, 0.95);
-    border: 2px solid rgba(0, 240, 255, 0.4);
+    border: 2px solid rgba(0, 213, 89, 0.4);
     border-radius: 18px;
     padding: 36px 32px;
     text-align: center;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 0 40px rgba(0,240,255,0.15), 0 8px 32px rgba(0,0,0,0.5);
+    box-shadow: 0 0 40px rgba(0,213,89,0.13), 0 8px 32px rgba(0,0,0,0.5);
     max-width: 380px;
     margin: 0 auto;
 }
@@ -114,7 +114,7 @@ st.markdown("""
     content: 'MOST POPULAR';
     position: absolute;
     top: 16px; right: -28px;
-    background: linear-gradient(135deg, #ff5e00, #ff8c00);
+    background: linear-gradient(135deg, #F9C62B, #ff8c00);
     color: white;
     font-size: 0.65rem;
     font-weight: 800;
@@ -123,12 +123,12 @@ st.markdown("""
     letter-spacing: 1.5px;
 }
 .price-amount {
-    font-family: 'Orbitron', monospace;
+    font-family: 'Inter', monospace;
     font-size: 3.2rem;
     font-weight: 900;
-    color: #00f0ff;
+    color: #00D559;
     line-height: 1;
-    text-shadow: 0 0 30px rgba(0,240,255,0.5);
+    text-shadow: 0 0 30px rgba(0,213,89,0.45);
 }
 .price-period {
     color: #607080;
@@ -136,9 +136,9 @@ st.markdown("""
     margin-bottom: 20px;
 }
 .price-plan-name {
-    font-family: 'Orbitron', monospace;
+    font-family: 'Inter', monospace;
     font-size: 1.1rem;
-    color: #00ffd5;
+    color: #00D559;
     margin-bottom: 4px;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -150,18 +150,18 @@ st.markdown("""
     text-align: left;
 }
 .price-feature-list li {
-    color: #c0d0e8;
+    color: #EEF0F6;
     font-size: 0.87rem;
     padding: 6px 0 6px 28px;
     position: relative;
-    border-bottom: 1px solid rgba(0,240,255,0.06);
+    border-bottom: 1px solid rgba(0,213,89,0.06);
 }
 .price-feature-list li:last-child { border-bottom: none; }
 .price-feature-list li::before {
     content: '✓';
     position: absolute;
     left: 4px;
-    color: #00ff9d;
+    color: #00D559;
     font-weight: 800;
 }
 
@@ -174,20 +174,20 @@ st.markdown("""
     font-size: 0.88rem;
 }
 .compare-table th {
-    background: rgba(0, 240, 255, 0.08);
-    color: #00f0ff;
-    font-family: 'Orbitron', monospace;
+    background: rgba(0, 213, 89, 0.08);
+    color: #00D559;
+    font-family: 'Inter', monospace;
     font-size: 0.78rem;
     letter-spacing: 1px;
     text-transform: uppercase;
     padding: 12px 16px;
-    border-bottom: 2px solid rgba(0,240,255,0.25);
+    border-bottom: 2px solid rgba(0,213,89,0.22);
     text-align: center;
 }
 .compare-table th:first-child { text-align: left; }
 .compare-table td {
     padding: 10px 16px;
-    border-bottom: 1px solid rgba(0,240,255,0.07);
+    border-bottom: 1px solid rgba(0,213,89,0.06);
     color: #b8c8e0;
     text-align: center;
     vertical-align: middle;
@@ -198,24 +198,24 @@ st.markdown("""
     font-weight: 500;
 }
 .compare-table tr:hover td {
-    background: rgba(0,240,255,0.04);
+    background: rgba(0,213,89,0.04);
 }
-.check-yes  { color: #00ff9d; font-size: 1.1rem; }
+.check-yes  { color: #00D559; font-size: 1.1rem; }
 .check-no   { color: #3a4a60; font-size: 1.0rem; }
 .check-limit { color: #ff9d00; font-size: 0.82rem; font-weight: 700; }
 
 /* ── Status Cards ─────────────────────────────────────── */
 .sub-status-card {
-    background: rgba(0, 255, 157, 0.06);
-    border: 1.5px solid rgba(0, 255, 157, 0.35);
+    background: rgba(0, 213, 89, 0.06);
+    border: 1.5px solid rgba(0, 213, 89, 0.35);
     border-radius: 14px;
     padding: 24px 28px;
     margin-bottom: 24px;
-    box-shadow: 0 0 24px rgba(0,255,157,0.08);
+    box-shadow: 0 0 24px rgba(0,213,89,0.08);
 }
 .sub-status-title {
-    font-family: 'Orbitron', monospace;
-    color: #00ff9d;
+    font-family: 'Inter', monospace;
+    color: #00D559;
     font-size: 1.1rem;
     margin: 0 0 6px;
 }

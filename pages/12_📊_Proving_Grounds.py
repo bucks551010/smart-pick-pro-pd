@@ -1,4 +1,4 @@
-# pages/12_📊_Proving_Grounds.py
+﻿# pages/12_📊_Proving_Grounds.py
 # Historical backtesting UI for Smart Pick Pro ("Proving Grounds").
 # Runs the prediction model against historical game log data to validate accuracy.
 
@@ -33,8 +33,8 @@ st.markdown("""
 <style>
 /* ─── Animations ─────────────────────────────────────────── */
 @keyframes pg-glow-pulse {
-    0%, 100% { box-shadow: 0 0 15px rgba(0,240,255,0.10), 0 4px 24px rgba(0,240,255,0.06); }
-    50%      { box-shadow: 0 0 30px rgba(0,240,255,0.25), 0 4px 30px rgba(0,240,255,0.12); }
+    0%, 100% { box-shadow: 0 0 15px rgba(0,213,89,0.09), 0 4px 24px rgba(0,213,89,0.06); }
+    50%      { box-shadow: 0 0 30px rgba(0,213,89,0.22), 0 4px 30px rgba(0,213,89,0.10); }
 }
 @keyframes pg-fade-up {
     from { opacity: 0; transform: translateY(14px); }
@@ -45,31 +45,31 @@ st.markdown("""
     100% { background-position: 300px 0; }
 }
 @keyframes pg-border-flow {
-    0%   { border-color: rgba(0,240,255,0.20); }
-    50%  { border-color: rgba(0,240,255,0.45); }
-    100% { border-color: rgba(0,240,255,0.20); }
+    0%   { border-color: rgba(0,213,89,0.18); }
+    50%  { border-color: rgba(0,213,89,0.40); }
+    100% { border-color: rgba(0,213,89,0.18); }
 }
 
 /* ─── Page Title ─────────────────────────────────────────── */
 .pg-page-title {
-    font-family: 'Orbitron', 'Inter', sans-serif;
+    font-family: 'Inter', 'Inter', sans-serif;
     font-size: 1.85rem;
     font-weight: 900;
     letter-spacing: 2px;
-    color: #00f0ff;
-    text-shadow: 0 0 20px rgba(0,240,255,0.50), 0 0 40px rgba(0,240,255,0.20);
+    color: #00D559;
+    text-shadow: 0 0 20px rgba(0,213,89,0.45), 0 0 40px rgba(0,213,89,0.18);
     margin-bottom: 2px;
     line-height: 1.3;
 }
 .pg-page-subtitle {
     font-size: 0.88rem;
-    color: #8a9bb8;
+    color: #6B7A9A;
     letter-spacing: 0.3px;
     line-height: 1.5;
 }
 .pg-title-bar {
-    background: linear-gradient(135deg, rgba(0,240,255,0.08) 0%, rgba(200,0,255,0.04) 100%);
-    border: 1px solid rgba(0,240,255,0.18);
+    background: linear-gradient(135deg, rgba(0,213,89,0.07) 0%, rgba(45,158,255,0.04) 100%);
+    border: 1px solid rgba(0,213,89,0.15);
     border-radius: 14px;
     padding: 20px 28px 16px 28px;
     margin-bottom: 20px;
@@ -78,7 +78,7 @@ st.markdown("""
 .pg-title-accent {
     height: 3px;
     width: 60px;
-    background: linear-gradient(90deg, #00f0ff, #c800ff);
+    background: linear-gradient(90deg, #00D559, #2D9EFF);
     border-radius: 2px;
     margin-top: 10px;
 }
@@ -86,13 +86,13 @@ st.markdown("""
 /* ─── Glass Metric Cards ─────────────────────────────────── */
 .pg-glass-card {
     background: linear-gradient(145deg, rgba(13,18,40,0.92) 0%, rgba(7,10,19,0.96) 100%);
-    border: 1px solid rgba(0,240,255,0.16);
+    border: 1px solid rgba(0,213,89,0.16);
     border-radius: 14px;
     padding: 16px 14px 14px 14px;
     text-align: center;
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.40), 0 0 12px rgba(0,240,255,0.05);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.40), 0 0 12px rgba(0,213,89,0.04);
     transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
     min-height: 105px;
     display: flex;
@@ -107,14 +107,14 @@ st.markdown("""
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(0,240,255,0.40), transparent);
+    background: linear-gradient(90deg, transparent, rgba(0,213,89,0.35), transparent);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
 .pg-glass-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.50), 0 0 24px rgba(0,240,255,0.12);
-    border-color: rgba(0,240,255,0.35);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.50), 0 0 24px rgba(0,213,89,0.10);
+    border-color: rgba(0,213,89,0.30);
 }
 .pg-glass-card:hover::before { opacity: 1; }
 .pg-glass-label {
@@ -129,10 +129,10 @@ st.markdown("""
 .pg-glass-value {
     font-size: 1.55rem;
     font-weight: 800;
-    color: #00f0ff;
+    color: #00D559;
     line-height: 1.15;
     font-family: 'JetBrains Mono', 'Inter', monospace;
-    text-shadow: 0 0 10px rgba(0,240,255,0.25);
+    text-shadow: 0 0 10px rgba(0,213,89,0.22);
 }
 .pg-glass-delta {
     font-size: 0.70rem;
@@ -152,13 +152,13 @@ st.markdown("""
 /* ─── Hero Results Banner ────────────────────────────────── */
 .pg-hero-banner {
     background: linear-gradient(135deg, rgba(13,18,40,0.95) 0%, rgba(7,10,19,0.98) 100%);
-    border: 1px solid rgba(0,240,255,0.22);
+    border: 1px solid rgba(0,213,89,0.20);
     border-radius: 16px;
     padding: 24px 30px;
     margin-bottom: 22px;
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
-    box-shadow: 0 0 30px rgba(0,240,255,0.08), 0 8px 32px rgba(0,0,0,0.50);
+    box-shadow: 0 0 30px rgba(0,213,89,0.07), 0 8px 32px rgba(0,0,0,0.50);
     animation: pg-glow-pulse 4s ease-in-out infinite, pg-fade-up 0.5s ease-out;
     position: relative;
     overflow: hidden;
@@ -168,16 +168,16 @@ st.markdown("""
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 3px;
-    background: linear-gradient(90deg, transparent 0%, #00f0ff 30%, #c800ff 70%, transparent 100%);
+    background: linear-gradient(90deg, transparent 0%, #00D559 30%, #2D9EFF 70%, transparent 100%);
     background-size: 300px 3px;
     animation: pg-shimmer 3s linear infinite;
 }
 .pg-hero-title {
-    font-family: 'Orbitron', 'Inter', sans-serif;
+    font-family: 'Inter', 'Inter', sans-serif;
     font-size: 1.15rem;
     font-weight: 800;
-    color: #00f0ff;
-    text-shadow: 0 0 14px rgba(0,240,255,0.5);
+    color: #00D559;
+    text-shadow: 0 0 14px rgba(0,213,89,0.45);
     margin-bottom: 10px;
     letter-spacing: 2px;
     text-transform: uppercase;
@@ -196,10 +196,10 @@ st.markdown("""
     font-size: 0.88rem;
 }
 .pg-hero-stat .hl {
-    color: #00f0ff;
+    color: #00D559;
     font-weight: 800;
     font-family: 'JetBrains Mono', monospace;
-    text-shadow: 0 0 8px rgba(0,240,255,0.4);
+    text-shadow: 0 0 8px rgba(0,213,89,0.4);
 }
 .pg-hero-stat .gold {
     color: #ffd740;
@@ -217,7 +217,7 @@ st.markdown("""
     text-shadow: 0 0 8px rgba(255,82,82,0.4);
 }
 .pg-hero-divider {
-    color: rgba(0,240,255,0.25);
+    color: rgba(0,213,89,0.22);
     margin: 0 4px;
     font-weight: 300;
 }
@@ -244,7 +244,7 @@ st.markdown("""
     min-width: 72px;
     padding: 5px 12px;
     border-radius: 6px;
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 0.70rem;
     font-weight: 800;
     letter-spacing: 1.5px;
@@ -290,14 +290,14 @@ st.markdown("""
     border: 1px solid rgba(255,215,64,0.35);
 }
 .pg-tier-strong {
-    background: linear-gradient(135deg, rgba(0,240,255,0.07) 0%, rgba(13,18,40,0.90) 100%);
-    border-left: 4px solid #00f0ff;
-    box-shadow: 0 0 12px rgba(0,240,255,0.05);
+    background: linear-gradient(135deg, rgba(0,213,89,0.06) 0%, rgba(13,18,40,0.90) 100%);
+    border-left: 4px solid #00D559;
+    box-shadow: 0 0 12px rgba(0,213,89,0.04);
 }
 .pg-tier-strong .pg-tier-badge {
-    background: linear-gradient(135deg, rgba(0,240,255,0.20), rgba(0,240,255,0.08));
-    color: #00f0ff;
-    border: 1px solid rgba(0,240,255,0.30);
+    background: linear-gradient(135deg, rgba(0,213,89,0.18), rgba(0,213,89,0.07));
+    color: #00D559;
+    border: 1px solid rgba(0,213,89,0.26);
 }
 .pg-tier-value {
     background: linear-gradient(135deg, rgba(200,200,255,0.04) 0%, rgba(13,18,40,0.90) 100%);
@@ -331,18 +331,18 @@ st.markdown("""
     line-height: 1;
 }
 .pg-section-text {
-    font-family: 'Orbitron', 'Inter', sans-serif;
+    font-family: 'Inter', 'Inter', sans-serif;
     font-size: 0.95rem;
     font-weight: 700;
-    color: #00f0ff;
+    color: #00D559;
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    text-shadow: 0 0 8px rgba(0,240,255,0.3);
+    text-shadow: 0 0 8px rgba(0,213,89,0.3);
 }
 .pg-section-line {
     flex: 1;
     height: 1px;
-    background: linear-gradient(90deg, rgba(0,240,255,0.25), transparent);
+    background: linear-gradient(90deg, rgba(0,213,89,0.22), transparent);
 }
 
 /* ─── Status Pills ───────────────────────────────────────── */
@@ -354,7 +354,7 @@ st.markdown("""
     margin: 8px 0 12px 0;
     padding: 10px 16px;
     background: linear-gradient(135deg, rgba(13,18,40,0.80) 0%, rgba(7,10,19,0.90) 100%);
-    border: 1px solid rgba(0,240,255,0.10);
+    border: 1px solid rgba(0,213,89,0.09);
     border-radius: 10px;
     animation: pg-fade-up 0.4s ease-out both;
 }
@@ -369,16 +369,16 @@ st.markdown("""
     letter-spacing: 0.3px;
 }
 .pg-pill.ok { background: rgba(0,230,118,0.12); color: #00e676; border: 1px solid rgba(0,230,118,0.22); }
-.pg-pill.warn { background: rgba(255,94,0,0.12); color: #ff5e00; border: 1px solid rgba(255,94,0,0.22); }
-.pg-pill.info { background: rgba(0,240,255,0.10); color: #00f0ff; border: 1px solid rgba(0,240,255,0.20); }
-.pg-pill.stale { background: rgba(255,200,0,0.10); color: #ffcc00; border: 1px solid rgba(255,200,0,0.20); }
+.pg-pill.warn { background: rgba(255,94,0,0.12); color: #F9C62B; border: 1px solid rgba(255,94,0,0.22); }
+.pg-pill.info { background: rgba(0,213,89,0.09); color: #00D559; border: 1px solid rgba(0,213,89,0.18); }
+.pg-pill.stale { background: rgba(255,200,0,0.10); color: #F9C62B; border: 1px solid rgba(255,200,0,0.20); }
 
 /* ─── Empty State ────────────────────────────────────────── */
 .pg-empty-state {
     text-align: center;
     padding: 48px 32px;
     background: linear-gradient(135deg, rgba(13,18,40,0.60) 0%, rgba(7,10,19,0.75) 100%);
-    border: 1px dashed rgba(0,240,255,0.18);
+    border: 1px dashed rgba(0,213,89,0.15);
     border-radius: 16px;
     margin: 20px 0;
     animation: pg-fade-up 0.5s ease-out;
@@ -389,16 +389,16 @@ st.markdown("""
     opacity: 0.7;
 }
 .pg-empty-title {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 1.1rem;
     font-weight: 700;
-    color: rgba(0,240,255,0.7);
+    color: rgba(0,213,89,0.65);
     letter-spacing: 1.5px;
     margin-bottom: 8px;
 }
 .pg-empty-desc {
     font-size: 0.86rem;
-    color: #8a9bb8;
+    color: #6B7A9A;
     max-width: 500px;
     margin: 0 auto;
     line-height: 1.6;
@@ -437,14 +437,14 @@ st.markdown("""
     letter-spacing: 1px;
 }
 .pg-winner-a {
-    background: rgba(0,240,255,0.15);
-    color: #00f0ff;
-    border: 1px solid rgba(0,240,255,0.30);
+    background: rgba(0,213,89,0.13);
+    color: #00D559;
+    border: 1px solid rgba(0,213,89,0.26);
 }
 .pg-winner-b {
-    background: rgba(200,0,255,0.15);
-    color: #c800ff;
-    border: 1px solid rgba(200,0,255,0.30);
+    background: rgba(45,158,255,0.15);
+    color: #2D9EFF;
+    border: 1px solid rgba(45,158,255,0.30);
 }
 .pg-winner-tie {
     background: rgba(255,255,255,0.08);
@@ -750,7 +750,7 @@ if game_logs_by_player:
         _pills.append(f'<span class="pg-pill stale">⏳ {stale_count} Stale</span>')
     st.markdown(
         f'<div class="pg-status-bar">{"".join(_pills)}'
-        f'<span style="color:#8a9bb8;font-size:0.78rem;margin-left:auto;">'
+        f'<span style="color:#6B7A9A;font-size:0.78rem;margin-left:auto;">'
         f'Use <strong>🔄 Refresh Historical Data</strong> in the sidebar to update</span></div>',
         unsafe_allow_html=True,
     )
@@ -758,7 +758,7 @@ else:
     st.markdown("""
     <div class="pg-status-bar">
         <span class="pg-pill warn">⚠️ No Game Logs Found</span>
-        <span style="color:#8a9bb8;font-size:0.78rem;">
+        <span style="color:#6B7A9A;font-size:0.78rem;">
             Click <strong>🔄 Refresh Historical Data</strong> in the sidebar
             or go to <strong>🔮 Player Simulator</strong> to cache player logs
         </span>
@@ -911,7 +911,7 @@ def _render_results(result, config_label=""):
             <div class="pg-empty-icon">🎯</div>
             <div class="pg-empty-title">READY TO TEST</div>
             <div class="pg-empty-desc">
-                Configure settings and click <strong style="color:#00f0ff;">▶ Run Backtest</strong> to see results.
+                Configure settings and click <strong style="color:#00D559;">▶ Run Backtest</strong> to see results.
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1068,7 +1068,7 @@ def _render_results(result, config_label=""):
 
             # Determine fill color based on final P&L
             _fill_color = "rgba(0,230,118,0.12)" if _cumulative >= 0 else "rgba(255,82,82,0.12)"
-            _line_color = "#00f0ff"
+            _line_color = "#00D559"
 
             # Build hover text
             _hover = [
@@ -1114,10 +1114,10 @@ def _render_results(result, config_label=""):
                 text=f"<b>{_cumulative:+.2f}u</b>",
                 showarrow=True,
                 arrowhead=2,
-                arrowcolor="rgba(0,240,255,0.5)",
-                font=dict(color="#00f0ff", size=12, family="JetBrains Mono"),
+                arrowcolor="rgba(0,213,89,0.45)",
+                font=dict(color="#00D559", size=12, family="JetBrains Mono"),
                 bgcolor="rgba(7,10,19,0.85)",
-                bordercolor="rgba(0,240,255,0.3)",
+                bordercolor="rgba(0,213,89,0.3)",
                 borderwidth=1,
                 ax=-40,
                 ay=-25,
@@ -1138,7 +1138,7 @@ def _render_results(result, config_label=""):
                     title=dict(text="Units", font=dict(size=11, color="rgba(255,255,255,0.45)")),
                     gridcolor="rgba(255,255,255,0.04)",
                     zeroline=True,
-                    zerolinecolor="rgba(0,240,255,0.15)",
+                    zerolinecolor="rgba(0,213,89,0.13)",
                     zerolinewidth=1.5,
                     tickfont=dict(size=10, color="rgba(255,255,255,0.40)"),
                 ),
@@ -1150,7 +1150,7 @@ def _render_results(result, config_label=""):
                 font=dict(color="rgba(255,255,255,0.65)", size=11),
                 hoverlabel=dict(
                     bgcolor="rgba(7,10,19,0.92)",
-                    bordercolor="rgba(0,240,255,0.30)",
+                    bordercolor="rgba(0,213,89,0.26)",
                     font=dict(color="#e8f0ff", size=12),
                 ),
             )
@@ -1341,7 +1341,7 @@ if not result and not result_b:
         <div class="pg-empty-title">READY TO TEST</div>
         <div class="pg-empty-desc">
             Configure your backtest settings in the sidebar and click
-            <strong style="color:#00f0ff;">▶ Run Backtest</strong> to validate the model
+            <strong style="color:#00D559;">▶ Run Backtest</strong> to validate the model
             against historical data.
         </div>
     </div>

@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/helpers/neural_analysis_helpers.py
 # PURPOSE: Helper functions for the Neural Analysis page.
 #          Extracted from pages/3_⚡_Quantum_Analysis_Matrix.py to reduce page size.
@@ -136,7 +136,7 @@ _STAT_EMOJI = {
 }
 
 
-def render_inline_breakdown_html(result, accent_color="#00f0ff", show_forces=True):
+def render_inline_breakdown_html(result, accent_color="#00D559", show_forces=True):
     """Generate an inline HTML breakdown block for any analysis card.
 
     Returns an HTML string containing:
@@ -252,11 +252,11 @@ def render_inline_breakdown_html(result, accent_color="#00f0ff", show_forces=Tru
             )
             bar_w = min(100, max(0, score_f))
             if bar_w >= 70:
-                bar_c = "#00f0ff"
+                bar_c = "#00D559"
             elif bar_w >= 40:
                 bar_c = "#ff5e00"
             else:
-                bar_c = "#ff4444"
+                bar_c = "#F24336"
             bars.append(
                 f'<div class="nah-bkd-row">'
                 f'<span class="nah-bkd-label">{label}</span>'
@@ -335,9 +335,9 @@ def _build_dfs_metrics_html(result):
         be_prob = t.get("breakeven", 0) * 100
         is_best = (n == best_tier)
         if is_best:
-            bg = "rgba(0,255,157,0.15)"
-            border = "rgba(0,255,157,0.5)"
-            color = "#00ff9d"
+            bg = "rgba(0,213,89,0.15)"
+            border = "rgba(0,213,89,0.5)"
+            color = "#00D559"
         elif beats:
             bg = "rgba(0,198,255,0.08)"
             border = "rgba(0,198,255,0.25)"
@@ -658,7 +658,7 @@ def _render_qds_full_breakdown_html(result):
     """Generate QDS-styled HTML for the full breakdown section.
 
     Uses the same colour palette as the Game Report's QDS dark-card CSS:
-    background #14192b, primary #ff5e00, cyan #00f0ff, text #c0d0e8.
+    background #14192b, primary #ff5e00, cyan #00D559, text #EEF0F6.
     Wrapped in a native <details>/<summary> element so it collapses
     inside the existing dark-card visual context without a plain Streamlit
     expander frame breaking the design.
@@ -690,7 +690,7 @@ def _render_qds_full_breakdown_html(result):
     # ── Forces HTML ──────────────────────────────────────────────
     def _forces_html(forces):
         if not forces:
-            return '<span style="color:#b0bec5;font-size:0.85rem;">None detected</span>'
+            return '<span style="color:#A0AABE;font-size:0.85rem;">None detected</span>'
         parts = []
         for f in (forces or []):
             if not isinstance(f, dict):
@@ -700,12 +700,12 @@ def _render_qds_full_breakdown_html(result):
             desc  = _html.escape(str(f.get("description", "") or ""))
             parts.append(
                 '<div style="margin-bottom:6px;padding:4px 0;">'
-                '<span style="color:#00f0ff;">' + stars + '</span> '
+                '<span style="color:#00D559;">' + stars + '</span> '
                 '<strong style="color:#ff5e00;">' + name + '</strong><br>'
-                '<span style="color:#c0d0e8;font-size:0.8rem;">' + desc + '</span>'
+                '<span style="color:#EEF0F6;font-size:0.8rem;">' + desc + '</span>'
                 '</div>'
             )
-        return "".join(parts) if parts else '<span style="color:#b0bec5;font-size:0.85rem;">None detected</span>'
+        return "".join(parts) if parts else '<span style="color:#A0AABE;font-size:0.85rem;">None detected</span>'
 
     # ── Score-breakdown bars ─────────────────────────────────────
     breakdown_rows = []
@@ -716,19 +716,19 @@ def _render_qds_full_breakdown_html(result):
             )
             bar_w = min(100, max(0, float(score or 0)))
             if bar_w >= 70:
-                bar_c = "#00f0ff"
+                bar_c = "#00D559"
             elif bar_w >= 40:
                 bar_c = "#ff5e00"
             else:
-                bar_c = "#ff4444"
+                bar_c = "#F24336"
             bar_c_fade = bar_c + "88"
             breakdown_rows.append(
                 '<div style="margin-bottom:8px;">'
-                '<div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#c0d0e8;margin-bottom:3px;">'
+                '<div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#EEF0F6;margin-bottom:3px;">'
                 '<span>' + label + '</span>'
                 '<span style="color:#ff5e00;font-weight:600;">' + f"{score:.0f}" + '/100</span>'
                 '</div>'
-                '<div style="height:6px;background:#1a2035;border-radius:3px;">'
+                '<div style="height:6px;background:#161B27;border-radius:3px;">'
                 '<div style="height:6px;width:' + f"{bar_w:.1f}" + '%;background:linear-gradient(90deg,' + bar_c + ',' + bar_c_fade + ');border-radius:3px;"></div>'
                 '</div></div>'
             )
@@ -758,7 +758,7 @@ def _render_qds_full_breakdown_html(result):
                 explain_parts.append(
                     '<div style="margin-bottom:8px;padding:8px;background:rgba(20,25,43,0.5);border-radius:4px;border-left:2px solid #ff5e00;">'
                     '<div style="color:#ff5e00;font-weight:600;font-size:0.8rem;">' + label + '</div>'
-                    '<div style="color:#c0d0e8;font-size:0.85rem;margin-top:4px;">' + _html.escape(str(text)) + '</div>'
+                    '<div style="color:#EEF0F6;font-size:0.85rem;margin-top:4px;">' + _html.escape(str(text)) + '</div>'
                     '</div>'
                 )
     explain_html = "".join(explain_parts)
@@ -768,7 +768,7 @@ def _render_qds_full_breakdown_html(result):
     if should_avoid and avoid_reasons:
         reasons_str = _html.escape(" | ".join(str(r) for r in avoid_reasons))
         avoid_html = (
-            '<div style="margin-bottom:10px;padding:8px 12px;background:rgba(255,68,68,0.1);border-radius:6px;border-left:3px solid #ff4444;color:#ff4444;font-size:0.85rem;">'
+            '<div style="margin-bottom:10px;padding:8px 12px;background:rgba(255,68,68,0.1);border-radius:6px;border-left:3px solid #F24336;color:#F24336;font-size:0.85rem;">'
             '⚠️ <strong>Avoid List:</strong> ' + reasons_str +
             '</div>'
         )
@@ -780,19 +780,19 @@ def _render_qds_full_breakdown_html(result):
         '<table style="width:100%;border-collapse:separate;border-spacing:4px;">'
         '<tr>'
         '<td style="text-align:center;padding:8px;background:rgba(20,25,43,0.7);border-radius:6px;width:25%;">'
-        '<div style="color:#b0bec5;font-size:0.75rem;">10th pct</div>'
+        '<div style="color:#A0AABE;font-size:0.75rem;">10th pct</div>'
         '<div style="color:#ff5e00;font-weight:700;font-size:1rem;">' + f"{p10:.1f}" + '</div>'
         '</td>'
         '<td style="text-align:center;padding:8px;background:rgba(20,25,43,0.7);border-radius:6px;width:25%;">'
-        '<div style="color:#b0bec5;font-size:0.75rem;">Median</div>'
-        '<div style="color:#00f0ff;font-weight:700;font-size:1rem;">' + f"{p50:.1f}" + '</div>'
+        '<div style="color:#A0AABE;font-size:0.75rem;">Median</div>'
+        '<div style="color:#00D559;font-weight:700;font-size:1rem;">' + f"{p50:.1f}" + '</div>'
         '</td>'
         '<td style="text-align:center;padding:8px;background:rgba(20,25,43,0.7);border-radius:6px;width:25%;">'
-        '<div style="color:#b0bec5;font-size:0.75rem;">90th pct</div>'
+        '<div style="color:#A0AABE;font-size:0.75rem;">90th pct</div>'
         '<div style="color:#ff5e00;font-weight:700;font-size:1rem;">' + f"{p90:.1f}" + '</div>'
         '</td>'
         '<td style="text-align:center;padding:8px;background:rgba(20,25,43,0.7);border-radius:6px;width:25%;">'
-        '<div style="color:#b0bec5;font-size:0.75rem;">Std Dev</div>'
+        '<div style="color:#A0AABE;font-size:0.75rem;">Std Dev</div>'
         '<div style="color:#ffffff;font-weight:700;font-size:1rem;">' + f"{std:.1f}" + '</div>'
         '</td>'
         '</tr>'
@@ -804,8 +804,8 @@ def _render_qds_full_breakdown_html(result):
     forces_html = (
         '<table style="width:100%;border-collapse:separate;border-spacing:8px;margin-bottom:15px;">'
         '<tr>'
-        '<td style="padding:12px;background:rgba(0,240,255,0.05);border-radius:6px;border-left:3px solid #00f0ff;vertical-align:top;width:50%;">'
-        '<div style="color:#00f0ff;font-weight:600;font-size:0.85rem;margin-bottom:8px;">🔵 Forces MORE</div>'
+        '<td style="padding:12px;background:rgba(0,213,89,0.05);border-radius:6px;border-left:3px solid #00D559;vertical-align:top;width:50%;">'
+        '<div style="color:#00D559;font-weight:600;font-size:0.85rem;margin-bottom:8px;">🔵 Forces MORE</div>'
         + _forces_html(over_forces) +
         '</td>'
         '<td style="padding:12px;background:rgba(255,94,0,0.05);border-radius:6px;border-left:3px solid #ff5e00;vertical-align:top;width:50%;">'
@@ -828,7 +828,7 @@ def _render_qds_full_breakdown_html(result):
         '&#128202; Full Breakdown &#8212; ' + player + ' ' + stat +
         '</summary>'
         '<div style="padding:14px 15px 16px;background:#0f1424;border:1px solid rgba(255,94,0,0.15);'
-        'border-top:none;border-radius:0 0 6px 6px;color:#c0d0e8;font-size:0.85rem;line-height:1.7;">'
+        'border-top:none;border-radius:0 0 6px 6px;color:#EEF0F6;font-size:0.85rem;line-height:1.7;">'
         + inner_content +
         '</div>'
         '</details>'
@@ -838,7 +838,7 @@ def _render_qds_full_breakdown_html(result):
     return (
         '<!DOCTYPE html><html><head><meta charset="utf-8">'
         '<style>'
-        'body{margin:0;padding:0;background:transparent;font-family:Montserrat,sans-serif;}'
+        'body{margin:0;padding:0;background:transparent;font-family:Inter,sans-serif;}'
         'details summary::-webkit-details-marker{display:none;}'
         '</style></head><body>'
         + body_html +
@@ -994,7 +994,7 @@ def render_recent_form_section(
     total = len(results)
     form_label = form_data.get("form_label", "")
 
-    form_color = "#ff7b2e" if "Hot" in form_label else "#5bc8f5" if "Cold" in form_label else "#8a9bb8"
+    form_color = "#ff7b2e" if "Hot" in form_label else "#5bc8f5" if "Cold" in form_label else "#6B7A9A"
 
     st.markdown(
         f'<div style="color:{form_color};font-weight:700;font-size:0.82rem;margin:8px 0 4px;">'
@@ -1013,7 +1013,7 @@ def render_recent_form_section(
         matchup_str = r.get("matchup", "")
         rows_html.append(
             f'<tr style="background:{"rgba(0,208,132,0.06)" if r["hit"] else "rgba(255,77,77,0.06)"};">'
-            f'<td style="padding:4px 8px;color:#8a9bb8;font-size:0.75rem;">{r.get("date","")}</td>'
+            f'<td style="padding:4px 8px;color:#6B7A9A;font-size:0.75rem;">{r.get("date","")}</td>'
             f'<td style="padding:4px 8px;color:#a0b4c8;font-size:0.75rem;">{matchup_str}</td>'
             f'<td style="padding:4px 8px;color:#e8f4ff;font-weight:600;text-align:center;">{r["value"]}</td>'
             f'<td style="padding:4px 8px;color:{hit_color};font-weight:700;text-align:center;">{hit_text}</td>'
@@ -1148,13 +1148,13 @@ def display_prop_analysis_card_qds(result):
             )
 
         st.markdown(
-            f'<div style="background:rgba(0,240,255,0.05);border:1px solid rgba(0,240,255,0.2);'
+            f'<div style="background:rgba(0,213,89,0.05);border:1px solid rgba(0,213,89,0.2);'
             f'border-radius:6px;padding:6px 12px;margin-bottom:6px;font-size:0.78rem;color:#a0c0d8;">'
-            f'<span style="color:#00f0ff;font-weight:600;">Platform Line:</span> '
+            f'<span style="color:#00D559;font-weight:600;">Platform Line:</span> '
             f'{direction.title()} {line} &nbsp;|&nbsp; '
-            f'<span style="color:#00f0ff;font-weight:600;">Odds:</span> {_odds_str} &nbsp;|&nbsp; '
-            f'<span style="color:#00f0ff;font-weight:600;">Model Proj:</span> {_proj_val:.1f} &nbsp;|&nbsp; '
-            f'<span style="color:#00f0ff;font-weight:600;">Breakeven:</span> {_implied_prob:.1f}% &nbsp;|&nbsp; '
+            f'<span style="color:#00D559;font-weight:600;">Odds:</span> {_odds_str} &nbsp;|&nbsp; '
+            f'<span style="color:#00D559;font-weight:600;">Model Proj:</span> {_proj_val:.1f} &nbsp;|&nbsp; '
+            f'<span style="color:#00D559;font-weight:600;">Breakeven:</span> {_implied_prob:.1f}% &nbsp;|&nbsp; '
             f'<span style="color:#{"4caf50" if _true_edge_pct > 0 else "ff4444"};font-weight:600;">'
             f'True Edge: {_true_edge_pct:+.1f}%</span>'
             + _mt_extra +
@@ -1213,7 +1213,7 @@ def display_prop_analysis_card_qds(result):
         )
     if _season_avg_show > 0:
         _gap = line - _season_avg_show
-        _gap_color = "#ff6b6b" if _gap > 0 else "#69f0ae"
+        _gap_color = "#F24336" if _gap > 0 else "#69f0ae"
         _meta_badges.append(
             f'<span style="background:rgba(255,255,255,0.04);color:{_gap_color};padding:2px 7px;'
             f'border-radius:4px;font-size:0.72rem;border:1px solid rgba(255,255,255,0.08);">'
@@ -1416,7 +1416,7 @@ def display_prop_analysis_card_qds(result):
             _fc1, _fc2 = st.columns(2)
             with _fc1:
                 st.markdown(
-                    f'<div style="color:#00ff9d;font-size:0.8rem;font-weight:700;">⬆️ MORE Forces ({len(_over_forces_list)})</div>',
+                    f'<div style="color:#00D559;font-size:0.8rem;font-weight:700;">⬆️ MORE Forces ({len(_over_forces_list)})</div>',
                     unsafe_allow_html=True,
                 )
                 for _f in _over_forces_list[:5]:
@@ -1424,7 +1424,7 @@ def display_prop_analysis_card_qds(result):
                     st.markdown(f'<div style="color:#a0d0b0;font-size:0.77rem;">• {_html.escape(str(_fname))}</div>', unsafe_allow_html=True)
             with _fc2:
                 st.markdown(
-                    f'<div style="color:#ff6b6b;font-size:0.8rem;font-weight:700;">⬇️ LESS Forces ({len(_under_forces_list)})</div>',
+                    f'<div style="color:#F24336;font-size:0.8rem;font-weight:700;">⬇️ LESS Forces ({len(_under_forces_list)})</div>',
                     unsafe_allow_html=True,
                 )
                 for _f in _under_forces_list[:5]:
@@ -1455,7 +1455,7 @@ def display_prop_analysis_card_qds(result):
         if _avoid_reasons:
             for _ar in _avoid_reasons[:3]:
                 st.markdown(
-                    f'<div style="color:#ff9966;font-size:0.78rem;background:rgba(255,80,0,0.08);'
+                    f'<div style="color:#F9C62B;font-size:0.78rem;background:rgba(255,80,0,0.08);'
                     f'border-radius:4px;padding:4px 8px;margin-top:3px;">⚠️ {_html.escape(str(_ar))}</div>',
                     unsafe_allow_html=True,
                 )

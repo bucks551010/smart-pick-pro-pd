@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/7_🎙️_The_Studio.py
 # PURPOSE: Joseph M. Smith's dedicated interactive page — the
 #          deep-dive destination for game analysis, player
@@ -39,7 +39,7 @@ except ImportError:
     def get_qds_css():
         return ""
     def get_team_colors(_t):
-        return ("#ff5e00", "#1e293b")
+        return ("#F9C62B", "#1e293b")
     def get_bet_card_html(_b, show_live_status=False):
         return ""
     def get_summary_cards_html(*a, **kw):
@@ -185,9 +185,9 @@ except ImportError:
         title = seg_dict.get("title", "")
         body = seg_dict.get("body", "")
         return (
-            f'<div style="border-left:3px solid #ff5e00;padding:10px 14px;'
+            f'<div style="border-left:3px solid #F9C62B;padding:10px 14px;'
             f'margin:8px 0;background:rgba(255,94,0,0.04);border-radius:4px">'
-            f'<div style="color:#ff5e00;font-weight:600;font-size:0.92rem">{title}</div>'
+            f'<div style="color:#F9C62B;font-weight:600;font-size:0.92rem">{title}</div>'
             f'<div style="color:#e2e8f0;font-size:0.88rem;margin-top:4px">{body}</div>'
             f'</div>'
         )
@@ -308,11 +308,11 @@ if "studio_monologue_shown" not in st.session_state:
     st.markdown(
         f'<div style="background:rgba(255,94,0,0.06);border:1px solid rgba(255,94,0,0.2);'
         f'border-radius:12px;padding:16px 20px;margin:0 0 20px 0;position:relative">'
-        f'<div style="color:#ff5e00;font-family:\'Orbitron\',sans-serif;font-size:0.75rem;'
+        f'<div style="color:#F9C62B;font-family:\'Inter\',sans-serif;font-size:0.75rem;'
         f'font-weight:700;letter-spacing:1px;margin-bottom:8px">'
         f'🎙️ JOSEPH\'S MONOLOGUE OF THE NIGHT</div>'
         f'<div style="color:#e2e8f0;font-size:0.92rem;line-height:1.65;'
-        f'font-family:\'Montserrat\',sans-serif;font-style:italic">'
+        f'font-family:\'Inter\',sans-serif;font-style:italic">'
         f'{_html.escape(_monologue)}</div></div>',
         unsafe_allow_html=True,
     )
@@ -471,7 +471,7 @@ if st.session_state["joseph_hot_take_mode"]:
     st.markdown(
         f'<div style="background:rgba(255,68,68,0.08);border:1px solid rgba(255,68,68,0.3);'
         f'border-radius:8px;padding:10px 14px;margin-bottom:12px;'
-        f'color:#ff4444;font-size:0.85rem;font-family:\'Montserrat\',sans-serif;font-weight:600">'
+        f'color:#F24336;font-size:0.85rem;font-family:\'Inter\',sans-serif;font-weight:600">'
         f'{random.choice(_hot_take_lines)}</div>',
         unsafe_allow_html=True,
     )
@@ -500,10 +500,10 @@ _platform_avatar = _avatar_inline(32) if avatar_b64 else _platform_fallback_icon
 st.markdown(
     f'<div style="display:flex;align-items:center;gap:10px;'
     f'margin:8px 0 16px 0;padding:10px 16px;'
-    f'background:rgba(255,94,0,0.06);border-left:3px solid #ff5e00;'
+    f'background:rgba(255,94,0,0.06);border-left:3px solid #F9C62B;'
     f'border-radius:6px">'
     f'{_platform_avatar}'
-    f'<span style="color:#e2e8f0;font-size:0.88rem;font-family:Montserrat,sans-serif">'
+    f'<span style="color:#e2e8f0;font-size:0.88rem;font-family:Inter,sans-serif">'
     f'What betting app are you using tonight?</span></div>',
     unsafe_allow_html=True,
 )
@@ -575,8 +575,8 @@ if mode == "🎤 ASK JOSEPH":
             var btn = document.createElement('button');
             btn.textContent = '🎤 Speak';
             btn.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);'
-                + 'background:#ff5e00;color:#fff;border:none;border-radius:6px;padding:4px 10px;'
-                + 'font-size:0.75rem;cursor:pointer;font-family:Montserrat,sans-serif;z-index:10';
+                + 'background:#F9C62B;color:#fff;border:none;border-radius:6px;padding:4px 10px;'
+                + 'font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;z-index:10';
             btn.onclick = function(e) {
                 e.preventDefault();
                 var rec = new SpeechRecognition();
@@ -670,11 +670,11 @@ if mode == "🏀 GAMES TONIGHT":
             try:
                 h_pri, h_sec = get_team_colors(home)
             except Exception:
-                h_pri, h_sec = "#ff5e00", "#1e293b"
+                h_pri, h_sec = "#F9C62B", "#1e293b"
             try:
                 a_pri, a_sec = get_team_colors(away)
             except Exception:
-                a_pri, a_sec = "#ff5e00", "#1e293b"
+                a_pri, a_sec = "#F9C62B", "#1e293b"
 
             # Render styled game card HTML (Enhancement 4 + 19)
             _time_str = f' • {_html.escape(str(game_time))}' if game_time else ''
@@ -738,7 +738,7 @@ if mode == "🏀 GAMES TONIGHT":
                     st.markdown(
                         '<div style="background:rgba(255,68,68,0.08);'
                         'border:1px solid rgba(255,68,68,0.3);border-radius:8px;'
-                        'padding:8px 14px;margin-bottom:10px;color:#ff4444;'
+                        'padding:8px 14px;margin-bottom:10px;color:#F24336;'
                         'font-size:0.82rem;font-weight:600">'
                         '🔥 HOT TAKE — Joseph is going AGAINST the model on these picks!</div>',
                         unsafe_allow_html=True,
@@ -978,7 +978,7 @@ elif mode == "👤 SCOUT A PLAYER":
                         st.markdown(
                             '<div style="background:rgba(255,68,68,0.08);'
                             'border:1px solid rgba(255,68,68,0.3);border-radius:8px;'
-                            'padding:8px 14px;margin-bottom:10px;color:#ff4444;'
+                            'padding:8px 14px;margin-bottom:10px;color:#F24336;'
                             'font-size:0.82rem;font-weight:600">'
                             '🔥 HOT TAKE — Joseph is going AGAINST the model on this scouting report!</div>',
                             unsafe_allow_html=True,
@@ -1000,8 +1000,8 @@ elif mode == "👤 SCOUT A PLAYER":
                         if archetype:
                             badge_parts.append(
                                 f'<span style="background:rgba(255,94,0,0.15);'
-                                f'color:#ff5e00;padding:4px 12px;border-radius:6px;'
-                                f'font-family:\'Orbitron\',sans-serif;font-size:0.8rem;'
+                                f'color:#F9C62B;padding:4px 12px;border-radius:6px;'
+                                f'font-family:\'Inter\',sans-serif;font-size:0.8rem;'
                                 f'font-weight:600">{_html.escape(str(archetype))}</span>'
                             )
                         if grade:
@@ -1011,7 +1011,7 @@ elif mode == "👤 SCOUT A PLAYER":
                             badge_parts.append(
                                 f'<span style="background:rgba(15,23,42,0.8);'
                                 f'color:{grade_color};padding:4px 14px;'
-                                f'border-radius:6px;font-family:\'Orbitron\',sans-serif;'
+                                f'border-radius:6px;font-family:\'Inter\',sans-serif;'
                                 f'font-size:1rem;font-weight:700;'
                                 f'border:1px solid {grade_color}">'
                                 f'{_html.escape(str(grade))}</span>'
@@ -1255,7 +1255,7 @@ elif mode == "🎰 BUILD MY BETS":
                         st.markdown(
                             '<div style="background:rgba(255,68,68,0.08);'
                             'border:1px solid rgba(255,68,68,0.3);border-radius:8px;'
-                            'padding:8px 14px;margin-bottom:10px;color:#ff4444;'
+                            'padding:8px 14px;margin-bottom:10px;color:#F24336;'
                             'font-size:0.82rem;font-weight:600">'
                             '🔥 HOT TAKE TICKET — All legs are CONTRARIAN picks!</div>',
                             unsafe_allow_html=True,
@@ -1488,8 +1488,8 @@ elif mode == "🎰 BUILD MY BETS":
                             )
                             st.markdown(
                                 f'<div style="margin-top:16px">'
-                                f'<div style="color:#ff5e00;font-size:0.85rem;'
-                                f'font-family:\'Orbitron\',sans-serif;margin-bottom:6px">'
+                                f'<div style="color:#F9C62B;font-size:0.85rem;'
+                                f'font-family:\'Inter\',sans-serif;margin-bottom:6px">'
                                 f'{_html.escape(platform)} Payouts — '
                                 f'{selected_legs}-Leg Entry</div>'
                                 f'<table class="studio-payout-table">'
@@ -1517,7 +1517,7 @@ elif mode == "🎰 BUILD MY BETS":
                         with _comp_cols[_ci]:
                             _tk_name = _tk.get("ticket_name", TICKET_NAMES.get(_legs, "TICKET"))
                             st.markdown(
-                                f'<div style="font-family:\'Orbitron\',sans-serif;'
+                                f'<div style="font-family:\'Inter\',sans-serif;'
                                 f'color:var(--studio-accent);font-size:0.85rem;'
                                 f'font-weight:700;margin-bottom:6px">'
                                 f'🎫 {_html.escape(str(_tk_name))}</div>',
@@ -1652,8 +1652,8 @@ if joseph_results:
 
     if _joseph_bets_tonight:
         st.markdown(
-            f'<div style="color:#8a9bb8;font-size:0.84rem;margin-bottom:10px;">'
-            f'Joseph has <strong style="color:#00f0ff;">{len(_joseph_bets_tonight)}</strong> '
+            f'<div style="color:#6B7A9A;font-size:0.84rem;margin-bottom:10px;">'
+            f'Joseph has <strong style="color:#00D559;">{len(_joseph_bets_tonight)}</strong> '
             f'active bets tonight (LOCK + SMASH + LEAN picks).</div>',
             unsafe_allow_html=True,
         )
@@ -1669,14 +1669,14 @@ if joseph_results:
             _jb_edge = _jb.get("edge", 0)
             _jb_team = _html.escape(str(_jb.get("team", "")))
 
-            _jb_v_clr = "#a855f7" if _jb_verdict == "LOCK" else "#ff4444" if _jb_verdict == "SMASH" else "#00ff9d"
-            _jb_edge_clr = "#00ff9d" if _jb_edge > 0 else "#ff6b6b"
+            _jb_v_clr = "#2D9EFF" if _jb_verdict == "LOCK" else "#F24336" if _jb_verdict == "SMASH" else "#00D559"
+            _jb_edge_clr = "#00D559" if _jb_edge > 0 else "#F24336"
 
             _jbt_rows += (
                 f'<tr>'
                 f'<td><strong>{_jb_name}</strong>'
                 f'<span style="color:#718096;font-size:0.75rem;margin-left:6px">{_jb_team}</span></td>'
-                f'<td style="color:#c0d0e8">{_jb_dir} {_jb_line} {_jb_prop}</td>'
+                f'<td style="color:#EEF0F6">{_jb_dir} {_jb_line} {_jb_prop}</td>'
                 f'<td style="color:{_jb_v_clr};font-weight:700">{_html.escape(str(_jb_emoji))} {_html.escape(_jb_verdict)}</td>'
                 f'<td style="color:{_jb_edge_clr};font-weight:700">{_jb_edge:+.1f}%</td>'
                 f'</tr>'
@@ -1878,10 +1878,10 @@ def _render_track_record_section():
     _pie_svg = (
         f'<svg width="50" height="50" viewBox="0 0 50 50" style="margin:4px auto;display:block">'
         f'<circle cx="25" cy="25" r="20" fill="none" stroke="#1e293b" stroke-width="6"/>'
-        f'<circle cx="25" cy="25" r="20" fill="none" stroke="#a855f7" stroke-width="6" '
+        f'<circle cx="25" cy="25" r="20" fill="none" stroke="#2D9EFF" stroke-width="6" '
         f'stroke-dasharray="{_lock_dash:.1f} {_pie_circ - _lock_dash:.1f}" '
         f'transform="rotate(-90 25 25)"/>'
-        f'<circle cx="25" cy="25" r="20" fill="none" stroke="#ff5e00" stroke-width="6" '
+        f'<circle cx="25" cy="25" r="20" fill="none" stroke="#F9C62B" stroke-width="6" '
         f'stroke-dasharray="{_smash_dash:.1f} {_pie_circ - _smash_dash:.1f}" '
         f'stroke-dashoffset="-{_lock_dash:.1f}" '
         f'transform="rotate(-90 25 25)"/>'
@@ -1905,7 +1905,7 @@ def _render_track_record_section():
         f'<div style="height:4px;width:{_wr_pct:.0f}%;background:var(--studio-green);border-radius:2px"></div></div>'
         f'</div>'
         f'<div class="studio-metric-card">'
-        f'<div class="studio-metric-value" style="color:#a855f7">{lock_pct:.1f}%</div>'
+        f'<div class="studio-metric-value" style="color:#2D9EFF">{lock_pct:.1f}%</div>'
         f'<div class="studio-metric-label">LOCK Accuracy</div></div>'
         f'<div class="studio-metric-card">'
         f'<div class="studio-metric-value">{smash_pct:.1f}%</div>'
@@ -2054,7 +2054,7 @@ if catchphrase_text:
 st.markdown(
     f'<div style="text-align:center;margin:24px 0">'
     f'{_avatar_inline(64)}'
-    f'<div style="color:var(--studio-accent);font-family:\'Orbitron\',sans-serif;'
+    f'<div style="color:var(--studio-accent);font-family:\'Inter\',sans-serif;'
     f'font-size:1rem;margin-top:12px">{signoff}</div>'
     f'<div style="color:var(--studio-muted);font-size:0.8rem;margin-top:4px">'
     f'— Joseph M. Smith, The Studio</div>'

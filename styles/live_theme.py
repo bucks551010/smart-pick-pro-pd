@@ -72,18 +72,19 @@ def get_live_sweat_css() -> str:
 
 /* ── Live Sweat Card ──────────────────────────────────────── */
 .sweat-card {
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
+    background: #161B27;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
     padding: 15px;
     margin-bottom: 14px;
-    transition: box-shadow 0.3s ease;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
     animation: slideUp 0.5s ease-out both;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.35);
 }
 .sweat-card:hover {
-    box-shadow: 0 0 18px rgba(0, 240, 255, 0.15);
+    border-color: rgba(0, 213, 89, 0.22);
+    box-shadow: 0 4px 20px rgba(0, 213, 89, 0.08), 0 6px 24px rgba(0,0,0,0.45);
+    transform: translateY(-2px);
 }
 
 /* ── Staggered card entrance (100ms per card) ────────────── */
@@ -100,17 +101,17 @@ def get_live_sweat_css() -> str:
 
 /* ── Dynamic Card Glow by Pace ───────────────────────────── */
 .sweat-card.glow-green {
-    border: 1px solid rgba(34, 197, 94, 0.5);
-    box-shadow: 0 0 16px rgba(34, 197, 94, 0.3), 0 0 40px rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(0, 213, 89, 0.45);
+    box-shadow: 0 0 16px rgba(0, 213, 89, 0.18), 0 0 36px rgba(0, 213, 89, 0.08);
 }
 .sweat-card.glow-red {
-    border: 1px solid rgba(239, 68, 68, 0.5);
-    box-shadow: 0 0 16px rgba(239, 68, 68, 0.3), 0 0 40px rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(242, 67, 54, 0.50);
+    box-shadow: 0 0 16px rgba(242, 67, 54, 0.22), 0 0 36px rgba(242, 67, 54, 0.10);
     animation: slideUp 0.5s ease-out both, panicPulse 1.5s ease-in-out infinite;
 }
 .sweat-card.glow-gold {
-    border: 1px solid rgba(234, 179, 8, 0.5);
-    box-shadow: 0 0 18px rgba(234, 179, 8, 0.4), 0 0 50px rgba(234, 179, 8, 0.15);
+    border: 1px solid rgba(249, 198, 43, 0.48);
+    box-shadow: 0 0 18px rgba(249, 198, 43, 0.22), 0 0 44px rgba(249, 198, 43, 0.10);
     animation: slideUp 0.5s ease-out both, victoryShimmer 2s ease-in-out infinite;
 }
 @keyframes panicPulse {
@@ -137,12 +138,49 @@ def get_live_sweat_css() -> str:
     position: sticky;
     top: 0;
     z-index: 99;
-    background: rgba(15, 23, 42, 0.95);
+    background: rgba(10, 13, 20, 0.96);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     padding: 8px 0;
     border-bottom: 1px solid rgba(0, 240, 255, 0.1);
     margin-bottom: 12px;
+}
+.sm-metric-row {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.sm-metric-cell {
+    text-align: center;
+    min-width: 80px;
+    padding: 4px 8px;
+}
+.sm-metric-value {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: #f0f4f8;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+.sm-metric-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+@media (max-width: 768px) {
+    .sm-metric-row { gap: 4px; }
+    .sm-metric-cell { min-width: 60px; padding: 2px 4px; }
+    .sm-metric-value { font-size: 1.1rem; }
+    .sm-metric-label { font-size: 0.62rem; }
+}
+@media (max-width: 480px) {
+    .sm-metric-row { justify-content: center; }
+    .sm-metric-cell { min-width: 50px; }
+    .sm-metric-value { font-size: 0.95rem; }
 }
 
 /* ── Live Heartbeat Indicator ────────────────────────────── */
@@ -155,13 +193,13 @@ def get_live_sweat_css() -> str:
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #00ff9d;
+    background: #00D559;
     animation: heartbeat 1s ease-in-out infinite;
     flex-shrink: 0;
 }
 @keyframes heartbeat {
-    0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 6px #00ff9d; }
-    50%      { transform: scale(1.3); opacity: 0.7; box-shadow: 0 0 12px #00ff9d, 0 0 24px rgba(0,255,157,0.3); }
+    0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 6px #00D559; }
+    50%      { transform: scale(1.3); opacity: 0.7; box-shadow: 0 0 12px #00D559, 0 0 24px rgba(0,213,89,0.3); }
 }
 
 /* ── Confetti Animation ──────────────────────────────────── */
@@ -238,10 +276,8 @@ def get_live_sweat_css() -> str:
     text-align: center;
     padding: 16px;
     margin-bottom: 16px;
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #161B27;
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 14px;
 }
 .sweat-score-number {
@@ -306,10 +342,8 @@ def get_live_sweat_css() -> str:
 
 /* ── Parlay Health Card ──────────────────────────────────── */
 .parlay-health-card {
-    background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(0, 240, 255, 0.2);
+    background: #161B27;
+    border: 1px solid rgba(0, 213, 89, 0.18);
     border-radius: 14px;
     padding: 16px;
     margin-bottom: 16px;

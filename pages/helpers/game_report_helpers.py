@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/helpers/game_report_helpers.py
 # PURPOSE: HTML rendering helpers for the Game Report page.
 #          Provides QDS-styled matchup cards, summary dashboards,
@@ -82,12 +82,12 @@ def get_matchup_card_html(
             return ""
         s = _html.escape(str(streak_str))
         if s.startswith("W"):
-            return (f'<span style="color:#00ff9d;font-size:0.68rem;font-weight:600;">'
+            return (f'<span style="color:#00D559;font-size:0.68rem;font-weight:600;">'
                     f'🔥 {s}</span>')
         if s.startswith("L"):
-            return (f'<span style="color:#ff6b6b;font-size:0.68rem;font-weight:600;">'
+            return (f'<span style="color:#F24336;font-size:0.68rem;font-weight:600;">'
                     f'❄️ {s}</span>')
-        return f'<span style="color:#8a9bb8;font-size:0.68rem;">{s}</span>'
+        return f'<span style="color:#6B7A9A;font-size:0.68rem;">{s}</span>'
 
     def _seed_badge(seed_str):
         """Return a small seed/rank badge or empty string."""
@@ -101,10 +101,10 @@ def get_matchup_card_html(
     if n_props:
         props_badge = (
             f'<div style="display:flex;gap:10px;justify-content:center;margin-top:8px;">'
-            f'<span style="background:rgba(0,255,213,0.10);color:#00ffd5;padding:3px 10px;'
+            f'<span style="background:rgba(0,213,89,0.10);color:#00D559;padding:3px 10px;'
             f'border-radius:12px;font-size:0.72rem;font-weight:600;">'
             f'{n_props} props</span>'
-            f'<span style="background:rgba(255,204,0,0.12);color:#ffcc00;padding:3px 10px;'
+            f'<span style="background:rgba(255,204,0,0.12);color:#F9C62B;padding:3px 10px;'
             f'border-radius:12px;font-size:0.72rem;font-weight:600;">'
             f'{n_high_conf} high-conf</span>'
             f'</div>'
@@ -112,7 +112,7 @@ def get_matchup_card_html(
     else:
         props_badge = (
             f'<div style="text-align:center;margin-top:6px;font-size:0.72rem;'
-            f'color:#8a9bb8;">No props analyzed yet</div>'
+            f'color:#6B7A9A;">No props analyzed yet</div>'
         )
 
     # Game time badge (centered above the matchup)
@@ -120,15 +120,15 @@ def get_matchup_card_html(
     if game_time:
         time_html = (
             f'<div style="text-align:center;margin-bottom:8px;">'
-            f'<span style="background:rgba(0,240,255,0.08);color:#8a9bb8;'
+            f'<span style="background:rgba(0,213,89,0.08);color:#6B7A9A;'
             f'padding:2px 10px;border-radius:10px;font-size:0.70rem;'
             f'font-weight:600;letter-spacing:0.5px;">'
             f'🕐 {_html.escape(str(game_time))}</span></div>'
         )
 
     return (
-        f'<div style="background:linear-gradient(135deg,rgba(0,255,213,0.04) 0%,rgba(0,180,255,0.04) 100%);'
-        f'border:1px solid rgba(0,255,213,0.12);border-radius:12px;padding:12px 14px;'
+        f'<div style="background:linear-gradient(135deg,rgba(0,213,89,0.04) 0%,rgba(0,180,255,0.04) 100%);'
+        f'border:1px solid rgba(0,213,89,0.12);border-radius:12px;padding:12px 14px;'
         f'margin-bottom:6px;">'
         + time_html
         + f'<div style="display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;">'
@@ -137,25 +137,25 @@ def get_matchup_card_html(
         f'<img src="{away_logo}" onerror="this.src=\'{NBA_LOGO_FALLBACK}\'" '
         f'style="width:44px;height:44px;object-fit:contain;'
         f'filter:drop-shadow(0 0 6px rgba(0,180,255,0.4));" alt="{safe_away}">'
-        f'<div style="font-family:\'Orbitron\',sans-serif;font-weight:700;font-size:0.95rem;'
+        f'<div style="font-family:\'Inter\',sans-serif;font-weight:700;font-size:0.95rem;'
         f'color:{away_color};">{safe_away}</div>'
-        + (f'<div style="font-size:0.72rem;color:#8a9bb8;">{safe_away_rec}</div>' if safe_away_rec else "")
+        + (f'<div style="font-size:0.72rem;color:#6B7A9A;">{safe_away_rec}</div>' if safe_away_rec else "")
         + f'<div style="display:flex;gap:6px;align-items:center;">'
         + _seed_badge(away_seed)
         + _streak_badge(away_streak)
         + f'</div>'
         + f'</div>'
         # @ divider
-        f'<div style="font-family:\'Orbitron\',sans-serif;font-size:0.85rem;color:#8a9bb8;'
+        f'<div style="font-family:\'Inter\',sans-serif;font-size:0.85rem;color:#6B7A9A;'
         f'padding:4px 12px;background:rgba(0,180,255,0.08);border-radius:20px;">@</div>'
         # Home team
         f'<div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:70px;">'
         f'<img src="{home_logo}" onerror="this.src=\'{NBA_LOGO_FALLBACK}\'" '
         f'style="width:44px;height:44px;object-fit:contain;'
         f'filter:drop-shadow(0 0 6px rgba(0,180,255,0.4));" alt="{safe_home}">'
-        f'<div style="font-family:\'Orbitron\',sans-serif;font-weight:700;font-size:0.95rem;'
+        f'<div style="font-family:\'Inter\',sans-serif;font-weight:700;font-size:0.95rem;'
         f'color:{home_color};">{safe_home}</div>'
-        + (f'<div style="font-size:0.72rem;color:#8a9bb8;">{safe_home_rec}</div>' if safe_home_rec else "")
+        + (f'<div style="font-size:0.72rem;color:#6B7A9A;">{safe_home_rec}</div>' if safe_home_rec else "")
         + f'<div style="display:flex;gap:6px;align-items:center;">'
         + _seed_badge(home_seed)
         + _streak_badge(home_streak)
@@ -225,8 +225,8 @@ def get_h2h_bars_html(away_abbrev: str, home_abbrev: str, stats: list) -> str:
         a_pct = round(max(0, min(100, (a_val - lo) / rng * 100)))
         h_pct = round(max(0, min(100, (h_val - lo) / rng * 100)))
         a_better = (a_val < h_val) if flip else (a_val > h_val)
-        a_bar_color = "#00ff9d" if a_better else "#8b949e"
-        h_bar_color = "#00ff9d" if not a_better else "#8b949e"
+        a_bar_color = "#00D559" if a_better else "#8b949e"
+        h_bar_color = "#00D559" if not a_better else "#8b949e"
 
         rows_html += (
             f'<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">'
@@ -235,15 +235,15 @@ def get_h2h_bars_html(away_abbrev: str, home_abbrev: str, stats: list) -> str:
             f'font-weight:600;">{a_val:.1f}</div>'
             # Bars
             f'<div style="flex:1;display:flex;align-items:center;gap:3px;">'
-            f'<div style="flex:1;height:10px;background:#1a2035;border-radius:3px;'
+            f'<div style="flex:1;height:10px;background:#161B27;border-radius:3px;'
             f'position:relative;overflow:hidden;">'
             f'<div style="position:absolute;right:0;width:{a_pct}%;height:10px;'
             f'background:{a_bar_color};border-radius:3px;'
             f'transition:width 1.5s cubic-bezier(0.4,0,0.2,1);"></div>'
             f'</div>'
             f'<div style="width:44px;text-align:center;font-size:0.65rem;font-weight:700;'
-            f'color:#c0d0e8;font-family:\'Orbitron\',sans-serif;">{_html.escape(label)}</div>'
-            f'<div style="flex:1;height:10px;background:#1a2035;border-radius:3px;'
+            f'color:#EEF0F6;font-family:\'Inter\',sans-serif;">{_html.escape(label)}</div>'
+            f'<div style="flex:1;height:10px;background:#161B27;border-radius:3px;'
             f'overflow:hidden;">'
             f'<div style="width:{h_pct}%;height:10px;background:{h_bar_color};border-radius:3px;'
             f'transition:width 1.5s cubic-bezier(0.4,0,0.2,1);"></div>'
@@ -257,8 +257,8 @@ def get_h2h_bars_html(away_abbrev: str, home_abbrev: str, stats: list) -> str:
 
     return (
         f'<div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:12px 14px;'
-        f'margin-top:8px;border:1px solid rgba(0,255,213,0.08);">'
-        f'<div style="font-family:\'Orbitron\',sans-serif;font-size:0.72rem;color:#8a9bb8;'
+        f'margin-top:8px;border:1px solid rgba(0,213,89,0.08);">'
+        f'<div style="font-family:\'Inter\',sans-serif;font-size:0.72rem;color:#6B7A9A;'
         f'font-weight:600;margin-bottom:12px;letter-spacing:1px;text-align:center;">'
         f'⚡ HEAD-TO-HEAD — DEAN OLIVER FOUR FACTORS</div>'
         f'<div style="display:flex;justify-content:space-between;margin-bottom:10px;'
@@ -303,51 +303,54 @@ def get_parlay_card_html(combo_type: str, picks: list, safe_avg: str, strategy: 
 
     # Determine card accent color by combo type
     if "Power" in combo_type:
-        accent = "#ff5e00"
+        accent = "#00D959"
         icon = "⚡"
     elif "Triple" in combo_type:
-        accent = "#ffcc00"
+        accent = "#50a874"
         icon = "🎯"
     else:
-        accent = "#00ffd5"
+        accent = "#90d0a8"
         icon = "🚀"
 
     picks_html = ""
     for i, pick in enumerate(picks):
         safe_pick = _html.escape(str(pick))
         picks_html += (
-            f'<div style="display:flex;align-items:center;gap:8px;padding:5px 0;'
-            f'border-bottom:1px solid rgba(255,255,255,0.04);">'
-            f'<span style="color:{accent};font-size:0.78rem;font-weight:700;">'
+            f'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;'
+            f'border-bottom:1px solid rgba(0,217,89,0.06);">'
+            f'<span style="color:{accent};font-size:0.75rem;font-weight:700;'
+            f'font-family:JetBrains Mono,monospace;">'
             f'Leg {i + 1}</span>'
-            f'<span style="color:#c0d0e8;font-size:0.84rem;">{safe_pick}</span>'
+            f'<span style="color:#e8f5ec;font-size:0.84rem;font-family:Inter,sans-serif;">{safe_pick}</span>'
             f'</div>'
         )
 
     return (
-        f'<div style="background:rgba(20,25,43,0.85);border-radius:10px;padding:14px 16px;'
+        f'<div style="background:rgba(4,8,6,0.88);border-radius:12px;padding:14px 18px;'
         f'margin-bottom:10px;'
-        f'border:1px solid rgba(255,255,255,0.06);border-left:3px solid {accent};'
+        f'border:1px solid rgba(0,217,89,0.12);border-left:3px solid {accent};'
         f'transition:transform 0.2s ease,box-shadow 0.2s ease;"'
         f' onmouseenter="this.style.transform=\'translateY(-2px)\';'
-        f'this.style.boxShadow=\'0 4px 16px rgba(0,0,0,0.3)\'"'
+        f'this.style.boxShadow=\'0 8px 30px rgba(0,0,0,0.4)\'"'
         f' onmouseleave="this.style.transform=\'translateY(0)\';'
         f'this.style.boxShadow=\'none\'">'
         f'<div style="display:flex;justify-content:space-between;align-items:center;'
         f'margin-bottom:8px;">'
         f'<div style="display:flex;align-items:center;gap:6px;">'
         f'<span style="font-size:1rem;">{icon}</span>'
-        f'<span style="color:{accent};font-weight:700;font-family:\'Orbitron\',sans-serif;'
-        f'font-size:0.82rem;">{safe_combo}</span>'
+        f'<span style="color:{accent};font-weight:700;font-family:Bebas Neue,Inter,sans-serif;'
+        f'font-size:0.9rem;letter-spacing:1px;">{safe_combo}</span>'
         f'</div>'
         f'<div style="display:flex;align-items:center;gap:8px;">'
-        f'<span style="background:rgba(0,255,213,0.10);color:#00ffd5;padding:2px 8px;'
-        f'border-radius:4px;font-size:0.72rem;font-weight:600;">'
+        f'<span style="background:rgba(0,217,89,0.1);color:#00D959;padding:3px 10px;'
+        f'border-radius:6px;font-size:0.72rem;font-weight:700;'
+        f'font-family:JetBrains Mono,monospace;">'
         f'SAFE {safe_avg_s}/100</span>'
         f'</div>'
         f'</div>'
         f'{picks_html}'
-        f'<div style="font-size:0.72rem;color:#8a9bb8;margin-top:6px;font-style:italic;">'
+        f'<div style="font-size:0.72rem;color:rgba(144,208,168,0.5);margin-top:6px;'
+        f'font-family:JetBrains Mono,monospace;">'
         f'{safe_strat}</div>'
         f'</div>'
     )
@@ -395,11 +398,11 @@ def get_builder_prop_card_html(
     # Tier determination
     if confidence >= 85:
         tier_label = "QUANTUM PICK"
-        tier_color = "#00ffd5"
+        tier_color = "#00D559"
         tier_icon = "💎"
     elif confidence >= 70:
         tier_label = "STRONG PICK"
-        tier_color = "#ffcc00"
+        tier_color = "#F9C62B"
         tier_icon = "🔒"
     elif confidence >= 55:
         tier_label = "SAFE PICK"
@@ -407,7 +410,7 @@ def get_builder_prop_card_html(
         tier_icon = "✓"
     else:
         tier_label = "PICK"
-        tier_color = "#a0b4d0"
+        tier_color = "#A0AABE"
         tier_icon = "⭐"
 
     # Direction colors
@@ -416,7 +419,7 @@ def get_builder_prop_card_html(
         dir_bg = "rgba(105,240,174,0.12)"
         dir_icon = "📈"
     else:
-        dir_color = "#ff6b6b"
+        dir_color = "#F24336"
         dir_bg = "rgba(255,107,107,0.12)"
         dir_icon = "📉"
 
@@ -450,7 +453,7 @@ def get_builder_prop_card_html(
         f'<span style="background:{dir_bg};color:{dir_color};padding:2px 8px;'
         f'border-radius:4px;font-size:0.72rem;font-weight:700;'
         f'border:1px solid {dir_color}40;">{dir_icon} {safe_dir}</span>'
-        f'<span class="qds-na-badge" style="background:{tier_color};color:#0a101f;">'
+        f'<span class="qds-na-badge" style="background:{tier_color};color:#0D0F14;">'
         f'{tier_icon} {tier_label}</span>'
         f'</div>'
         # Player row
@@ -507,7 +510,7 @@ def get_narrative_card_html(
     return (
         f'<div style="background:rgba(20,26,45,0.90);border-radius:12px;padding:18px 16px;'
         f'border-left:4px solid {home_color};border-right:4px solid {away_color};'
-        f'border-top:1px solid rgba(0,255,213,0.10);border-bottom:1px solid rgba(0,255,213,0.10);'
+        f'border-top:1px solid rgba(0,213,89,0.10);border-bottom:1px solid rgba(0,213,89,0.10);'
         f'position:relative;overflow:hidden;">'
         # Watermark logos
         f'<img src="{away_logo}" onerror="this.style.display=\'none\'" '
@@ -521,7 +524,7 @@ def get_narrative_card_html(
         f'margin-bottom:14px;">'
         f'<img src="{away_logo}" onerror="this.src=\'{NBA_LOGO_FALLBACK}\'" '
         f'style="width:28px;height:28px;object-fit:contain;" alt="{safe_away}">'
-        f'<span style="font-family:\'Orbitron\',sans-serif;font-size:0.85rem;color:#8a9bb8;">@</span>'
+        f'<span style="font-family:\'Inter\',sans-serif;font-size:0.85rem;color:#6B7A9A;">@</span>'
         f'<img src="{home_logo}" onerror="this.src=\'{NBA_LOGO_FALLBACK}\'" '
         f'style="width:28px;height:28px;object-fit:contain;" alt="{safe_home}">'
         f'</div>'
@@ -535,7 +538,7 @@ def get_narrative_card_html(
 # ============================================================
 
 _TIER_STYLES = {
-    "platinum": ("#00f0ff", "rgba(0,240,255,0.12)", "rgba(0,240,255,0.30)"),
+    "platinum": ("#00D559", "rgba(0,213,89,0.12)", "rgba(0,213,89,0.30)"),
     "gold":     ("#ffb347", "rgba(255,179,71,0.12)", "rgba(255,179,71,0.30)"),
     "silver":   ("#94A3B8", "rgba(148,163,184,0.10)", "rgba(148,163,184,0.20)"),
 }
@@ -568,17 +571,17 @@ def get_picks_summary_chips_html(rows: list) -> str:
             f'{t_name.upper()} {ct}</span>'
         )
 
-    safe_color = "#69f0ae" if avg_safe >= 70 else "#ffb347" if avg_safe >= 55 else "#ff6b6b"
+    safe_color = "#69f0ae" if avg_safe >= 70 else "#ffb347" if avg_safe >= 55 else "#F24336"
 
     return (
         f'<div class="grt-summary-bar">'
-        f'<span class="grt-chip" style="background:rgba(0,240,255,0.08);color:#00f0ff;'
-        f'border:1px solid rgba(0,240,255,0.25);">📋 {total} PICKS</span>'
+        f'<span class="grt-chip" style="background:rgba(0,213,89,0.08);color:#00D559;'
+        f'border:1px solid rgba(0,213,89,0.25);">📋 {total} PICKS</span>'
         f'<span class="grt-chip" style="background:rgba(105,240,174,0.08);color:{safe_color};'
         f'border:1px solid {safe_color}30;">⚡ AVG SAFE {avg_safe:.1f}</span>'
         f'<span class="grt-chip" style="background:rgba(105,240,174,0.08);color:#69f0ae;'
         f'border:1px solid rgba(105,240,174,0.25);">📈 {over_ct} OVER</span>'
-        f'<span class="grt-chip" style="background:rgba(255,107,107,0.08);color:#ff6b6b;'
+        f'<span class="grt-chip" style="background:rgba(255,107,107,0.08);color:#F24336;'
         f'border:1px solid rgba(255,107,107,0.25);">📉 {under_ct} UNDER</span>'
         f'{tier_chips}'
         f'</div>'
@@ -641,18 +644,18 @@ def get_picks_table_html(rows: list) -> str:
         gap = proj - line
         if direction == "UNDER":
             gap = line - proj
-        gap_color = "#69f0ae" if gap > 0 else "#ff6b6b" if gap < 0 else "#8a9bb8"
+        gap_color = "#69f0ae" if gap > 0 else "#F24336" if gap < 0 else "#6B7A9A"
 
         # SAFE score bar + number
         safe_pct = min(safe, 100)
         if safe >= 75:
-            safe_color = "#00f0ff"
+            safe_color = "#00D559"
         elif safe >= 65:
             safe_color = "#69f0ae"
         elif safe >= 55:
             safe_color = "#ffb347"
         else:
-            safe_color = "#ff6b6b"
+            safe_color = "#F24336"
         safe_html = (
             f'<div class="grt-safe-wrap">'
             f'<span class="grt-safe-num" style="color:{safe_color};">{safe:.1f}</span>'
@@ -667,10 +670,10 @@ def get_picks_table_html(rows: list) -> str:
             edge_color = "#69f0ae"
             edge_prefix = "+"
         elif edge < 0:
-            edge_color = "#ff6b6b"
+            edge_color = "#F24336"
             edge_prefix = ""
         else:
-            edge_color = "#8a9bb8"
+            edge_color = "#6B7A9A"
             edge_prefix = ""
         edge_html = (
             f'<span style="color:{edge_color};font-weight:600;">'

@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/10_🗺️_Correlation_Matrix.py
 # PURPOSE: Visualize pairwise Pearson correlations between
 #          players' Quantum Matrix simulation arrays.  Renders an
@@ -215,21 +215,21 @@ if _off_diag:
     st.markdown(
         '<div class="corr-stats-bar">'
         # Mean
-        '<div class="corr-stat-card" style="border:1px solid rgba(0,240,255,0.15);">'
+        '<div class="corr-stat-card" style="border:1px solid rgba(0,213,89,0.13);">'
         '<div class="corr-stat-label">Mean r</div>'
-        f'<div class="corr-stat-value" style="color:#00f0ff;">{_mean_r:+.3f}</div></div>'
+        f'<div class="corr-stat-value" style="color:#00D559;">{_mean_r:+.3f}</div></div>'
         # Max
-        '<div class="corr-stat-card" style="border:1px solid rgba(0,255,157,0.18);">'
+        '<div class="corr-stat-card" style="border:1px solid rgba(0,213,89,0.18);">'
         '<div class="corr-stat-label">Max r</div>'
-        f'<div class="corr-stat-value" style="color:#00ff9d;">{_max_r_val:+.3f}</div></div>'
+        f'<div class="corr-stat-value" style="color:#00D559;">{_max_r_val:+.3f}</div></div>'
         # Min
         '<div class="corr-stat-card" style="border:1px solid rgba(255,94,0,0.18);">'
         '<div class="corr-stat-label">Min r</div>'
-        f'<div class="corr-stat-value" style="color:#ff5e00;">{_min_r_val:+.3f}</div></div>'
+        f'<div class="corr-stat-value" style="color:#F9C62B;">{_min_r_val:+.3f}</div></div>'
         # Pairs
         '<div class="corr-stat-card" style="border:1px solid rgba(148,163,184,0.12);">'
         '<div class="corr-stat-label">Pairs</div>'
-        f'<div class="corr-stat-value" style="color:#c0d0e8;">{_num_pairs}</div></div>'
+        f'<div class="corr-stat-value" style="color:#EEF0F6;">{_num_pairs}</div></div>'
         '</div>',
         unsafe_allow_html=True,
     )
@@ -277,7 +277,7 @@ try:
             [0.25, "#991b1b"],   # medium red   (r = -0.5)
             [0.5,  "#1e293b"],   # dark slate   (r =  0.0)
             [0.75, "#059669"],   # emerald      (r = +0.5)
-            [1.0,  "#00ff9d"],   # neon green   (r = +1.0)
+            [1.0,  "#00D559"],   # neon green   (r = +1.0)
         ],
         zmin=-1.0,
         zmax=1.0,
@@ -349,11 +349,11 @@ for i in range(n):
 
 if _max_r > 0.3:
     st.markdown(
-        f'<div class="corr-insight" style="border:1px solid rgba(0,255,157,0.25);">'
-        f'<span class="corr-insight-title" style="color:#00ff9d;">🔗 Positive Correlation Detected</span><br>'
+        f'<div class="corr-insight" style="border:1px solid rgba(0,213,89,0.25);">'
+        f'<span class="corr-insight-title" style="color:#00D559;">🔗 Positive Correlation Detected</span><br>'
         f'<span class="corr-insight-body">'
         f'<b>{_html.escape(_max_pair[0])}</b> and <b>{_html.escape(_max_pair[1])}</b> '
-        f'show <span style="color:#00ff9d;font-family:\'JetBrains Mono\',monospace;font-variant-numeric:tabular-nums;">'
+        f'show <span style="color:#00D559;font-family:\'JetBrains Mono\',monospace;font-variant-numeric:tabular-nums;">'
         f'r = {_max_r:+.2f}</span>.  Their simulation distributions move together — '
         f'combining them in a parlay amplifies variance.  Consider diversifying across games.</span></div>',
         unsafe_allow_html=True,
@@ -362,10 +362,10 @@ if _max_r > 0.3:
 if _min_r < -0.15:
     st.markdown(
         f'<div class="corr-insight" style="border:1px solid rgba(255,94,0,0.25);">'
-        f'<span class="corr-insight-title" style="color:#ff5e00;">🔀 Negative Correlation Detected</span><br>'
+        f'<span class="corr-insight-title" style="color:#F9C62B;">🔀 Negative Correlation Detected</span><br>'
         f'<span class="corr-insight-body">'
         f'<b>{_html.escape(_min_pair[0])}</b> and <b>{_html.escape(_min_pair[1])}</b> '
-        f'show <span style="color:#ff5e00;font-family:\'JetBrains Mono\',monospace;font-variant-numeric:tabular-nums;">'
+        f'show <span style="color:#F9C62B;font-family:\'JetBrains Mono\',monospace;font-variant-numeric:tabular-nums;">'
         f'r = {_min_r:+.2f}</span>.  These props tend to diverge — one going over '
         f'implies the other is more likely to go under.  Useful for hedging.</span></div>',
         unsafe_allow_html=True,
@@ -418,7 +418,7 @@ _corr_joint = adjust_parlay_probability(_parlay_probs, corr_matrix)
 
 _parlay_delta = _corr_joint - _naive_joint
 _parlay_pct_change = ((_parlay_delta / _naive_joint) * 100) if _naive_joint > 0 else 0.0
-_delta_color = "#00ff9d" if _parlay_delta >= 0 else "#ff5e00"
+_delta_color = "#00D559" if _parlay_delta >= 0 else "#F9C62B"
 
 _pc1, _pc2, _pc3 = st.columns(3)
 with _pc1:
@@ -427,18 +427,18 @@ with _pc1:
         'border-radius:8px;padding:12px 16px;text-align:center;">'
         '<div style="color:#64748b;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">'
         'Independent Joint Prob</div>'
-        f'<div style="color:#c0d0e8;font-size:1.3rem;font-weight:800;'
+        f'<div style="color:#EEF0F6;font-size:1.3rem;font-weight:800;'
         f"font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;"
         f'">{_naive_joint * 100:.2f}%</div></div>',
         unsafe_allow_html=True,
     )
 with _pc2:
     st.markdown(
-        '<div style="background:linear-gradient(135deg,#070A13,#0F172A);border:1px solid rgba(0,240,255,0.20);'
+        '<div style="background:linear-gradient(135deg,#070A13,#0F172A);border:1px solid rgba(0,213,89,0.18);'
         'border-radius:8px;padding:12px 16px;text-align:center;">'
         '<div style="color:#64748b;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">'
         'Correlation-Adjusted Prob</div>'
-        f'<div style="color:#00f0ff;font-size:1.3rem;font-weight:800;'
+        f'<div style="color:#00D559;font-size:1.3rem;font-weight:800;'
         f"font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;"
         f'">{_corr_joint * 100:.2f}%</div></div>',
         unsafe_allow_html=True,
@@ -521,7 +521,7 @@ with _kc2:
         unsafe_allow_html=True,
     )
 with _kc3:
-    _disc_color = "#00ff9d" if _kelly_discount >= 0.9 else ("#ffcc00" if _kelly_discount >= 0.7 else "#ff5e00")
+    _disc_color = "#00D559" if _kelly_discount >= 0.9 else ("#F9C62B" if _kelly_discount >= 0.7 else "#F9C62B")
     st.markdown(
         f'<div style="background:linear-gradient(135deg,#070A13,#0F172A);'
         f'border:1px solid {_disc_color}33;'

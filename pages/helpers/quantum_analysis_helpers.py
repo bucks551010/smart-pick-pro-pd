@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/helpers/quantum_analysis_helpers.py
 # PURPOSE: Helper functions for the Quantum Analysis Matrix page.
 #          Extracted from pages/3_⚡_Quantum_Analysis_Matrix.py to
@@ -43,18 +43,18 @@ JOSEPH_DESK_SIZE_CSS = """<style>
 }
 </style>"""
 
-IMPACT_COLORS = {"high": "#ff4444", "medium": "#ffd700", "low": "#8b949e"}
+IMPACT_COLORS = {"high": "#F24336", "medium": "#ffd700", "low": "#8b949e"}
 
 CATEGORY_EMOJI = {
     "injury": "🏥", "trade": "🔄", "performance": "📈",
     "suspension": "🚫", "contract": "💰", "roster": "📋",
 }
 
-SIGNAL_COLORS = {"sharp_buy": "#00ff9d", "sharp_fade": "#ff6b6b", "neutral": "#8b949e"}
+SIGNAL_COLORS = {"sharp_buy": "#00D559", "sharp_fade": "#F24336", "neutral": "#8b949e"}
 
 # Shared positive/negative accent colors used for edge and direction styling
-_POSITIVE_COLOR = "#00ff9d"
-_NEGATIVE_COLOR = "#ff6b6b"
+_POSITIVE_COLOR = "#00D559"
+_NEGATIVE_COLOR = "#F24336"
 
 SIGNAL_LABELS = {
     "sharp_buy": "🟢 SHARP BUY",
@@ -78,7 +78,7 @@ PARLAY_LABELS = {
 def render_dfs_flex_edge_html(beats_be_count: int, total_dfs: int,
                               avg_dfs_edge: float) -> str:
     """Return the DFS FLEX EDGE inline card HTML."""
-    edge_c = "#00ff9d" if avg_dfs_edge > 0 else "#ff5e00"
+    edge_c = "#00D559" if avg_dfs_edge > 0 else "#ff5e00"
     return (
         f'<div class="qam-dfs-edge">'
         f'<span class="qam-dfs-edge-label">📈 DFS FLEX EDGE</span>'
@@ -456,14 +456,10 @@ def _edge_gauge_svg(edge_pct: float, display: str) -> str:
 
 
 def render_quantum_edge_gap_card_html(result: dict, rank: int = 0) -> str:
-    """Return HTML for a single Quantum Edge Gap pick card.
+    """Return HTML for a single PP-style Quantum Edge Gap prop card.
 
-    Parameters
-    ----------
-    result:
-        A single prop analysis result dict from the engine.
-    rank:
-        1-based position of this pick in the edge gap list (0 = no rank shown).
+    Each card is a 175px ``<details>`` element that expands to 310px
+    on click, matching the PrizePicks card layout with horizontal scroll.
     """
     player_name = _html.escape(str(result.get("player_name", "Unknown")))
     stat_type = _html.escape(str(result.get("stat_type", "")))
@@ -472,6 +468,7 @@ def render_quantum_edge_gap_card_html(result: dict, rank: int = 0) -> str:
     )
     platform = _html.escape(str(result.get("platform", "")))
     tier = _html.escape(str(result.get("tier", "Bronze")))
+    tier_lower = tier.lower()
 
     # Prop line
     prop_line = result.get("prop_line", result.get("line", 0))
@@ -480,7 +477,7 @@ def render_quantum_edge_gap_card_html(result: dict, rank: int = 0) -> str:
         line_display = f"{line_val:g}"
     except (ValueError, TypeError):
         line_val = 0
-        line_display = "—"
+        line_display = "\u2014"
 
     # Confidence
     confidence = result.get("confidence_score", 0)
@@ -497,23 +494,24 @@ def render_quantum_edge_gap_card_html(result: dict, rank: int = 0) -> str:
         edge_display = f"{edge_val:+.1f}%"
     except (ValueError, TypeError):
         edge_val = 0
-        edge_display = "—"
+        edge_display = "\u2014"
 
     # Direction
     direction = str(result.get("direction", "")).upper()
     dir_label = "OVER" if direction == "OVER" else "UNDER"
-    dir_css = "qeg-dir-over" if direction == "OVER" else "qeg-dir-under"
-    card_dir_css = "qeg-card-over" if direction == "OVER" else "qeg-card-under"
-    dir_arrow = "▲" if direction == "OVER" else "▼"
+    dir_css = "qeg-prop-over" if direction == "OVER" else "qeg-prop-under"
+    dir_arrow = "\u25b2" if direction == "OVER" else "\u25bc"
 
-    # Probability — direction-aware so we show the relevant side
+    # Probability — direction-aware
     prob_over = result.get("probability_over", 0)
     try:
         _prob_raw = float(prob_over)
     except (ValueError, TypeError):
         _prob_raw = 0.5
     _prob_dir = _prob_raw if direction == "OVER" else (1.0 - _prob_raw)
-    prob_pct = f"{_prob_dir * 100:.1f}%"
+    prob_pct = f"{_prob_dir * 100:.0f}%"
+    over_pct_raw = max(0, min(100, _prob_raw * 100))
+    under_pct_raw = 100 - over_pct_raw
 
     # Projection
     projection = result.get("adjusted_projection", 0)
@@ -521,27 +519,20 @@ def render_quantum_edge_gap_card_html(result: dict, rank: int = 0) -> str:
         proj_val = float(projection)
         proj_display = f"{proj_val:.1f}"
     except (ValueError, TypeError):
-        proj_val = 0
-        proj_display = "—"
+        proj_display = "\u2014"
 
     # Percentiles
-    p10 = result.get("percentile_10", 0)
-    p50 = result.get("percentile_50", 0)
-    p90 = result.get("percentile_90", 0)
-    try:
-        p10_d = f"{float(p10):.1f}"
-    except (ValueError, TypeError):
-        p10_d = "—"
-    try:
-        p50_d = f"{float(p50):.1f}"
-    except (ValueError, TypeError):
-        p50_d = "—"
-    try:
-        p90_d = f"{float(p90):.1f}"
-    except (ValueError, TypeError):
-        p90_d = "—"
+    def _safe_fmt(val):
+        try:
+            return f"{float(val):.1f}"
+        except (ValueError, TypeError):
+            return "\u2014"
 
-    # Season average for this stat type (for comparison)
+    p10_d = _safe_fmt(result.get("percentile_10", 0))
+    p50_d = _safe_fmt(result.get("percentile_50", 0))
+    p90_d = _safe_fmt(result.get("percentile_90", 0))
+
+    # Season average
     stat_key_lower = stat_type.lower().replace(" ", "_")
     season_avg_key = _STAT_AVG_KEYS.get(stat_key_lower, "")
     season_avg = result.get(season_avg_key, 0) if season_avg_key else 0
@@ -558,93 +549,160 @@ def render_quantum_edge_gap_card_html(result: dict, rank: int = 0) -> str:
         if player_id
         else ""
     )
-    headshot_html = (
-        f'<img class="qeg-headshot" src="{_html.escape(headshot_url)}" '
-        f'alt="{player_name}" loading="lazy">'
-        if headshot_url
-        else ""
-    )
 
     # Stat type display label
     stat_display = _display_stat_name(stat_type)
 
-    # Tier emoji
-    tier_emoji_map = {"Platinum": "💎", "Gold": "🥇", "Silver": "🥈", "Bronze": "🥉"}
-    tier_emoji = tier_emoji_map.get(tier, "🥉")
+    # Glow for platinum/gold
+    glow = ""
+    if tier_lower in ("platinum", "gold"):
+        glow = f" qeg-prop-{tier_lower}"
+
+    # Opponent + game info
+    opponent = _html.escape(str(result.get("opponent", "")))
+    is_home = result.get("is_home")
+    if opponent:
+        ha = "vs" if is_home else "@"
+        game_info = f"{ha} {opponent}"
+    else:
+        game_info = ""
+
+    # Position
+    position = _html.escape(str(result.get("position", "")))
+    team_pos_str = " - ".join(filter(None, [team, position]))
+
+    # Button classes
+    over_btn_cls = "qeg-btn-over-active" if direction == "OVER" else "qeg-btn-over-inactive"
+    under_btn_cls = "qeg-btn-under-active" if direction == "UNDER" else "qeg-btn-under-inactive"
+    prob_fill_cls = "qeg-prop-prob-fill-over" if direction == "OVER" else "qeg-prop-prob-fill-under"
+    prob_w = _prob_dir * 100
+    prob_lbl_cls = "qeg-prop-prob-label-over" if direction == "OVER" else "qeg-prop-prob-label-under"
 
     # Rank badge
-    rank_html = (
-        f'<div class="qeg-rank">#{rank}</div>'
-        if rank > 0
-        else ""
-    )
-
-    # Season avg sub-text
-    avg_sub_html = (
-        f'<div class="qeg-stat-block-sub">Avg: {avg_display}</div>'
-        if avg_display
-        else ""
-    )
+    rank_html = f'<span class="qeg-prop-rank">#{rank}</span>' if rank > 0 else ""
 
     # Stagger animation delay
-    delay_style = f' style="animation-delay:{(rank - 1) * 0.08:.2f}s;"' if rank > 0 else ""
+    delay_style = f' style="animation-delay:{(rank - 1) * 0.06:.2f}s;"' if rank > 0 else ""
 
-    # Edge gauge SVG
+    # Headshot HTML
+    hs_img = (
+        f'<img class="qeg-prop-hs" src="{_html.escape(headshot_url)}" '
+        f'alt="{player_name}" loading="lazy" '
+        f'onerror="this.style.display=\'none\'">'
+        if headshot_url else ""
+    )
+
+    # == CARD FACE (summary) ==========================================
+    face_html = (
+        f'<div class="qeg-prop-status">'
+        f'{rank_html}'
+        f'<span class="qeg-tier qeg-tier-{tier_lower}">{tier}</span>'
+        f'{("<span class='qeg-prop-platform'>" + platform + "</span>") if platform else ""}'
+        f'</div>'
+        f'<div class="qeg-prop-hs-wrap">{hs_img}</div>'
+        f'<div class="qeg-prop-team-pos">{team_pos_str}</div>'
+        f'<div class="qeg-prop-player-name">{player_name}</div>'
+        f'<div class="qeg-prop-game-info">{game_info}</div>'
+        f'<div class="qeg-prop-line-area">'
+        f'<div class="qeg-prop-big-line">{line_display}</div>'
+        f'<div class="qeg-prop-stat-name">{_html.escape(stat_display)}</div>'
+        f'</div>'
+        f'<div class="qeg-prop-prob-bar">'
+        f'<div class="{prob_fill_cls}" style="width:{prob_w:.1f}%;"></div>'
+        f'</div>'
+        f'<div class="qeg-prop-prob-label {prob_lbl_cls}">{prob_pct}</div>'
+        f'<div class="qeg-btn-row">'
+        f'<div class="qeg-btn {under_btn_cls}">&#8595; Less</div>'
+        f'<div class="qeg-btn {over_btn_cls}">&#8593; More</div>'
+        f'</div>'
+    )
+
+    # == EXPANDED DETAIL PANEL ========================================
     gauge_svg = _edge_gauge_svg(edge_val, edge_display)
-
-    # Prop call line (e.g. "▲ OVER 25.5 Points")
     prop_call = f"{dir_arrow} {dir_label} {line_display} {stat_display}"
+    prop_call_cls = "qeg-detail-prop-over" if direction == "OVER" else "qeg-detail-prop-under"
 
-    # Edge heat bar width: maps [10%, 50%] → [0%, 100%] so picks at the
-    # 15% threshold already show visible fill (≈12%).
-    abs_edge = abs(edge_val)
-    heat_width = max(0, min(100, (abs_edge - 10) / 40 * 100))
-    heat_pct_display = f"{abs_edge:.1f}%"
+    # Detail header
+    detail_hs = (
+        f'<img class="qeg-detail-hs" src="{_html.escape(headshot_url)}" '
+        f'alt="{player_name}" loading="lazy" '
+        f'onerror="this.style.display=\'none\'">'
+        if headshot_url else ""
+    )
 
-    # Force direction bar: probability split between over/under
-    over_pct = max(0, min(100, _prob_raw * 100))
-    under_pct = 100 - over_pct
+    # Team badge color
+    team_colors = get_team_colors(
+        str(result.get("player_team", result.get("team", "")))
+    )
+    team_bg = team_colors[0] if team_colors else "#4a5568"
+
+    detail_hdr = (
+        f'<div class="qeg-detail-hdr">'
+        f'{detail_hs}'
+        f'<div class="qeg-detail-info">'
+        f'<div class="qeg-detail-name">{player_name}</div>'
+        f'<div class="qeg-detail-sub">'
+        f'<span class="qeg-detail-team-badge" style="background:{team_bg};">{team}</span>'
+        f'{(" \u00b7 " + position) if position else ""}'
+        f'{(" \u00b7 " + game_info) if game_info else ""}'
+        f'</div>'
+        f'</div>'
+        f'</div>'
+    )
+
+    # Avg comparison
+    avg_html = ""
+    if avg_display:
+        avg_html = (
+            f'<div class="qeg-detail-avg">'
+            f'Season avg <span class="qeg-detail-avg-val">{avg_display}</span>'
+            f'</div>'
+        )
+
+    expanded_html = (
+        f'<div class="qeg-prop-expanded">'
+        f'{detail_hdr}'
+        f'<div class="qeg-detail-prop-call {prop_call_cls}">{prop_call}</div>'
+        f'<div class="qeg-sec-label">Edge &amp; Projection</div>'
+        f'<div class="qeg-detail-edge">'
+        f'{gauge_svg}'
+        f'<div class="qeg-detail-edge-info">'
+        f'<div class="qeg-detail-edge-val">{edge_display}</div>'
+        f'<div class="qeg-detail-edge-lbl">Model Edge</div>'
+        f'</div>'
+        f'</div>'
+        f'{avg_html}'
+        f'<div class="qeg-sec-label">Metrics</div>'
+        f'<div class="qeg-detail-metrics">'
+        f'<div class="qeg-dm"><div class="qeg-dm-val">{prob_pct}</div><div class="qeg-dm-lbl">Prob</div></div>'
+        f'<div class="qeg-dm"><div class="qeg-dm-val">{confidence:.0f}</div><div class="qeg-dm-lbl">SAFE</div></div>'
+        f'<div class="qeg-dm"><div class="qeg-dm-val">{edge_display}</div><div class="qeg-dm-lbl">Edge</div></div>'
+        f'<div class="qeg-dm"><div class="qeg-dm-val">{proj_display}</div><div class="qeg-dm-lbl">Proj</div></div>'
+        f'</div>'
+        f'<div class="qeg-sec-label">Distribution</div>'
+        f'<div class="qeg-detail-dist">'
+        f'<div class="qeg-dd"><div class="qeg-dd-val">{p10_d}</div><div class="qeg-dd-lbl">P10</div></div>'
+        f'<div class="qeg-dd qeg-dd-med"><div class="qeg-dd-val">{p50_d}</div><div class="qeg-dd-lbl">MED</div></div>'
+        f'<div class="qeg-dd"><div class="qeg-dd-val">{p90_d}</div><div class="qeg-dd-lbl">P90</div></div>'
+        f'<div class="qeg-dd qeg-dd-proj"><div class="qeg-dd-val">{proj_display}</div><div class="qeg-dd-lbl">Proj</div></div>'
+        f'</div>'
+        f'<div class="qeg-sec-label">Direction</div>'
+        f'<div class="qeg-detail-force">'
+        f'<span class="qeg-df-lbl qeg-df-lbl-over">{over_pct_raw:.0f}%</span>'
+        f'<div class="qeg-df-track">'
+        f'<div class="qeg-df-fill-over" style="width:{over_pct_raw:.1f}%;"></div>'
+        f'<div class="qeg-df-fill-under" style="width:{under_pct_raw:.1f}%;"></div>'
+        f'</div>'
+        f'<span class="qeg-df-lbl qeg-df-lbl-under">{under_pct_raw:.0f}%</span>'
+        f'</div>'
+        f'</div>'
+    )
 
     return (
-        f'<div class="qeg-card {card_dir_css}"{delay_style}>'
-        f'<div class="qeg-card-top">'
-        f'{rank_html}'
-        # Identity
-        f'<div class="qeg-card-identity">'
-        f'{headshot_html}'
-        f'<div class="qeg-player-info">'
-        f'<span class="qeg-player-name">{player_name}</span>'
-        f'<span class="qeg-player-meta">{team} · {platform}</span>'
-        f'</div>'
-        f'</div>'
-        # Compact metrics row
-        f'<div class="qeg-card-center">'
-        f'<span class="qeg-player-prop">{prop_call}</span>'
-        f'<div class="qeg-card-metrics">'
-        f'<div class="qeg-metric">'
-        f'<span class="qeg-direction-badge {dir_css}">{dir_arrow} {dir_label}</span>'
-        f'</div>'
-        f'<div class="qeg-metric">'
-        f'<div class="qeg-metric-val">{proj_display}</div>'
-        f'<div class="qeg-metric-lbl">Proj</div>'
-        f'</div>'
-        f'<div class="qeg-metric">'
-        f'<div class="qeg-metric-val">{confidence:.0f}</div>'
-        f'<div class="qeg-metric-lbl">SAFE</div>'
-        f'</div>'
-        f'<div class="qeg-metric">'
-        f'<div class="qeg-metric-val">{tier_emoji} {tier}</div>'
-        f'<div class="qeg-metric-lbl">Tier</div>'
-        f'</div>'
-        f'</div>'
-        f'</div>'
-        # Edge gauge callout
-        f'<div class="qeg-edge-highlight">'
-        f'{gauge_svg}'
-        f'<span class="qeg-edge-highlight-lbl">Edge</span>'
-        f'</div>'
-        f'</div>'
-        f'</div>'
+        f'<details class="qeg-prop {dir_css}{glow}"{delay_style}>'
+        f'<summary>{face_html}</summary>'
+        f'{expanded_html}'
+        f'</details>'
     )
 
 
@@ -726,11 +784,12 @@ def deduplicate_qeg_picks(picks: list) -> list:
 
 
 def render_quantum_edge_gap_grouped_html(picks: list) -> str:
-    """Return collapsible HTML grouping QEG picks by player.
+    """Return PP-style HTML grouping QEG picks by player with horizontal scroll.
 
-    Players with a single prop render as a flat card.
-    Players with multiple props are wrapped in a ``<details>`` element
-    so the user can expand/collapse their bets, saving vertical space.
+    Each player gets an expandable row (``<details class="qeg-player-row">``)
+    containing a horizontal scroll strip of PP-style prop cards.
+    Single-prop players render as a flat horizontal strip without the
+    expandable wrapper.
     """
     from collections import OrderedDict
 
@@ -739,42 +798,87 @@ def render_quantum_edge_gap_grouped_html(picks: list) -> str:
         name = p.get("player_name", "Unknown")
         groups.setdefault(name, []).append(p)
 
-    parts: list[str] = []
-    global_rank = 0
+    # Separate singles and multi-prop groups so singles render first
+    single_groups: list[tuple[str, list]] = []
+    multi_groups: list[tuple[str, list]] = []
     for player_name, player_picks in groups.items():
         if len(player_picks) == 1:
-            global_rank += 1
-            parts.append(render_quantum_edge_gap_card_html(player_picks[0], rank=global_rank))
+            single_groups.append((player_name, player_picks))
         else:
-            # Collapsible group
-            best_edge = max(abs(p.get("edge_percentage", 0)) for p in player_picks)
-            team = _html.escape(str(player_picks[0].get("player_team", player_picks[0].get("team", ""))))
-            player_id = player_picks[0].get("player_id", "")
-            headshot_url = (
-                f"{_NBA_HEADSHOT_CDN}/{player_id}.png" if player_id else ""
+            multi_groups.append((player_name, player_picks))
+
+    parts: list[str] = []
+    global_rank = 0
+
+    # ── Singles: all in one horizontal wrap row ──────────────────
+    if single_groups:
+        single_cards: list[str] = []
+        for player_name, player_picks in single_groups:
+            global_rank += 1
+            single_cards.append(
+                render_quantum_edge_gap_card_html(player_picks[0], rank=global_rank)
             )
-            headshot_img = (
-                f'<img class="qeg-headshot" src="{_html.escape(headshot_url)}" '
-                f'alt="{_html.escape(player_name)}" loading="lazy">'
-                if headshot_url else ""
-            )
-            summary_line = (
-                f'{headshot_img}'
-                f'<span class="qeg-group-name">{_html.escape(player_name)}</span>'
-                f'<span class="qeg-group-meta">{team} · '
-                f'{len(player_picks)} props · '
-                f'Best edge {best_edge:.1f}%</span>'
-            )
-            inner_cards = []
-            for pp in player_picks:
-                global_rank += 1
-                inner_cards.append(render_quantum_edge_gap_card_html(pp, rank=global_rank))
-            parts.append(
-                f'<details class="qeg-group">'
-                f'<summary class="qeg-group-summary">{summary_line}</summary>'
-                f'<div class="qeg-group-body">{"".join(inner_cards)}</div>'
-                f'</details>'
-            )
+        parts.append(
+            '<div class="qeg-singles-row">'
+            + "".join(single_cards)
+            + '</div>'
+        )
+
+    # ── Multi-prop groups: expandable rows ───────────────────────
+    for player_name, player_picks in multi_groups:
+        card_htmls = []
+        for pp in player_picks:
+            global_rank += 1
+            card_htmls.append(render_quantum_edge_gap_card_html(pp, rank=global_rank))
+        cards_str = "".join(card_htmls)
+
+        best_edge = max(abs(p.get("edge_percentage", 0)) for p in player_picks)
+        team = _html.escape(
+            str(player_picks[0].get("player_team", player_picks[0].get("team", "")))
+        )
+        player_id = player_picks[0].get("player_id", "")
+        headshot_url = (
+            f"{_NBA_HEADSHOT_CDN}/{player_id}.png" if player_id else ""
+        )
+        headshot_img = (
+            f'<img class="qeg-sum-head" src="{_html.escape(headshot_url)}" '
+            f'alt="{_html.escape(player_name)}" loading="lazy" '
+            f'onerror="this.style.display=\'none\'">'
+            if headshot_url else ""
+        )
+        prop_label = f"{len(player_picks)} prop{'s' if len(player_picks) != 1 else ''}"
+
+        # Team color for badge
+        team_colors = get_team_colors(
+            str(player_picks[0].get("player_team", player_picks[0].get("team", "")))
+        )
+        team_bg = team_colors[0] if team_colors else "#4a5568"
+
+        border_color = "#50a874"  # default green
+        # If all picks are UNDER, use red
+        if all(str(p.get("direction", "")).upper() == "UNDER" for p in player_picks):
+            border_color = "#c85555"
+
+        parts.append(
+            f'<details class="qeg-player-row" style="border-left-color:{border_color};">'
+            f'<summary>'
+            f'<span class="qeg-sum-arrow">&#9654;</span>'
+            f'{headshot_img}'
+            f'<div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;">'
+            f'<span class="qeg-sum-name">{_html.escape(player_name)}</span>'
+            f'<div style="display:flex;align-items:center;gap:5px;">'
+            f'<span class="qeg-sum-team" style="background:{team_bg};">{team}</span>'
+            f'<span class="qeg-sum-props">{prop_label}</span>'
+            f'</div>'
+            f'</div>'
+            f'<span class="qeg-sum-edge">Edge {best_edge:.1f}%</span>'
+            f'</summary>'
+            f'<div class="qeg-player-body">'
+            f'<div class="qeg-props-scroll">{cards_str}</div>'
+            f'</div>'
+            f'</details>'
+        )
+
     return "".join(parts)
 
 
@@ -818,7 +922,7 @@ def render_parlays_header_html() -> str:
         '<p class="espn-parlay-section-sub">Multi-leg combos ranked by combined EDGE Score\u2122 &mdash; diversified across games</p>'
         '</div>'
         '</div>'
-        '<div class="espn-parlay-section-badge">SMARTAI</div>'
+        '<div class="espn-parlay-section-badge">SMART PICK PRO</div>'
         '</div>'
     )
 
@@ -846,27 +950,20 @@ def render_parlay_card_html(entry: dict, card_index: int) -> str:
     game_groups = entry.get("game_groups", {})
     raw_picks = entry.get("raw_picks", [])
 
-    picks_html = ""
+    picks_html = '<div class="plc-row">'
     if game_groups:
         for matchup, group_data in game_groups.items():
             if isinstance(group_data, dict):
                 legs = group_data.get("picks", [])
-                meta = group_data.get("meta", {})
             else:
                 legs = group_data
-                meta = {}
 
-            game_label_html = _render_game_group_label(str(matchup), meta)
-            picks_html += (
-                f'<div class="espn-parlay-game-group">'
-                f'{game_label_html}'
-            )
             for leg in legs:
                 picks_html += _render_single_leg_html(leg, raw_picks)
-            picks_html += '</div>'
     else:
         for pick_str in entry.get("picks", []):
             picks_html += _render_leg_from_string(pick_str, raw_picks)
+    picks_html += '</div>'
 
     # ── Reason tags ──────────────────────────────────────────
     reasons = entry.get("reasons", [])
@@ -892,50 +989,56 @@ def render_parlay_card_html(entry: dict, card_index: int) -> str:
     rank_labels = {0: "TOP PICK", 1: "RUNNER-UP"}
     rank_label = rank_labels.get(card_index, f"#{card_index + 1}")
 
-    # SVG confidence ring (90-degree arc segment based on combined prob)
-    ring_pct = min(combined / 100.0, 1.0)
-    dash = ring_pct * 188.5  # circumference of r=30 circle ≈ 188.5
-    gap = 188.5 - dash
+    # SAFE score bar width (clamp 0-100)
+    try:
+        safe_val = float(avg_conf)
+    except (ValueError, TypeError):
+        safe_val = 0
+    bar_width = max(0, min(100, safe_val))
+
+    # SAFE bar color by tier
+    if safe_val >= 80:
+        bar_color = "#00D559"
+    elif safe_val >= 60:
+        bar_color = "#2D9EFF"
+    else:
+        bar_color = "#6B7A9A"
+
+    # Edge color badge style
+    if avg_edge > 0:
+        edge_badge = (
+            f'<span class="espn-parlay-stat-num" '
+            f'style="color:#00D559;">{avg_edge:+.1f}%</span>'
+        )
+    else:
+        edge_badge = (
+            f'<span class="espn-parlay-stat-num" '
+            f'style="color:#F24336;">{avg_edge:+.1f}%</span>'
+        )
 
     return (
-        f'<div class="espn-parlay-card{top_pick}">'
+        f'<div class="espn-parlay-card{top_pick}" style="animation-delay:{card_index * 0.08}s;">'
         # Top bar
         f'<div class="espn-parlay-topbar">'
         f'<span class="espn-parlay-rank">{_html.escape(rank_label)}</span>'
         f'<span class="espn-parlay-label">{_html.escape(label)}</span>'
         f'</div>'
-        # Main content
+        # Main content — vertical picks
         f'<div class="espn-parlay-body">'
-        # Left: confidence ring
-        f'<div class="espn-parlay-ring-wrap">'
-        f'<svg class="espn-parlay-ring" viewBox="0 0 70 70">'
-        f'<circle cx="35" cy="35" r="30" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4.5"/>'
-        f'<circle cx="35" cy="35" r="30" fill="none" stroke="url(#espnGrad{card_index})" '
-        f'stroke-width="4.5" stroke-linecap="round" '
-        f'stroke-dasharray="{dash:.1f} {gap:.1f}" '
-        f'transform="rotate(-90 35 35)"/>'
-        f'<defs><linearGradient id="espnGrad{card_index}" x1="0" y1="0" x2="1" y2="1">'
-        f'<stop offset="0%" stop-color="#00C6FF"/>'
-        f'<stop offset="100%" stop-color="#00ff9d"/>'
-        f'</linearGradient></defs>'
-        f'<text x="35" y="33" text-anchor="middle" fill="#f8fafc" '
-        f'font-size="14" font-weight="800" font-family="JetBrains Mono,monospace">'
-        f'{combined:.0f}%</text>'
-        f'<text x="35" y="45" text-anchor="middle" fill="#8b96a9" '
-        f'font-size="7.5" font-weight="700" letter-spacing="0.5">PROB</text>'
-        f'</svg>'
-        f'</div>'
-        # Right: picks
         f'<div class="espn-parlay-picks">'
         f'{picks_html}'
         f'</div>'
         f'</div>'
         # Tags
         f'{reason_html}'
-        # Footer stats
+        # Footer stats — metric cells like .pc-m
         f'<div class="espn-parlay-footer">'
         f'<div class="espn-parlay-stat">'
-        f'<span class="espn-parlay-stat-num" style="color:{edge_color};">{avg_edge:+.1f}%</span>'
+        f'<span class="espn-parlay-stat-num espn-parlay-safe">{combined:.0f}%</span>'
+        f'<span class="espn-parlay-stat-lbl">PROB</span>'
+        f'</div>'
+        f'<div class="espn-parlay-stat">'
+        f'{edge_badge}'
         f'<span class="espn-parlay-stat-lbl">AVG EDGE</span>'
         f'</div>'
         f'<div class="espn-parlay-stat">'
@@ -944,6 +1047,12 @@ def render_parlay_card_html(entry: dict, card_index: int) -> str:
         f'</div>'
         f'<div class="espn-parlay-stat">'
         f'<span class="espn-parlay-stat-num espn-parlay-safe">{avg_conf}</span>'
+        f'<div style="width:100%;max-width:60px;height:4px;background:rgba(255,255,255,0.06);'
+        f'border-radius:100px;margin-top:5px;overflow:hidden;'
+        f'box-shadow:inset 0 1px 2px rgba(0,0,0,0.2);">'
+        f'<div style="width:{bar_width}%;height:100%;background:{bar_color};'
+        f'border-radius:100px;box-shadow:0 0 4px {bar_color};"></div>'
+        f'</div>'
         f'<span class="espn-parlay-stat-lbl">SAFE SCORE</span>'
         f'</div>'
         f'</div>'
@@ -1004,47 +1113,109 @@ def _render_game_group_label(matchup: str, meta: dict) -> str:
     safe_matchup = _html.escape(matchup)
     return (
         f'<div class="espn-parlay-matchup">'
-        f'<span class="espn-parlay-team-name" style="color:#94A3B8;">{safe_matchup}</span>'
+        f'<span class="espn-parlay-team-name" style="color:#90d0a8;">{safe_matchup}</span>'
         f'</div>'
     )
 
 
 def _render_single_leg_html(leg_info: dict, raw_picks: list) -> str:
-    """Render one pick leg with direction badge and edge info.
+    """Render one pick leg as a hero-style mini card.
 
     Parameters
     ----------
     leg_info : dict
-        Must have ``player_name``, ``direction``, ``line``, ``stat_type``.
-        May also have ``edge_percentage`` and ``tier``.
+        Full analysis result dict with ``player_name``, ``player_team``,
+        ``player_id``, ``direction``, ``line``, ``stat_type``,
+        ``edge_percentage``, ``tier``, ``confidence_score``, etc.
     raw_picks : list
         Full raw pick dicts (used as fallback for edge/tier lookup).
     """
     pname = _html.escape(str(leg_info.get("player_name", "")))
+    team = _html.escape((leg_info.get("player_team", leg_info.get("team", "")) or "").upper())
     direction = (leg_info.get("direction", "") or "").upper()
     line = leg_info.get("line", "")
-    stat = _html.escape(str(leg_info.get("stat_type", "")).replace("_", " ").title())
+    raw_stat = (leg_info.get("stat_type", "") or "").lower().strip()
+    stat = _html.escape(_display_stat_name(raw_stat))
     edge = leg_info.get("edge_percentage", 0) or 0
     tier = (leg_info.get("tier", "") or "").lower()
+    conf = leg_info.get("confidence_score", 0) or 0
 
-    dir_cls = "espn-leg-over" if direction == "OVER" else "espn-leg-under"
-    dir_label = _html.escape(direction) if direction else ""
+    try:
+        line_val = f'{float(line):g}'
+    except (ValueError, TypeError):
+        line_val = str(line) if line else "\u2014"
 
-    tier_html = ""
+    # Direction
+    dir_label = "MORE" if direction == "OVER" else "LESS"
+    dir_arrow = "&#8593;" if direction == "OVER" else "&#8595;"
+
+    # Tier class
+    tier_cls = ""
+    if tier == "platinum":
+        tier_cls = " plc-platinum"
+    elif tier == "gold":
+        tier_cls = " plc-gold"
+
+    # Headshot
+    player_id = leg_info.get("player_id", "") or ""
+    headshot_url = (
+        f"{_NBA_HEADSHOT_CDN}/{player_id}.png"
+        if player_id else ""
+    )
+    team_colors = get_team_colors(leg_info.get("player_team", leg_info.get("team", "")) or "")
+    team_color = team_colors[0] if team_colors else "rgba(255,255,255,0.12)"
+
+    headshot_html = (
+        f'<div class="plc-hs-wrap">'
+        f'<img class="plc-hs" '
+        f'style="--plc-team-color:{team_color};" '
+        f'src="{headshot_url}" alt="{pname}" '
+        f'onerror="this.style.display=\'none\'">'
+        f'</div>'
+    ) if headshot_url else ""
+
+    # Tier badge
+    tier_badge = ""
     if tier in ("platinum", "gold", "silver"):
-        tier_html = f'<span class="espn-leg-tier espn-leg-tier-{tier}">{tier.title()}</span>'
+        tier_badge = (
+            f'<span class="plc-tier plc-tier-{tier}">'
+            f'{tier.title()}</span>'
+        )
 
-    edge_color = _POSITIVE_COLOR if edge > 0 else _NEGATIVE_COLOR
+    # Edge color
+    edge_color = "#00D559" if edge > 0 else "#F24336"
+    edge_sign = "+" if edge > 0 else ""
 
     return (
-        f'<div class="espn-leg-row">'
-        f'<div class="espn-leg-left">'
-        f'<span class="espn-leg-player">{pname}</span>'
-        f'<span class="espn-leg-dir {dir_cls}">{dir_label}</span>'
-        f'<span class="espn-leg-detail">{line} {stat}</span>'
-        f'{tier_html}'
+        f'<div class="plc-card{tier_cls}">'
+        # Tier + team status row
+        f'<div class="plc-status">'
+        f'{tier_badge}'
         f'</div>'
-        f'<span class="espn-leg-edge" style="color:{edge_color};">{edge:+.1f}%</span>'
+        # Headshot
+        f'{headshot_html}'
+        # Player info
+        f'<div class="plc-team">{team}</div>'
+        f'<div class="plc-name">{pname}</div>'
+        # Big line
+        f'<div class="plc-line-area">'
+        f'<div class="plc-line">{_html.escape(line_val)}</div>'
+        f'<div class="plc-stat">{stat}</div>'
+        f'</div>'
+        # Direction button
+        f'<div class="plc-dir" data-dir="{_html.escape(direction)}">'
+        f'{dir_arrow} {dir_label}</div>'
+        # Bottom metrics: Edge + Confidence
+        f'<div class="plc-metrics">'
+        f'<div class="plc-m">'
+        f'<div class="plc-m-val" style="color:{edge_color};">{edge_sign}{edge:.1f}%</div>'
+        f'<div class="plc-m-lbl">Edge</div>'
+        f'</div>'
+        f'<div class="plc-m">'
+        f'<div class="plc-m-val">{conf:.0f}</div>'
+        f'<div class="plc-m-lbl">Conf</div>'
+        f'</div>'
+        f'</div>'
         f'</div>'
     )
 
@@ -1199,12 +1370,18 @@ def render_hero_section_html(top_picks: list) -> str:
         name = _html.escape(r.get("player_name", "Unknown"))
         team = _html.escape((r.get("player_team", "") or "").upper())
         opp = r.get("opponent", "")
-        team_line = f'{team} vs {_html.escape(opp)}' if opp else team
+        is_home = r.get("is_home")
+        if opp:
+            ha = "vs" if is_home else "@"
+            game_info = f"{ha} {_html.escape(opp)}"
+        else:
+            game_info = ""
 
         raw_stat = (r.get("stat_type", "") or "").lower().strip()
         stat = _html.escape(_display_stat_name(raw_stat))
         direction = (r.get("direction", "OVER") or "OVER").upper()
         dir_label = "MORE" if direction == "OVER" else "LESS"
+        dir_arrow = "&#8593;" if direction == "OVER" else "&#8595;"
         try:
             line_val_num = float(r.get("prop_line", r.get("line", 0)))
             line_val = f'{line_val_num:g}'
@@ -1215,18 +1392,16 @@ def render_hero_section_html(top_picks: list) -> str:
         tier = r.get("tier", "Gold")
         conf = r.get("confidence_score", 0)
         edge = r.get("edge_percentage", 0)
-        # Direction-aware probability: OVER uses probability_over,
-        # UNDER uses (1 - probability_over).  Value is 0-1 fraction.
         _prob_over_raw = float(r.get("probability_over", 0) or 0)
         prob = (_prob_over_raw if direction == "OVER" else 1.0 - _prob_over_raw) * 100
 
         # Confidence color
         if conf >= 80:
-            conf_color = "#00f0ff"
+            conf_color = "#00D559"
         elif conf >= 65:
-            conf_color = "#FFD700"
+            conf_color = "#F9C62B"
         else:
-            conf_color = "#00b4ff"
+            conf_color = "#2D9EFF"
 
         # ── Projection ───────────────────────────────────────
         try:
@@ -1235,18 +1410,17 @@ def render_hero_section_html(top_picks: list) -> str:
             proj_val = 0
         proj_display = f'{proj_val:.1f}' if proj_val else "\u2014"
 
-        # Projection vs Line bar (visual gap indicator)
+        # Projection vs Line bar
         proj_bar_html = ""
         if proj_val and line_val_num:
             diff = proj_val - line_val_num
-            diff_pct = (diff / line_val_num * 100) if line_val_num else 0
-            bar_color = "#00ff9d" if diff > 0 else "#ff5e00"
+            bar_color = "#00D559" if diff > 0 else "#F24336"
             bar_label = f'+{diff:.1f}' if diff > 0 else f'{diff:.1f}'
-            bar_width = min(abs(diff_pct), 100)
+            bar_width = min(abs(diff / line_val_num * 100), 100) if line_val_num else 0
             proj_bar_html = (
                 f'<div class="qam-hero-proj-bar">'
                 f'<div class="qam-hero-proj-bar-label">'
-                f'<span style="color:#64748b;">Line {_html.escape(line_val)}</span>'
+                f'<span style="color:#6B7A9A;">Line {_html.escape(line_val)}</span>'
                 f'<span style="color:{bar_color};font-weight:700;">'
                 f'Proj {proj_display} ({bar_label})</span>'
                 f'</div>'
@@ -1257,53 +1431,21 @@ def render_hero_section_html(top_picks: list) -> str:
                 f'</div>'
             )
 
-        # ── Verdict ──────────────────────────────────────────
-        verdict_raw = r.get("verdict", "") or ""
-        verdict_emoji = r.get("verdict_emoji", "") or ""
-        verdict_html = ""
-        if verdict_raw:
-            v_upper = verdict_raw.upper().replace("_", " ")
-            v_cls = verdict_raw.lower().replace(" ", "-").replace("_", "-")
-            verdict_html = (
-                f'<span class="qam-hero-verdict" data-verdict="{_html.escape(v_cls)}">'
-                f'{verdict_emoji} {_html.escape(v_upper)}</span>'
-            )
-
-        # ── Season Average (stat-matched) ────────────────────
-        season_avg = 0
-        avg_key_map = {
-            "points": "season_pts_avg", "rebounds": "season_reb_avg",
-            "assists": "season_ast_avg", "threes": "season_threes_avg",
-            "three pointers made": "season_threes_avg",
-            "steals": "season_stl_avg", "blocks": "season_blk_avg",
-        }
-        avg_key = avg_key_map.get(raw_stat, "")
-        if avg_key:
-            try:
-                season_avg = float(r.get(avg_key, 0) or 0)
-            except (ValueError, TypeError):
-                season_avg = 0
-        # Fallback: try generic keys
-        if not season_avg:
-            for k in (f"{raw_stat}_avg", "points_avg", "rebounds_avg", "assists_avg"):
-                try:
-                    season_avg = float(r.get(k, 0) or 0)
-                    if season_avg:
-                        break
-                except (ValueError, TypeError):
-                    continue
-        season_avg_display = f'{season_avg:.1f}' if season_avg else "\u2014"
-
-        # ── Headshot ─────────────────────────────────────────
+        # ── Headshot with team-colored ring ──────────────────
         player_id = r.get("player_id", "") or ""
-        if player_id:
-            headshot_url = f"https://cdn.nba.com/headshots/nba/latest/1040x760/{player_id}.png"
-        else:
-            headshot_url = ""
+        headshot_url = (
+            f"https://cdn.nba.com/headshots/nba/latest/1040x760/{player_id}.png"
+            if player_id else ""
+        )
+        team_colors = get_team_colors(r.get("player_team", "") or "")
+        team_color = team_colors[0] if team_colors else "rgba(255,255,255,0.12)"
         headshot_html = (
+            f'<div class="qam-hero-hs-wrap">'
             f'<img class="qam-hero-headshot" '
-            f'src="{headshot_url}" alt="" '
+            f'style="--hero-team-color:{team_color};" '
+            f'src="{headshot_url}" alt="{name}" '
             f'onerror="this.style.display=\'none\'">'
+            f'</div>'
         ) if headshot_url else ""
 
         # ── Simulation range ─────────────────────────────────
@@ -1321,51 +1463,46 @@ def render_hero_section_html(top_picks: list) -> str:
                 f'<div class="qam-hero-range">'
                 f'<span class="qam-hero-range-label">SIM RANGE</span>'
                 f'<span class="qam-hero-range-vals">'
-                f'{p10:.1f} — {p90:.1f}</span>'
+                f'{p10:.1f} &mdash; {p90:.1f}</span>'
                 f'</div>'
             )
 
-        # ── Joseph take ──────────────────────────────────────
-        joseph_take = ""
-        take_text = r.get("joseph_take", "") or r.get("joseph_short_take", "")
-        if take_text:
-            joseph_take = (
-                f'<div class="qam-hero-joseph">'
-                f'{_html.escape(str(take_text)[:220])}'
-                f'</div>'
-            )
+        # Projection color
+        proj_color = "#00D559" if proj_val > line_val_num else "#F24336"
 
         cards.append(
             f'<div class="qam-hero-card" data-tier="{_html.escape(tier)}" '
             f'style="animation-delay:{idx * 120}ms;">'
             f'<span class="qam-hero-rank">#{idx + 1}</span>'
-            f'<div class="qam-hero-top">'
-            f'{headshot_html}'
-            f'<div>'
-            f'<div class="qam-hero-name">{name}</div>'
-            f'<div class="qam-hero-team">{team_line}</div>'
-            f'<div class="qam-hero-badges">'
+            # Status bar: tier + team
+            f'<div class="qam-hero-status">'
             f'<span class="qam-hero-tier" data-tier="{_html.escape(tier)}">'
             f'{_html.escape(tier)}</span>'
-            f'{verdict_html}'
             f'</div>'
-            f'</div>'
-            f'</div>'
-            f'<div class="qam-hero-body">'
-            f'<div>'
-            f'<span class="qam-hero-line">{_html.escape(line_val)}</span>'
-            f'<span class="qam-hero-dir" data-dir="{_html.escape(direction)}">{dir_label}</span>'
-            f'</div>'
+            # Centered headshot
+            f'{headshot_html}'
+            # Player info centered
+            f'<div class="qam-hero-team-pos">{team}</div>'
+            f'<div class="qam-hero-name">{name}</div>'
+            f'<div class="qam-hero-game-info">{game_info}</div>'
+            # Big line number + stat
+            f'<div class="qam-hero-line-area">'
+            f'<div class="qam-hero-line">{_html.escape(line_val)}</div>'
             f'<div class="qam-hero-stat">{stat}</div>'
             f'</div>'
+            # Direction button (active pill)
+            f'<div class="qam-hero-dir" data-dir="{_html.escape(direction)}">'
+            f'{dir_arrow} {dir_label}</div>'
+            # Projection bar
             f'{proj_bar_html}'
+            # Metrics grid
             f'<div class="qam-hero-metrics">'
             f'<div class="qam-hero-metric">'
             f'<div class="qam-hero-metric-val" style="color:{conf_color};">{conf:.0f}</div>'
             f'<div class="qam-hero-metric-label">Confidence</div>'
             f'</div>'
             f'<div class="qam-hero-metric">'
-            f'<div class="qam-hero-metric-val">{edge:+.1f}%</div>'
+            f'<div class="qam-hero-metric-val" style="color:#00D559;">{edge:+.1f}%</div>'
             f'<div class="qam-hero-metric-label">Edge</div>'
             f'</div>'
             f'<div class="qam-hero-metric">'
@@ -1373,23 +1510,200 @@ def render_hero_section_html(top_picks: list) -> str:
             f'<div class="qam-hero-metric-label">Probability</div>'
             f'</div>'
             f'<div class="qam-hero-metric">'
-            f'<div class="qam-hero-metric-val" style="color:#00f0ff;">{proj_display}</div>'
+            f'<div class="qam-hero-metric-val" style="color:{proj_color};">{proj_display}</div>'
             f'<div class="qam-hero-metric-label">Projection</div>'
             f'</div>'
-            f'<div class="qam-hero-metric">'
-            f'<div class="qam-hero-metric-val">{season_avg_display}</div>'
-            f'<div class="qam-hero-metric-label">Avg</div>'
             f'</div>'
-            f'</div>'
+            # Sim range
             f'{range_html}'
-            f'{joseph_take}'
             f'</div>'
         )
 
     return (
         f'<div class="qam-hero-section">'
-        f'<div class="qam-hero-label">🏆 Top {len(cards)} Tonight</div>'
+        f'<div class="qam-hero-label">\U0001f3c6 Top {len(cards)} Tonight</div>'
         f'<div class="qam-hero-grid">{"".join(cards)}</div>'
+        f'</div>'
+    )
+
+
+# ═══════════════════════════════════════════════════════════════
+# PLATFORM AI PICKS — Stunning electric AI-themed cards
+# ═══════════════════════════════════════════════════════════════
+
+def render_platform_picks_html(picks: list) -> str:
+    """Build the Platform AI Picks section HTML.
+
+    Parameters
+    ----------
+    picks : list
+        Analysis result dicts for platform picks, pre-sorted by confidence.
+
+    Returns
+    -------
+    str
+        Complete HTML for the Platform AI Picks section.
+    """
+    if not picks:
+        return ""
+
+    cards: list[str] = []
+    for idx, r in enumerate(picks):
+        name = _html.escape(r.get("player_name", "Unknown"))
+        team = _html.escape((r.get("player_team", "") or "").upper())
+        platform = _html.escape(r.get("platform", "Platform") or "Platform")
+        opp = r.get("opponent", "")
+        is_home = r.get("is_home")
+        if opp:
+            ha = "vs" if is_home else "@"
+            game_info = f"{ha} {_html.escape(opp)}"
+        else:
+            game_info = ""
+
+        raw_stat = (r.get("stat_type", "") or "").lower().strip()
+        stat = _html.escape(_display_stat_name(raw_stat))
+        direction = (r.get("direction", "OVER") or "OVER").upper()
+        dir_label = "MORE" if direction == "OVER" else "LESS"
+        dir_arrow = "&#8593;" if direction == "OVER" else "&#8595;"
+        try:
+            line_val_num = float(r.get("prop_line", r.get("line", 0)))
+            line_val = f'{line_val_num:g}'
+        except (ValueError, TypeError):
+            line_val_num = 0
+            line_val = "\u2014"
+
+        tier = r.get("tier", "Gold")
+        conf = r.get("confidence_score", 0)
+        edge = r.get("edge_percentage", 0)
+        _prob_over_raw = float(r.get("probability_over", 0) or 0)
+        prob = (_prob_over_raw if direction == "OVER" else 1.0 - _prob_over_raw) * 100
+
+        # Confidence color (AI purple/blue palette)
+        if conf >= 80:
+            conf_color = "#c084fc"
+        elif conf >= 65:
+            conf_color = "#fbbf24"
+        else:
+            conf_color = "#60a5fa"
+
+        # Projection
+        try:
+            proj_val = float(r.get("adjusted_projection", 0) or 0)
+        except (ValueError, TypeError):
+            proj_val = 0
+        proj_display = f'{proj_val:.1f}' if proj_val else "\u2014"
+
+        # Projection bar
+        proj_bar_html = ""
+        if proj_val and line_val_num:
+            diff = proj_val - line_val_num
+            bar_color = "#c084fc" if diff > 0 else "#60a5fa"
+            bar_label = f'+{diff:.1f}' if diff > 0 else f'{diff:.1f}'
+            bar_width = min(abs(diff / line_val_num * 100), 100) if line_val_num else 0
+            proj_bar_html = (
+                f'<div class="plat-proj-bar">'
+                f'<div class="plat-proj-bar-label">'
+                f'<span style="color:#7c82a8;">Line {_html.escape(line_val)}</span>'
+                f'<span style="color:{bar_color};font-weight:700;">'
+                f'Proj {proj_display} ({bar_label})</span>'
+                f'</div>'
+                f'<div class="plat-proj-bar-track">'
+                f'<div class="plat-proj-bar-fill" '
+                f'style="width:{bar_width:.0f}%;"></div>'
+                f'</div>'
+                f'</div>'
+            )
+
+        # Headshot
+        player_id = r.get("player_id", "") or ""
+        headshot_url = (
+            f"https://cdn.nba.com/headshots/nba/latest/1040x760/{player_id}.png"
+            if player_id else ""
+        )
+        headshot_html = (
+            f'<div class="plat-hs-wrap">'
+            f'<img class="plat-headshot" '
+            f'src="{headshot_url}" alt="{name}" '
+            f'onerror="this.style.display=\'none\'">'
+            f'</div>'
+        ) if headshot_url else ""
+
+        # Sim range
+        try:
+            p10 = float(r.get("percentile_10", 0) or 0)
+        except (ValueError, TypeError):
+            p10 = 0
+        try:
+            p90 = float(r.get("percentile_90", 0) or 0)
+        except (ValueError, TypeError):
+            p90 = 0
+        range_html = ""
+        if p10 and p90:
+            range_html = (
+                f'<div class="plat-range">'
+                f'<span class="plat-range-label">SIM RANGE</span>'
+                f'<span class="plat-range-vals">'
+                f'{p10:.1f} &mdash; {p90:.1f}</span>'
+                f'</div>'
+            )
+
+        # Projection color
+        proj_color = "#c084fc" if proj_val > line_val_num else "#60a5fa"
+
+        cards.append(
+            f'<div class="plat-card" '
+            f'style="animation-delay:{idx * 120}ms;">'
+            f'<span class="plat-rank">#{idx + 1}</span>'
+            # Status bar: platform badge
+            f'<div class="plat-status">'
+            f'<span class="plat-badge">'
+            f'<span class="plat-badge-icon">&#9889;</span> '
+            f'{platform} AI</span>'
+            f'</div>'
+            # Headshot
+            f'{headshot_html}'
+            # Player info
+            f'<div class="plat-team-pos">{team}</div>'
+            f'<div class="plat-name">{name}</div>'
+            f'<div class="plat-game-info">{game_info}</div>'
+            # Line area
+            f'<div class="plat-line-area">'
+            f'<div class="plat-line">{_html.escape(line_val)}</div>'
+            f'<div class="plat-stat">{stat}</div>'
+            f'</div>'
+            # Direction
+            f'<div class="plat-dir" data-dir="{_html.escape(direction)}">'
+            f'{dir_arrow} {dir_label}</div>'
+            # Projection bar
+            f'{proj_bar_html}'
+            # Metrics
+            f'<div class="plat-metrics">'
+            f'<div class="plat-metric">'
+            f'<div class="plat-metric-val" style="color:{conf_color};">{conf:.0f}</div>'
+            f'<div class="plat-metric-label">Confidence</div>'
+            f'</div>'
+            f'<div class="plat-metric">'
+            f'<div class="plat-metric-val" style="color:#c084fc;">{edge:+.1f}%</div>'
+            f'<div class="plat-metric-label">Edge</div>'
+            f'</div>'
+            f'<div class="plat-metric">'
+            f'<div class="plat-metric-val">{prob:.0f}%</div>'
+            f'<div class="plat-metric-label">Probability</div>'
+            f'</div>'
+            f'<div class="plat-metric">'
+            f'<div class="plat-metric-val" style="color:{proj_color};">{proj_display}</div>'
+            f'<div class="plat-metric-label">Projection</div>'
+            f'</div>'
+            f'</div>'
+            # Sim range
+            f'{range_html}'
+            f'</div>'
+        )
+
+    return (
+        f'<div class="plat-section">'
+        f'<div class="plat-label">&#9889; Platform AI Picks</div>'
+        f'<div class="plat-grid">{"".join(cards)}</div>'
         f'</div>'
     )
 
@@ -1439,7 +1753,7 @@ def render_quick_view_html(results: list, best_pick_keys: set | None = None) -> 
 
         # Confidence color
         if conf >= 80:
-            conf_color = "#00f0ff"
+            conf_color = "#00D559"
         elif conf >= 65:
             conf_color = "#FFD700"
         elif conf >= 50:

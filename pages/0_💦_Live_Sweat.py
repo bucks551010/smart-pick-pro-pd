@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/0_💦_Live_Sweat.py
 # PURPOSE: Live Sweat in-game dashboard.  Tracks locked pre-game
 #          bets against real-time NBA box scores with auto-refresh,
@@ -735,7 +735,7 @@ if scoreboard_games:
             f'{_cards_html}{_cards_html}</div>'  # duplicated for infinite loop
         )
     else:
-        _inner = f'<div class="espn-ticker-track">{_cards_html}</div>'
+        _inner = _cards_html  # static — no wrapper needed
 
     _header_text = "🔴 LIVE SCORES" if _has_live else "🏀 TODAY'S GAMES"
     _ticker_html = (
@@ -942,15 +942,27 @@ cards_html = "".join(cards_html_parts)
 
 # ── Sticky Top-Level Metrics ──────────────────────────────────
 
-st.markdown('<div class="sticky-metrics-bar">', unsafe_allow_html=True)
-c1, c2, c3, c4, c5, c6 = st.columns(6)
-c1.metric("🎯 Active Bets", len(active_bets))
-c2.metric("📡 Tracking Live", tracking_count)
-c3.metric("✅ Cashed", cashed_count)
-c4.metric("❌ Lost", lost_count)
-c5.metric("🚨 At Risk", risk_count)
-c6.metric("🕐 Awaiting", waiting_count)
-st.markdown('</div>', unsafe_allow_html=True)
+_metrics_items = [
+    ("🎯", "Active Bets", len(active_bets)),
+    ("📡", "Tracking Live", tracking_count),
+    ("✅", "Cashed", cashed_count),
+    ("❌", "Lost", lost_count),
+    ("🚨", "At Risk", risk_count),
+    ("🕐", "Awaiting", waiting_count),
+]
+_metrics_cells = "".join(
+    f'<div class="sm-metric-cell">'
+    f'<div class="sm-metric-value">{icon} {val}</div>'
+    f'<div class="sm-metric-label">{label}</div>'
+    f'</div>'
+    for icon, label, val in _metrics_items
+)
+st.markdown(
+    f'<div class="sticky-metrics-bar">'
+    f'<div class="sm-metric-row">{_metrics_cells}</div>'
+    f'</div>',
+    unsafe_allow_html=True,
+)
 
 st.divider()
 
@@ -1068,7 +1080,7 @@ elif live_games:
 st.markdown(
     '<div style="text-align:center;margin:12px 0;">'
     '<a href="/Prop_Scanner" target="_self" '
-    'style="color:#00f0ff;text-decoration:none;font-weight:700;">'
+    'style="color:#00D559;text-decoration:none;font-weight:700;">'
     '🔒 Lock More Bets → Prop Scanner</a>'
     '</div>',
     unsafe_allow_html=True,

@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/helpers/bet_tracker_helpers.py
 # PURPOSE: Helper functions for the Bet Tracker page.
 #          Extracted from pages/11_📈_Bet_Tracker.py to reduce page size.
@@ -186,12 +186,12 @@ def get_calendar_heatmap_html(bets_by_date: dict, num_days: int = 42) -> str:
     return (
         f'<div style="margin:10px 0;">'
         f'<div class="heatmap-grid">{header}{cells_html}</div>'
-        f'<div style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:0.70rem;color:#5a6880;">'
+        f'<div style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:0.70rem;color:#3A4460;">'
         f'<span>Less</span>'
         f'<div style="width:12px;height:12px;border-radius:2px;background:rgba(255,68,68,0.55);"></div>'
         f'<div style="width:12px;height:12px;border-radius:2px;background:rgba(255,204,0,0.20);"></div>'
-        f'<div style="width:12px;height:12px;border-radius:2px;background:rgba(0,255,157,0.35);"></div>'
-        f'<div style="width:12px;height:12px;border-radius:2px;background:rgba(0,255,157,0.80);"></div>'
+        f'<div style="width:12px;height:12px;border-radius:2px;background:rgba(0,213,89,0.35);"></div>'
+        f'<div style="width:12px;height:12px;border-radius:2px;background:rgba(0,213,89,0.80);"></div>'
         f'<span>More</span>'
         f'</div>'
         f'</div>'
@@ -219,7 +219,7 @@ def get_achievement_ring_html(icon: str, name: str, desc: str, progress: float, 
     dash = circumference * min(progress, 1.0)
     gap = circumference - dash
 
-    ring_color = "#00f0ff" if earned else "#5a6880"
+    ring_color = "#00D559" if earned else "#3A4460"
     badge_class = "badge-earned" if earned else "badge-locked"
     opacity = "1" if earned else "0.45"
 

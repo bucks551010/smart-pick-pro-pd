@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/2_🔬_Prop_Scanner.py
 # PURPOSE: Prop Scanner — enter, upload, or pull live prop lines,
 #          then scan, filter, and analyse them with Smart Scan
@@ -351,12 +351,12 @@ with tab_dashboard:
         # ── Value Summary Banner (HTML) ───────────────────────────
         if low_count + high_count + fair_count > 0:
             st.markdown(
-                f'<div style="background:rgba(0,240,255,0.05);border:1px solid rgba(0,240,255,0.15);'
-                f'border-radius:6px;padding:8px 14px;margin-bottom:8px;font-size:0.83rem;color:#c0d0e8;">'
+                f'<div style="background:rgba(0,213,89,0.04);border:1px solid rgba(0,213,89,0.13);'
+                f'border-radius:6px;padding:8px 14px;margin-bottom:8px;font-size:0.83rem;color:#EEF0F6;">'
                 f'📊 <strong>Line Value Summary:</strong> &nbsp; '
-                f'<span style="color:#00ff9d;font-weight:700;">🔥 {low_count} Low (OVER value)</span> &nbsp;·&nbsp; '
+                f'<span style="color:#00D559;font-weight:700;">🔥 {low_count} Low (OVER value)</span> &nbsp;·&nbsp; '
                 f'<span style="color:#69b4ff;font-weight:600;">✅ {fair_count} Fair</span> &nbsp;·&nbsp; '
-                f'<span style="color:#ff9966;font-weight:700;">⚠️ {high_count} High (UNDER value)</span>'
+                f'<span style="color:#F9C62B;font-weight:700;">⚠️ {high_count} High (UNDER value)</span>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -513,7 +513,7 @@ with tab_load:
             'border-radius:10px;padding:12px 16px;margin-bottom:8px;">'
             '<span style="color:#ff9d00;font-weight:600;">🔒 Premium Feature</span>'
             f' — Live platform loading (all major sportsbooks) requires a '
-            f'<a href="{_PREM_PATH}" style="color:#ff5e00;font-weight:700;">Premium subscription</a>. '
+            f'<a href="{_PREM_PATH}" style="color:#F9C62B;font-weight:700;">Premium subscription</a>. '
             'You can still enter up to 5 props manually on the ✏️ Manual Entry tab.</div>',
             unsafe_allow_html=True,
         )
@@ -702,7 +702,7 @@ with tab_load:
             'border-radius:10px;padding:12px 16px;">'
             '<span style="color:#ff9d00;font-weight:600;">🔒 Premium Feature</span>'
             f' — CSV upload requires a '
-            f'<a href="{_PREM_PATH}" style="color:#ff5e00;font-weight:700;">Premium subscription</a>.'
+            f'<a href="{_PREM_PATH}" style="color:#F9C62B;font-weight:700;">Premium subscription</a>.'
             '</div>',
             unsafe_allow_html=True,
         )

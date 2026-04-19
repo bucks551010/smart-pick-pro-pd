@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/6_🧬_Entry_Builder.py
 # PURPOSE: Build optimal parlay entries for sportsbook platforms
 #          (PrizePicks, Underdog Fantasy, DraftKings Pick6). Calculates EV.
@@ -74,7 +74,7 @@ if "selected_picks" not in st.session_state:
 # PAGE-LEVEL CSS — premium styling for Entry Builder
 # ═══════════════════════════════════════════════════════════
 _EB_PAGE_CSS = """<style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 /* ── Animated background orbs ── */
 @keyframes eb-orbFloat1 {
@@ -99,31 +99,31 @@ _EB_PAGE_CSS = """<style>
 
 .eb-bg-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:0;overflow:hidden}
 .eb-orb{position:absolute;border-radius:50%;filter:blur(80px)}
-.eb-orb-a{left:8%;top:10%;width:500px;height:500px;background:radial-gradient(circle,rgba(0,240,255,.12) 0%,transparent 70%);animation:eb-orbFloat1 12s ease-in-out infinite}
-.eb-orb-b{right:5%;bottom:8%;width:450px;height:450px;background:radial-gradient(circle,rgba(0,255,157,.09) 0%,transparent 70%);animation:eb-orbFloat2 15s ease-in-out infinite 3s}
+.eb-orb-a{left:8%;top:10%;width:500px;height:500px;background:radial-gradient(circle,rgba(0,213,89,.12) 0%,transparent 70%);animation:eb-orbFloat1 12s ease-in-out infinite}
+.eb-orb-b{right:5%;bottom:8%;width:450px;height:450px;background:radial-gradient(circle,rgba(0,213,89,.09) 0%,transparent 70%);animation:eb-orbFloat2 15s ease-in-out infinite 3s}
 .eb-orb-c{left:40%;top:45%;width:350px;height:350px;background:radial-gradient(circle,rgba(0,198,255,.06) 0%,transparent 70%);animation:eb-orbFloat1 18s ease-in-out infinite 6s}
 
 /* ── Hero ── */
 .eb-hero{text-align:center;padding:32px 20px 24px;animation:eb-fadeSlideUp .6s ease-out}
-.eb-hero h1{font-family:Orbitron,sans-serif;font-size:2.2rem;font-weight:900;margin:0;background:linear-gradient(135deg,#00f0ff,#00ff9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:2px}
+.eb-hero h1{font-family:Inter,sans-serif;font-size:2.2rem;font-weight:900;margin:0;background:linear-gradient(135deg,#00D559,#00D559);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:2px}
 .eb-hero-sub{color:#94a3b8;font-size:.92rem;margin:10px auto 0;max-width:660px;line-height:1.6}
 .eb-hero-stats{display:flex;justify-content:center;gap:24px;margin-top:16px;flex-wrap:wrap}
-.eb-hero-stat{background:rgba(15,23,42,.6);border:1px solid rgba(0,240,255,.12);border-radius:8px;padding:8px 18px;backdrop-filter:blur(8px)}
-.eb-hero-stat-val{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:800;color:#00f0ff;display:block}
+.eb-hero-stat{background:rgba(15,23,42,.6);border:1px solid rgba(0,213,89,.12);border-radius:8px;padding:8px 18px;backdrop-filter:blur(8px)}
+.eb-hero-stat-val{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:800;color:#00D559;display:block}
 .eb-hero-stat-lbl{font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.08em}
 
 /* ── Glass cards ── */
 .eb-glass{background:linear-gradient(135deg,rgba(12,18,32,.85),rgba(20,30,48,.75));border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 22px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:eb-fadeSlideUp .5s ease-out both}
-.eb-glass-green{border-color:rgba(0,255,157,.15);box-shadow:0 0 20px rgba(0,255,157,.06)}
-.eb-glass-cyan{border-color:rgba(0,240,255,.15);box-shadow:0 0 20px rgba(0,240,255,.06)}
+.eb-glass-green{border-color:rgba(0,213,89,.15);box-shadow:0 0 20px rgba(0,213,89,.06)}
+.eb-glass-cyan{border-color:rgba(0,213,89,.15);box-shadow:0 0 20px rgba(0,213,89,.06)}
 .eb-glass-gold{border-color:rgba(255,215,0,.15);box-shadow:0 0 20px rgba(255,215,0,.06)}
 .eb-glass-red{border-color:rgba(255,68,68,.15);box-shadow:0 0 20px rgba(255,68,68,.06)}
 
 /* ── Pick cards ── */
 .eb-pick{background:linear-gradient(135deg,rgba(7,10,19,.9),rgba(15,23,42,.8));border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px;transition:all .25s ease;animation:eb-fadeSlideUp .4s ease-out both;position:relative;overflow:hidden}
-.eb-pick:hover{border-color:rgba(0,240,255,.25);box-shadow:0 0 16px rgba(0,240,255,.08);transform:translateY(-1px)}
-.eb-pick-platinum{border-left:4px solid #00f0ff}
-.eb-pick-gold{border-left:4px solid #ffd700}
+.eb-pick:hover{border-color:rgba(0,213,89,.25);box-shadow:0 0 16px rgba(0,213,89,.08);transform:translateY(-1px)}
+.eb-pick-platinum{border-left:4px solid #00D559}
+.eb-pick-gold{border-left:4px solid #F9C62B}
 .eb-pick-silver{border-left:4px solid #c0c0c0}
 .eb-pick-bronze{border-left:4px solid #cd7f32}
 .eb-pick-headshot{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.1);flex-shrink:0}
@@ -134,24 +134,24 @@ _EB_PAGE_CSS = """<style>
 .eb-pick-stat{color:#94a3b8;font-size:.82rem}
 .eb-pick-right{text-align:right;flex-shrink:0}
 .eb-tier-badge{display:inline-block;padding:2px 10px;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.03em}
-.eb-tier-plat{background:#00f0ff;color:#0a0f1a}
-.eb-tier-gold{background:#ffd700;color:#0a0f1a}
+.eb-tier-plat{background:#00D559;color:#0a0f1a}
+.eb-tier-gold{background:#F9C62B;color:#0a0f1a}
 .eb-tier-silv{background:#c0c0c0;color:#0a0f1a}
 .eb-tier-brnz{background:#cd7f32;color:#0a0f1a}
 .eb-prob{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.92rem}
-.eb-edge{font-size:.76rem;color:#8a9bb8;margin-left:6px}
-.eb-lock-badge{position:absolute;top:6px;right:8px;background:rgba(200,0,255,.8);color:#fff;padding:2px 8px;border-radius:4px;font-size:.65rem;font-weight:700;letter-spacing:.04em}
+.eb-edge{font-size:.76rem;color:#6B7A9A;margin-left:6px}
+.eb-lock-badge{position:absolute;top:6px;right:8px;background:rgba(45,158,255,.8);color:#fff;padding:2px 8px;border-radius:4px;font-size:.65rem;font-weight:700;letter-spacing:.04em}
 .eb-conf-bar{background:rgba(255,255,255,.06);border-radius:3px;height:5px;width:80px;display:inline-block;vertical-align:middle;margin-top:4px}
 .eb-conf-fill{height:100%;border-radius:3px}
 
 /* ── Ticket ── */
-.eb-ticket{background:#070A13;border:2px solid rgba(0,255,157,.12);border-radius:14px;overflow:hidden;max-width:540px;margin:16px auto;box-shadow:0 4px 32px rgba(0,0,0,.5),0 0 40px rgba(0,255,157,.04);animation:eb-fadeSlideUp .6s ease-out both}
-.eb-ticket-header{background:linear-gradient(135deg,#0F172A,#1e293b);padding:16px 20px;border-bottom:2px solid rgba(0,255,157,.15);position:relative;overflow:hidden}
-.eb-ticket-header::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(0,255,157,.04),transparent);animation:eb-fadeSlideUp 2s ease-in-out infinite alternate}
-.eb-ticket-title{color:#00ff9d;font-weight:800;font-size:1.05rem;font-family:Orbitron,sans-serif;letter-spacing:1px}
+.eb-ticket{background:#070A13;border:2px solid rgba(0,213,89,.12);border-radius:14px;overflow:hidden;max-width:540px;margin:16px auto;box-shadow:0 4px 32px rgba(0,0,0,.5),0 0 40px rgba(0,213,89,.04);animation:eb-fadeSlideUp .6s ease-out both}
+.eb-ticket-header{background:linear-gradient(135deg,#0F172A,#1e293b);padding:16px 20px;border-bottom:2px solid rgba(0,213,89,.15);position:relative;overflow:hidden}
+.eb-ticket-header::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(0,213,89,.04),transparent);animation:eb-fadeSlideUp 2s ease-in-out infinite alternate}
+.eb-ticket-title{color:#00D559;font-weight:800;font-size:1.05rem;font-family:Inter,sans-serif;letter-spacing:1px}
 .eb-ticket-sub{color:#64748b;font-size:.72rem}
 .eb-ticket-leg{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(148,163,184,.06);transition:background .2s}
-.eb-ticket-leg:hover{background:rgba(0,240,255,.03)}
+.eb-ticket-leg:hover{background:rgba(0,213,89,.03)}
 .eb-ticket-footer{background:#0F172A;padding:16px 20px;border-top:1px solid rgba(148,163,184,.08)}
 .eb-metric-row{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:12px}
 .eb-metric-block{text-align:center}
@@ -159,28 +159,32 @@ _EB_PAGE_CSS = """<style>
 .eb-metric-val{font-family:'JetBrains Mono',monospace;font-weight:800;font-variant-numeric:tabular-nums}
 
 /* ── AI Parlay suggestions ── */
-.eb-ai-header{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(12,18,32,.85),rgba(20,30,48,.75));border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:18px 24px;margin-bottom:14px;backdrop-filter:blur(12px)}
-.eb-ai-badge{background:linear-gradient(135deg,#dc2626,#f97316);color:#fff;font-weight:900;font-size:.82rem;font-family:'JetBrains Mono',monospace;padding:10px 14px;border-radius:10px;letter-spacing:1px;box-shadow:0 0 20px rgba(220,38,38,.25)}
-.eb-parlay-card{background:rgba(20,25,43,.8);border-radius:10px;padding:12px 16px;margin-bottom:8px;border-left:4px solid #ff5e00;box-shadow:0 0 12px rgba(255,94,0,.12);animation:eb-fadeSlideUp .4s ease-out both;transition:transform .2s,box-shadow .2s}
-.eb-parlay-card:hover{transform:translateY(-1px);box-shadow:0 0 20px rgba(255,94,0,.2)}
+.eb-ai-header{display:flex;align-items:center;gap:18px;background:linear-gradient(168deg,rgba(0,20,10,.95),rgba(2,12,6,.98));border:1px solid rgba(0,217,89,.2);border-radius:20px;padding:26px 32px;margin-bottom:20px;position:relative;overflow:hidden;backdrop-filter:blur(20px)}
+.eb-ai-header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent 0%,#00D959 30%,#00ff6a 50%,#00D959 70%,transparent 100%);background-size:200% 100%;animation:parlayShimmer 4s linear infinite}
+.eb-ai-header::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(0,217,89,.06) 0%,transparent 60%);pointer-events:none}
+.eb-ai-badge{background:linear-gradient(135deg,#00D959 0%,#00ff6a 40%,#00a843 100%);color:#000;font-weight:900;font-size:.82rem;font-family:'JetBrains Mono',monospace;padding:14px 16px;border-radius:14px;letter-spacing:2px;box-shadow:0 4px 20px rgba(0,217,89,.35),inset 0 1px 0 rgba(255,255,255,.2);line-height:1}
+.eb-parlay-card{background:linear-gradient(170deg,rgba(2,14,8,.92),rgba(4,8,6,.96));border-radius:16px;padding:16px 20px;margin-bottom:12px;border:1px solid rgba(0,217,89,.1);position:relative;animation:eb-fadeSlideUp .4s ease-out both;transition:all .35s cubic-bezier(.4,0,.2,1)}
+.eb-parlay-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(0,217,89,.35),transparent);opacity:0;transition:opacity .35s ease}
+.eb-parlay-card:hover{transform:translateY(-4px);box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 40px rgba(0,217,89,.05);border-color:rgba(0,217,89,.25)}
+.eb-parlay-card:hover::before{opacity:1}
 
 /* ── Entry cards ── */
 .eb-entry{background:linear-gradient(135deg,rgba(7,10,19,.9),rgba(15,23,42,.8));border-radius:14px;padding:18px 22px;margin-bottom:18px;border:1px solid rgba(255,255,255,.08);animation:eb-fadeSlideUp .5s ease-out both;transition:box-shadow .3s}
-.eb-entry-pos{border-top:3px solid #00ff9d}
-.eb-entry-neg{border-top:3px solid #ff4444}
-.eb-entry:hover{box-shadow:0 0 24px rgba(0,240,255,.08)}
+.eb-entry-pos{border-top:3px solid #00D559}
+.eb-entry-neg{border-top:3px solid #F24336}
+.eb-entry:hover{box-shadow:0 0 24px rgba(0,213,89,.08)}
 .eb-entry-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.eb-entry-rank{font-family:Orbitron,sans-serif;font-size:1rem;font-weight:700}
+.eb-entry-rank{font-family:Inter,sans-serif;font-size:1rem;font-weight:700}
 .eb-entry-stats{display:flex;gap:16px;font-size:.85rem}
 .eb-entry-legs{display:flex;gap:8px;flex-wrap:wrap}
 .eb-entry-leg{flex:1;min-width:120px;background:rgba(0,0,0,.3);border-radius:10px;padding:12px;text-align:center;border:1px solid rgba(255,255,255,.06);transition:border-color .2s}
-.eb-entry-leg:hover{border-color:rgba(0,240,255,.2)}
+.eb-entry-leg:hover{border-color:rgba(0,213,89,.2)}
 
 /* ── Success banner ── */
-.eb-success-banner{background:linear-gradient(135deg,rgba(0,255,157,.08),rgba(0,240,255,.04));border:1px solid rgba(0,255,157,.25);border-radius:12px;padding:14px 20px;margin:12px 0;display:flex;align-items:center;gap:12px;animation:eb-fadeSlideUp .4s ease-out}
+.eb-success-banner{background:linear-gradient(135deg,rgba(0,213,89,.08),rgba(0,213,89,.04));border:1px solid rgba(0,213,89,.25);border-radius:12px;padding:14px 20px;margin:12px 0;display:flex;align-items:center;gap:12px;animation:eb-fadeSlideUp .4s ease-out}
 .eb-success-icon{font-size:1.5rem}
 .eb-success-text{color:#e2e8f0;font-size:.88rem}
-.eb-success-text strong{color:#00ff9d}
+.eb-success-text strong{color:#00D559}
 
 /* ── Stats bar ── */
 .eb-stats-bar{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
@@ -345,9 +349,9 @@ if len(_top_picks) >= 2:
     st.markdown(
         '<div class="eb-ai-header">'
         '<div class="eb-ai-badge">AI</div>'
-        '<div>'
-        '<h3 style="color:#f8fafc;margin:0;font-size:1.2rem;font-family:Orbitron,sans-serif;">AI-Optimized Parlays</h3>'
-        '<p style="color:#94a3b8;font-size:0.82rem;margin:4px 0 0;">Auto-populated from tonight\'s highest-edge picks</p>'
+        '<div style="position:relative;z-index:1;">'
+        '<h3 style="color:#fff;margin:0;font-size:1.25rem;font-family:Inter,-apple-system,sans-serif;font-weight:900;letter-spacing:-0.2px;">AI-Optimized Parlays</h3>'
+        '<p style="color:rgba(144,208,168,0.6);font-size:0.78rem;margin:5px 0 0;font-weight:500;">Auto-populated from tonight\'s highest-edge picks</p>'
         '</div></div>',
         unsafe_allow_html=True,
     )
@@ -375,13 +379,17 @@ if len(_top_picks) >= 2:
         st.markdown(
             f'<div class="eb-parlay-card" style="animation-delay:{_n*0.08}s;">'
             f'<div style="display:flex;justify-content:space-between;align-items:center;">'
-            f'<span style="color:#ff5e00;font-weight:700;">{_lbl}</span>'
-            f'<span style="background:#ff5e00;color:#0a0f1a;padding:2px 8px;border-radius:4px;'
-            f'font-size:0.78rem;font-weight:700;">SAFE {_avg_c}/100</span>'
+            f'<span style="color:rgba(232,245,236,0.9);font-weight:700;font-family:Inter,-apple-system,sans-serif;font-size:1.05rem;letter-spacing:0.3px;">{_lbl}</span>'
+            f'<span style="background:linear-gradient(135deg,#00D959,#00ff6a);color:#000;padding:5px 14px;border-radius:8px;'
+            f'font-size:0.72rem;font-weight:900;font-family:JetBrains Mono,monospace;box-shadow:0 2px 10px rgba(0,217,89,.2);">SAFE {_avg_c}/100</span>'
             f'</div>'
-            f'<div style="color:#c0d0e8;font-size:0.85rem;margin-top:6px;">{_picks_str}</div>'
-            f'<div style="color:#8b949e;font-size:0.78rem;margin-top:4px;">'
-            f'Combined prob: {_combined_pct:.1f}% · Avg edge: {_avg_edge:+.1f}%</div>'
+            f'<div style="color:#fff;font-size:0.86rem;margin-top:10px;font-family:Inter,sans-serif;font-weight:500;line-height:1.5;">{_picks_str}</div>'
+            f'<div style="display:flex;gap:16px;margin-top:8px;">'
+            f'<span style="color:rgba(144,208,168,0.5);font-size:0.72rem;font-family:JetBrains Mono,monospace;font-weight:600;">'
+            f'Prob {_combined_pct:.1f}%</span>'
+            f'<span style="color:{"#00D559" if _avg_edge > 0 else "#F24336"};font-size:0.72rem;font-family:JetBrains Mono,monospace;font-weight:700;">'
+            f'Edge {_avg_edge:+.1f}%</span>'
+            f'</div>'
             f'</div>',
             unsafe_allow_html=True,
         )
@@ -470,13 +478,13 @@ with _kelly_col2:
 if session_budget > 0 and entry_fee > 0:
     _max_affordable = int(session_budget // entry_fee)
     _budget_pct = min(100, round(_max_affordable / max(max_entries, 1) * 100))
-    _budget_color = "#00ff9d" if _max_affordable >= max_entries else ("#ffcc00" if _max_affordable > 0 else "#ff4444")
+    _budget_color = "#00D559" if _max_affordable >= max_entries else ("#F9C62B" if _max_affordable > 0 else "#F24336")
     st.markdown(
         f'<div style="background:#14192b;border-radius:6px;padding:10px 16px;'
         f'border-left:3px solid {_budget_color};margin-top:4px;">'
-        f'<span style="color:#8a9bb8;font-size:0.82rem;">💰 Budget:</span> '
+        f'<span style="color:#6B7A9A;font-size:0.82rem;">💰 Budget:</span> '
         f'<strong style="color:{_budget_color};">${session_budget:.0f}</strong> total · '
-        f'<strong style="color:#c0d0e8;">{_max_affordable}</strong> entries @ ${entry_fee:.0f} each · '
+        f'<strong style="color:#EEF0F6;">{_max_affordable}</strong> entries @ ${entry_fee:.0f} each · '
         f'<span style="color:{_budget_color};">'
         f'{"✅ Enough for " + str(min(_max_affordable, int(max_entries))) + " entries" if _max_affordable >= 1 else "⚠️ Budget too low for even 1 entry"}'
         f'</span></div>',
@@ -495,7 +503,7 @@ if "locked_legs" not in st.session_state:
 with st.expander("🔒 Lock / Unlock Legs (force picks into every entry)", expanded=False):
     st.markdown(
         '<div class="eb-glass eb-glass-cyan" style="margin-bottom:12px;">'
-        '<span style="color:#00f0ff;font-weight:700;">🔒 Lock Legs</span>'
+        '<span style="color:#00D559;font-weight:700;">🔒 Lock Legs</span>'
         '<p style="color:#94a3b8;font-size:0.85rem;margin:6px 0 0;">'
         'Locked legs are <strong style="color:#e2e8f0;">forced into every generated entry</strong>. '
         'Use this to anchor your highest-conviction picks.</p></div>',
@@ -515,12 +523,12 @@ with st.expander("🔒 Lock / Unlock Legs (force picks into every entry)", expan
         _lock_chips = ""
         for _ln in _locked:
             _lock_chips += (
-                f'<span style="display:inline-block;background:rgba(200,0,255,.15);border:1px solid rgba(200,0,255,.35);'
+                f'<span style="display:inline-block;background:rgba(45,158,255,.15);border:1px solid rgba(45,158,255,.35);'
                 f'color:#e0b0ff;padding:4px 12px;border-radius:20px;font-size:0.78rem;font-weight:600;margin:3px 4px;">'
                 f'🔒 {_html_eb.escape(_ln)}</span>'
             )
         st.markdown(
-            f'<div class="eb-success-banner" style="border-color:rgba(200,0,255,.25);background:linear-gradient(135deg,rgba(200,0,255,.06),rgba(0,240,255,.03));">'
+            f'<div class="eb-success-banner" style="border-color:rgba(45,158,255,.25);background:linear-gradient(135deg,rgba(45,158,255,.06),rgba(0,213,89,.03));">'
             f'<div class="eb-success-icon">🔒</div>'
             f'<div class="eb-success-text"><strong style="color:#e0b0ff;">{len(_locked)} leg(s) locked</strong> — forced into every entry</div>'
             f'</div>'
@@ -586,7 +594,7 @@ if selected_picks:
     
     # Show picks as premium styled pick cards
     _tier_badge_colors = {
-        "Platinum": "#00f0ff", "Gold": "#ffd700",
+        "Platinum": "#00D559", "Gold": "#F9C62B",
         "Silver": "#c0c0c0", "Bronze": "#cd7f32",
     }
     _tier_css_map = {
@@ -608,7 +616,7 @@ if selected_picks:
         pick_conf = pick.get("confidence_score", 50)
         _badge_c = _tier_badge_colors.get(tier_name, "#cd7f32")
         _dir_arrow = "⬆️" if direction == "OVER" else "⬇️"
-        _prob_c = "#00ff9d" if display_prob >= 60 else ("#ffcc00" if display_prob >= 55 else "#ff6b6b")
+        _prob_c = "#00D559" if display_prob >= 60 else ("#F9C62B" if display_prob >= 55 else "#F24336")
         _conf_pct = min(pick_conf, 100)
         _pick_cls, _tier_cls = _tier_css_map.get(tier_name, ("eb-pick-bronze", "eb-tier-brnz"))
         _player_name = pick.get("player_name", "")
@@ -688,7 +696,7 @@ if selected_picks:
             # ── EV Gauge / Speedometer (#4) ─────────────────────────
             _ev_roi_raw = quick_ev.get("return_on_investment", 0) * 100  # as percentage
             _gauge_val = max(-50, min(50, _ev_roi_raw))
-            _gauge_color = "#00ff9d" if _gauge_val >= 0 else "#ff4444"
+            _gauge_color = "#00D559" if _gauge_val >= 0 else "#F24336"
             # Simple SVG radial gauge
             _angle_min, _angle_max = -135, 135  # sweep range
             _needle_angle = _angle_min + (_gauge_val + 50) / 100 * (_angle_max - _angle_min)
@@ -703,14 +711,14 @@ if selected_picks:
                 # Red zone (-50% to 0)
                 f'<path d="M 20 110 A 80 80 0 0 1 100 30" fill="none" stroke="rgba(255,68,68,0.3)" stroke-width="14" stroke-linecap="round"/>'
                 # Green zone (0 to +50%)
-                f'<path d="M 100 30 A 80 80 0 0 1 180 110" fill="none" stroke="rgba(0,255,157,0.3)" stroke-width="14" stroke-linecap="round"/>'
+                f'<path d="M 100 30 A 80 80 0 0 1 180 110" fill="none" stroke="rgba(0,213,89,0.3)" stroke-width="14" stroke-linecap="round"/>'
                 # Needle
                 f'<line x1="100" y1="110" x2="{_nx:.1f}" y2="{_ny:.1f}" stroke="{_gauge_color}" stroke-width="3" stroke-linecap="round"/>'
                 f'<circle cx="100" cy="110" r="5" fill="{_gauge_color}"/>'
                 # Labels
-                f'<text x="18" y="130" fill="#ff6b6b" font-size="9" font-family="JetBrains Mono,monospace">-50%</text>'
+                f'<text x="18" y="130" fill="#F24336" font-size="9" font-family="JetBrains Mono,monospace">-50%</text>'
                 f'<text x="90" y="22" fill="#94a3b8" font-size="9" font-family="JetBrains Mono,monospace">0%</text>'
-                f'<text x="165" y="130" fill="#00ff9d" font-size="9" font-family="JetBrains Mono,monospace">+50%</text>'
+                f'<text x="165" y="130" fill="#00D559" font-size="9" font-family="JetBrains Mono,monospace">+50%</text>'
                 # Value
                 f'<text x="100" y="100" fill="{_gauge_color}" font-size="16" font-weight="800" text-anchor="middle"'
                 f' font-family="JetBrains Mono,monospace">{_gauge_val:+.1f}%</text>'
@@ -732,11 +740,11 @@ if selected_picks:
                     # Per-leg average probability
                     _eb_avg_leg = (sum(selected_probs) / len(selected_probs) * 100) if selected_probs else 50
                     _eb_beats = _eb_avg_leg > _eb_be_prob
-                    _eb_color = "#00ff9d" if _eb_beats else "#ff5e00"
+                    _eb_color = "#00D559" if _eb_beats else "#F9C62B"
                     _eb_icon = "✅" if _eb_beats else "⚠️"
                     st.markdown(
                         f'<div style="background:linear-gradient(135deg,#070A13,#0F172A);'
-                        f'border:1px solid rgba(0,255,157,0.2);border-radius:8px;padding:8px 14px;margin:8px 0;">'
+                        f'border:1px solid rgba(0,213,89,0.2);border-radius:8px;padding:8px 14px;margin:8px 0;">'
                         f'<span style="color:#64748b;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;">'
                         f'📈 DFS {_eb_plat} · {_eb_n_picks}-Pick Flex</span><br>'
                         f'<span style="color:{_eb_color};font-size:0.88rem;font-weight:800;'
@@ -788,14 +796,14 @@ if selected_picks:
                             _v = _cm[_ri][_ci]
                             _fill = f"rgba(255,94,0,{min(_v, 1.0):.2f})" if _v > 0.1 else "rgba(148,163,184,0.06)"
                             if _ri == _ci:
-                                _fill = "rgba(0,255,157,0.2)"
+                                _fill = "rgba(0,213,89,0.2)"
                             _rx = (_ci + 1) * _cell
                             _ry = (_ri + 1) * _cell
                             _svg_rects += (
                                 f'<rect x="{_rx}" y="{_ry}" width="{_cell-2}" height="{_cell-2}" '
                                 f'rx="3" fill="{_fill}"/>'
                                 f'<text x="{_rx + _cell//2}" y="{_ry + _cell//2 + 4}" '
-                                f'fill="#c0d0e8" font-size="9" text-anchor="middle" '
+                                f'fill="#EEF0F6" font-size="9" text-anchor="middle" '
                                 f'font-family="JetBrains Mono,monospace">{_v:.1f}</text>'
                             )
                     # Labels
@@ -847,20 +855,20 @@ if selected_picks:
                 _lp_prob = _lp.get("probability_over", 0.5)
                 _lp_prob_dir = (_lp_prob if _lp_dir == "OVER" else 1.0 - _lp_prob) * 100
                 _lp_tc = _tier_badge_colors.get(_lp_tier, "#94a3b8")
-                _lp_pc = "#00ff9d" if _lp_prob_dir >= 60 else ("#ffcc00" if _lp_prob_dir >= 55 else "#ff6b6b")
+                _lp_pc = "#00D559" if _lp_prob_dir >= 60 else ("#F9C62B" if _lp_prob_dir >= 55 else "#F24336")
                 _live_legs += (
                     f'<div class="eb-ticket-leg">'
                     f'<div><span style="color:#e2e8f0;font-weight:600;font-size:0.82rem;">{_lp_name}</span>'
                     f'<span style="color:#64748b;font-size:0.70rem;margin-left:6px;">{_lp_team}</span><br>'
                     f'<span style="color:#94a3b8;font-size:0.74rem;">{_lp_stat} '
-                    f'<span style="color:{"#00f0ff" if _lp_dir == "OVER" else "#ff5e00"};">'
+                    f'<span style="color:{"#00D559" if _lp_dir == "OVER" else "#F9C62B"};">'
                     f'{"MORE" if _lp_dir == "OVER" else "LESS"}</span> {_lp_line}</span></div>'
                     f'<div style="text-align:right;">'
                     f'<span style="color:{_lp_tc};font-size:0.70rem;font-weight:700;">{_lp_tier}</span>'
                     f'<span style="color:{_lp_pc};font-size:0.78rem;font-weight:700;margin-left:6px;">{_lp_prob_dir:.0f}%</span></div></div>'
                 )
             _live_ev_val = quick_ev.get("return_on_investment", 0) * 100
-            _live_ev_c = "#00ff9d" if _live_ev_val >= 0 else "#ff5e00"
+            _live_ev_c = "#00D559" if _live_ev_val >= 0 else "#F9C62B"
             _live_ev_s = "+" if _live_ev_val > 0 else ""
             _combined_prob_live = 1.0
             for _sp in selected_probs:
@@ -1001,7 +1009,7 @@ if _stored_entries:
 
         # ── Visual Parlay Card ────────────────────────────────────────
         _card_cls = "eb-entry-pos" if ev_display["is_positive_ev"] else "eb-entry-neg"
-        _card_border = "#00ff9d" if ev_display["is_positive_ev"] else "#ff4444"
+        _card_border = "#00D559" if ev_display["is_positive_ev"] else "#F24336"
         _pick_cells = ""
         for _pick in picks:
             _pdir = _pick.get("direction", "OVER")
@@ -1015,18 +1023,18 @@ if _stored_entries:
             _pedge = _pick.get("edge_percentage", 0)
             _pteam = _pick.get("team", "")
             _is_locked = _pname in st.session_state.get("locked_legs", set())
-            _lock_badge = ' <span style="background:rgba(200,0,255,.8);color:#fff;padding:1px 5px;border-radius:3px;font-size:0.68rem;font-weight:700;">🔒</span>' if _is_locked else ""
-            _prob_color = "#00ff9d" if _pdisp_prob >= 60 else ("#ffcc00" if _pdisp_prob >= 55 else "#ff6b6b")
+            _lock_badge = ' <span style="background:rgba(45,158,255,.8);color:#fff;padding:1px 5px;border-radius:3px;font-size:0.68rem;font-weight:700;">🔒</span>' if _is_locked else ""
+            _prob_color = "#00D559" if _pdisp_prob >= 60 else ("#F9C62B" if _pdisp_prob >= 55 else "#F24336")
             _pick_cells += (
                 f'<div class="eb-entry-leg">'
-                f'<div style="font-size:0.75rem;color:#8a9bb8;">{_html_eb.escape(_pteam)}</div>'
-                f'<div style="font-size:0.88rem;font-weight:700;color:#c0d0e8;margin:4px 0;">'
+                f'<div style="font-size:0.75rem;color:#6B7A9A;">{_html_eb.escape(_pteam)}</div>'
+                f'<div style="font-size:0.88rem;font-weight:700;color:#EEF0F6;margin:4px 0;">'
                 f'{_html_eb.escape(_pname)}{_lock_badge}</div>'
                 f'<div style="font-size:1.1rem;color:{_prob_color};font-weight:800;">'
                 f'{_parrow} {_pdir}</div>'
-                f'<div style="font-size:0.8rem;color:#8a9bb8;">{_pstat} {_pline}</div>'
+                f'<div style="font-size:0.8rem;color:#6B7A9A;">{_pstat} {_pline}</div>'
                 f'<div style="font-size:0.85rem;color:{_prob_color};font-weight:700;">{_pdisp_prob:.0f}%</div>'
-                f'<div style="font-size:0.72rem;color:#8a9bb8;">{_ptier} Edge: {_pedge:+.1f}%</div>'
+                f'<div style="font-size:0.72rem;color:#6B7A9A;">{_ptier} Edge: {_pedge:+.1f}%</div>'
                 f'</div>'
             )
 
@@ -1036,8 +1044,8 @@ if _stored_entries:
             f'<div class="eb-entry-rank" style="color:{_card_border};">Entry #{entry_rank}</div>'
             f'<div class="eb-entry-stats">'
             f'<span style="color:{_card_border};font-weight:700;">EV: {_html_eb.escape(ev_label)}</span>'
-            f'<span style="color:#8a9bb8;">ROI: {_html_eb.escape(roi_label)}</span>'
-            f'<span style="color:#8a9bb8;">Confidence: {confidence:.0f}/100</span>'
+            f'<span style="color:#6B7A9A;">ROI: {_html_eb.escape(roi_label)}</span>'
+            f'<span style="color:#6B7A9A;">Confidence: {confidence:.0f}/100</span>'
             f'</div></div>'
             f'<div class="eb-entry-legs">{_pick_cells}</div>'
             f'</div>',
@@ -1357,7 +1365,7 @@ selected_pick_labels = st.multiselect(
 # ── Color-Coded Tier Badges (#7) ─────────────────────────────
 if selected_pick_labels:
     _custom_tier_colors = {
-        "Platinum": "#00f0ff", "Gold": "#ffd700",
+        "Platinum": "#00D559", "Gold": "#F9C62B",
         "Silver": "#c0c0c0", "Bronze": "#cd7f32",
     }
     _chips_html = ""
@@ -1439,7 +1447,7 @@ st.divider()
 
 st.markdown(
     '<div class="eb-glass eb-glass-green" style="margin-bottom:16px;">'
-    '<h2 style="color:#00ff9d;margin:0 0 6px;font-family:Orbitron,sans-serif;font-weight:800;">'
+    '<h2 style="color:#00D559;margin:0 0 6px;font-family:Inter,sans-serif;font-weight:800;">'
     '🚀 Auto-Slip Optimizer</h2>'
     '<p style="color:#94a3b8;font-size:0.84rem;margin:0;">'
     'Generates the mathematically optimal ticket from tonight\'s props using '
@@ -1523,13 +1531,13 @@ if _slips:
     _avg_ev = sum(_all_evs) / len(_all_evs) if _all_evs else 0
     _avg_prob = sum(_all_probs) / len(_all_probs) if _all_probs else 0
     _best_ev = max(_all_evs) if _all_evs else 0
-    _avg_ev_c = "#00ff9d" if _avg_ev > 0 else "#ff5e00"
-    _best_ev_c = "#00ff9d" if _best_ev > 0 else "#ff5e00"
+    _avg_ev_c = "#00D559" if _avg_ev > 0 else "#F9C62B"
+    _best_ev_c = "#00D559" if _best_ev > 0 else "#F9C62B"
 
     # DFS aggregate across all slips (Phase 4)
     _all_dfs_edges = [s.get("dfs_avg_edge", 0) for s in _slips if s.get("dfs_leg_edges")]
     _avg_dfs_edge = (sum(_all_dfs_edges) / len(_all_dfs_edges) * 100) if _all_dfs_edges else 0
-    _avg_dfs_edge_c = "#00ff9d" if _avg_dfs_edge > 0 else "#ff5e00"
+    _avg_dfs_edge_c = "#00D559" if _avg_dfs_edge > 0 else "#F9C62B"
 
     st.markdown(
         '<div class="eb-stats-bar">'
@@ -1537,18 +1545,18 @@ if _slips:
         '<div class="eb-stat-box">'
         '<div style="color:#64748b;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">'
         'Slips Generated</div>'
-        f'<div style="color:#c0d0e8;font-size:1.15rem;font-weight:800;'
+        f'<div style="color:#EEF0F6;font-size:1.15rem;font-weight:800;'
         f"font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;"
         f'">{len(_slips)}</div></div>'
         # Best EV
-        '<div class="eb-stat-box" style="border-color:rgba(0,255,157,.18);">'
+        '<div class="eb-stat-box" style="border-color:rgba(0,213,89,.18);">'
         '<div style="color:#64748b;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">'
         'Best EV</div>'
         f'<div style="color:{_best_ev_c};font-size:1.15rem;font-weight:800;'
         f"font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;"
         f'">{"+" if _best_ev > 0 else ""}{_best_ev * 100:.1f}%</div></div>'
         # Avg EV
-        '<div class="eb-stat-box" style="border-color:rgba(0,240,255,.15);">'
+        '<div class="eb-stat-box" style="border-color:rgba(0,213,89,.15);">'
         '<div style="color:#64748b;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">'
         'Avg EV</div>'
         f'<div style="color:{_avg_ev_c};font-size:1.15rem;font-weight:800;'
@@ -1558,11 +1566,11 @@ if _slips:
         '<div class="eb-stat-box">'
         '<div style="color:#64748b;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">'
         'Avg All-Hit</div>'
-        f'<div style="color:#c0d0e8;font-size:1.15rem;font-weight:800;'
+        f'<div style="color:#EEF0F6;font-size:1.15rem;font-weight:800;'
         f"font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;"
         f'">{_avg_prob * 100:.1f}%</div></div>'
         # DFS Avg Edge (Phase 4)
-        '<div class="eb-stat-box" style="border-color:rgba(0,255,157,.12);">'
+        '<div class="eb-stat-box" style="border-color:rgba(0,213,89,.12);">'
         '<div style="color:#64748b;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;">'
         'DFS Edge</div>'
         f'<div style="color:{_avg_dfs_edge_c};font-size:1.15rem;font-weight:800;'
@@ -1580,7 +1588,7 @@ if _slips:
     _fair_odds = _best["fair_odds"]
     _slip_size = _best["slip_size"]
 
-    _ev_color = "#00ff9d" if _ev > 0 else "#ff5e00"
+    _ev_color = "#00D559" if _ev > 0 else "#F9C62B"
     _ev_sign = "+" if _ev > 0 else ""
 
     # ── Kelly TARGET ALLOCATION for the slip ──────────────────
@@ -1623,11 +1631,11 @@ if _slips:
         _pk_team = _html_eb.escape(str(_pk.get("player_team", _pk.get("team", ""))))
 
         _tier_colors = {
-            "Platinum": "#00f0ff", "Gold": "#ffd700", "Silver": "#c0c0c0",
+            "Platinum": "#00D559", "Gold": "#F9C62B", "Silver": "#c0c0c0",
             "Bronze": "#cd7f32", "Diamond": "#b9f2ff",
         }
         _tc = _tier_colors.get(_pk_tier, "#94a3b8")
-        _edge_c = "#00ff9d" if _pk_edge > 0 else "#ff5e00"
+        _edge_c = "#00D559" if _pk_edge > 0 else "#F9C62B"
         _edge_s = "+" if _pk_edge > 0 else ""
 
         _pk_dir_label = "MORE" if _pk_dir == "OVER" else "LESS"
@@ -1640,13 +1648,13 @@ if _slips:
             _le_edge = _le.get("edge_vs_breakeven", 0) * 100
             if _le_beats:
                 _dfs_badge = (
-                    f'<span style="color:#00ff9d;font-size:0.60rem;margin-left:4px;" '
+                    f'<span style="color:#00D559;font-size:0.60rem;margin-left:4px;" '
                     f'title="Beats {_slip_size}-pick breakeven by {_le_edge:+.1f}%">'
                     f'✅ BE+{_le_edge:.0f}%</span>'
                 )
             else:
                 _dfs_badge = (
-                    f'<span style="color:#ff5e00;font-size:0.60rem;margin-left:4px;" '
+                    f'<span style="color:#F9C62B;font-size:0.60rem;margin-left:4px;" '
                     f'title="Below {_slip_size}-pick breakeven by {_le_edge:.1f}%">'
                     f'⚠️ BE{_le_edge:+.0f}%</span>'
                 )
@@ -1657,7 +1665,7 @@ if _slips:
             f'<span style="color:#e2e8f0;font-weight:600;font-size:0.84rem;">{_pk_name}</span>'
             f'<span style="color:#64748b;font-size:0.72rem;margin-left:6px;">{_pk_team}</span><br>'
             f'<span style="color:#94a3b8;font-size:0.76rem;">{_pk_stat} '
-            f'<span style="color:{"#00f0ff" if _pk_dir == "OVER" else "#ff5e00"};">{_pk_dir_label}</span> '
+            f'<span style="color:{"#00D559" if _pk_dir == "OVER" else "#F9C62B"};">{_pk_dir_label}</span> '
             f'<span style="font-family:\'JetBrains Mono\',monospace;font-variant-numeric:tabular-nums;">'
             f'{_pk_line}</span></span></div>'
             f'<div style="text-align:right;">'
@@ -1671,7 +1679,7 @@ if _slips:
 
     _odds_str = f"+{_fair_odds:.0f}" if _fair_odds > 0 else f"{_fair_odds:.0f}"
     _penalty_note = (
-        f'<span style="color:#ff5e00;font-size:0.68rem;">'
+        f'<span style="color:#F9C62B;font-size:0.68rem;">'
         f'⚠️ Correlation penalty: {(1-_penalty)*100:.0f}%</span>'
         if _penalty < 1.0 else ""
     )
@@ -1734,29 +1742,29 @@ if _slips:
         f'{_kelly_row}'
         # DFS Platform EV
         f'<div style="margin-top:6px;padding-top:6px;'
-        f'border-top:1px solid rgba(0,240,255,0.08);">'
+        f'border-top:1px solid rgba(0,213,89,0.07);">'
         f'<div class="eb-metric-row">'
         f'<div class="eb-metric-block">'
         f'<span class="eb-metric-label">DFS EV ({_opt_platform})</span>'
-        f'<span class="eb-metric-val" style="color:{"#00ff9d" if _dfs_ev_val > 0 else "#ff5e00"};font-size:0.9rem;">'
+        f'<span class="eb-metric-val" style="color:{"#00D559" if _dfs_ev_val > 0 else "#F9C62B"};font-size:0.9rem;">'
         f'{"+" if _dfs_ev_val > 0 else ""}{_dfs_ev_val:.2f}</span></div>'
         f'<div class="eb-metric-block">'
         f'<span class="eb-metric-label">DFS ROI</span>'
-        f'<span class="eb-metric-val" style="color:{"#00ff9d" if _dfs_roi > 0 else "#ff5e00"};font-size:0.9rem;">'
+        f'<span class="eb-metric-val" style="color:{"#00D559" if _dfs_roi > 0 else "#F9C62B"};font-size:0.9rem;">'
         f'{"+" if _dfs_roi > 0 else ""}{_dfs_roi:.1f}%</span></div>'
         f'</div></div>'
         # DFS per-leg breakeven summary (Phase 4)
         + (
             f'<div style="margin-top:4px;padding-top:4px;'
-            f'border-top:1px solid rgba(0,255,157,0.06);">'
+            f'border-top:1px solid rgba(0,213,89,0.06);">'
             f'<div style="display:flex;justify-content:space-between;align-items:baseline;">'
             f'<span style="color:#64748b;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.06em;">'
             f'LEGS vs {_slip_size}-PICK BREAKEVEN</span>'
-            f'<span style="color:{"#00ff9d" if _best.get("dfs_legs_beat_breakeven", 0) == _slip_size else "#94a3b8"};'
+            f'<span style="color:{"#00D559" if _best.get("dfs_legs_beat_breakeven", 0) == _slip_size else "#94a3b8"};'
             f'font-size:0.72rem;font-weight:700;font-family:\'JetBrains Mono\',monospace;">'
             f'{_best.get("dfs_legs_beat_breakeven", 0)}/{_slip_size} ✅'
             f'</span>'
-            f'<span style="color:{"#00ff9d" if _best.get("dfs_avg_edge", 0) > 0 else "#ff5e00"};'
+            f'<span style="color:{"#00D559" if _best.get("dfs_avg_edge", 0) > 0 else "#F9C62B"};'
             f'font-size:0.68rem;font-family:\'JetBrains Mono\',monospace;font-variant-numeric:tabular-nums;">'
             f'avg {"+" if _best.get("dfs_avg_edge", 0) > 0 else ""}'
             f'{_best.get("dfs_avg_edge", 0) * 100:.1f}%</span>'
@@ -1828,11 +1836,11 @@ if _slips:
                 _alt_names = ", ".join(
                     _html_eb.escape(str(p.get("player_name", "?"))) for p in _alt["picks"]
                 )
-                _alt_ev_c = "#00ff9d" if _alt_ev > 0 else "#ff5e00"
+                _alt_ev_c = "#00D559" if _alt_ev > 0 else "#F9C62B"
                 _alt_s = "+" if _alt_ev > 0 else ""
                 _alt_odds_str = f"+{_alt_odds:.0f}" if _alt_odds > 0 else f"{_alt_odds:.0f}"
                 _alt_penalty_tag = (
-                    f' <span style="color:#ff5e00;font-size:0.62rem;">⚠ corr {(1-_alt_penalty)*100:.0f}%</span>'
+                    f' <span style="color:#F9C62B;font-size:0.62rem;">⚠ corr {(1-_alt_penalty)*100:.0f}%</span>'
                     if _alt_penalty < 1.0 else ""
                 )
                 st.markdown(
@@ -1883,15 +1891,15 @@ with st.expander("🔀 Cross-Platform EV Comparison", expanded=False):
             if _cp_payout:
                 _cp_ev = calculate_entry_expected_value(_cmp_probs, _cp_payout, float(entry_fee))
                 _cp_display = format_ev_display(_cp_ev, float(entry_fee))
-                _cp_color = "#00ff9d" if _cp_display["is_positive_ev"] else "#ff5e00"
+                _cp_color = "#00D559" if _cp_display["is_positive_ev"] else "#F9C62B"
                 _cmp_rows += (
                     f'<div style="display:flex;justify-content:space-between;align-items:center;'
                     f'padding:8px 14px;border-bottom:1px solid rgba(148,163,184,0.06);">'
-                    f'<span style="color:#c0d0e8;font-weight:600;font-size:0.85rem;">{_html_eb.escape(_cp)}</span>'
+                    f'<span style="color:#EEF0F6;font-weight:600;font-size:0.85rem;">{_html_eb.escape(_cp)}</span>'
                     f'<div>'
                     f'<span style="color:{_cp_color};font-weight:700;font-size:0.9rem;'
                     f'font-family:\'JetBrains Mono\',monospace;">{_html_eb.escape(_cp_display["ev_label"])}</span>'
-                    f'<span style="color:#8a9bb8;font-size:0.76rem;margin-left:10px;">'
+                    f'<span style="color:#6B7A9A;font-size:0.76rem;margin-left:10px;">'
                     f'ROI: {_html_eb.escape(_cp_display["roi_label"])}</span>'
                     f'</div></div>'
                 )
@@ -1903,9 +1911,9 @@ with st.expander("🔀 Cross-Platform EV Comparison", expanded=False):
         _cmp_names = ", ".join(_html_eb.escape(p.get("player_name", "?")) for p in _cmp_picks)
         st.markdown(
             f'<div style="background:#0a0f1a;border-radius:10px;overflow:hidden;'
-            f'border:1px solid rgba(0,255,157,0.12);">'
+            f'border:1px solid rgba(0,213,89,0.12);">'
             f'<div style="background:#0F172A;padding:10px 14px;border-bottom:1px solid rgba(148,163,184,0.08);">'
-            f'<span style="color:#00ff9d;font-weight:700;font-size:0.85rem;">📊 {len(_cmp_picks)}-Leg Entry</span>'
+            f'<span style="color:#00D559;font-weight:700;font-size:0.85rem;">📊 {len(_cmp_picks)}-Leg Entry</span>'
             f'<span style="color:#64748b;font-size:0.72rem;margin-left:8px;">{_cmp_names}</span></div>'
             f'{_cmp_rows}</div>',
             unsafe_allow_html=True,
@@ -1939,14 +1947,14 @@ with st.expander("📜 Entry History", expanded=False):
             _he_leg_names = ", ".join(_html_eb.escape(l.get("player_name", "?")) for l in _he_legs)
             st.markdown(
                 f'<div style="background:#14192b;border-radius:8px;padding:10px 14px;'
-                f'margin-bottom:6px;border-left:3px solid #00ff9d;">'
+                f'margin-bottom:6px;border-left:3px solid #00D559;">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;">'
-                f'<span style="color:#c0d0e8;font-weight:600;font-size:0.84rem;">'
+                f'<span style="color:#EEF0F6;font-weight:600;font-size:0.84rem;">'
                 f'Entry #{_hi} · {len(_he_legs)} legs</span>'
                 f'<span style="color:#64748b;font-size:0.72rem;">{_html_eb.escape(_he_time)} · {_html_eb.escape(_he_plat)}</span>'
                 f'</div>'
-                f'<div style="color:#8a9bb8;font-size:0.78rem;margin-top:4px;">{_he_leg_names}</div>'
-                f'<div style="color:#00ff9d;font-size:0.82rem;font-weight:700;margin-top:2px;">EV: {_html_eb.escape(_he_ev)}</div>'
+                f'<div style="color:#6B7A9A;font-size:0.78rem;margin-top:4px;">{_he_leg_names}</div>'
+                f'<div style="color:#00D559;font-size:0.82rem;font-weight:700;margin-top:2px;">EV: {_html_eb.escape(_he_ev)}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )

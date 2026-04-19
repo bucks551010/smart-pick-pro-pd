@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/1_🏀_Todays_Games.py
 # PURPOSE: Show tonight's NBA matchups as rich visual game cards.
 #          Auto-loads games and lets user enter Vegas lines.
@@ -62,18 +62,18 @@ st.markdown("""
 /* Game card wrapper — enhanced dark glass with cyan glow */
 .game-card {
     background: linear-gradient(135deg, rgba(13,18,40,0.95) 0%, rgba(11,18,35,0.98) 100%);
-    border: 1px solid rgba(0,240,255,0.18);
+    border: 1px solid rgba(0,213,89,0.15);
     border-radius: 12px;
     padding: 20px 24px;
     margin-bottom: 18px;
-    box-shadow: 0 0 20px rgba(0,240,255,0.07), 0 4px 20px rgba(0,0,0,0.5);
+    box-shadow: 0 0 20px rgba(0,213,89,0.06), 0 4px 20px rgba(0,0,0,0.5);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 .game-card:hover {
-    border-color: rgba(0,240,255,0.40);
-    box-shadow: 0 0 30px rgba(0,240,255,0.15), 0 6px 24px rgba(0,0,0,0.6);
+    border-color: rgba(0,213,89,0.35);
+    box-shadow: 0 0 30px rgba(0,213,89,0.13), 0 6px 24px rgba(0,0,0,0.6);
     transform: translateY(-3px);
     transition: all 0.2s ease;
 }
@@ -98,13 +98,13 @@ st.markdown("""
     border-radius: 2px;
 }
 /* Record text */
-.record-text { color: #8a9bb8; font-size: 0.9rem; }
+.record-text { color: #6B7A9A; font-size: 0.9rem; }
 /* Streak positive/negative */
-.streak-hot { color: #00ff9d; font-weight: 700; text-shadow: 0 0 6px rgba(0,255,157,0.5); }
-.streak-cold { color: #ff6b6b; font-weight: 700; }
+.streak-hot { color: #00D559; font-weight: 700; text-shadow: 0 0 6px rgba(0,213,89,0.5); }
+.streak-cold { color: #F24336; font-weight: 700; }
 .streak-neutral { color: rgba(255,255,255,0.85); font-weight: 600; }
 /* Game meta info */
-.game-meta { color: #8a9bb8; font-size: 0.85rem; margin-top: 4px; }
+.game-meta { color: #6B7A9A; font-size: 0.85rem; margin-top: 4px; }
 /* Side-by-side scoreboard layout */
 .scoreboard-row {
     display: flex;
@@ -122,25 +122,25 @@ st.markdown("""
 .scoreboard-at {
     font-size: 1.3rem;
     font-weight: 800;
-    color: #ff5e00;
+    color: #F9C62B;
     text-shadow: 0 0 10px rgba(255,94,0,0.6);
     flex-shrink: 0;
 }
 /* Key players row */
-.key-players { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,240,255,0.12); }
-.key-players-title { color: #8a9bb8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+.key-players { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,213,89,0.10); }
+.key-players-title { color: #6B7A9A; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
 .player-stat { color: rgba(255,255,255,0.85); font-size: 0.9rem; }
 /* Injury inline badges */
-.injury-badge-out { display:inline-block; background:#ff4444; color:#fff; font-size:0.65rem;
+.injury-badge-out { display:inline-block; background:#F24336; color:#fff; font-size:0.65rem;
     font-weight:700; padding:1px 5px; border-radius:3px; margin-left:4px; vertical-align:middle; }
-.injury-badge-gtd { display:inline-block; background:#ffcc00; color:#000; font-size:0.65rem;
+.injury-badge-gtd { display:inline-block; background:#F9C62B; color:#000; font-size:0.65rem;
     font-weight:700; padding:1px 5px; border-radius:3px; margin-left:4px; vertical-align:middle; }
 /* Game attractiveness badges */
 .signal-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.72rem;
     font-weight:700; letter-spacing:0.5px; margin-left:8px; }
 .signal-high { background:rgba(0,255,100,0.18); color:#00ff64; border:1px solid rgba(0,255,100,0.3); }
-.signal-medium { background:rgba(255,200,0,0.15); color:#ffcc00; border:1px solid rgba(255,200,0,0.3); }
-.signal-low { background:rgba(255,68,68,0.15); color:#ff6b6b; border:1px solid rgba(255,68,68,0.3); }
+.signal-medium { background:rgba(255,200,0,0.15); color:#F9C62B; border:1px solid rgba(255,200,0,0.3); }
+.signal-low { background:rgba(255,68,68,0.15); color:#F24336; border:1px solid rgba(255,68,68,0.3); }
 /* Skeleton / shimmer loading cards */
 @keyframes shimmer {
     0% { background-position: -400px 0; }
@@ -148,7 +148,7 @@ st.markdown("""
 }
 .skeleton-card {
     background: linear-gradient(135deg, rgba(13,18,40,0.95) 0%, rgba(11,18,35,0.98) 100%);
-    border: 1px solid rgba(0,240,255,0.10);
+    border: 1px solid rgba(0,213,89,0.09);
     border-radius: 12px;
     padding: 20px 24px;
     margin-bottom: 18px;
@@ -156,7 +156,7 @@ st.markdown("""
 .skeleton-line {
     height: 14px;
     border-radius: 4px;
-    background: linear-gradient(90deg, rgba(0,240,255,0.06) 25%, rgba(0,240,255,0.12) 50%, rgba(0,240,255,0.06) 75%);
+    background: linear-gradient(90deg, rgba(0,213,89,0.06) 25%, rgba(0,213,89,0.10) 50%, rgba(0,213,89,0.06) 75%);
     background-size: 400px 100%;
     animation: shimmer 1.5s ease-in-out infinite;
     margin-bottom: 10px;
@@ -169,7 +169,7 @@ st.markdown("""
 .status-pill { display:inline-flex; align-items:center; gap:4px; padding:3px 10px;
     border-radius:6px; font-size:0.78rem; font-weight:600; }
 .status-pill.ok { background:rgba(0,255,100,0.12); color:#00ff64; border:1px solid rgba(0,255,100,0.2); }
-.status-pill.empty { background:rgba(255,94,0,0.12); color:#ff5e00; border:1px solid rgba(255,94,0,0.2); }
+.status-pill.empty { background:rgba(255,94,0,0.12); color:#F9C62B; border:1px solid rgba(255,94,0,0.2); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -247,14 +247,14 @@ st.markdown(f'<div class="status-dash">{"".join(_status_pills)}</div>', unsafe_a
 
 # ── ⚡ One-Click Setup — Primary CTA ─────────────────────────
 st.markdown("""
-<div style="background:linear-gradient(135deg,rgba(0,240,255,0.10),rgba(200,0,255,0.08));
-            border:2px solid rgba(0,240,255,0.35);border-radius:12px;
+<div style="background:linear-gradient(135deg,rgba(0,213,89,0.09),rgba(45,158,255,0.08));
+            border:2px solid rgba(0,213,89,0.30);border-radius:12px;
             padding:14px 20px;margin-bottom:14px;text-align:center;">
-  <div style="font-family:'Orbitron',sans-serif;font-size:1.05rem;font-weight:800;
-              color:#00f0ff;text-shadow:0 0 12px rgba(0,240,255,0.7);letter-spacing:1px;">
+  <div style="font-family:'Inter', sans-serif;font-size:1.05rem;font-weight:800;
+              color:#00D559;text-shadow:0 0 12px rgba(0,213,89,0.65);letter-spacing:1px;">
     ⚡ One-Click Setup — Recommended
   </div>
-  <div style="color:#8a9bb8;font-size:0.84rem;margin-top:4px;">
+  <div style="color:#6B7A9A;font-size:0.84rem;margin-top:4px;">
     Loads tonight's games + retrieves live prop lines from all platforms in one step
   </div>
 </div>
@@ -278,13 +278,13 @@ with _one_click_info:
 # ── Advanced Options (collapsed by default) ─────────────────
 with st.expander("⚙️ Advanced Options — Individual Data Pipelines", expanded=False):
     st.markdown("""
-    <div style="background:linear-gradient(90deg,rgba(0,240,255,0.06),rgba(200,0,255,0.04));
-                border:1px solid rgba(0,240,255,0.14);border-radius:10px;
+    <div style="background:linear-gradient(90deg,rgba(0,213,89,0.06),rgba(45,158,255,0.04));
+                border:1px solid rgba(0,213,89,0.12);border-radius:10px;
                 padding:12px 18px;margin-bottom:14px;">
-      <span style="color:#00f0ff;font-weight:700;font-size:0.95rem;">
+      <span style="color:#00D559;font-weight:700;font-size:0.95rem;">
         ⚡ Two independent data pipelines — choose based on your goal:
       </span><br>
-      <span style="color:#8a9bb8;font-size:0.84rem;">
+      <span style="color:#6B7A9A;font-size:0.84rem;">
         <strong style="color:#e8f0ff;">🔄 Auto-Load</strong> = tonight's schedule + rosters + stats &nbsp;|&nbsp;
         <strong style="color:#e8f0ff;">📊 Get Platform Props</strong> = <em>real live lines</em> from all major sportsbooks → Neural Analysis
       </span>
@@ -320,11 +320,11 @@ with st.expander("⚙️ Advanced Options — Individual Data Pipelines", expand
     # Platform Props row — visually distinct section
     st.markdown("""
     <div style="margin-bottom:6px;">
-      <span style="color:#c800ff;font-size:1.05rem;font-weight:800;font-family:'Orbitron',sans-serif;
-                   text-shadow:0 0 10px rgba(200,0,255,0.5);">
+      <span style="color:#2D9EFF;font-size:1.05rem;font-weight:800;font-family:'Inter', sans-serif;
+                   text-shadow:0 0 10px rgba(45,158,255,0.5);">
         📊 Get Live Platform Props & Analyze
       </span>
-      <span style="color:#8a9bb8;font-size:0.82rem;margin-left:10px;">
+      <span style="color:#6B7A9A;font-size:0.82rem;margin-left:10px;">
         — Retrieves <em>real</em> prop lines from live data, not season-average estimates
       </span>
     </div>
@@ -385,7 +385,7 @@ with st.expander("⚙️ Advanced Options — Individual Data Pipelines", expand
             st.session_state["joseph_preferred_platform"] = "PrizePicks"
 
         st.markdown(
-            '<span style="color:#e2e8f0;font-size:0.88rem;font-family:Montserrat,sans-serif">'
+            '<span style="color:#e2e8f0;font-size:0.88rem;font-family:Inter,sans-serif">'
             'What betting app are you using tonight?</span>',
             unsafe_allow_html=True,
         )
@@ -416,7 +416,7 @@ with st.expander("⚙️ Advanced Options — Individual Data Pipelines", expand
     if _ETL_AVAILABLE_LG:
         with st.expander("🗄️ ETL Data Pull — Fresh Stats from Local Database", expanded=False):
             st.markdown(
-                '<span style="color:#8a9bb8;font-size:0.84rem;">'
+                '<span style="color:#6B7A9A;font-size:0.84rem;">'
                 'Pull the latest player stats into your local database before loading games. '
                 '<strong style="color:#e8f0ff;">Smart Update</strong> fetches only new data (~30s). '
                 '<strong style="color:#e8f0ff;">Full Pull</strong> refreshes the entire season (~60s).'
@@ -1689,7 +1689,7 @@ if current_games:
 
         def _conf_badge(rank, conf):
             if rank and conf:
-                return f'<span style="color:#8a9bb8;font-size:0.75rem;">#{rank} {conf}</span>'
+                return f'<span style="color:#6B7A9A;font-size:0.75rem;">#{rank} {conf}</span>'
             return ""
 
         def _l10_badge(l10):
@@ -1812,7 +1812,7 @@ if current_games:
 
         def _team_badge_html(abbrev, color, logo_url, is_home=False):
             r, g, b = _hex_to_rgb(color)
-            safe_color = _h.escape(color) if color else "#00f0ff"
+            safe_color = _h.escape(color) if color else "#00D559"
             return (
                 f'<span class="team-badge" style="background:rgba({r},{g},{b},0.18);'
                 f'border:1px solid {safe_color}40;">'
@@ -1866,9 +1866,9 @@ if current_games:
             _pace_adj = "Fast 🚀" if total > 230 else ("Slow 🐢" if total < 210 else "Normal ⚖️")
             _blowout_risk = abs(spread)
             _blowout_lbl = "Low" if _blowout_risk < 5 else ("Medium" if _blowout_risk < 10 else "HIGH ⚠️")
-            _blowout_clr = "#00ff9d" if _blowout_risk < 5 else ("#ffcc00" if _blowout_risk < 10 else "#ff4444")
+            _blowout_clr = "#00D559" if _blowout_risk < 5 else ("#F9C62B" if _blowout_risk < 10 else "#F24336")
             _o_u_lbl = "OVER-Friendly 📈" if total > 225 else ("UNDER-Friendly 📉" if total < 210 else "Neutral")
-            _o_u_clr = "#00ff9d" if total > 225 else ("#8b949e" if total < 210 else "#c0d0e8")
+            _o_u_clr = "#00D559" if total > 225 else ("#8b949e" if total < 210 else "#EEF0F6")
 
             # Enhancement #5: Game Attractiveness composite score
             _attract_score = 0
@@ -1912,7 +1912,7 @@ if current_games:
                 if not out_players:
                     return ""
                 escaped = ", ".join(_h.escape(n) for n in out_players[:3])
-                return f'<span style="color:#ff6b6b;">🏥 {_h.escape(team_abbrev)}: {escaped}</span>'
+                return f'<span style="color:#F24336;">🏥 {_h.escape(team_abbrev)}: {escaped}</span>'
 
             _inj_txt_parts = []
             _home_inj_html = _format_injury_text(home, _home_out)
@@ -1921,7 +1921,7 @@ if current_games:
                 _inj_txt_parts.append(_home_inj_html)
             if _away_inj_html:
                 _inj_txt_parts.append(_away_inj_html)
-            _inj_txt = "&nbsp;&nbsp;".join(_inj_txt_parts) if _inj_txt_parts else '<span style="color:#00ff9d;">✅ No major injuries reported</span>'
+            _inj_txt = "&nbsp;&nbsp;".join(_inj_txt_parts) if _inj_txt_parts else '<span style="color:#00D559;">✅ No major injuries reported</span>'
 
             # Bookmaker consensus row (only shown when Odds API data available)
             _bk_count = game.get("bookmaker_count", 0)
@@ -1941,7 +1941,7 @@ if current_games:
                 )
                 _consensus_html = (
                     f'<div style="margin-top:6px;font-size:0.8rem;">'
-                    f'📚 <strong style="color:#8a9bb8;">Consensus ({_bk_count} books):</strong> '
+                    f'📚 <strong style="color:#6B7A9A;">Consensus ({_bk_count} books):</strong> '
                     f'Spread <strong style="color:#63b3ed;">{_cs_txt}{_spread_rng_txt}</strong>'
                     f' &nbsp;|&nbsp; '
                     f'O/U <strong style="color:#63b3ed;">{_ct_txt}{_total_rng_txt}</strong>'
@@ -1950,20 +1950,20 @@ if current_games:
 
             st.markdown(
                 f'<div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:12px 16px;'
-                f'margin:-4px 0 16px 0;border:1px solid rgba(0,240,255,0.10);">'
-                f'<div style="font-size:0.78rem;color:#8a9bb8;font-weight:600;margin-bottom:8px;'
+                f'margin:-4px 0 16px 0;border:1px solid rgba(0,213,89,0.09);">'
+                f'<div style="font-size:0.78rem;color:#6B7A9A;font-weight:600;margin-bottom:8px;'
                 f'letter-spacing:0.5px;">⚙️ GAME ENVIRONMENT'
                 f'<span class="signal-badge {_attract_cls}">{_attract_lbl}</span></div>'
                 f'<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:0.82rem;">'
-                f'<div><span style="color:#8a9bb8;">Pace:</span> '
-                f'<strong style="color:#c0d0e8;">{_pace_adj}</strong></div>'
-                f'<div><span style="color:#8a9bb8;">O/U {total}:</span> '
+                f'<div><span style="color:#6B7A9A;">Pace:</span> '
+                f'<strong style="color:#EEF0F6;">{_pace_adj}</strong></div>'
+                f'<div><span style="color:#6B7A9A;">O/U {total}:</span> '
                 f'<strong style="color:{_o_u_clr};">{_o_u_lbl}</strong></div>'
-                f'<div><span style="color:#8a9bb8;">Blowout Risk:</span> '
+                f'<div><span style="color:#6B7A9A;">Blowout Risk:</span> '
                 f'<strong style="color:{_blowout_clr};">{_blowout_lbl} ({_blowout_risk:.0f} pts)</strong></div>'
                 f'</div>'
                 f'{_consensus_html}'
-                f'<div style="margin-top:8px;font-size:0.8rem;">🏥 <strong style="color:#8a9bb8;">Injury Impact:</strong> {_inj_txt}</div>'
+                f'<div style="margin-top:8px;font-size:0.8rem;">🏥 <strong style="color:#6B7A9A;">Injury Impact:</strong> {_inj_txt}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -2028,11 +2028,11 @@ if current_games:
 else:
     # Enhancement #8: Skeleton / shimmer loading cards
     st.markdown(
-        '<div style="background:linear-gradient(135deg,rgba(255,94,0,0.12),rgba(200,0,255,0.08));'
+        '<div style="background:linear-gradient(135deg,rgba(255,94,0,0.12),rgba(45,158,255,0.08));'
         'border:1px solid rgba(255,94,0,0.35);border-radius:10px;padding:16px 24px;margin:8px 0 16px 0;">'
-        '<div style="font-size:1.1rem;font-weight:700;color:#ff5e00;margin-bottom:6px;">'
+        '<div style="font-size:1.1rem;font-weight:700;color:#F9C62B;margin-bottom:6px;">'
         '🚫 No Games Loaded Tonight</div>'
-        '<div style="color:#c0d0e8;">'
+        '<div style="color:#EEF0F6;">'
         'No NBA games have been loaded yet. Click <strong>⚡ One-Click Setup</strong> above to '
         'automatically load tonight\'s slate, player stats, injury reports, and props in one click.<br>'
         '<span style="color:#8b949e;font-size:0.85rem;">Or expand <strong>⚙️ Advanced Options</strong> '

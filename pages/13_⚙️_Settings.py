@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/13_⚙️_Settings.py
 # PURPOSE: Configure the SmartBetPro NBA engine settings:
 #          simulation depth, edge thresholds, platform selection,
@@ -114,9 +114,9 @@ for _ci, (_pname, _pdata) in enumerate(_PROFILES.items()):
     with _prof_cols[_ci]:
         st.markdown(
             f'<div style="background:#14192b;border-radius:8px;padding:14px 16px;'
-            f'border:1px solid rgba(0,240,255,0.18);margin-bottom:8px;">'
-            f'<div style="font-size:1rem;font-weight:700;color:#ff5e00;">{_pname}</div>'
-            f'<div style="color:#b0bec5;font-size:0.82rem;margin-top:4px;">{_pdata["description"]}</div>'
+            f'border:1px solid rgba(0,213,89,0.15);margin-bottom:8px;">'
+            f'<div style="font-size:1rem;font-weight:700;color:#F9C62B;">{_pname}</div>'
+            f'<div style="color:#A0AABE;font-size:0.82rem;margin-top:4px;">{_pdata["description"]}</div>'
             f'<div style="color:#8b949e;font-size:0.75rem;margin-top:6px;">'
             f'Edge ≥ {_pdata["minimum_edge_threshold"]}% · '
             f'{_pdata["simulation_depth"]:,} sims · '

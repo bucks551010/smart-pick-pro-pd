@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/3_⚡_Quantum_Analysis_Matrix.py
 # PURPOSE: The main analysis page. Runs Quantum Matrix Engine 5.6 simulation
 #          for each prop and shows probability, edge, tier, and
@@ -179,6 +179,8 @@ from data.platform_mappings import COMBO_STATS, FANTASY_SCORING
 from utils.renderers import compile_card_matrix as _compile_card_matrix
 from utils.renderers import build_horizontal_card_html as _build_h_card
 from utils.player_card_renderer import compile_player_card_matrix as _compile_player_cards
+from utils.player_card_renderer import compile_player_cards_flat as _compile_player_cards_flat
+from utils.player_card_renderer import PLAYER_CARD_CSS as _PLAYER_CARD_CSS
 from styles.theme import get_quantum_card_matrix_css as _get_qcm_css
 
 # ── Glassmorphic Trading-Card imports ────────────────────────────────────────
@@ -275,6 +277,8 @@ st.set_page_config(
 st.markdown(get_global_css(), unsafe_allow_html=True)
 st.markdown(get_qds_css(), unsafe_allow_html=True)
 st.markdown(_get_gm_css(), unsafe_allow_html=True)
+st.markdown(_get_qcm_css(), unsafe_allow_html=True)
+st.markdown(f'<style>{_PLAYER_CARD_CSS}</style>', unsafe_allow_html=True)
 
 # ── Reduce excessive bottom padding / blank space ─────────────
 # Also disable pull-to-refresh on mobile to prevent accidental reloads
@@ -550,6 +554,7 @@ from pages.helpers.quantum_analysis_helpers import (
     deduplicate_qeg_picks as _deduplicate_qeg_picks,
     filter_qeg_picks as _filter_qeg_picks,
     render_hero_section_html as _render_hero_section_html,
+    render_platform_picks_html as _render_platform_picks_html,
     render_quick_view_html as _render_quick_view_html,
     IMPACT_COLORS as _IMP_COLORS,
     CATEGORY_EMOJI as _CAT_EMOJI,
@@ -590,7 +595,7 @@ minimum_edge     = st.session_state.get("minimum_edge_threshold", 5.0)
 # ============================================================
 
 st.markdown(
-    '<h2 style="font-family:\'Orbitron\',sans-serif;color:#00ffd5;'
+    '<h2 style="font-family:\'Inter\',sans-serif;color:#00D559;'
     'margin-bottom:4px;">⚡ Neural Analysis</h2>'
     '<p style="color:#a0b4d0;margin-top:0;font-size:0.82rem;">Quantum Matrix Engine 5.6 — Powered by N.A.N. (Neural Analysis Network)</p>',
     unsafe_allow_html=True,
@@ -727,16 +732,19 @@ run_analysis = st.button(
 # ── Feature 14: Quick Filter Chips ──────────────────────────────
 # Initialise session-state keys for filter chips (persist across reruns).
 for _chip_key in ("chip_platinum", "chip_gold_plus", "chip_high_edge",
-                  "chip_hot_form", "chip_hide_avoids"):
+                  "chip_hot_form"):
     if _chip_key not in st.session_state:
         st.session_state[_chip_key] = False
+# Hide Avoids defaults to ON — QAM is for best top picks
+if "chip_hide_avoids" not in st.session_state:
+    st.session_state["chip_hide_avoids"] = True
 
 # ── Feature 15: Sort selector ───────────────────────────────────
 if "qam_sort_key" not in st.session_state:
     st.session_state["qam_sort_key"] = "Confidence Score ↓"
 
 # Default for the show-all/top radio (rendered inside the results fragment).
-st.session_state.setdefault("qam_show_mode", "All picks")
+st.session_state.setdefault("qam_show_mode", "Top picks only (edge ≥ threshold)")
 
 if run_analysis:
     # Set a flag so that if the user navigates away during analysis
@@ -1154,6 +1162,47 @@ if analysis_results and st.session_state.get("_analysis_session_reloaded_at"):
         "Results are preserved from your last analysis run — click **🚀 Run Analysis** above to refresh."
     )
 
+# ════ PLATFORM AI PICKS ════
+# Show all picks that qualify for auto-logging to the Bet Tracker,
+# matching the same criteria as auto_log_analysis_bets() so the QAM
+# section and the Bet Tracker Platform Picks tab stay in sync.
+if analysis_results:
+    _PLAT_SILVER_MIN_EDGE = 3.0
+    _PLAT_BRONZE_MIN_EDGE = 8.0
+    _PLAT_BRONZE_MIN_CONF = 60.0
+    _PLAT_DEFAULT_MIN_EDGE = float(minimum_edge)
+    _plat_pool = []
+    for _pp in analysis_results:
+        if _pp.get("should_avoid", False) or _pp.get("player_is_out", False):
+            continue
+        if not ((_pp.get("platform", "") or "").strip()):
+            continue
+        _pp_edge = float(_pp.get("edge_percentage", 0) or 0)
+        _pp_tier = _pp.get("tier", "Bronze")
+        _pp_conf = float(_pp.get("confidence_score", 0) or 0)
+        if _pp_edge <= 0 or _pp_tier not in {"Platinum", "Gold", "Silver", "Bronze"}:
+            continue
+        if _pp_tier == "Silver" and _pp_edge < _PLAT_SILVER_MIN_EDGE:
+            continue
+        if _pp_tier == "Bronze" and (_pp_edge < _PLAT_BRONZE_MIN_EDGE or _pp_conf < _PLAT_BRONZE_MIN_CONF):
+            continue
+        if _pp_tier in {"Gold", "Platinum"} and _pp_edge < _PLAT_DEFAULT_MIN_EDGE:
+            continue
+        _plat_pool.append(_pp)
+    _plat_picks_list = sorted(
+        _plat_pool,
+        key=lambda r: (r.get("confidence_score", 0), abs(r.get("edge_percentage", 0))),
+        reverse=True,
+    )
+    if _plat_picks_list:
+        from styles.theme import get_quantum_card_matrix_css as _get_qcm_css_plat
+        st.markdown(_get_qcm_css_plat(), unsafe_allow_html=True)
+        st.markdown(
+            _render_platform_picks_html(_plat_picks_list),
+            unsafe_allow_html=True,
+        )
+        st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
+
 # ════ JOSEPH M. SMITH LIVE BROADCAST DESK ════
 # Reduce Joseph's container size by 60% on this page per design requirements.
 # CSS extracted to pages/helpers/quantum_analysis_helpers.py
@@ -1430,9 +1479,10 @@ def _render_results_fragment():
         displayed_results = [r for r in displayed_results if r.get("tier") in _na_tier_names]
 
     # ── Quality floor: hide Bronze / Avoid by default & low-confidence picks ──
-    # Unless user explicitly selected Bronze or toggled "All picks", strip them out.
+    # Unless user explicitly selected Bronze in the tier filter, strip them out.
+    # QAM is for the best top picks — Bronze/Avoid should not appear by default.
     _user_wants_bronze = "Bronze 🥉" in (_na_tier_filter or [])
-    if not _user_wants_bronze and _show_mode != "All picks":
+    if not _user_wants_bronze:
         displayed_results = [
             r for r in displayed_results
             if r.get("tier") not in ("Bronze", "Avoid", None)
@@ -1465,6 +1515,20 @@ def _render_results_fragment():
             _seen_result_keys.add(_rkey)
             _deduped.append(_r)
     displayed_results = _deduped
+
+    # ── Per-player cap: keep only the top 2 props per player ──────
+    # QAM is for the best top picks — showing 5 props per player dilutes
+    # signal with low-value lines.  Keep the top 2 by confidence score.
+    _MAX_PROPS_PER_PLAYER = 2
+    _player_prop_counts: dict = {}
+    _capped_results: list = []
+    for _r in displayed_results:
+        _pname = _r.get("player_name", "")
+        _player_prop_counts.setdefault(_pname, 0)
+        if _player_prop_counts[_pname] < _MAX_PROPS_PER_PLAYER:
+            _capped_results.append(_r)
+            _player_prop_counts[_pname] += 1
+    displayed_results = _capped_results
 
     # ── Summary metrics ────────────────────────────────────────
     total_analyzed   = len(_frag_analysis_results)
@@ -1927,7 +1991,7 @@ def _render_results_fragment():
             # Inject QCM CSS for matchup card styling
             st.markdown(_get_qcm_css(), unsafe_allow_html=True)
             st.markdown(
-                '<h3 style="font-family:\'Orbitron\',sans-serif;color:#00C6FF;'
+                '<h3 style="font-family:\'Inter\',sans-serif;color:#00C6FF;'
                 'margin-bottom:8px;">🃏 Quantum Analysis Matrix</h3>'
                 '<p style="color:#94A3B8;font-size:0.82rem;margin-bottom:12px;">'
                 'Click any player to expand and view their full prop analysis.</p>',
@@ -1983,17 +2047,9 @@ def _render_results_fragment():
                         unsafe_allow_html=True,
                     )
 
-                _expander_label = (
-                    f"📊 View {_gp_count} player{'s' if _gp_count != 1 else ''}"
-                    f", {_gp_prop_count} prop{'s' if _gp_prop_count != 1 else ''}"
-                ) if _gm and _game_label != _no_game else (
-                    f"🏀 {_game_label} — {_gp_count} player{'s' if _gp_count != 1 else ''}"
-                    f", {_gp_prop_count} prop{'s' if _gp_prop_count != 1 else ''}"
-                )
-
-                with st.expander(_expander_label, expanded=(_game_idx == 0)):
-                    _game_html = _compile_player_cards(_game_players)
-                    _render_card_native(_game_html)
+                # Render all prop cards in one horizontal row under the matchup card
+                _game_html = _compile_player_cards_flat(_game_players)
+                st.markdown(_game_html, unsafe_allow_html=True)
 
     # Show OUT players in a separate collapsed section
     _out_display = [r for r in displayed_results if r.get("player_is_out", False)]

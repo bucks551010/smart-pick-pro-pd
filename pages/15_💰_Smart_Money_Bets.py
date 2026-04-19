@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/15_👹_Goblin_Demon_Zone.py
 # PURPOSE: EASY MONEY (Goblin) & SMART RISK (Demon) — dedicated
 #          spotlight for extreme-value alt-line props.
@@ -447,7 +447,7 @@ _NEURAL_ANIM_HTML = """
 
 _PAGE_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 /* ═══════════════════════════════════════════════════════════
    KEYFRAME ANIMATIONS
@@ -582,7 +582,7 @@ _PAGE_CSS = """
     z-index: 1;
 }
 .s15-page-hero h1 {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 3.4rem;
     font-weight: 900;
     letter-spacing: 0.18em;
@@ -747,7 +747,7 @@ _PAGE_CSS = """
     animation: s15LogoFloat 3.5s ease-in-out infinite, s15LogoPulseD 2.5s ease-in-out infinite;
 }
 .s15-banner-title {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 2.2rem;
     font-weight: 900;
     letter-spacing: 0.22em;
@@ -808,7 +808,7 @@ _PAGE_CSS = """
 .s15-banner-goblin .s15-count-block::after { background: linear-gradient(90deg, transparent, rgba(46,204,64,0.35), transparent); }
 .s15-banner-demon .s15-count-block::after { background: linear-gradient(90deg, transparent, rgba(231,76,60,0.35), transparent); }
 .s15-count-num {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 2.8rem;
     font-weight: 900;
     line-height: 1;
@@ -852,7 +852,7 @@ _PAGE_CSS = """
     animation: s15PillGlowD 4s ease-in-out infinite;
 }
 .s15-metric-val {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 700;
     font-size: 1.35rem;
     font-variant-numeric: tabular-nums;
@@ -876,7 +876,7 @@ _PAGE_CSS = """
     gap: 8px;
     padding: 12px 24px;
     border-radius: 18px;
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 0.74rem;
     font-weight: 800;
     letter-spacing: 0.18em;
@@ -1044,7 +1044,7 @@ _PAGE_CSS = """
     gap: 5px;
     padding: 3px 12px;
     border-radius: 8px;
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 0.52rem;
     font-weight: 800;
     letter-spacing: 0.16em;
@@ -1188,7 +1188,7 @@ _PAGE_CSS = """
 .s15-card-goblin .s15-gauge-ring { stroke: #2ecc40; filter: drop-shadow(0 0 8px rgba(46,204,64,0.55)); }
 .s15-card-demon .s15-gauge-ring  { stroke: #e74c3c; filter: drop-shadow(0 0 8px rgba(231,76,60,0.55)); }
 .s15-gauge-text {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 11px;
     font-weight: 900;
     text-anchor: middle;
@@ -1278,7 +1278,7 @@ _PAGE_CSS = """
     padding: 6px 18px; border-radius: 22px;
     background: linear-gradient(135deg, rgba(94,255,130,0.07), rgba(255,107,91,0.07));
     border: 1px solid rgba(255,255,255,0.08);
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 0.56rem; font-weight: 800;
     letter-spacing: 0.22em; color: rgba(255,255,255,0.52);
     text-transform: uppercase; margin-bottom: 18px;
@@ -1289,7 +1289,7 @@ _PAGE_CSS = """
     animation: s15EduPulse 2s ease-in-out infinite;
 }
 .s15-edu h2 {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 1.6rem; font-weight: 900;
     letter-spacing: 0.16em; color: #ffffff;
     margin: 0 0 12px; text-transform: uppercase; line-height: 1.15;
@@ -1340,7 +1340,7 @@ _PAGE_CSS = """
 .s15-edu-card-gold::after { background: linear-gradient(90deg, transparent, rgba(241,196,15,0.45), transparent); }
 .s15-edu-card-icon { font-size: 2.2rem; margin-bottom: 16px; display: block; line-height: 1; }
 .s15-edu-card-title {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 0.72rem; font-weight: 800;
     letter-spacing: 0.14em; text-transform: uppercase;
     margin: 0 0 12px; line-height: 1.2;
@@ -1364,7 +1364,7 @@ _PAGE_CSS = """
     box-sizing: border-box;
 }
 .s15-edu-example-label {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 0.56rem; font-weight: 800;
     letter-spacing: 0.18em; color: rgba(255,255,255,0.35);
     text-transform: uppercase; flex-shrink: 0; white-space: nowrap;
@@ -1561,7 +1561,7 @@ div[data-testid="stTabs"] > div[role="tablist"]::after {
 
 /* Individual tab buttons */
 div[data-testid="stTabs"] button[role="tab"] {
-    font-family: 'Orbitron', sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
     font-size: 0.78rem !important;
     font-weight: 800 !important;
     letter-spacing: 0.10em !important;
@@ -1616,7 +1616,7 @@ div[data-testid="stTabs"] [data-baseweb="tab-highlight"] {
 
 /* Tab label text inside Streamlit's p tag */
 div[data-testid="stTabs"] button[role="tab"] p {
-    font-family: 'Orbitron', sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
     font-size: 0.78rem !important;
     font-weight: 800 !important;
     letter-spacing: 0.10em !important;

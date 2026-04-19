@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/9_📡_Smart_NBA_Data.py
 # PURPOSE: Streamlit page — Smart NBA Data hub.
 #          Consolidated data refresh control panel with readiness
@@ -135,15 +135,15 @@ def _staleness_badge(timestamp_str, warn_hours=4.0, error_hours=24.0):
         dt = datetime.datetime.fromisoformat(timestamp_str)
         age_h = (datetime.datetime.now() - dt).total_seconds() / 3600
         if age_h < warn_hours:
-            bg, color, dot_cls = "rgba(0,255,157,0.10)", "#00ff9d", "df-dot-live"
-            border_c = "rgba(0,255,157,0.25)"
+            bg, color, dot_cls = "rgba(0,213,89,0.10)", "#00D559", "df-dot-live"
+            border_c = "rgba(0,213,89,0.25)"
             label = f"FRESH — {age_h:.0f}h ago"
         elif age_h < error_hours:
-            bg, color, dot_cls = "rgba(255,204,0,0.10)", "#ffcc00", "df-dot-warn"
+            bg, color, dot_cls = "rgba(255,204,0,0.10)", "#F9C62B", "df-dot-warn"
             border_c = "rgba(255,204,0,0.25)"
             label = f"AGING — {age_h:.0f}h ago"
         else:
-            bg, color, dot_cls = "rgba(255,68,68,0.10)", "#ff4444", "df-dot-stale"
+            bg, color, dot_cls = "rgba(255,68,68,0.10)", "#F24336", "df-dot-stale"
             border_c = "rgba(255,68,68,0.25)"
             label = f"STALE — {age_h:.1f}h ago"
         badge = (
@@ -171,10 +171,10 @@ def _health_bar(age_h, max_age=24.0):
     else:
         freshness = max(0.0, 1.0 - age_h / max_age)
         pct = round(freshness * 100)
-        color = "#00ff9d" if pct > 70 else ("#ffcc00" if pct > 30 else "#ff4444")
+        color = "#00D559" if pct > 70 else ("#F9C62B" if pct > 30 else "#F24336")
     return (
         f'<div style="height:6px;background:rgba(13,18,32,0.80);border-radius:3px;'
-        f'margin:8px 0;border:1px solid rgba(0,240,255,0.05);">'
+        f'margin:8px 0;border:1px solid rgba(0,213,89,0.04);">'
         f'<div style="height:6px;width:{pct}%;background:{color};border-radius:3px;'
         f'box-shadow:0 0 6px {color};transition:width 0.4s ease;"></div>'
         f'</div>'
@@ -266,8 +266,8 @@ st.markdown(
     'margin:-12px 0 16px;line-height:1.6;">'
     'Your complete NBA data hub — pull real-time stats, browse league leaders, '
     'view standings, playoff picture, and live prop lines from '
-    '<span style="color:#00ff9d;font-weight:600;">PrizePicks</span>, '
-    '<span style="color:#ffcc00;font-weight:600;">Underdog Fantasy</span>, and '
+    '<span style="color:#00D559;font-weight:600;">PrizePicks</span>, '
+    '<span style="color:#F9C62B;font-weight:600;">Underdog Fantasy</span>, and '
     '<span style="color:#00a0ff;font-weight:600;">DraftKings Pick6</span>. '
     'Update before each betting session for maximum accuracy.</div>',
     unsafe_allow_html=True,
@@ -325,9 +325,9 @@ if _ETL_DB_AVAILABLE and _ETL_DB_COUNTS:
         st.markdown(
             f'<div style="text-align:center;color:rgba(192,208,232,0.55);font-size:0.78rem;'
             f'margin:4px 0 8px;font-family:\'JetBrains Mono\',monospace;">'
-            f'ETL DB: <span style="color:#00ff9d;">{_p_cnt:,}</span> players · '
-            f'<span style="color:#00ff9d;">{_g_cnt:,}</span> games · '
-            f'<span style="color:#00ff9d;">{_l_cnt:,}</span> logs</div>',
+            f'ETL DB: <span style="color:#00D559;">{_p_cnt:,}</span> players · '
+            f'<span style="color:#00D559;">{_g_cnt:,}</span> games · '
+            f'<span style="color:#00D559;">{_l_cnt:,}</span> logs</div>',
             unsafe_allow_html=True,
         )
 
@@ -444,13 +444,13 @@ with tab_quick:
             f"<span style='font-family:JetBrains Mono,monospace;'><strong>{_p:,}</strong> players · "
             f"<strong>{_g:,}</strong> games · <strong>{_l:,}</strong> logs</span>. "
             f"Use <em>Smart ETL Update</em> to add new games, or <em>Full ETL Pull</em> to rebuild from scratch.",
-            icon_color="#00ff9d",
+            icon_color="#00D559",
         ), unsafe_allow_html=True)
     else:
         st.markdown(get_action_card_html(
             "🗄️ ETL DATABASE — EMPTY",
             "No ETL data yet. Run <strong>Full ETL Pull</strong> or <code>python -m etl.initial_pull</code> to populate.",
-            icon_color="#ffcc00",
+            icon_color="#F9C62B",
         ), unsafe_allow_html=True)
 
     etl_c1, etl_c2, etl_c3 = st.columns([1, 1, 2])
@@ -476,7 +476,7 @@ with tab_quick:
         "⚡ SMART UPDATE — TODAY'S TEAMS ONLY",
         "Retrieves team rosters using <code>CommonTeamRoster</code> (current, post-trade) "
         "then game logs for only those players. Takes <strong>1–2 minutes</strong> instead of 10–15.",
-        icon_color="#00f0ff",
+        icon_color="#00D559",
     ), unsafe_allow_html=True)
 
     sm_c1, sm_c2 = st.columns([1, 3])
@@ -542,7 +542,7 @@ with tab_advanced:
         "🏥 REAL-TIME INJURY REPORT",
         "Retrieves live injury designations with NBA CDN feed as fallback — "
         "real-time GTD/Out/Doubtful status, specific injury details, and expected return dates.",
-        icon_color="#c800ff",
+        icon_color="#2D9EFF",
     ), unsafe_allow_html=True)
 
     inj_c1, inj_c2 = st.columns([1, 3])
@@ -649,7 +649,7 @@ with tab_props:
     )
     st.markdown(
         '<div style="color:rgba(192,208,232,0.60);font-size:0.88rem;margin-bottom:12px;">'
-        'Pull <strong style="color:#00ff9d;">live prop lines</strong> directly from betting platforms. '
+        'Pull <strong style="color:#00D559;">live prop lines</strong> directly from betting platforms. '
         'Platforms only list active players playing tonight — so this also '
         'acts as a real-time active roster check.</div>',
         unsafe_allow_html=True,
@@ -706,7 +706,7 @@ with tab_props:
         _ud_cls = "df-platform-badge df-badge-ud" if _ud_on else "df-platform-badge df-badge-off"
         _dk_cls = "df-platform-badge df-badge-dk" if _dk_cb_on else "df-platform-badge df-badge-off"
         _pp_badge = f'<span class="{_pp_cls}"><span class="df-dot-live" style="width:6px;height:6px;"></span> PrizePicks</span>' if _pp_on else f'<span class="{_pp_cls}">⏸️ PrizePicks</span>'
-        _ud_badge = f'<span class="{_ud_cls}"><span class="df-dot-live" style="width:6px;height:6px;background:#ffcc00;box-shadow:0 0 6px rgba(255,204,0,0.7);"></span> Underdog</span>' if _ud_on else f'<span class="{_ud_cls}">⏸️ Underdog</span>'
+        _ud_badge = f'<span class="{_ud_cls}"><span class="df-dot-live" style="width:6px;height:6px;background:#F9C62B;box-shadow:0 0 6px rgba(255,204,0,0.7);"></span> Underdog</span>' if _ud_on else f'<span class="{_ud_cls}">⏸️ Underdog</span>'
         _dk_badge = f'<span class="{_dk_cls}"><span class="df-dot-live" style="width:6px;height:6px;background:#00a0ff;box-shadow:0 0 6px rgba(0,160,255,0.7);"></span> DraftKings</span>' if _dk_cb_on else f'<span class="{_dk_cls}">⏸️ DraftKings</span>'
         st.markdown(f'<div style="margin:8px 0 14px;">{_pp_badge}{_ud_badge}{_dk_badge}</div>', unsafe_allow_html=True)
         st.caption("Toggle platforms above. DraftKings requires an Odds API key (⚙️ Settings page).")
@@ -1775,8 +1775,8 @@ if _standings_display or _news_display:
 
     with _sn_tab2:
         if _news_display:
-            _imp_colors = {"high": "rgba(255,68,68,0.15)", "medium": "rgba(255,204,0,0.15)", "low": "rgba(0,255,157,0.15)"}
-            _imp_text_colors = {"high": "#ff4444", "medium": "#ffcc00", "low": "#00ff9d"}
+            _imp_colors = {"high": "rgba(255,68,68,0.15)", "medium": "rgba(255,204,0,0.15)", "low": "rgba(0,213,89,0.15)"}
+            _imp_text_colors = {"high": "#F24336", "medium": "#F9C62B", "low": "#00D559"}
             _cat_emoji = {
                 "injury": "🏥", "trade": "🔄", "performance": "📈",
                 "suspension": "🚫", "contract": "💰", "roster": "📋",
@@ -2045,7 +2045,7 @@ if _errors:
     with st.expander(f"⚠️ Errors ({len(_errors)})", expanded=False):
         for _err in _errors:
             st.markdown(
-                f'<div style="color:#ff4444;font-size:0.85rem;padding:3px 0;'
+                f'<div style="color:#F24336;font-size:0.85rem;padding:3px 0;'
                 f'font-family:\'JetBrains Mono\',monospace;">• {_err}</div>',
                 unsafe_allow_html=True,
             )

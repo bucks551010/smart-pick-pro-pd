@@ -40,264 +40,362 @@ _e = _html.escape
 # ===================================================================
 
 PLAYER_CARD_CSS = r"""
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&family=Bebas+Neue&display=swap');
 
-/* -- Player row grid ---------------------------------------- */
-.pc-grid { display:flex; flex-direction:column; gap:6px; padding:8px 0; width:100%; }
+/* ── Page grid ───────────────────────────────────────────────── */
+.pc-grid { display:flex; flex-direction:column; gap:14px; padding:8px 0; width:100%; }
 
-/* -- Expandable card ---------------------------------------- */
+/* ── Player section row ─────────────────────────────────────── */
 .pc-card {
-  background: rgba(15,18,30,0.92);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(168deg, #1A1F2E 0%, #161B27 50%, #131722 100%);
+  border: 1.5px solid rgba(255,255,255,0.07);
   border-left: 3px solid transparent;
-  border-radius: 10px;
+  border-radius: 18px;
   font-family: 'Inter', sans-serif;
   color: #e0eeff;
-  overflow: visible;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.03);
 }
-.pc-card:hover { border-color: rgba(255,255,255,0.12); }
-.pc-card:nth-child(even) { background: rgba(20,24,42,0.92); }
-.pc-card[open] {
-  border-color: rgba(0,198,255,0.25);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-}
+.pc-card:hover { border-color: rgba(255,255,255,0.15); box-shadow: 0 6px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04); }
+.pc-card[open] { border-color: rgba(0,213,89,0.25); box-shadow: 0 8px 32px rgba(0,213,89,0.06), 0 4px 20px rgba(0,0,0,0.5); }
 
-/* -- Summary row (always visible) --------------------------- */
+/* ── Player summary row ─────────────────────────────────────── */
 .pc-card > summary {
   display: flex; align-items: center; gap: 12px;
-  padding: 10px 16px; cursor: pointer;
+  padding: 13px 18px; cursor: pointer;
   list-style: none; user-select: none;
   transition: background 0.15s;
 }
 .pc-card > summary::-webkit-details-marker { display:none; }
 .pc-card > summary::marker { display:none; content:''; }
-.pc-card > summary:hover { background: rgba(255,255,255,0.03); }
+.pc-card > summary:hover { background: rgba(255,255,255,0.025); }
+.pc-card[open] > summary { border-bottom: 1px solid rgba(255,255,255,0.06); }
 
-/* arrow */
-.pc-arrow { font-size:0.5rem; color:#4a5568; flex-shrink:0; transition:transform 0.25s,color 0.2s; }
-.pc-card[open] .pc-arrow { transform:rotate(90deg); color:#00C6FF; }
+.pc-arrow { font-size:0.52rem; color:#3A4460; flex-shrink:0; transition:transform 0.22s,color 0.18s; }
+.pc-card[open] .pc-arrow { transform:rotate(90deg); color:#00D559; }
 
-/* summary headshot -- 50% bigger: 32 -> 48 */
-.pc-head {
-  width:48px; height:48px; border-radius:50%;
-  border:2px solid rgba(255,255,255,0.15);
-  object-fit:cover; flex-shrink:0; background:#1a1d2e;
-}
-.pc-card[open] .pc-head { border-color:rgba(0,198,255,0.4); }
+.pc-head { width:48px; height:48px; border-radius:50%; border:2px solid rgba(255,255,255,0.12); object-fit:cover; flex-shrink:0; background:#1C2232; transition:border-color 0.25s, box-shadow 0.25s; box-shadow:0 3px 10px rgba(0,0,0,0.35); }
+.pc-card[open] .pc-head { border-color:rgba(0,213,89,0.40); box-shadow:0 3px 14px rgba(0,213,89,0.12); }
 
-/* name */
-.pc-name { font-size:0.95rem; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:1; min-width:0; }
+.pc-name { font-size:0.96rem; font-weight:800; color:#FFFFFF; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; letter-spacing:-0.01em; }
+.pc-sum-team { font-size:0.60rem; font-weight:700; padding:2px 7px; border-radius:100px; color:#fff; white-space:nowrap; }
+.pc-sum-props { font-size:0.68rem; color:#6B7A9A; white-space:nowrap; }
+.pc-sum-edge { font-size:0.68rem; font-weight:700; padding:2px 9px; border-radius:100px; white-space:nowrap; background:rgba(0,213,89,0.09); color:#00D559; border:1px solid rgba(0,213,89,0.22); margin-left:auto; flex-shrink:0; }
+.pc-sum-grade { font-family:'JetBrains Mono',monospace; font-size:0.70rem; font-weight:800; padding:3px 9px; border-radius:7px; flex-shrink:0; }
 
-/* summary meta */
-.pc-meta { font-family:'JetBrains Mono',monospace; font-size:0.75rem; font-weight:600; color:#5eead4; white-space:nowrap; flex-shrink:0; margin-left:auto; }
-
-/* summary win grade badge */
-.pc-sum-grade { font-family:'JetBrains Mono',monospace; font-size:0.72rem; font-weight:800; padding:3px 8px; border-radius:5px; flex-shrink:0; margin-left:4px; }
-
-/* -- Expanded identity header ------------------------------- */
-.pc-identity { display:flex; align-items:center; gap:14px; padding:14px 0 10px; border-bottom:1px solid rgba(255,255,255,0.05); margin-bottom:8px; }
-.pc-id-avatar { width:84px; height:84px; border-radius:50%; border:2px solid rgba(0,198,255,0.3); object-fit:cover; background:#1a1d2e; flex-shrink:0; }
-.pc-id-info { display:flex; flex-direction:column; gap:2px; min-width:0; }
-.pc-id-name { font-size:1.1rem; font-weight:800; color:#fff; }
-.pc-id-sub { font-size:0.72rem; color:#8a9bb8; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-.pc-id-team-badge { font-size:0.58rem; font-weight:700; padding:2px 8px; border-radius:4px; }
-.pc-id-opp { font-size:0.62rem; color:#94a3b8; }
-.pc-id-status { font-size:0.58rem; font-weight:700; padding:2px 8px; border-radius:4px; background:rgba(239,68,68,0.15); color:#ef4444; margin-left:4px; }
-.pc-id-stats { display:flex; gap:6px; margin-left:auto; flex-shrink:0; flex-wrap:wrap; }
-.pc-stat-pill { display:flex; flex-direction:column; align-items:center; padding:4px 10px; border-radius:6px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); }
-.pc-stat-pill-val { font-family:'JetBrains Mono',monospace; font-size:0.78rem; font-weight:700; color:#e2e8f0; }
-.pc-stat-pill-lbl { font-size:0.46rem; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; }
-
-/* -- Expanded body ------------------------------------------ */
+/* ── Expanded body ───────────────────────────────────────────── */
 @keyframes pcSlideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
-.pc-body { padding:0 16px 16px; border-top:1px solid rgba(255,255,255,0.05); animation:pcSlideIn 0.25s ease; }
-.pc-prop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:12px; padding-top:12px; }
+.pc-body { padding:0 14px 16px; animation:pcSlideIn 0.22s cubic-bezier(0.22,1,0.36,1); }
 
-/* -- Individual prop card ----------------------------------- */
-.pc-prop {
-  background: rgba(10,15,30,0.85);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 10px; padding: 14px;
-  display: flex; flex-direction: column; gap: 8px;
-  transition: border-color 0.2s;
+/* Identity header */
+.pc-identity { display:flex; align-items:center; gap:12px; padding:14px 2px 12px; border-bottom:1px solid rgba(255,255,255,0.05); margin-bottom:10px; background:linear-gradient(180deg, rgba(255,255,255,0.01) 0%, transparent 100%); }
+.pc-id-avatar { width:70px; height:70px; border-radius:50%; border:2px solid rgba(0,213,89,0.28); object-fit:cover; background:#1C2232; flex-shrink:0; box-shadow:0 4px 16px rgba(0,0,0,0.4), 0 0 10px rgba(0,213,89,0.06); transition:box-shadow 0.25s; }
+.pc-id-info { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.pc-id-name { font-size:1.05rem; font-weight:800; color:#FFFFFF; }
+.pc-id-sub { font-size:0.66rem; color:#6B7A9A; display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+.pc-id-team-badge { font-size:0.56rem; font-weight:700; padding:2px 7px; border-radius:100px; color:#fff; }
+.pc-id-opp { font-size:0.60rem; color:#6B7A9A; }
+.pc-id-status { font-size:0.56rem; font-weight:700; padding:2px 7px; border-radius:100px; background:rgba(242,67,54,0.14); color:#F24336; border:1px solid rgba(242,67,54,0.26); }
+.pc-id-stats { display:flex; gap:6px; margin-left:auto; flex-shrink:0; flex-wrap:wrap; }
+.pc-stat-pill { display:flex; flex-direction:column; align-items:center; padding:4px 9px; border-radius:9px; background:linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%); border:1px solid rgba(255,255,255,0.07); box-shadow:inset 0 1px 0 rgba(255,255,255,0.03), 0 1px 3px rgba(0,0,0,0.12); }
+.pc-stat-pill-val { font-family:'JetBrains Mono',monospace; font-size:0.78rem; font-weight:700; color:#FFFFFF; }
+.pc-stat-pill-lbl { font-size:0.44rem; color:#6B7A9A; text-transform:uppercase; letter-spacing:0.05em; margin-top:1px; }
+
+/* ── Horizontal prop scroll strip ───────────────────────────── */
+.pc-props-scroll {
+  display: flex; gap: 12px; align-items: flex-start;
+  overflow-x: auto; overflow-y: visible;
+  padding: 10px 2px 16px;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent;
 }
-.pc-prop:hover { border-color:rgba(0,198,255,0.2); }
-.pc-prop-platinum { border-color:rgba(200,0,255,0.3); box-shadow:0 0 18px rgba(200,0,255,0.10),inset 0 0 12px rgba(200,0,255,0.04); }
-.pc-prop-gold { border-color:rgba(255,94,0,0.3); box-shadow:0 0 18px rgba(255,94,0,0.10),inset 0 0 12px rgba(255,94,0,0.04); }
+.pc-props-scroll::-webkit-scrollbar { height: 4px; }
+.pc-props-scroll::-webkit-scrollbar-track { background: transparent; }
+.pc-props-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 2px; }
+.pc-props-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.20); }
 
-/* -- Win grade + SAFE cluster ------------------------------- */
-.pc-grade-row { display:flex; align-items:center; gap:8px; justify-content:space-between; }
-.pc-grade-badge { font-family:'JetBrains Mono',monospace; font-size:1.1rem; font-weight:900; width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:8px; flex-shrink:0; }
+/* ── PP-style prop card (fixed width, expands vertically on click) ── */
+.pc-prop {
+  flex-shrink: 0;
+  width: 280px;
+  background: linear-gradient(168deg, #1E2336 0%, #1A1F2E 35%, #161B27 100%);
+  border: 1.5px solid rgba(255,255,255,0.08);
+  border-radius: 22px;
+  overflow: hidden;
+  position: relative;
+  transition: border-color 0.25s, transform 0.22s cubic-bezier(.22,1,.36,1), box-shadow 0.25s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.pc-prop:hover { border-color:rgba(255,255,255,0.20); transform:translateY(-4px) scale(1.015); box-shadow:0 16px 40px rgba(0,0,0,0.6), 0 0 24px rgba(45,158,255,0.06), inset 0 1px 0 rgba(255,255,255,0.06); }
+.pc-prop[open] { width:420px; border-color:rgba(0,213,89,0.28); box-shadow:0 8px 28px rgba(0,213,89,0.08); transform:none; }
+.pc-prop-platinum { border-color:rgba(0,213,89,0.35) !important; box-shadow:0 0 24px rgba(0,213,89,0.14), 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,213,89,0.06); }
+.pc-prop-gold     { border-color:rgba(249,198,43,0.30) !important; box-shadow:0 0 22px rgba(249,198,43,0.12), 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(249,198,43,0.05); }
+
+/* gradient top bar */
+.pc-prop::before { content:''; display:block; height:3.5px; background:linear-gradient(90deg,#00D559,#2D9EFF); opacity:0.85; }
+.pc-prop-platinum::before { background:linear-gradient(90deg,#00D559,#2D9EFF,#00D559); opacity:1; }
+.pc-prop-gold::before     { background:linear-gradient(90deg,#F9C62B,#F24336); opacity:1; }
+
+/* ── Card face (summary = what you see before clicking) ─────── */
+.pc-prop > summary {
+  display: flex; flex-direction: column; align-items: center;
+  list-style: none; cursor: pointer; user-select: none;
+  padding-bottom: 4px; outline: none;
+  position: relative; z-index: 0;
+}
+.pc-prop > summary::-webkit-details-marker { display:none; }
+.pc-prop > summary::marker { display:none; content:''; }
+.pc-prop > summary::after { content:''; position:absolute; top:0; left:10%; right:10%; height:55%; background:radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.025) 0%, transparent 70%); pointer-events:none; z-index:-1; }
+
+/* status bar */
+.pc-prop-status { display:flex; align-items:center; justify-content:space-between; width:100%; padding:10px 14px 6px; }
+
+/* tier badge */
+.pc-tier { font-size:0.62rem; font-weight:800; letter-spacing:0.07em; padding:2px 7px; border-radius:100px; text-transform:uppercase; white-space:nowrap; }
+.pc-tier-platinum { background:rgba(0,213,89,0.12); color:#00D559; border:1px solid rgba(0,213,89,0.26); }
+.pc-tier-gold     { background:rgba(249,198,43,0.12); color:#F9C62B; border:1px solid rgba(249,198,43,0.26); }
+.pc-tier-silver   { background:rgba(160,170,190,0.10); color:#A0AABE; border:1px solid rgba(160,170,190,0.20); }
+.pc-tier-bronze   { background:rgba(107,122,154,0.10); color:#6B7A9A; border:1px solid rgba(107,122,154,0.20); }
+.pc-tier-avoid    { background:rgba(242,67,54,0.12); color:#F24336; border:1px solid rgba(242,67,54,0.26); }
+.pc-platform { font-size:0.52rem; color:#3A4460; font-family:'JetBrains Mono',monospace; }
+
+/* headshot */
+.pc-prop-hs-wrap { position:relative; margin:4px auto 10px; width:100px; height:100px; }
+.pc-prop-hs { width:100px; height:100px; border-radius:50%; border:2.5px solid rgba(255,255,255,0.14); object-fit:cover; background:#1C2232; display:block; transition:border-color 0.25s, box-shadow 0.25s; box-shadow:0 4px 16px rgba(0,0,0,0.45); }
+.pc-prop:hover .pc-prop-hs { border-color:rgba(45,158,255,0.35); box-shadow:0 4px 20px rgba(45,158,255,0.12), 0 4px 16px rgba(0,0,0,0.4); }
+.pc-prop[open] .pc-prop-hs { border-color:rgba(0,213,89,0.40); box-shadow:0 4px 20px rgba(0,213,89,0.12); }
+
+/* player info */
+.pc-prop-team-pos { font-size:0.68rem; font-weight:600; color:#6B7A9A; text-align:center; margin-bottom:4px; }
+.pc-prop-player-name { font-size:1.10rem; font-weight:800; color:#FFFFFF; text-align:center; letter-spacing:-0.01em; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px; }
+.pc-prop[open] .pc-prop-player-name { white-space:normal; max-width:400px; }
+.pc-prop-game-info { font-size:0.60rem; color:#4A5568; text-align:center; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px; }
+
+/* line block */
+.pc-prop-line-area { width:100%; text-align:center; padding:14px 14px 6px; background:linear-gradient(180deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.12) 100%); margin:4px 0; border-top:1px solid rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.03); }
+.pc-prop-cur-label { font-size:0.58rem; color:#6B7A9A; margin-bottom:2px; }
+.pc-prop-big-line { font-size:3.2rem; font-weight:900; color:#FFFFFF; font-family:'Bebas Neue','Inter',sans-serif; line-height:1; font-variant-numeric:tabular-nums; letter-spacing:-0.01em; text-shadow:0 2px 10px rgba(0,0,0,0.35); }
+.pc-prop-stat-name { font-size:0.85rem; font-weight:600; color:#A0AABE; margin-top:4px; padding-bottom:8px; }
+
+/* mini prob bar */
+.pc-prop-prob-bar { width:calc(100% - 20px); margin:4px 10px 2px; height:5px; border-radius:100px; background:rgba(255,255,255,0.06); overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,0.2); }
+.pc-prop-prob-fill-over  { height:100%; border-radius:100px; background:linear-gradient(90deg,#00D559,#2D9EFF); }
+.pc-prop-prob-fill-under { height:100%; border-radius:100px; background:linear-gradient(90deg,#F24336,#F9C62B); }
+.pc-prop-prob-label { font-size:0.56rem; font-weight:700; text-align:center; margin-bottom:4px; }
+.pc-prop-prob-label-over  { color:#00D559; }
+.pc-prop-prob-label-under { color:#F24336; }
+
+/* Less / More buttons */
+.pc-btn-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:8px 16px 16px; width:100%; box-sizing:border-box; }
+.pc-btn { display:flex; align-items:center; justify-content:center; gap:6px; padding:12px 6px; border-radius:12px; font-weight:800; font-size:1.0rem; letter-spacing:0.03em; border:1.5px solid transparent; transition:box-shadow 0.2s, transform 0.15s, filter 0.15s; white-space:nowrap; }
+.pc-btn:hover { transform:translateY(-1px); filter:brightness(1.08); }
+.pc-btn-over-active   { background:linear-gradient(180deg, #0FE868, #00C44E); color:#0D0F14; border-color:#00D559; box-shadow:0 3px 14px rgba(0,213,89,0.45), inset 0 1px 0 rgba(255,255,255,0.18); }
+.pc-btn-over-inactive { background:rgba(0,213,89,0.06); color:rgba(0,213,89,0.45); border-color:rgba(0,213,89,0.15); box-shadow:inset 0 1px 3px rgba(0,0,0,0.15); }
+.pc-btn-under-active  { background:linear-gradient(180deg, #F65B4F, #E02E24); color:#FFFFFF; border-color:#F24336; box-shadow:0 3px 14px rgba(242,67,54,0.40), inset 0 1px 0 rgba(255,255,255,0.12); }
+.pc-btn-under-inactive{ background:rgba(242,67,54,0.06); color:rgba(242,67,54,0.45); border-color:rgba(242,67,54,0.15); box-shadow:inset 0 1px 3px rgba(0,0,0,0.15); }
+
+/* ── Expanded detail panel (appears when card is clicked) ────── */
+@keyframes pcPropExpand { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+.pc-prop-expanded {
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding: 12px 12px 14px;
+  display: flex; flex-direction: column; gap: 10px;
+  animation: pcPropExpand 0.22s cubic-bezier(0.22,1,0.36,1);
+  background: linear-gradient(180deg, rgba(0,0,0,0.08) 0%, transparent 40%);
+}
+
+/* detail player header */
+.pc-detail-hdr { display:flex; gap:10px; align-items:flex-start; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); background:linear-gradient(135deg, rgba(255,255,255,0.015) 0%, transparent 60%); border-radius:10px; padding:10px; margin:-2px -2px 0; }
+.pc-detail-hs { width:52px; height:52px; border-radius:50%; border:2px solid rgba(0,213,89,0.30); object-fit:cover; flex-shrink:0; background:#1C2232; box-shadow:0 3px 12px rgba(0,0,0,0.4), 0 0 8px rgba(0,213,89,0.06); }
+.pc-detail-info { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.pc-detail-name { font-size:0.88rem; font-weight:800; color:#FFFFFF; }
+.pc-detail-sub  { font-size:0.60rem; color:#6B7A9A; display:flex; flex-wrap:wrap; gap:4px; align-items:center; }
+.pc-detail-team-badge { font-size:0.56rem; font-weight:700; padding:1px 7px; border-radius:100px; color:#fff; }
+
+/* section labels */
+.pc-sec-label { font-size:0.54rem; font-weight:700; color:#3A4460; text-transform:uppercase; letter-spacing:0.10em; margin-bottom:3px; }
+
+/* win grade */
+.pc-grade-row { display:flex; align-items:center; gap:6px; }
+.pc-grade-badge { font-family:'JetBrains Mono',monospace; font-size:0.92rem; font-weight:900; width:34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:8px; flex-shrink:0; text-shadow:0 1px 6px currentColor; box-shadow:inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.25); }
 .pc-grade-info { display:flex; flex-direction:column; gap:1px; flex:1; min-width:0; }
-.pc-grade-label { font-size:0.64rem; font-weight:700; color:#e2e8f0; }
-.pc-grade-rec { font-size:0.56rem; color:#8a9bb8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pc-grade-label { font-size:0.62rem; font-weight:700; color:#FFFFFF; }
+.pc-grade-rec   { font-size:0.54rem; color:#6B7A9A; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pc-safe { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
-.pc-safe-val { font-family:'JetBrains Mono',monospace; font-size:0.92rem; font-weight:800; color:#00f0ff; }
-.pc-safe-lbl { font-size:0.48rem; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
+.pc-safe-val { font-family:'JetBrains Mono',monospace; font-size:0.88rem; font-weight:800; color:#2D9EFF; }
+.pc-safe-lbl { font-size:0.44rem; color:#3A4460; text-transform:uppercase; letter-spacing:0.06em; font-weight:700; }
 
-/* -- Recommendation banner ---------------------------------- */
-.pc-rec-banner { font-size:0.68rem; font-weight:600; padding:6px 10px; border-radius:6px; background:rgba(0,240,255,0.06); border:1px solid rgba(0,240,255,0.12); color:#b0d4e8; text-align:center; }
+/* alert badges */
+.pc-badges { display:flex; gap:3px; flex-wrap:wrap; }
+.pc-badge { font-size:0.54rem; font-weight:700; padding:2px 6px; border-radius:100px; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.15); transition:transform 0.15s; }
+.pc-badge:hover { transform:translateY(-1px); }
+.pc-badge-best      { background:rgba(249,198,43,0.12); color:#F9C62B; border:1px solid rgba(249,198,43,0.24); }
+.pc-badge-uncertain { background:rgba(249,198,43,0.10); color:#F9C62B; border:1px solid rgba(249,198,43,0.20); }
+.pc-badge-avoid     { background:rgba(242,67,54,0.12); color:#F24336; border:1px solid rgba(242,67,54,0.24); }
+.pc-badge-trap      { background:rgba(242,67,54,0.14); color:#F24336; border:1px solid rgba(242,67,54,0.28); }
+.pc-badge-risk      { background:rgba(249,198,43,0.10); color:#F9C62B; border:1px solid rgba(249,198,43,0.20); }
+.pc-badge-line-warn { background:rgba(249,198,43,0.10); color:#F9C62B; border:1px solid rgba(249,198,43,0.18); }
+.pc-badge-injury    { background:rgba(242,67,54,0.12); color:#F24336; border:1px solid rgba(242,67,54,0.24); }
 
-/* -- Prop header row ---------------------------------------- */
-.pc-prop-hdr { display:flex; align-items:center; gap:6px; justify-content:space-between; }
-.pc-prop-left { display:flex; align-items:center; gap:6px; min-width:0; flex:1; flex-wrap:wrap; }
-.pc-tier { font-family:'JetBrains Mono',monospace; font-size:0.58rem; font-weight:700; letter-spacing:0.06em; padding:2px 8px; border-radius:4px; text-transform:uppercase; white-space:nowrap; flex-shrink:0; }
-.pc-tier-platinum { background:rgba(200,0,255,0.15); color:#c800ff; }
-.pc-tier-gold { background:rgba(255,94,0,0.15); color:#ff5e00; }
-.pc-tier-silver { background:rgba(176,192,216,0.15); color:#b0c0d8; }
-.pc-tier-bronze { background:rgba(100,116,139,0.15); color:#94a3b8; }
-.pc-tier-avoid { background:rgba(239,68,68,0.15); color:#ef4444; }
+/* rec banner */
+.pc-rec-banner { font-size:0.60rem; font-weight:600; padding:5px 8px; border-radius:7px; background:linear-gradient(135deg, rgba(45,158,255,0.06) 0%, rgba(45,158,255,0.02) 100%); border:1px solid rgba(45,158,255,0.14); color:#A0AABE; text-align:center; box-shadow:inset 0 1px 0 rgba(255,255,255,0.02); }
 
-.pc-stat-label { font-size:0.82rem; font-weight:700; color:#e2e8f0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.pc-platform { font-size:0.56rem; color:#64748b; flex-shrink:0; font-family:'JetBrains Mono',monospace; }
+/* trueline */
+.pc-trueline { display:flex; justify-content:space-between; align-items:center; padding:5px 8px; border-radius:7px; background:linear-gradient(135deg, rgba(45,158,255,0.07) 0%, rgba(45,158,255,0.03) 100%); border:1px solid rgba(45,158,255,0.14); box-shadow:inset 0 1px 0 rgba(255,255,255,0.03), 0 1px 4px rgba(0,0,0,0.12); }
+.pc-trueline-lbl { font-size:0.60rem; color:#6B7A9A; }
+.pc-trueline-val { font-family:'JetBrains Mono',monospace; font-size:0.82rem; font-weight:800; color:#2D9EFF; }
 
-/* direction pill */
-.pc-dir-pill { font-size:0.58rem; font-weight:800; padding:2px 8px; border-radius:4px; text-transform:uppercase; letter-spacing:0.06em; white-space:nowrap; flex-shrink:0; }
-.pc-dir-over { background:rgba(0,255,157,0.12); color:#00ff9d; border:1px solid rgba(0,255,157,0.18); }
-.pc-dir-under { background:rgba(255,94,0,0.12); color:#ff5e00; border:1px solid rgba(255,94,0,0.18); }
-
-/* badges */
-.pc-badges { display:flex; gap:4px; flex-wrap:wrap; }
-.pc-badge { font-size:0.56rem; font-weight:700; padding:1px 6px; border-radius:3px; white-space:nowrap; }
-.pc-badge-best { background:rgba(250,204,21,0.15); color:#facc15; }
-.pc-badge-uncertain { background:rgba(251,146,60,0.15); color:#fb923c; }
-.pc-badge-avoid { background:rgba(239,68,68,0.15); color:#ef4444; }
-.pc-badge-trap { background:rgba(239,68,68,0.18); color:#ff6b6b; border:1px solid rgba(239,68,68,0.25); }
-.pc-badge-risk { background:rgba(251,146,60,0.12); color:#fb923c; border:1px solid rgba(251,146,60,0.18); }
-.pc-badge-line-warn { background:rgba(251,191,36,0.12); color:#fbbf24; }
-.pc-badge-injury { background:rgba(239,68,68,0.15); color:#ef4444; }
-
-/* -- True line row ------------------------------------------ */
-.pc-trueline { display:flex; justify-content:space-between; align-items:center; padding:6px 10px; border-radius:6px; background:rgba(0,240,255,0.04); border:1px solid rgba(0,240,255,0.1); }
-.pc-trueline-lbl { font-size:0.7rem; color:#8a9bb8; }
-.pc-trueline-val { font-family:'JetBrains Mono',monospace; font-size:0.9rem; font-weight:800; color:#00f0ff; }
-
-/* -- Line vs avg comparison --------------------------------- */
-.pc-line-compare { display:flex; align-items:center; gap:8px; padding:4px 10px; border-radius:6px; background:rgba(255,255,255,0.02); }
-.pc-lc-item { font-family:'JetBrains Mono',monospace; font-size:0.64rem; display:flex; align-items:center; gap:4px; }
-.pc-lc-label { font-size:0.52rem; color:#64748b; text-transform:uppercase; }
+/* line compare */
+.pc-line-compare { display:flex; align-items:center; gap:6px; padding:3px 8px; border-radius:6px; background:rgba(255,255,255,0.02); flex-wrap:wrap; }
+.pc-lc-item { font-family:'JetBrains Mono',monospace; font-size:0.58rem; display:flex; align-items:center; gap:3px; }
+.pc-lc-label { font-size:0.46rem; color:#3A4460; text-transform:uppercase; }
 .pc-lc-val { font-weight:700; }
-.pc-lc-sep { color:#374151; }
+.pc-lc-sep { color:#1C2232; }
 
-/* -- Odds display ------------------------------------------- */
-.pc-odds { display:flex; gap:6px; align-items:center; justify-content:center; }
-.pc-odds-chip { font-family:'JetBrains Mono',monospace; font-size:0.62rem; font-weight:700; padding:2px 8px; border-radius:4px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); }
-.pc-odds-over { color:#00ff9d; }
-.pc-odds-under { color:#ff5e00; }
-.pc-odds-lbl { font-size:0.48rem; color:#64748b; margin-right:2px; }
+/* prob row */
+.pc-prob-row { display:flex; align-items:center; gap:8px; }
+.pc-prob-track { flex:1; height:5px; background:rgba(255,255,255,0.07); border-radius:100px; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,0.2); }
+.pc-prob-fill-over  { height:100%; border-radius:100px; background:linear-gradient(90deg,#00D559,#2D9EFF); }
+.pc-prob-fill-under { height:100%; border-radius:100px; background:linear-gradient(90deg,#F24336,#F9C62B); }
+.pc-prob-pct { font-size:0.72rem; font-weight:800; color:#FFFFFF; min-width:32px; text-align:right; font-variant-numeric:tabular-nums; }
+.pc-edge { display:inline-flex; align-items:center; padding:1px 6px; border-radius:100px; font-size:0.62rem; font-weight:700; }
+.pc-edge-pos { background:rgba(0,213,89,0.10); color:#00D559; border:1px solid rgba(0,213,89,0.24); }
+.pc-edge-neg { background:rgba(242,67,54,0.10); color:#F24336; border:1px solid rgba(242,67,54,0.24); }
 
-/* -- Prediction pill ---------------------------------------- */
-.pc-pred { font-size:0.72rem; font-weight:700; padding:4px 10px; border-radius:6px; text-align:center; }
-.pc-pred-over { background:rgba(0,255,157,0.1); color:#00ff9d; border:1px solid rgba(0,255,157,0.2); }
-.pc-pred-under { background:rgba(255,94,0,0.1); color:#ff5e00; border:1px solid rgba(255,94,0,0.2); }
-.pc-pred-neutral { background:rgba(148,163,184,0.1); color:#94a3b8; border:1px solid rgba(148,163,184,0.2); }
+/* prediction */
+.pc-pred { font-size:0.64rem; font-weight:700; padding:3px 8px; border-radius:7px; text-align:center; }
+.pc-pred-over    { background:rgba(0,213,89,0.08); color:#00D559; border:1px solid rgba(0,213,89,0.20); }
+.pc-pred-under   { background:rgba(242,67,54,0.08); color:#F24336; border:1px solid rgba(242,67,54,0.20); }
+.pc-pred-neutral { background:rgba(107,122,154,0.08); color:#6B7A9A; border:1px solid rgba(107,122,154,0.16); }
 
-/* -- Confidence bar ----------------------------------------- */
-.pc-conf-hdr { display:flex; justify-content:space-between; font-size:0.64rem; color:#8a9bb8; }
+/* odds */
+.pc-odds { display:flex; gap:5px; align-items:center; justify-content:center; flex-wrap:wrap; }
+.pc-odds-chip { font-family:'JetBrains Mono',monospace; font-size:0.56rem; font-weight:700; padding:2px 7px; border-radius:5px; background:linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%); border:1px solid rgba(255,255,255,0.08); box-shadow:inset 0 1px 0 rgba(255,255,255,0.03); transition:transform 0.15s, background 0.15s; }
+.pc-odds-chip:hover { transform:translateY(-1px); background:rgba(255,255,255,0.06); }
+.pc-odds-over  { color:#00D559; }
+.pc-odds-under { color:#F24336; }
+.pc-odds-lbl   { font-size:0.44rem; color:#3A4460; margin-right:1px; }
+
+/* confidence bar */
+.pc-conf-hdr { display:flex; justify-content:space-between; font-size:0.60rem; color:#6B7A9A; }
 .pc-conf-pct { font-weight:700; }
-.pc-conf-track { height:5px; border-radius:3px; background:rgba(255,255,255,0.06); overflow:hidden; margin-top:3px; }
-.pc-conf-fill { height:100%; border-radius:3px; transition:width 0.3s; }
+.pc-conf-track { height:5px; border-radius:3px; background:rgba(255,255,255,0.06); overflow:hidden; margin-top:3px; box-shadow:inset 0 1px 2px rgba(0,0,0,0.2); }
+.pc-conf-fill { height:100%; border-radius:3px; transition:width 0.35s; box-shadow:0 0 6px currentColor; }
 
-/* -- Std devs indicator ------------------------------------- */
-.pc-stdev-row { display:flex; align-items:center; gap:8px; }
-.pc-stdev-bar-wrap { flex:1; height:16px; position:relative; border-radius:4px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); overflow:hidden; }
+/* stdev */
+.pc-stdev-row { display:flex; align-items:center; gap:6px; }
+.pc-stdev-bar-wrap { flex:1; height:12px; position:relative; border-radius:3px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); overflow:hidden; }
 .pc-stdev-marker { position:absolute; top:0; width:3px; height:100%; border-radius:1px; }
-.pc-stdev-label { font-family:'JetBrains Mono',monospace; font-size:0.62rem; font-weight:700; flex-shrink:0; }
-.pc-stdev-sublbl { font-size:0.48rem; color:#64748b; flex-shrink:0; }
+.pc-stdev-label { font-family:'JetBrains Mono',monospace; font-size:0.58rem; font-weight:700; flex-shrink:0; }
+.pc-stdev-sublbl { font-size:0.44rem; color:#3A4460; flex-shrink:0; }
 
-/* -- Matchup factors row ------------------------------------ */
-.pc-mx-row { display:flex; gap:4px; flex-wrap:wrap; }
-.pc-mx-pill { font-family:'JetBrains Mono',monospace; font-size:0.56rem; font-weight:600; padding:2px 7px; border-radius:4px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; gap:3px; }
-.pc-mx-pill-lbl { font-size:0.48rem; color:#64748b; }
-.pc-mx-good { color:#00ff9d; border-color:rgba(0,255,157,0.15); }
-.pc-mx-bad { color:#ff5e00; border-color:rgba(255,94,0,0.15); }
-.pc-mx-neutral { color:#94a3b8; }
+/* metrics */
+.pc-metrics { display:grid; grid-template-columns:repeat(2,1fr); gap:5px; }
+.pc-m { display:flex; flex-direction:column; align-items:center; background:linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02)); border-radius:8px; padding:6px 4px; border:1px solid rgba(255,255,255,0.06); box-shadow:inset 0 1px 0 rgba(255,255,255,0.03), 0 1px 3px rgba(0,0,0,0.12); }
+.pc-m-val { font-family:'JetBrains Mono',monospace; font-size:0.80rem; font-weight:700; color:#FFFFFF; }
+.pc-m-lbl { font-size:0.48rem; color:#6B7A9A; text-transform:uppercase; letter-spacing:0.04em; margin-top:1px; }
 
-/* -- Metrics row -------------------------------------------- */
-.pc-metrics { display:flex; gap:6px; justify-content:space-around; }
-.pc-m { display:flex; flex-direction:column; align-items:center; }
-.pc-m-val { font-family:'JetBrains Mono',monospace; font-size:0.82rem; font-weight:700; color:#e2e8f0; }
-.pc-m-lbl { font-size:0.5rem; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; }
+/* matchup pills */
+.pc-mx-row { display:flex; gap:3px; flex-wrap:wrap; }
+.pc-mx-pill { font-family:'JetBrains Mono',monospace; font-size:0.52rem; font-weight:600; padding:2px 6px; border-radius:5px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; gap:2px; }
+.pc-mx-pill-lbl { font-size:0.44rem; color:#3A4460; }
+.pc-mx-good    { color:#00D559; border-color:rgba(0,213,89,0.18); }
+.pc-mx-bad     { color:#F24336; border-color:rgba(242,67,54,0.18); }
+.pc-mx-neutral { color:#6B7A9A; }
 
-/* -- Distribution row --------------------------------------- */
-.pc-dist { display:flex; gap:4px; justify-content:space-around; }
-.pc-d { display:flex; flex-direction:column; align-items:center; }
-.pc-d-val { font-family:'JetBrains Mono',monospace; font-size:0.72rem; font-weight:700; color:#94a3b8; }
-.pc-d-lbl { font-size:0.48rem; color:#4a5568; text-transform:uppercase; }
-.pc-d-med .pc-d-val { color:#e2e8f0; }
-.pc-d-proj .pc-d-val { color:#00f0ff; }
+/* distribution */
+.pc-dist { display:flex; gap:3px; justify-content:space-around; flex-wrap:wrap; }
+.pc-d { display:flex; flex-direction:column; align-items:center; padding:3px 6px; border-radius:6px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04); transition:background 0.15s; }
+.pc-d:hover { background:rgba(255,255,255,0.04); }
+.pc-d-val { font-family:'JetBrains Mono',monospace; font-size:0.66rem; font-weight:700; color:#6B7A9A; }
+.pc-d-lbl { font-size:0.44rem; color:#3A4460; text-transform:uppercase; }
+.pc-d-med  .pc-d-val { color:#FFFFFF; text-shadow:0 1px 4px rgba(255,255,255,0.15); }
+.pc-d-proj .pc-d-val { color:#2D9EFF; text-shadow:0 1px 4px rgba(45,158,255,0.25); }
 
-/* -- Recent form sparkline ---------------------------------- */
-.pc-spark { display:flex; align-items:flex-end; gap:2px; height:32px; padding:4px 0; }
-.pc-spark-bar { min-width:6px; flex:1; border-radius:2px 2px 0 0; transition:height 0.2s; }
-.pc-spark-line-ref { position:relative; }
+/* sparkline */
+.pc-spark { display:flex; align-items:flex-end; gap:2px; height:26px; padding:3px 0; }
+.pc-spark-bar { min-width:5px; flex:1; border-radius:2px 2px 0 0; box-shadow:0 0 3px currentColor; transition:opacity 0.15s; }
+.pc-spark-bar:hover { opacity:0.85; }
 .pc-spark-wrap { position:relative; }
-.pc-spark-line { position:absolute; left:0; right:0; height:1px; border-top:1px dashed rgba(0,240,255,0.4); }
-.pc-spark-lbl { font-size:0.48rem; color:#64748b; text-align:center; margin-top:2px; }
+.pc-spark-line { position:absolute; left:0; right:0; height:1px; border-top:1px dashed rgba(45,158,255,0.4); }
+.pc-spark-lbl { font-size:0.44rem; color:#3A4460; text-align:center; margin-top:2px; }
 
-/* -- Context pills ------------------------------------------ */
-.pc-ctx { display:flex; flex-wrap:wrap; gap:4px; }
-.pc-ctx-pill { font-size:0.58rem; padding:2px 7px; border-radius:4px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:#94a3b8; font-family:'JetBrains Mono',monospace; }
+/* context pills */
+.pc-ctx { display:flex; flex-wrap:wrap; gap:3px; }
+.pc-ctx-pill { font-size:0.52rem; padding:2px 6px; border-radius:5px; background:linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%); border:1px solid rgba(255,255,255,0.07); color:#6B7A9A; font-family:'JetBrains Mono',monospace; box-shadow:inset 0 1px 0 rgba(255,255,255,0.02); transition:background 0.15s, transform 0.15s; }
+.pc-ctx-pill:hover { background:rgba(255,255,255,0.05); transform:translateY(-1px); }
 
-/* -- Forces ------------------------------------------------- */
-.pc-forces-bar-wrap { position:relative; margin-bottom:8px; }
-.pc-forces-bar { display:flex; height:10px; border-radius:5px; overflow:hidden; background:rgba(255,255,255,0.04); }
-.pc-forces-over-fill { background:linear-gradient(90deg,#00ff9d,#00d4a8); }
-.pc-forces-under-fill { background:linear-gradient(90deg,#ff8844,#ff5e00); }
+/* forces */
+.pc-forces-bar-wrap { position:relative; margin-bottom:5px; }
+.pc-forces-bar { display:flex; height:7px; border-radius:100px; overflow:hidden; background:rgba(255,255,255,0.04); box-shadow:inset 0 1px 2px rgba(0,0,0,0.2); }
+.pc-forces-over-fill  { background:linear-gradient(90deg,#00D559,#2D9EFF); box-shadow:0 0 6px rgba(0,213,89,0.3); }
+.pc-forces-under-fill { background:linear-gradient(90deg,#F9C62B,#F24336); box-shadow:0 0 6px rgba(242,67,54,0.3); }
 .pc-forces-pct-row { display:flex; justify-content:space-between; margin-top:2px; }
-.pc-forces-pct { font-family:'JetBrains Mono',monospace; font-size:0.54rem; font-weight:700; }
-.pc-forces-pct-over { color:#00ff9d; }
-.pc-forces-pct-under { color:#ff5e00; }
-.pc-forces-conflict { font-size:0.52rem; color:#fbbf24; text-align:center; margin-top:1px; }
-.pc-forces { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.pc-forces-lbl { font-size:0.56rem; font-weight:700; margin-bottom:2px; }
-.pc-forces-lbl-over { color:#00ff9d; }
-.pc-forces-lbl-under { color:#ff5e00; }
-.pc-force-item { font-size:0.58rem; color:#94a3b8; margin-bottom:2px; }
-.pc-force-name { font-weight:600; color:#b0c4de; }
-.pc-force-desc { font-size:0.52rem; color:#5a6b80; margin-left:4px; }
-.pc-force-none { font-size:0.58rem; color:#374151; font-style:italic; }
+.pc-forces-pct { font-family:'JetBrains Mono',monospace; font-size:0.50rem; font-weight:700; }
+.pc-forces-pct-over  { color:#00D559; }
+.pc-forces-pct-under { color:#F24336; }
+.pc-forces-conflict { font-size:0.50rem; color:#F9C62B; text-align:center; margin-top:2px; }
+.pc-forces { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:4px; }
+.pc-forces-lbl { font-size:0.52rem; font-weight:700; margin-bottom:2px; }
+.pc-forces-lbl-over  { color:#00D559; }
+.pc-forces-lbl-under { color:#F24336; }
+.pc-force-item { font-size:0.54rem; color:#6B7A9A; margin-bottom:2px; }
+.pc-force-name { font-weight:600; color:#A0AABE; }
+.pc-force-desc { font-size:0.46rem; color:#3A4460; margin-left:4px; }
+.pc-force-none { font-size:0.52rem; color:#1C2232; font-style:italic; }
 
-/* -- Ensemble info ------------------------------------------ */
-.pc-ensemble { display:flex; align-items:center; gap:8px; padding:4px 8px; border-radius:6px; background:rgba(94,234,212,0.04); border:1px solid rgba(94,234,212,0.08); }
-.pc-ens-icon { font-size:0.72rem; }
-.pc-ens-text { font-size:0.56rem; color:#5eead4; }
+/* ensemble */
+.pc-ensemble { display:flex; align-items:center; gap:6px; padding:4px 8px; border-radius:7px; background:linear-gradient(135deg, rgba(45,158,255,0.06) 0%, rgba(45,158,255,0.02) 100%); border:1px solid rgba(45,158,255,0.14); box-shadow:inset 0 1px 0 rgba(255,255,255,0.02), 0 1px 4px rgba(0,0,0,0.1); }
+.pc-ens-icon { font-size:0.68rem; }
+.pc-ens-text { font-size:0.54rem; color:#2D9EFF; }
 .pc-ens-models { font-family:'JetBrains Mono',monospace; font-weight:700; }
 
-/* -- Breakdown bars ----------------------------------------- */
-.pc-breakdown { display:flex; flex-direction:column; gap:4px; }
-.pc-bd-row { display:flex; align-items:center; gap:6px; }
-.pc-bd-label { font-size:0.56rem; color:#8a9bb8; width:70px; flex-shrink:0; text-align:right; }
-.pc-bd-score { font-family:'JetBrains Mono',monospace; font-size:0.56rem; font-weight:700; color:#e2e8f0; width:22px; text-align:right; flex-shrink:0; }
-.pc-bd-track { flex:1; height:4px; border-radius:2px; background:rgba(255,255,255,0.06); overflow:hidden; }
-.pc-bd-fill { height:100%; border-radius:2px; }
+/* breakdown */
+.pc-breakdown { display:flex; flex-direction:column; gap:3px; }
+.pc-bd-row { display:flex; align-items:center; gap:5px; }
+.pc-bd-label { font-size:0.52rem; color:#6B7A9A; width:60px; flex-shrink:0; text-align:right; }
+.pc-bd-score { font-family:'JetBrains Mono',monospace; font-size:0.52rem; font-weight:700; color:#FFFFFF; width:20px; text-align:right; flex-shrink:0; }
+.pc-bd-track { flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,0.06); overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,0.15); }
+.pc-bd-fill { height:100%; border-radius:2px; box-shadow:0 0 4px currentColor; }
 
-/* -- Key factors -------------------------------------------- */
+/* key factors */
 .pc-factors { display:flex; flex-direction:column; gap:2px; }
-.pc-factors-title { font-size:0.6rem; font-weight:700; color:#8a9bb8; text-transform:uppercase; letter-spacing:0.04em; }
-.pc-factor-item { font-size:0.58rem; color:#94a3b8; }
-.pc-factor-item::before { content:'\2713 '; color:#5eead4; }
+.pc-factors-title { font-size:0.56rem; font-weight:700; color:#6B7A9A; text-transform:uppercase; letter-spacing:0.04em; }
+.pc-factor-item { font-size:0.54rem; color:#6B7A9A; }
+.pc-factor-item::before { content:'\2713 '; color:#00D559; }
 
-/* -- Responsive --------------------------------------------- */
+/* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width:768px) {
-  .pc-card > summary { gap:8px; padding:10px 12px; }
-  .pc-head { width:40px; height:40px; }
-  .pc-name { font-size:0.86rem; }
-  .pc-meta { font-size:0.64rem; }
-  .pc-prop-grid { grid-template-columns:1fr; }
-  .pc-body { padding:0 10px 12px; }
-  .pc-identity { gap:10px; flex-wrap:wrap; }
-  .pc-id-avatar { width:64px; height:64px; }
+  .pc-card > summary { gap:10px; padding:12px 14px; }
+  .pc-head { width:42px; height:42px; }
+  .pc-name { font-size:0.95rem; }
+  .pc-prop { width:220px; }
+  .pc-prop[open] { width:340px; }
+  .pc-prop-big-line { font-size:2.6rem; }
+  .pc-prop-hs-wrap { width:80px; height:80px; }
+  .pc-identity { flex-wrap:wrap; }
+  .pc-id-avatar { width:56px; height:56px; }
   .pc-id-stats { width:100%; justify-content:center; }
-  .pc-grade-badge { width:32px; height:32px; font-size:0.9rem; }
+  .pc-prop-player-name { font-size:0.95rem; }
+  .pc-btn { font-size:0.85rem; padding:8px 0; }
 }
 @media (max-width:480px) {
-  .pc-card > summary { gap:6px; padding:8px 10px; }
   .pc-head { width:36px; height:36px; }
-  .pc-name { font-size:0.80rem; }
-  .pc-meta { font-size:0.58rem; }
-  .pc-id-avatar { width:52px; height:52px; }
+  .pc-prop { width:170px; }
+  .pc-prop[open] { width:280px; border-radius:16px; }
+  .pc-prop-big-line { font-size:2.2rem; }
+  .pc-prop-hs-wrap { width:64px; height:64px; }
+  .pc-prop-player-name { font-size:0.82rem; }
+  .pc-prop-stat-name { font-size:0.62rem; }
+  .pc-prop-team-pos { font-size:0.56rem; }
+  .pc-btn { font-size:0.78rem; padding:6px 0; border-radius:8px; }
+}
+@media (max-width:360px) {
+  .pc-prop { width:155px; }
+  .pc-prop[open] { width:260px; }
+  .pc-prop-big-line { font-size:1.9rem; }
+  .pc-prop-hs-wrap { width:56px; height:56px; }
+  .pc-prop-player-name { font-size:0.76rem; }
 }
 """
 
@@ -396,9 +494,18 @@ def _mx_cls_inv(val, neutral=1.0, threshold=0.03):
 #  SINGLE PROP CARD
 # ===================================================================
 
-def _build_prop_card(result):
-    """Build HTML for one prop analysis card."""
+def _build_prop_card(result, player_info=None):
+    """Build HTML for one PP-style prop card (horizontal scroll, expand on click)."""
     r = result
+    pi = player_info or {}
+
+    # -- Player display info ------------------------------------------
+    headshot = pi.get("headshot_url") or _FALLBACK_HEADSHOT
+    p_team = _e(str(pi.get("team") or ""))
+    p_pos  = _e(str(pi.get("position") or ""))
+    p_name = _e(str(pi.get("name") or ""))
+    team_bg = pi.get("team_bg") or "#2A3350"
+    team_pos_str = " - ".join(filter(None, [p_team, p_pos]))
 
     # -- Core values --------------------------------------------------
     tier = (r.get("tier") or "Bronze").strip()
@@ -416,15 +523,68 @@ def _build_prop_card(result):
     if not direction:
         direction = "OVER" if prob_over >= 0.5 else "UNDER"
 
-    dir_label = "More" if direction == "OVER" else "Less"
     stat_lower = (r.get("stat_type") or "").lower()
-    emoji = _STAT_EMOJI.get(stat_lower, "\U0001f3c0")
-    prop_text = f"{emoji} {dir_label} {true_line} {_e(stat_type)}"
 
     # Glow class
     glow = ""
     if tier_lower in ("platinum", "gold"):
         glow = f" pc-prop-{tier_lower}"
+
+    # Game info
+    opponent = _e(str(r.get("opponent") or ""))
+    is_home  = r.get("is_home")
+    if opponent:
+        ha = "vs" if is_home else "@"
+        game_info = f"{ha} {opponent}"
+    else:
+        game_info = ""
+
+    # Current value label
+    cur_val = r.get("current_value")
+    cur_label = ""
+    if cur_val is not None:
+        try:
+            cur_label = f'<div class="pc-prop-cur-label">Cur. {float(cur_val):.0f}</div>'
+        except (ValueError, TypeError):
+            pass
+
+    # OVER/UNDER button & prob setup
+    over_pct  = f"{prob_over * 100:.0f}%"
+    under_pct = f"{(1 - prob_over) * 100:.0f}%"
+    over_btn_cls  = "pc-btn-over-active"  if direction == "OVER"  else "pc-btn-over-inactive"
+    under_btn_cls = "pc-btn-under-active" if direction == "UNDER" else "pc-btn-under-inactive"
+    prob_fill_cls = "pc-prop-prob-fill-over" if direction == "OVER" else "pc-prop-prob-fill-under"
+    prob_w = prob_over * 100 if direction == "OVER" else (1 - prob_over) * 100
+    prob_lbl_cls = "pc-prop-prob-label-over" if direction == "OVER" else "pc-prop-prob-label-under"
+    disp_pct = over_pct if direction == "OVER" else under_pct
+
+    # == CARD FACE (summary — the PP card front) =======================
+    face_html = (
+        f'<div class="pc-prop-status">'
+        f'<span class="pc-tier pc-tier-{tier_lower}">{_e(tier)}</span>'
+        f'{("<span class=\"pc-platform\">" + platform + "</span>") if platform else ""}'
+        f'</div>'
+        f'<div class="pc-prop-hs-wrap">'
+        f'<img class="pc-prop-hs" src="{_e(headshot)}" alt="{p_name}" '
+        f'onerror="this.onerror=null;this.src=\'{_FALLBACK_HEADSHOT}\'">'
+        f'</div>'
+        f'<div class="pc-prop-team-pos">{team_pos_str}</div>'
+        f'<div class="pc-prop-player-name">{p_name}</div>'
+        f'<div class="pc-prop-game-info">{game_info}</div>'
+        f'<div class="pc-prop-line-area">'
+        f'{cur_label}'
+        f'<div class="pc-prop-big-line">{line}</div>'
+        f'<div class="pc-prop-stat-name">{_e(stat_type)}</div>'
+        f'</div>'
+        f'<div class="pc-prop-prob-bar">'
+        f'<div class="{prob_fill_cls}" style="width:{prob_w:.1f}%;"></div>'
+        f'</div>'
+        f'<div class="pc-prop-prob-label {prob_lbl_cls}">{disp_pct}</div>'
+        f'<div class="pc-btn-row">'
+        f'<div class="pc-btn {under_btn_cls}">&#8595; Less</div>'
+        f'<div class="pc-btn {over_btn_cls}">&#8593; More</div>'
+        f'</div>'
+    )
 
     # == Win Grade + Recommendation ====================================
     grade = _e(r.get("win_score_grade") or "")
@@ -445,25 +605,25 @@ def _build_prop_card(result):
             f'<span class="pc-safe-lbl">SAFE</span></div>'
             f'</div>'
         )
-    else:
-        grade_row = (
-            f'<div class="pc-grade-row">'
-            f'<div class="pc-grade-info">'
-            f'<span class="pc-grade-rec">{recommendation}</span>'
-            f'</div>'
-            f'<div class="pc-safe"><span class="pc-safe-val">{safe_score}</span>'
-            f'<span class="pc-safe-lbl">SAFE</span></div>'
-            f'</div>'
-        )
 
     # == Recommendation banner =========================================
-    rec_html = ""
-    if recommendation:
-        rec_html = f'<div class="pc-rec-banner">{recommendation}</div>'
+    rec_html = f'<div class="pc-rec-banner">{recommendation}</div>' if recommendation else ""
 
-    # == Header ========================================================
-    dir_cls = "pc-dir-over" if direction == "OVER" else "pc-dir-under"
-    dir_pill_html = f'<span class="pc-dir-pill {dir_cls}">{direction}</span>'
+    # Detail player header (shown inside expanded panel)
+    detail_hdr = (
+        f'<div class="pc-detail-hdr">'
+        f'<img class="pc-detail-hs" src="{_e(headshot)}" alt="{p_name}" '
+        f'onerror="this.onerror=null;this.src=\'{_FALLBACK_HEADSHOT}\'">'
+        f'<div class="pc-detail-info">'
+        f'<div class="pc-detail-name">{p_name}</div>'
+        f'<div class="pc-detail-sub">'
+        f'<span class="pc-detail-team-badge" style="background:{team_bg};">{p_team}</span>'
+        f'{(" \u00b7 " + p_pos) if p_pos else ""}'
+        f'{(" \u00b7 " + game_info) if game_info else ""}'
+        f'</div>'
+        f'</div>'
+        f'</div>'
+    )
 
     badges = ""
     if r.get("_is_best_pick"):
@@ -497,17 +657,6 @@ def _build_prop_card(result):
         if p_note:
             stext += f" - {_e(str(p_note))}"
         badges += f'<span class="pc-badge pc-badge-injury">\U0001f3e5 {stext}</span>'
-
-    hdr = (
-        f'<div class="pc-prop-hdr">'
-        f'<div class="pc-prop-left">'
-        f'<span class="pc-tier pc-tier-{tier_lower}">{_e(tier)}</span>'
-        f'{dir_pill_html}'
-        f'<span class="pc-stat-label">{prop_text}</span>'
-        f'<span class="pc-platform">{platform}</span>'
-        f'</div>'
-        f'</div>'
-    )
 
     badges_html = f'<div class="pc-badges">{badges}</div>' if badges else ""
 
@@ -853,15 +1002,46 @@ def _build_prop_card(result):
         items = "".join(f'<div class="pc-factor-item">{_e(bf)}</div>' for bf in bonus_factors)
         factors_html = f'<div class="pc-factors"><div class="pc-factors-title">Key Factors</div>{items}</div>'
 
-    # == Assemble card ================================================
-    return (
-        f'<div class="pc-prop{glow}">'
-        f'{grade_row}{badges_html}{hdr}'
-        f'{trueline}{line_compare}{odds_html}'
-        f'{pred_html}{conf}{stdev_html}{mx_html}'
-        f'{metrics}{dist}{spark_html}'
-        f'{ctx_html}{ens_html}{forces_html}{bd_html}{factors_html}'
+    # == Prob row (full version for expanded) ========================
+    edge_cls = "pc-edge-pos" if edge >= 0 else "pc-edge-neg"
+    edge_disp = f"{edge:+.1f}%"
+    prob_row_html = (
+        f'<div class="pc-prob-row">'
+        f'<div class="pc-prob-track">'
+        f'<div class="pc-prob-fill-{"over" if direction == "OVER" else "under"}" '
+        f'style="width:{prob_w:.1f}%;"></div>'
         f'</div>'
+        f'<span class="pc-prob-pct">{disp_pct}</span>'
+        f'<span class="pc-edge {edge_cls}">{edge_disp}</span>'
+        f'</div>'
+    )
+
+    # == EXPANDED DETAIL PANEL ========================================
+    expanded_html = (
+        f'<div class="pc-prop-expanded">'
+        f'{detail_hdr}'
+        f'{grade_row}'
+        f'{badges_html}'
+        f'{rec_html}'
+        f'<div class="pc-sec-label">Line &amp; Projection</div>'
+        f'{trueline}{line_compare}'
+        f'<div class="pc-sec-label">Probability &amp; Edge</div>'
+        f'{prob_row_html}{odds_html}{pred_html}'
+        f'<div style="padding:2px 0;">{conf}</div>'
+        f'{stdev_html}'
+        f'<div class="pc-sec-label">Analysis</div>'
+        f'{metrics}{mx_html}{dist}{spark_html}{ctx_html}'
+        f'<div class="pc-sec-label">Forces</div>'
+        f'{forces_html}'
+        f'{ens_html}{bd_html}{factors_html}'
+        f'</div>'
+    )
+
+    return (
+        f'<details class="pc-prop{glow}">'
+        f'<summary>{face_html}</summary>'
+        f'{expanded_html}'
+        f'</details>'
     )
 
 
@@ -905,20 +1085,27 @@ def build_player_card(player_name, vitals, props):
             best_tier = pt
     border_color = _TIER_BORDER.get(best_tier, "#64748b")
 
-    # Build prop cards
-    cards = "".join(_build_prop_card(p) for p in props)
+    # Expanded identity header — compute team_bg first so player_info can use it
+    position = _e(vitals.get("position") or "")
+    pos_label = f" \u00b7 {position}" if position else ""
+    team_colors = get_team_colors(vitals.get("team") or "")
+    team_bg = team_colors[0] if team_colors else "#4a5568"
+
+    # Build prop cards with player_info so each PP card face shows headshot + name
+    player_info = {
+        "name": player_name,
+        "headshot_url": headshot,
+        "team": vitals.get("team") or "",
+        "position": vitals.get("position") or "",
+        "team_bg": team_bg,
+    }
+    cards = "".join(_build_prop_card(p, player_info=player_info) for p in props)
 
     # Summary win grade badge
     sum_grade_html = ""
     if best_grade:
         gc = _GRADE_COLORS.get(best_grade, ("#94a3b8", "rgba(148,163,184,0.12)"))
         sum_grade_html = f'<span class="pc-sum-grade" style="color:{gc[0]};background:{gc[1]};">{_e(best_grade)}</span>'
-
-    # Expanded identity header
-    position = _e(vitals.get("position") or "")
-    pos_label = f" \u00b7 {position}" if position else ""
-    team_colors = get_team_colors(vitals.get("team") or "")
-    team_bg = team_colors[0] if team_colors else "#4a5568"
 
     # Opponent + home/away from first prop
     opponent = ""
@@ -972,17 +1159,24 @@ def build_player_card(player_name, vitals, props):
         f'</div>'
     )
 
+    # PP/DK-style team badge for summary (reuse team_bg already set above)
     return (
         f'<details class="pc-card" style="border-left-color:{border_color};">'
         f'<summary>'
         f'<span class="pc-arrow">&#9654;</span>'
         f'<img class="pc-head" src="{headshot}" alt="{safe_name}" '
         f'onerror="this.onerror=null;this.src=\'{_FALLBACK_HEADSHOT}\'">'
+        f'<div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;">'
         f'<span class="pc-name">{safe_name}</span>'
-        f'<span class="pc-meta">{team} &middot; {prop_label} &middot; Edge {best_edge_str}</span>'
+        f'<div style="display:flex;align-items:center;gap:5px;">'
+        f'<span class="pc-sum-team" style="background:{team_bg};">{team}</span>'
+        f'<span class="pc-sum-props">{prop_label}</span>'
+        f'</div>'
+        f'</div>'
+        f'<span class="pc-sum-edge">Edge {best_edge_str}</span>'
         f'{sum_grade_html}'
         f'</summary>'
-        f'<div class="pc-body">{id_header}<div class="pc-prop-grid">{cards}</div></div>'
+        f'<div class="pc-body">{id_header}<div class="pc-props-scroll">{cards}</div></div>'
         f'</details>'
     )
 
@@ -1015,4 +1209,42 @@ def compile_player_card_matrix(grouped_players):
     return (
         f"<style>{PLAYER_CARD_CSS}</style>"
         f'<div class="pc-grid">{"".join(cards)}</div>'
+    )
+
+
+def compile_player_cards_flat(grouped_players):
+    """Compile all players' prop cards into a single horizontal scroll row.
+
+    Unlike ``compile_player_card_matrix`` which nests props inside collapsible
+    per-player rows, this outputs every prop card side-by-side in one
+    horizontal strip — no collapsibles at all.
+    """
+    if not grouped_players:
+        return (
+            '<div style="text-align:center;color:#64748b;padding:40px;">'
+            "No analysis results to display.</div>"
+        )
+
+    all_cards = []
+    for name, data in grouped_players.items():
+        vitals = data.get("vitals") or {}
+        props = data.get("props") or []
+        if not props:
+            continue
+
+        headshot = (vitals.get("headshot_url") or "") or _get_headshot_url(name) or ""
+        team_colors_pair = get_team_colors(vitals.get("team") or "")
+        team_bg = team_colors_pair[0] if team_colors_pair else "#4a5568"
+        player_info = {
+            "name": name,
+            "headshot_url": headshot,
+            "team": vitals.get("team") or "",
+            "position": vitals.get("position") or "",
+            "team_bg": team_bg,
+        }
+        for p in props:
+            all_cards.append(_build_prop_card(p, player_info=player_info))
+
+    return (
+        f'<div class="pc-props-scroll" style="padding:10px 0 16px;">{"".join(all_cards)}</div>'
     )

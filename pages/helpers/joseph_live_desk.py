@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/helpers/joseph_live_desk.py
 # PURPOSE: Joseph M. Smith's Live Broadcast Desk — renders above
 #          prop cards on the Neural Analysis page (page 3).
@@ -167,22 +167,16 @@ def get_smart_pick_pro_logo_b64() -> str:
 def render_live_desk_css() -> str:
     """Return complete CSS string for Joseph's Live Broadcast Desk."""
     return """<style>
-/* ── Joseph Live Desk — Premium QDS Broadcast Container ─────── */
+/* ── Joseph Live Desk — PP/DK Green Theme ───────────────────── */
 .joseph-live-desk{
-    background:linear-gradient(145deg,rgba(7,10,19,0.97) 0%,rgba(15,23,42,0.93) 40%,rgba(7,10,19,0.97) 100%);
-    backdrop-filter:blur(24px);
-    -webkit-backdrop-filter:blur(24px);
-    border:1px solid rgba(255,94,0,0.30);
+    background:linear-gradient(160deg,rgba(4,8,6,0.97) 0%,rgba(8,16,12,0.95) 40%,rgba(4,8,6,0.97) 100%);
+    border:1.5px solid rgba(0,180,100,0.18);
     border-radius:20px;
     padding:0;
     margin:24px 0;
     position:relative;
     overflow:hidden;
-    box-shadow:
-        0 0 60px rgba(255,94,0,0.08),
-        0 0 120px rgba(0,198,255,0.04),
-        inset 0 1px 0 rgba(255,158,0,0.15),
-        inset 0 -1px 0 rgba(0,198,255,0.06);
+    box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 30px rgba(0,180,100,0.04);
     width:100%;
     max-width:100%;
     box-sizing:border-box;
@@ -193,18 +187,18 @@ def render_live_desk_css() -> str:
 .joseph-live-desk *::after{
     box-sizing:border-box;
 }
-/* Top broadcast bar — enhanced gradient shimmer */
+/* Top accent bar — green shimmer */
 .joseph-live-desk::before{
     content:'';position:absolute;top:0;left:0;right:0;height:3px;
-    background:linear-gradient(90deg,transparent,#ff5e00,#00C6FF,#ff9e00,#ff5e00,transparent);
+    background:linear-gradient(90deg,transparent,#00D959,#50a874,#00D959,transparent);
     background-size:300% 100%;
     animation:josephShimmer 4s linear infinite;
     z-index:2;
 }
-/* Bottom broadcast bar — cyan accent */
+/* Bottom accent bar */
 .joseph-live-desk::after{
     content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
-    background:linear-gradient(90deg,transparent,#00C6FF40,#ff5e0060,#00C6FF40,transparent);
+    background:linear-gradient(90deg,transparent,rgba(0,217,89,0.25),rgba(80,168,116,0.15),transparent);
     background-size:300% 100%;
     animation:josephShimmer 4s linear infinite reverse;
 }
@@ -213,43 +207,35 @@ def render_live_desk_css() -> str:
     100%{background-position:200% 0}
 }
 
-/* ── Hero Banner — ESPN-style broadcast header ────────────── */
+/* ── Hero Banner ──────────────────────────────────────────── */
 .joseph-hero{
     display:flex;align-items:center;gap:20px;
     padding:28px 32px 22px;
-    background:linear-gradient(135deg,rgba(15,20,35,0.95) 0%,rgba(25,15,8,0.4) 60%,rgba(15,20,35,0.95) 100%);
-    border-bottom:1px solid rgba(255,94,0,0.18);
+    background:linear-gradient(135deg,rgba(4,8,6,0.95) 0%,rgba(10,20,14,0.5) 60%,rgba(4,8,6,0.95) 100%);
+    border-bottom:1px solid rgba(0,180,100,0.12);
     position:relative;
-}
-/* Ambient scan-line overlay on hero */
-.joseph-hero::after{
-    content:'';position:absolute;top:0;left:0;right:0;bottom:0;
-    background:repeating-linear-gradient(
-        0deg,transparent,transparent 2px,rgba(0,198,255,0.015) 2px,rgba(0,198,255,0.015) 4px
-    );
-    pointer-events:none;z-index:0;
 }
 
 /* ── LIVE Pulsing Dot ─────────────────────────────────────── */
 .joseph-live-dot{
     display:inline-block;width:10px;height:10px;
-    background:#ff2020;border-radius:50%;
+    background:#00D959;border-radius:50%;
     margin-right:6px;vertical-align:middle;
     animation:josephLivePulse 1.4s ease-in-out infinite;
-    box-shadow:0 0 12px rgba(255,32,32,0.7);
+    box-shadow:0 0 12px rgba(0,217,89,0.7);
 }
 @keyframes josephLivePulse{
-    0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 12px rgba(255,32,32,0.7)}
-    50%{opacity:0.4;transform:scale(0.85);box-shadow:0 0 4px rgba(255,32,32,0.3)}
+    0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 12px rgba(0,217,89,0.7)}
+    50%{opacity:0.4;transform:scale(0.85);box-shadow:0 0 4px rgba(0,217,89,0.3)}
 }
 
 /* ── LIVE Badge Pill ──────────────────────────────────────── */
 .joseph-live-badge{
     display:inline-flex;align-items:center;gap:6px;
     padding:4px 14px 4px 10px;border-radius:20px;
-    background:rgba(255,32,32,0.15);border:1px solid rgba(255,32,32,0.4);
-    font-family:'Orbitron',sans-serif;font-size:0.72rem;
-    font-weight:700;color:#ff4444;letter-spacing:1px;
+    background:rgba(0,217,89,0.10);border:1px solid rgba(0,217,89,0.35);
+    font-family:'Inter',sans-serif;font-size:0.72rem;
+    font-weight:700;color:#00D959;letter-spacing:1px;
     text-transform:uppercase;
 }
 
@@ -257,7 +243,7 @@ def render_live_desk_css() -> str:
 .joseph-typing{display:inline-flex;gap:4px;align-items:center;padding:4px 0}
 .joseph-typing span{
     display:inline-block;width:6px;height:6px;
-    background:#ff5e00;border-radius:50%;
+    background:#00D959;border-radius:50%;
     animation:josephBounce 1.2s ease-in-out infinite;
 }
 .joseph-typing span:nth-child(2){animation-delay:0.15s}
@@ -267,53 +253,44 @@ def render_live_desk_css() -> str:
     40%{transform:translateY(-8px)}
 }
 
-/* ── Joseph Avatar Circle — enhanced glow ring ────────────── */
+/* ── Joseph Avatar Circle ─────────────────────────────────── */
 .joseph-avatar{
     width:88px;height:88px;border-radius:50%;
-    border:3px solid #ff5e00;object-fit:cover;
-    box-shadow:
-        0 0 20px rgba(255,94,0,0.5),
-        0 0 40px rgba(255,94,0,0.18),
-        0 0 60px rgba(255,94,0,0.08);
+    border:3px solid #00D959;object-fit:cover;
+    box-shadow:0 0 20px rgba(0,217,89,0.35),0 0 40px rgba(0,217,89,0.12);
     flex-shrink:0;
     animation:josephAvatarGlow 3s ease-in-out infinite;
     position:relative;z-index:1;
 }
 @keyframes josephAvatarGlow{
-    0%,100%{box-shadow:0 0 20px rgba(255,94,0,0.5),0 0 40px rgba(255,94,0,0.18)}
-    50%{box-shadow:0 0 28px rgba(255,94,0,0.7),0 0 56px rgba(255,94,0,0.25)}
+    0%,100%{box-shadow:0 0 20px rgba(0,217,89,0.35),0 0 40px rgba(0,217,89,0.12)}
+    50%{box-shadow:0 0 28px rgba(0,217,89,0.5),0 0 56px rgba(0,217,89,0.18)}
 }
 .joseph-avatar-sm{width:48px;height:48px;border-radius:50%;
-    border:2px solid #ff5e00;object-fit:cover;
-    box-shadow:0 0 10px rgba(255,94,0,0.3);flex-shrink:0}
+    border:2px solid #00D959;object-fit:cover;
+    box-shadow:0 0 10px rgba(0,217,89,0.25);flex-shrink:0}
 
 /* ── Broadcast Header Text ────────────────────────────────── */
 .joseph-header{
     display:flex;flex-direction:column;gap:6px;
     position:relative;z-index:1;
-    min-width:0;
-    flex:1 1 0;
+    min-width:0;flex:1 1 0;
 }
 .joseph-header-text{
-    font-family:'Orbitron',sans-serif;font-size:1.35rem;
+    font-family:'Inter',sans-serif;font-size:1.35rem;
     color:#ffffff;font-weight:700;letter-spacing:0.5px;
-    text-shadow:0 0 20px rgba(255,94,0,0.35);
     display:flex;align-items:center;gap:10px;
-    flex-wrap:wrap;
-    line-height:1.3;
-    min-width:0;
-    overflow-wrap:anywhere;
+    flex-wrap:wrap;line-height:1.3;
+    min-width:0;overflow-wrap:anywhere;
 }
 .joseph-header-text .joseph-name-accent{
-    color:#ff5e00;
+    color:#00D959;
 }
 .joseph-subtitle{
-    color:#94a3b8;font-size:0.82rem;margin-top:2px;
-    font-family:'Montserrat',sans-serif;letter-spacing:0.3px;
+    color:#7a9888;font-size:0.82rem;margin-top:2px;
+    font-family:'Inter',sans-serif;letter-spacing:0.3px;
     display:flex;align-items:center;gap:8px;
-    flex-wrap:wrap;
-    min-width:0;
-    overflow-wrap:anywhere;
+    flex-wrap:wrap;min-width:0;overflow-wrap:anywhere;
 }
 
 /* ── Desk Content Body ────────────────────────────────────── */
@@ -324,7 +301,7 @@ def render_live_desk_css() -> str:
 /* ── Section Divider ──────────────────────────────────────── */
 .joseph-divider{
     height:1px;margin:20px 0;
-    background:linear-gradient(90deg,transparent,rgba(255,94,0,0.25),rgba(0,198,255,0.15),transparent);
+    background:linear-gradient(90deg,transparent,rgba(0,180,100,0.20),transparent);
 }
 
 /* ── Stat Summary KPI Bar ─────────────────────────────────── */
@@ -335,270 +312,254 @@ def render_live_desk_css() -> str:
 .joseph-kpi{
     display:flex;align-items:center;gap:6px;
     padding:6px 14px;border-radius:10px;
-    background:rgba(15,23,42,0.7);
-    border:1px solid rgba(148,163,184,0.12);
-    font-family:'Montserrat',sans-serif;font-size:0.82rem;
-    color:#cbd5e1;
+    background:rgba(4,8,6,0.7);
+    border:1px solid rgba(0,180,100,0.10);
+    font-family:'Inter',sans-serif;font-size:0.82rem;
+    color:#b0c8b8;
 }
 .joseph-kpi-value{
-    font-family:'Orbitron',sans-serif;font-weight:700;
+    font-family:'JetBrains Mono',monospace;font-weight:700;
     font-size:0.9rem;font-variant-numeric:tabular-nums;
 }
 
-/* ── Opening Monologue — speech bubble style ──────────────── */
+/* ── Opening Monologue ────────────────────────────────────── */
 .joseph-monologue{
-    background:linear-gradient(135deg,rgba(20,26,44,0.85) 0%,rgba(12,16,30,0.7) 100%);
-    border:1px solid rgba(255,94,0,0.12);
+    background:linear-gradient(135deg,rgba(6,12,8,0.85) 0%,rgba(4,8,6,0.7) 100%);
+    border:1px solid rgba(0,180,100,0.10);
+    border-left:3px solid rgba(0,217,89,0.40);
     border-radius:16px;padding:20px 24px;
     margin-bottom:8px;
     position:relative;
 }
 .joseph-monologue-label{
     display:inline-flex;align-items:center;gap:6px;
-    font-family:'Orbitron',sans-serif;font-size:0.78rem;
-    font-weight:600;color:#ff5e00;letter-spacing:0.6px;
-    margin-bottom:12px;
-    text-shadow:0 0 12px rgba(255,94,0,0.18);
+    font-family:'Inter',sans-serif;font-size:0.78rem;
+    font-weight:700;color:#00D959;letter-spacing:0.6px;
+    margin-bottom:12px;text-transform:uppercase;
 }
 .joseph-monologue-text{
-    color:#e2e8f0;font-size:0.92rem;
-    line-height:1.75;font-family:'Montserrat',sans-serif;
+    color:#d0dcd6;font-size:0.92rem;
+    line-height:1.75;font-family:'Inter',sans-serif;
 }
-.joseph-monologue-text strong{color:#ff9e00}
+.joseph-monologue-text strong{color:#90d0a8}
 
-/* ── Broadcast Segment Cards — QDS glassmorphism ──────────── */
+/* ── Broadcast Segment Cards ──────────────────────────────── */
 .joseph-segment{
-    background:linear-gradient(135deg,rgba(15,23,42,0.80) 0%,rgba(7,10,19,0.65) 100%);
-    backdrop-filter:blur(12px);
-    -webkit-backdrop-filter:blur(12px);
-    border:1px solid rgba(255,94,0,0.15);
-    border-left:3px solid rgba(255,94,0,0.55);
+    background:linear-gradient(160deg,rgba(4,8,6,0.90) 0%,rgba(8,16,12,0.80) 100%);
+    border:1px solid rgba(0,180,100,0.10);
+    border-left:3px solid rgba(0,217,89,0.40);
     border-radius:14px;padding:16px 20px;
     margin-bottom:12px;
-    transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
-    position:relative;
-    overflow:hidden;
+    transition:all 0.25s ease;
+    position:relative;overflow:hidden;
 }
-/* Subtle inner shimmer on hover */
-.joseph-segment::before{
-    content:'';position:absolute;top:0;left:-100%;
-    width:100%;height:100%;
-    background:linear-gradient(90deg,transparent,rgba(255,94,0,0.04),transparent);
-    transition:left 0.5s ease;
-    pointer-events:none;
-}
-.joseph-segment:hover::before{left:100%}
 .joseph-segment:hover{
-    border-color:rgba(255,94,0,0.40);
-    transform:translateY(-2px);
-    box-shadow:0 6px 32px rgba(255,94,0,0.10),0 0 16px rgba(0,198,255,0.04);
+    border-color:rgba(0,180,100,0.25);
+    box-shadow:0 4px 20px rgba(0,0,0,0.3);
 }
-
 .joseph-segment-title{
-    font-family:'Orbitron',sans-serif;
-    color:#ff5e00;font-size:0.92rem;font-weight:600;
-    margin-bottom:8px;letter-spacing:0.6px;
-    text-shadow:0 0 12px rgba(255,94,0,0.18);
+    font-family:'Inter',sans-serif;
+    color:#00D959;font-size:0.92rem;font-weight:700;
+    margin-bottom:8px;letter-spacing:0.4px;
     display:flex;align-items:center;gap:8px;
     flex-wrap:wrap;
 }
 .joseph-segment-body{
-    color:#e2e8f0;font-size:0.9rem;
-    line-height:1.7;font-family:'Montserrat',sans-serif;
+    color:#d0dcd6;font-size:0.9rem;
+    line-height:1.7;font-family:'Inter',sans-serif;
     overflow-wrap:anywhere;
 }
-.joseph-segment-body strong{color:#ff9e00}
+.joseph-segment-body strong{color:#90d0a8}
 
-/* ── Pick Card — premium numbered cards ───────────────────── */
+/* ── Pick Card ────────────────────────────────────────────── */
 .joseph-pick-card{
-    display:flex;gap:16px;align-items:stretch;
-    background:linear-gradient(135deg,rgba(15,23,42,0.80) 0%,rgba(7,10,19,0.65) 100%);
-    border:1px solid rgba(255,94,0,0.15);
-    border-radius:14px;padding:0;
+    display:flex;gap:0;align-items:stretch;
+    background:linear-gradient(160deg,rgba(4,8,6,0.92) 0%,rgba(8,16,12,0.85) 100%);
+    border:1px solid rgba(0,180,100,0.10);
+    border-radius:16px;padding:0;
     margin-bottom:12px;overflow:hidden;
-    transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+    transition:all 0.25s ease;
 }
 .joseph-pick-card:hover{
-    border-color:rgba(255,94,0,0.40);
-    transform:translateY(-2px);
-    box-shadow:0 6px 32px rgba(255,94,0,0.10),0 0 16px rgba(0,198,255,0.04);
+    border-color:rgba(0,180,100,0.25);
+    box-shadow:0 4px 24px rgba(0,0,0,0.35);
 }
 .joseph-pick-rank{
     display:flex;align-items:center;justify-content:center;
     min-width:52px;
-    font-family:'Orbitron',sans-serif;font-size:1.3rem;font-weight:800;
+    font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:800;
     color:rgba(255,255,255,0.9);
-    background:linear-gradient(180deg,rgba(255,94,0,0.25) 0%,rgba(255,94,0,0.08) 100%);
-    border-right:1px solid rgba(255,94,0,0.2);
+    background:linear-gradient(180deg,rgba(0,217,89,0.15) 0%,rgba(0,217,89,0.04) 100%);
+    border-right:1px solid rgba(0,180,100,0.12);
     flex-shrink:0;
 }
 .joseph-pick-content{
-    flex:1;padding:16px 18px 14px 0;
+    flex:1;padding:16px 18px 14px 16px;
     display:flex;flex-direction:column;gap:6px;
     min-width:0;
 }
 .joseph-pick-player{
-    font-family:'Montserrat',sans-serif;font-size:1.05rem;
+    font-family:'Inter',sans-serif;font-size:1.05rem;
     font-weight:700;color:#ffffff;
     overflow-wrap:anywhere;
 }
 .joseph-pick-prop{
-    font-family:'Montserrat',sans-serif;font-size:0.88rem;
-    color:#94a3b8;display:flex;align-items:center;gap:8px;
+    font-family:'Inter',sans-serif;font-size:0.88rem;
+    color:#7a9888;display:flex;align-items:center;gap:8px;
     flex-wrap:wrap;
 }
 .joseph-pick-edge{
     display:inline-flex;align-items:center;gap:4px;
     padding:3px 10px;border-radius:6px;
-    background:rgba(255,94,0,0.12);border:1px solid rgba(255,94,0,0.3);
+    background:rgba(0,217,89,0.10);border:1px solid rgba(0,217,89,0.25);
     font-family:'JetBrains Mono',monospace;font-size:0.82rem;
-    font-weight:700;color:#ff5e00;
+    font-weight:700;color:#00D959;
     font-variant-numeric:tabular-nums;
 }
 .joseph-pick-rant{
-    color:#cbd5e1;font-size:0.88rem;line-height:1.6;
-    font-family:'Montserrat',sans-serif;margin-top:4px;
+    color:#b0c8b8;font-size:0.88rem;line-height:1.6;
+    font-family:'Inter',sans-serif;margin-top:4px;
     overflow-wrap:anywhere;
 }
 
 /* ── Section Header ───────────────────────────────────────── */
 .joseph-section-header{
     display:flex;align-items:center;gap:10px;
-    font-family:'Orbitron',sans-serif;font-size:0.95rem;
-    font-weight:700;color:#ff5e00;letter-spacing:0.6px;
+    font-family:'Inter',sans-serif;font-size:0.95rem;
+    font-weight:700;color:#00D959;letter-spacing:0.4px;
     margin-bottom:14px;
-    text-shadow:0 0 12px rgba(255,94,0,0.18);
 }
 .joseph-section-header::after{
     content:'';flex:1;height:1px;
-    background:linear-gradient(90deg,rgba(255,94,0,0.3),transparent);
+    background:linear-gradient(90deg,rgba(0,180,100,0.25),transparent);
 }
 
-/* ── Verdict Badges — enhanced glow ──────────────────────── */
+/* ── Verdict Badges ───────────────────────────────────────── */
 .joseph-verdict{
-    display:inline-block;padding:4px 14px;border-radius:8px;
-    font-family:'Orbitron',sans-serif;font-size:0.72rem;
+    display:inline-block;padding:4px 14px;border-radius:100px;
+    font-family:'JetBrains Mono',monospace;font-size:0.68rem;
     font-weight:700;letter-spacing:0.8px;margin-right:8px;
     vertical-align:middle;
-    text-shadow:0 0 10px currentColor;
-    transition:transform 0.15s ease,box-shadow 0.15s ease;
+    transition:transform 0.15s ease;
 }
-.joseph-verdict:hover{transform:scale(1.08)}
-.joseph-verdict-lock{background:rgba(168,85,247,0.25);color:#a855f7;border:1px solid rgba(168,85,247,0.50);box-shadow:0 0 18px rgba(168,85,247,0.25)}
-.joseph-verdict-smash{background:rgba(239,68,68,0.2);color:#ff4444;border:1px solid rgba(239,68,68,0.40);box-shadow:0 0 14px rgba(239,68,68,0.18)}
-.joseph-verdict-lean{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.35);box-shadow:0 0 14px rgba(34,197,94,0.15)}
-.joseph-verdict-fade{background:rgba(234,179,8,0.15);color:#eab308;border:1px solid rgba(234,179,8,0.35);box-shadow:0 0 14px rgba(234,179,8,0.15)}
-.joseph-verdict-stay_away{background:rgba(107,114,128,0.2);color:#9ca3af;border:1px solid rgba(107,114,128,0.3)}
+.joseph-verdict:hover{transform:scale(1.06)}
+.joseph-verdict-lock{background:rgba(168,85,247,0.15);color:#a855f7;border:1px solid rgba(168,85,247,0.35)}
+.joseph-verdict-smash{background:rgba(239,68,68,0.12);color:#F24336;border:1px solid rgba(239,68,68,0.30)}
+.joseph-verdict-lean{background:rgba(0,217,89,0.10);color:#00D959;border:1px solid rgba(0,217,89,0.25)}
+.joseph-verdict-fade{background:rgba(234,179,8,0.10);color:#eab308;border:1px solid rgba(234,179,8,0.25)}
+.joseph-verdict-stay_away{background:rgba(107,114,128,0.12);color:#9ca3af;border:1px solid rgba(107,114,128,0.22)}
 
 /* ── Ticket Card ──────────────────────────────────────────── */
 .joseph-ticket{
     display:flex;align-items:stretch;
-    background:rgba(15,23,42,0.6);
-    border:1px solid rgba(255,94,0,0.15);border-radius:12px;
+    background:rgba(4,8,6,0.7);
+    border:1px solid rgba(0,180,100,0.10);border-radius:14px;
     margin-bottom:10px;overflow:hidden;
+    transition:border-color 0.2s ease;
 }
+.joseph-ticket:hover{border-color:rgba(0,180,100,0.22)}
 .joseph-ticket-icon{
     display:flex;align-items:center;justify-content:center;
     min-width:44px;font-size:1.2rem;
-    background:rgba(255,94,0,0.08);
-    border-right:1px solid rgba(255,94,0,0.15);
+    background:rgba(0,217,89,0.06);
+    border-right:1px solid rgba(0,180,100,0.10);
 }
 .joseph-ticket-body{
     flex:1;padding:12px 16px;
 }
 .joseph-ticket-name{
-    font-family:'Orbitron',sans-serif;font-size:0.82rem;
-    font-weight:700;color:#ff5e00;letter-spacing:0.5px;
+    font-family:'Inter',sans-serif;font-size:0.82rem;
+    font-weight:700;color:#00D959;letter-spacing:0.5px;
     margin-bottom:4px;
 }
 .joseph-ticket-legs{
-    font-family:'Montserrat',sans-serif;font-size:0.85rem;
-    color:#e2e8f0;line-height:1.5;
+    font-family:'Inter',sans-serif;font-size:0.85rem;
+    color:#d0dcd6;line-height:1.5;
 }
 .joseph-ticket-pitch{
-    font-family:'Montserrat',sans-serif;font-size:0.82rem;
-    color:#94a3b8;margin-top:6px;font-style:italic;
+    font-family:'Inter',sans-serif;font-size:0.82rem;
+    color:#7a9888;margin-top:6px;font-style:italic;
 }
 
 /* ── Dawg Board Table ─────────────────────────────────────── */
 .joseph-table-wrap{
-    width:100%;
-    max-width:100%;
-    overflow-x:auto;
-    overflow-y:hidden;
+    width:100%;max-width:100%;
+    overflow-x:auto;overflow-y:hidden;
     -webkit-overflow-scrolling:touch;
     margin-bottom:10px;
 }
 .joseph-dawg-table{
     width:100%;border-collapse:separate;border-spacing:0;
-    font-family:'Montserrat',sans-serif;font-size:0.85rem;
-    border-radius:10px;overflow:hidden;
+    font-family:'Inter',sans-serif;font-size:0.85rem;
+    border-radius:12px;overflow:hidden;
     min-width:640px;
 }
 .joseph-dawg-table th{
-    background:rgba(255,94,0,0.12);color:#ff5e00;
+    background:rgba(0,217,89,0.08);color:#00D959;
     padding:10px 14px;text-align:left;
-    font-family:'Orbitron',sans-serif;font-size:0.72rem;
-    letter-spacing:0.5px;border-bottom:1px solid rgba(255,94,0,0.2);
+    font-family:'Inter',sans-serif;font-size:0.72rem;
+    font-weight:700;letter-spacing:0.5px;
+    border-bottom:1px solid rgba(0,180,100,0.15);
 }
 .joseph-dawg-table td{
-    padding:8px 14px;color:#e2e8f0;
-    border-bottom:1px solid rgba(148,163,184,0.08);
+    padding:8px 14px;color:#d0dcd6;
+    border-bottom:1px solid rgba(0,180,100,0.06);
     transition:background 0.15s ease;
 }
-.joseph-dawg-table tr:hover td{background:rgba(255,94,0,0.06)}
+.joseph-dawg-table tr:hover td{background:rgba(0,180,100,0.04)}
 
 /* ── Override Report Table ────────────────────────────────── */
 .joseph-override-table{
     width:100%;border-collapse:separate;border-spacing:0;
-    font-family:'Montserrat',sans-serif;font-size:0.85rem;
-    border-radius:10px;overflow:hidden;
+    font-family:'Inter',sans-serif;font-size:0.85rem;
+    border-radius:12px;overflow:hidden;
     min-width:680px;
 }
 .joseph-override-table th{
-    background:rgba(0,240,255,0.08);color:#00f0ff;
+    background:rgba(0,217,89,0.08);color:#00D959;
     padding:10px 14px;text-align:left;
-    font-family:'Orbitron',sans-serif;font-size:0.72rem;
-    letter-spacing:0.5px;border-bottom:1px solid rgba(0,240,255,0.18);
+    font-family:'Inter',sans-serif;font-size:0.72rem;
+    font-weight:700;letter-spacing:0.5px;
+    border-bottom:1px solid rgba(0,180,100,0.15);
 }
 .joseph-override-table td{
-    padding:8px 14px;color:#e2e8f0;
-    border-bottom:1px solid rgba(148,163,184,0.08);
+    padding:8px 14px;color:#d0dcd6;
+    border-bottom:1px solid rgba(0,180,100,0.06);
     transition:background 0.15s ease;
 }
-.joseph-override-table tr:hover td{background:rgba(0,240,255,0.04)}
+.joseph-override-table tr:hover td{background:rgba(0,180,100,0.04)}
 
 /* ── Nerd Stats Toggle ────────────────────────────────────── */
 .joseph-nerd-stats{
-    background:rgba(7,10,19,0.6);border:1px solid rgba(148,163,184,0.12);
+    background:rgba(4,8,6,0.7);border:1px solid rgba(0,180,100,0.10);
     border-radius:10px;padding:14px 18px;margin-top:10px;
     font-family:'JetBrains Mono',monospace;font-size:0.78rem;
-    color:#94a3b8;line-height:1.6;
+    color:#7a9888;line-height:1.6;
     font-variant-numeric:tabular-nums;
 }
-.joseph-nerd-stats strong{color:#00f0ff}
+.joseph-nerd-stats strong{color:#90d0a8}
 
 /* ── Edge Scoreboard Numbers ──────────────────────────────── */
 .joseph-edge-value{
     font-family:'JetBrains Mono',monospace;
     font-variant-numeric:tabular-nums;
-    font-weight:700;color:#ff5e00;
+    font-weight:700;color:#00D959;
 }
 
 /* ── Sign-off Footer ──────────────────────────────────────── */
 .joseph-signoff{
     text-align:center;padding:20px 28px;
-    border-top:1px solid rgba(255,94,0,0.12);
-    background:linear-gradient(180deg,transparent,rgba(255,94,0,0.03));
+    border-top:1px solid rgba(0,180,100,0.10);
+    background:linear-gradient(180deg,transparent,rgba(0,180,100,0.02));
 }
 .joseph-signoff-text{
-    color:#cbd5e1;font-size:0.92rem;line-height:1.6;
-    font-family:'Montserrat',sans-serif;
+    color:#b0c8b8;font-size:0.92rem;line-height:1.6;
+    font-family:'Inter',sans-serif;
 }
-.joseph-signoff-text em{color:#ff9e00}
+.joseph-signoff-text em{color:#90d0a8}
 .joseph-signoff-icon{font-size:1.3rem;margin-bottom:6px}
 
-/* ── Mobile Responsive — Broadcast Desk ──────────────────── */
+/* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 768px){
     .joseph-live-desk{margin:12px 0;border-radius:14px}
     .joseph-hero{padding:16px 14px 14px;gap:12px;flex-wrap:wrap}
@@ -614,9 +575,9 @@ def render_live_desk_css() -> str:
     .joseph-segment{padding:12px 14px;border-radius:10px}
     .joseph-segment-title{font-size:0.84rem}
     .joseph-segment-body{font-size:0.82rem}
-    .joseph-pick-card{gap:10px;border-radius:10px}
+    .joseph-pick-card{border-radius:12px}
     .joseph-pick-rank{min-width:40px;font-size:1rem}
-    .joseph-pick-content{padding:12px 12px 10px 0}
+    .joseph-pick-content{padding:12px 12px 10px 12px}
     .joseph-pick-player{font-size:0.92rem}
     .joseph-pick-prop{font-size:0.80rem}
     .joseph-pick-edge{font-size:0.76rem;padding:2px 8px}
@@ -643,9 +604,8 @@ def render_live_desk_css() -> str:
     .joseph-kpi-bar{flex-direction:column;align-items:stretch}
     .joseph-kpi{padding:4px 8px;font-size:0.72rem}
     .joseph-segment{padding:10px 12px}
-    .joseph-pick-card{gap:0;flex-direction:column}
-    .joseph-pick-rank{min-width:100%;min-height:34px;border-right:none;border-bottom:1px solid rgba(255,94,0,0.2)}
-    .joseph-pick-rank{min-width:36px;font-size:0.9rem}
+    .joseph-pick-card{flex-direction:column}
+    .joseph-pick-rank{min-width:100%;min-height:34px;border-right:none;border-bottom:1px solid rgba(0,180,100,0.10)}
     .joseph-pick-content{padding:10px 10px 8px 10px}
     .joseph-pick-player{font-size:0.85rem}
     .joseph-pick-prop{font-size:0.76rem;flex-direction:column;align-items:flex-start}
@@ -737,9 +697,9 @@ def _build_dawg_board_html(joseph_results: list) -> str:
         if verdict == "LOCK":
             v_clr = "#a855f7"
         elif verdict == "SMASH":
-            v_clr = "#ff4444"
+            v_clr = "#F24336"
         elif verdict == "LEAN":
-            v_clr = "#00ff9d"
+            v_clr = "#00D559"
         elif verdict == "FADE":
             v_clr = "#eab308"
         else:
@@ -754,22 +714,22 @@ def _build_dawg_board_html(joseph_results: list) -> str:
 
         # Color-code dawg factor
         if df_val >= 5:
-            df_color = "#ff4444"
+            df_color = "#F24336"
         elif df_val >= 3:
-            df_color = "#ff5e00"
+            df_color = "#00D959"
         elif df_val >= 1:
             df_color = "#eab308"
         else:
-            df_color = "#94a3b8"
+            df_color = "#7a9888"
 
         rows_html += (
             f'<tr>'
-            f'<td style="color:#ff5e00;font-weight:700">#{idx}</td>'
+            f'<td style="color:#00D959;font-weight:700">#{idx}</td>'
             f'<td><strong>{name}</strong></td>'
-            f'<td style="color:#00f0ff;font-size:0.85rem">{bet_escaped}{verdict_badge}</td>'
+            f'<td style="color:#90d0a8;font-size:0.85rem">{bet_escaped}{verdict_badge}</td>'
             f'<td style="color:{df_color};font-weight:700">{df_val:+.1f}</td>'
             f'<td style="font-size:0.8rem">{tags}</td>'
-            f'<td style="color:#00f0ff">{archetype}</td>'
+            f'<td style="color:#90d0a8">{archetype}</td>'
             f'</tr>'
         )
 
@@ -830,8 +790,8 @@ def render_override_report(joseph_results: list) -> None:
             f'<tr>'
             f'<td><strong>{name}</strong></td>'
             f'<td>{prop}</td>'
-            f'<td style="color:#00f0ff">{qme_edge:+.1f}%</td>'
-            f'<td style="color:#ff5e00;font-weight:700">{j_edge:+.1f}%</td>'
+            f'<td style="color:#00D559">{qme_edge:+.1f}%</td>'
+            f'<td style="color:#00D959;font-weight:700">{j_edge:+.1f}%</td>'
             f'<td>{direction}</td>'
             f'<td style="font-size:0.8rem;max-width:300px">{reasoning}</td>'
             f'</tr>'
@@ -948,7 +908,7 @@ def render_avatar_commentary(commentary_text: str, size: int = 48) -> str:
         f'margin:10px 0">'
         f'{img_html}'
         f'<div style="color:#e2e8f0;font-size:0.95rem;line-height:1.5;'
-        f'font-family:\'Montserrat\',sans-serif">{escaped}</div>'
+        f'font-family:\'Inter\',sans-serif">{escaped}</div>'
         f'</div>'
     )
 
@@ -1007,7 +967,7 @@ def render_confidence_gauge_svg(
         f'style="--gauge-dash:{dash:.1f};--gauge-gap:{gap:.1f}"/>'
         f'<text x="45" y="49" text-anchor="middle" '
         f'fill="{color}" font-size="14" font-weight="700" '
-        f'font-family="Orbitron,sans-serif">{prob:.0f}%</text>'
+        f'font-family="Inter,sans-serif">{prob:.0f}%</text>'
         f'</svg>'
         # ── EV bar ──
         f'<div style="margin:4px auto;width:80px;text-align:left">'
@@ -1072,7 +1032,7 @@ def render_outcome_badge(result_str: str) -> str:
     elif label == "loss":
         bg, text_color, icon = "#7f1d1d", "#fca5a5", "❌"
     elif label == "even":
-        bg, text_color, icon = "#37474f", "#b0bec5", "🔄"
+        bg, text_color, icon = "#37474f", "#A0AABE", "🔄"
     elif label == "void":
         bg, text_color, icon = "#424242", "#9e9e9e", "🚫"
     else:
@@ -1082,7 +1042,7 @@ def render_outcome_badge(result_str: str) -> str:
     return (
         f'<span style="display:inline-block;padding:2px 10px;'
         f'border-radius:8px;font-size:0.78rem;font-weight:700;'
-        f'font-family:\'Orbitron\',sans-serif;letter-spacing:0.5px;'
+        f'font-family:\'Inter\',sans-serif;letter-spacing:0.5px;'
         f'background:{bg};color:{text_color}">'
         f'{icon} {display}</span>'
     )
@@ -1117,17 +1077,17 @@ def render_empty_state(
         cta_html = (
             f'<a href="{esc_href}" style="display:inline-block;margin-top:12px;'
             f'padding:8px 20px;border-radius:8px;font-size:0.85rem;'
-            f'font-weight:700;font-family:\'Orbitron\',sans-serif;'
-            f'background:linear-gradient(135deg,#ff5e00,#ff9e00);color:#0a0f1c;'
+            f'font-weight:700;font-family:\'Inter\',sans-serif;'
+            f'background:linear-gradient(135deg,#00D959,#50a874);color:#0a0f1c;'
             f'text-decoration:none;letter-spacing:0.5px">{esc_label}</a>'
         )
     return (
         f'<div style="text-align:center;padding:32px 24px;'
-        f'background:rgba(7,10,19,0.7);border:1px dashed rgba(255,94,0,0.3);'
+        f'background:rgba(4,8,6,0.7);border:1px dashed rgba(0,180,100,0.25);'
         f'border-radius:12px;margin:16px 0">'
         f'<div style="font-size:2rem;margin-bottom:8px">📭</div>'
         f'<div style="color:#94a3b8;font-size:0.95rem;'
-        f'font-family:\'Montserrat\',sans-serif">{escaped_msg}</div>'
+        f'font-family:\'Inter\',sans-serif">{escaped_msg}</div>'
         f'{cta_html}'
         f'</div>'
     )
@@ -1160,7 +1120,7 @@ def render_verdict_heatmap_html(joseph_results: list) -> str:
 
     verdict_meta = {
         "LOCK": ("#a855f7", VERDICT_EMOJIS.get("LOCK", "🔒")),
-        "SMASH": ("#ff5e00", VERDICT_EMOJIS.get("SMASH", "🔥")),
+        "SMASH": ("#F24336", VERDICT_EMOJIS.get("SMASH", "🔥")),
         "LEAN": ("#22c55e", VERDICT_EMOJIS.get("LEAN", "✅")),
         "FADE": ("#f59e0b", VERDICT_EMOJIS.get("FADE", "⚠️")),
         "STAY_AWAY": ("#ef4444", VERDICT_EMOJIS.get("STAY_AWAY", "🚫")),
@@ -1173,7 +1133,7 @@ def render_verdict_heatmap_html(joseph_results: list) -> str:
         bars.append(
             f'<div style="margin:4px 0">'
             f'<div style="display:flex;justify-content:space-between;'
-            f'font-size:0.75rem;color:#cbd5e1;font-family:\'Montserrat\','
+            f'font-size:0.75rem;color:#cbd5e1;font-family:\'Inter\','
             f'sans-serif;margin-bottom:2px">'
             f'<span>{emoji} {_html.escape(verdict)}</span>'
             f'<span>{cnt} ({pct:.0f}%)</span></div>'
@@ -1183,9 +1143,9 @@ def render_verdict_heatmap_html(joseph_results: list) -> str:
         )
     return (
         f'<div style="padding:8px 12px;background:rgba(7,10,19,0.6);'
-        f'border-radius:8px;border:1px solid rgba(255,94,0,0.15)">'
-        f'<div style="font-size:0.8rem;font-weight:700;color:#ff5e00;'
-        f'font-family:\'Orbitron\',sans-serif;margin-bottom:6px">'
+        f'border-radius:8px;border:1px solid rgba(0,180,100,0.12)">'
+        f'<div style="font-size:0.8rem;font-weight:700;color:#00D959;'
+        f'font-family:\'Inter\',sans-serif;margin-bottom:6px">'
         f'VERDICT DISTRIBUTION</div>'
         + "".join(bars)
         + '</div>'
@@ -1343,9 +1303,9 @@ def render_joseph_live_desk(
                 '<div class="joseph-divider"></div>'
                 '<div class="joseph-kpi-bar">'
                 f'<div class="joseph-kpi">📊 Analyzed '
-                f'<span class="joseph-kpi-value" style="color:#00f0ff">{n_total}</span></div>'
+                f'<span class="joseph-kpi-value" style="color:#00D559">{n_total}</span></div>'
                 f'<div class="joseph-kpi">🔥 SMASH '
-                f'<span class="joseph-kpi-value" style="color:#ff4444">{n_smash}</span></div>'
+                f'<span class="joseph-kpi-value" style="color:#F24336">{n_smash}</span></div>'
                 f'<div class="joseph-kpi">✅ LEAN '
                 f'<span class="joseph-kpi-value" style="color:#22c55e">{n_lean}</span></div>'
                 f'<div class="joseph-kpi">⚠️ FADE '
@@ -1391,7 +1351,7 @@ def render_joseph_live_desk(
             mismatch = pick.get("mismatch")
             if isinstance(mismatch, dict) and mismatch.get("alert"):
                 mismatch_html = (
-                    f'<div style="color:#ff9e00;font-size:0.85rem;margin-top:6px">'
+                    f'<div style="color:#90d0a8;font-size:0.85rem;margin-top:6px">'
                     f'⚡ <strong>MISMATCH:</strong> {_html.escape(str(mismatch.get("alert", "")))}'
                     f'</div>'
                 )
@@ -1401,7 +1361,7 @@ def render_joseph_live_desk(
             comp = pick.get("comp")
             if isinstance(comp, dict) and comp.get("name"):
                 comp_html = (
-                    f'<div style="color:#00f0ff;font-size:0.85rem;margin-top:6px">'
+                    f'<div style="color:#00D559;font-size:0.85rem;margin-top:6px">'
                     f'📜 <strong>Comp:</strong> {_html.escape(str(comp["name"]))}'
                     f'</div>'
                 )
@@ -1514,8 +1474,8 @@ def render_joseph_live_desk(
                     f'<tr>'
                     f'<td><strong>{name}</strong></td>'
                     f'<td>{prop}</td>'
-                    f'<td style="color:#00f0ff">{qme_edge:+.1f}%</td>'
-                    f'<td style="color:#ff5e00;font-weight:700">{j_edge:+.1f}%</td>'
+                    f'<td style="color:#00D559">{qme_edge:+.1f}%</td>'
+                    f'<td style="color:#00D959;font-weight:700">{j_edge:+.1f}%</td>'
                     f'<td>{direction}</td>'
                     f'<td style="font-size:0.8rem;max-width:300px">{reasoning}</td>'
                     f'</tr>'

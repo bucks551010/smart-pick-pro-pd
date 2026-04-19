@@ -455,6 +455,19 @@ def _fetch_all_boxscores_nba_api(date_str: str) -> dict:
                             mins = float(min_raw)
                     except (ValueError, TypeError):
                         mins = 0.0
+                    # Skip players with no minutes AND all-zero stats — box
+                    # score data likely hasn't been populated yet (game marked
+                    # Final before detailed stats are loaded by the NBA API).
+                    if mins == 0.0:
+                        _has_any_stat = any(
+                            float(row.get(c) or 0) > 0
+                            for c in ("points", "reboundsTotal", "assists",
+                                      "steals", "blocks", "turnovers",
+                                      "fieldGoalsMade", "fieldGoalsAttempted",
+                                      "freeThrowsMade", "freeThrowsAttempted")
+                        )
+                        if not _has_any_stat:
+                            continue  # data not ready — skip this player
                     lookup[pname] = {
                         "pts":     float(row.get("points") or 0),
                         "reb":     float(row.get("reboundsTotal") or 0),
@@ -1281,7 +1294,7 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15):
             stat_type=res.get("stat_type", "points"),
             prop_line=float(res.get("line", 0) or 0),
             direction=res.get("direction", "OVER"),
-            platform="SmartAI-Auto",
+            platform=res.get("platform") or "SmartAI-Auto",
             confidence_score=float(res.get("confidence_score", 0) or 0),
             probability_over=float(res.get("probability_over", 0.5) or 0.5),
             edge_percentage=float(edge),
@@ -1396,6 +1409,12 @@ def auto_resolve_bet_results(date_str=None):
             stat_col = _STAT_COL.get(normalized)
             if stat_col:
                 stat_type = normalized
+            elif normalized in COMBO_STATS:
+                is_combo = True
+                stat_type = normalized
+            elif normalized in FANTASY_SCORING:
+                is_fantasy = True
+                stat_type = normalized
             elif normalized in _COMPUTED_STATS:
                 is_computed = True
                 stat_type = normalized
@@ -1505,15 +1524,19 @@ def auto_resolve_bet_results(date_str=None):
 
             logs = _game_log_cache.get(player_id, [])
             if not logs:
-                # DNP: if bulk boxscores exist but player has no logs → VOID
-                if _bulk_lookup:
+                # Only VOID if the player IS in the bulk lookup (their game
+                # has real data but they recorded 0 min — true DNP).
+                # If they're simply absent from the lookup, their game's data
+                # may not be ready yet — leave as pending.
+                _player_in_bulk = _lookup_bulk_row(_bulk_lookup, player_name, _normalize_name) is not None
+                if _player_in_bulk:
                     success, msg = record_bet_result(bet_id, "VOID", 0.0)
                     if success:
                         resolved_count += 1
                     else:
                         errors_list.append(f"#{bet_id} {player_name}: VOID update failed — {msg}")
                 else:
-                    errors_list.append(f"#{bet_id} {player_name}: no game log found")
+                    errors_list.append(f"#{bet_id} {player_name}: no game log found (game data may not be ready)")
                 continue
 
             # Find the game on target date
@@ -1525,9 +1548,10 @@ def auto_resolve_bet_results(date_str=None):
                     break
 
             if matching_log is None:
-                # DNP detection: if bulk boxscores exist (games were played)
-                # but this player wasn't found anywhere → they didn't play.
-                if _bulk_lookup:
+                # Only VOID if the player IS in the bulk lookup (confirmed
+                # their game was played but they have no log entry — true DNP).
+                _player_in_bulk = _lookup_bulk_row(_bulk_lookup, player_name, _normalize_name) is not None
+                if _player_in_bulk:
                     success, msg = record_bet_result(bet_id, "VOID", 0.0)
                     if success:
                         resolved_count += 1
@@ -1716,6 +1740,12 @@ def resolve_todays_bets():
             stat_col = _STAT_COL.get(normalized)
             if stat_col:
                 stat_type = normalized
+            elif normalized in COMBO_STATS:
+                is_combo = True
+                stat_type = normalized
+            elif normalized in FANTASY_SCORING:
+                is_fantasy = True
+                stat_type = normalized
             elif normalized in _COMPUTED_STATS:
                 is_computed = True
                 stat_type = normalized
@@ -1835,8 +1865,9 @@ def resolve_todays_bets():
 
             logs = _game_log_cache.get(player_id, [])
             if not logs:
-                # DNP: if bulk boxscores exist but player has no logs → VOID
-                if _bulk_lookup:
+                # Only VOID if player IS in the bulk lookup (true DNP).
+                _player_in_bulk = _lookup_bulk_row(_bulk_lookup, player_name, _normalize_name) is not None
+                if _player_in_bulk:
                     ok = update_bet_result(bet_id, "VOID", 0.0)
                     if ok:
                         summary["resolved"] += 1
@@ -1856,8 +1887,9 @@ def resolve_todays_bets():
                     break
 
             if latest is None:
-                # DNP: bulk boxscores exist but player not found → VOID
-                if _bulk_lookup:
+                # Only VOID if player IS in the bulk lookup (true DNP).
+                _player_in_bulk = _lookup_bulk_row(_bulk_lookup, player_name, _normalize_name) is not None
+                if _player_in_bulk:
                     ok = update_bet_result(bet_id, "VOID", 0.0)
                     if ok:
                         summary["resolved"] += 1
@@ -2042,6 +2074,12 @@ def regrade_bets_for_date(date_str=None):
             normalized = _norm_stat_type(stat_type)
             stat_col = _STAT_COL.get(normalized)
             if stat_col:
+                stat_type = normalized
+            elif normalized in COMBO_STATS:
+                is_combo = True
+                stat_type = normalized
+            elif normalized in FANTASY_SCORING:
+                is_fantasy = True
                 stat_type = normalized
             elif normalized in _COMPUTED_STATS:
                 is_computed = True
@@ -2309,6 +2347,12 @@ def resolve_all_pending_bets():
                 stat_col = _STAT_COL.get(normalized)
                 if stat_col:
                     stat_type = normalized
+                elif normalized in COMBO_STATS:
+                    is_combo = True
+                    stat_type = normalized
+                elif normalized in FANTASY_SCORING:
+                    is_fantasy = True
+                    stat_type = normalized
                 elif normalized in _COMPUTED_STATS:
                     is_computed = True
                     stat_type = normalized
@@ -2392,8 +2436,9 @@ def resolve_all_pending_bets():
 
             logs = _log_cache.get(player_id, [])
             if not logs:
-                # DNP: if bulk boxscores exist but player has no logs → VOID
-                if _bulk_lookup:
+                # Only VOID if player IS in the bulk lookup (true DNP).
+                _player_in_bulk = _lookup_bulk_row(_bulk_lookup, player_name, _normalize_name) is not None
+                if _player_in_bulk:
                     ok = update_bet_result(bet_id, "VOID", 0.0)
                     if ok:
                         summary["resolved"] += 1
@@ -2415,8 +2460,9 @@ def resolve_all_pending_bets():
                     break
 
             if matching_log is None:
-                # DNP: bulk boxscores exist (games played) but player not found → VOID
-                if _bulk_lookup:
+                # Only VOID if player IS in the bulk lookup (true DNP).
+                _player_in_bulk = _lookup_bulk_row(_bulk_lookup, player_name, _normalize_name) is not None
+                if _player_in_bulk:
                     ok = update_bet_result(bet_id, "VOID", 0.0)
                     if ok:
                         summary["resolved"] += 1
@@ -2626,6 +2672,12 @@ def resolve_all_analysis_picks(date_str=None, include_today=False):
                 stat_col = _STAT_COL.get(normalized)
                 if stat_col:
                     stat_type = normalized
+                elif normalized in COMBO_STATS:
+                    is_combo = True
+                    stat_type = normalized
+                elif normalized in FANTASY_SCORING:
+                    is_fantasy = True
+                    stat_type = normalized
                 elif normalized in _COMPUTED_STATS:
                     is_computed = True
                     stat_type = normalized
@@ -2716,8 +2768,9 @@ def resolve_all_analysis_picks(date_str=None, include_today=False):
 
             logs = _log_cache.get(player_id, [])
             if not logs:
-                # DNP: if bulk boxscores exist but player has no logs → VOID
-                if _bulk_lookup:
+                # Only VOID if player IS in the bulk lookup (true DNP).
+                _player_in_bulk = _lookup_bulk_row(_bulk_lookup, player_name, _normalize_name) is not None
+                if _player_in_bulk:
                     ok = update_analysis_pick_result(pick_id, "VOID", 0.0)
                     if ok:
                         summary["resolved"] += 1
@@ -2741,8 +2794,9 @@ def resolve_all_analysis_picks(date_str=None, include_today=False):
                     break
 
             if matching_log is None:
-                # DNP: bulk boxscores exist but player not found → VOID
-                if _bulk_lookup:
+                # Only VOID if player IS in the bulk lookup (true DNP).
+                _player_in_bulk = _lookup_bulk_row(_bulk_lookup, player_name, _normalize_name) is not None
+                if _player_in_bulk:
                     ok = update_analysis_pick_result(pick_id, "VOID", 0.0)
                     if ok:
                         summary["resolved"] += 1

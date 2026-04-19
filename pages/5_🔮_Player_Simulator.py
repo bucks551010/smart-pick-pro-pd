@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/5_🔮_Player_Simulator.py
 # PURPOSE: Player Simulator — run Quantum Matrix Engine 5.6 simulations for
 #          selected players to project their full stat line and
@@ -43,8 +43,8 @@ except ImportError:
 
 # Shared color palette for Plotly charts
 _CHART_COLORS = [
-    "#ff5e00", "#00ff9d", "#00ffd5", "#ffd700", "#ff6b6b",
-    "#8a9bb8", "#c0d0e8", "#e066ff", "#66ccff", "#ff9966",
+    "#F9C62B", "#00D559", "#00D559", "#F9C62B", "#F24336",
+    "#6B7A9A", "#EEF0F6", "#e066ff", "#66ccff", "#F9C62B",
 ]
 
 # ─── Page config ────────────────────────────────────────────
@@ -71,11 +71,11 @@ if not premium_gate("Player Simulator"):
 
 # ─── Header ─────────────────────────────────────────────────
 st.markdown(
-    '<h2 style="font-family:\'Orbitron\',sans-serif;color:#00ffd5;margin-bottom:4px;">'
+    '<h2 style="font-family:\'Inter\',sans-serif;color:#00D559;margin-bottom:4px;">'
     '🔮 Player Simulator</h2>'
-    '<p style="color:#a0b4d0;margin-top:0;">'
+    '<p style="color:#A0AABE;margin-top:0;">'
     'Select active players and simulate their full stat line for tonight\'s game. '
-    'Identifies <strong style="color:#ff5e00;">dark horse</strong> upside picks automatically.</p>',
+    'Identifies <strong style="color:#F9C62B;">dark horse</strong> upside picks automatically.</p>',
     unsafe_allow_html=True,
 )
 
@@ -579,21 +579,21 @@ def _render_betting_recommendations(sim_result: dict, is_dark_horse: bool = Fals
             continue  # Guard against bad line values
         edge_pct = round((projected - prop_line) / max(prop_line, 0.1) * 100, 1)
         direction = "OVER" if projected >= prop_line else "UNDER"
-        dir_color = "#00ff9d" if direction == "OVER" else "#ff5e00"
+        dir_color = "#00D559" if direction == "OVER" else "#F9C62B"
         edge_label = f"{edge_pct:+.1f}%"
         emoji = _STAT_EMOJI.get(stat, "📊")
 
         # Enhancement 3: Color-coded edge indicator
         abs_edge = abs(edge_pct)
         if abs_edge >= 10:
-            edge_bg = "rgba(0,255,157,0.15)"
-            edge_color = "#00ff9d"
+            edge_bg = "rgba(0,213,89,0.15)"
+            edge_color = "#00D559"
         elif abs_edge >= 5:
             edge_bg = "rgba(255,215,0,0.15)"
-            edge_color = "#ffd700"
+            edge_color = "#F9C62B"
         else:
             edge_bg = "rgba(255,107,107,0.10)"
-            edge_color = "#ff6b6b"
+            edge_color = "#F24336"
 
         # Only show meaningful edges (≥ 3%)
         if abs_edge < 3.0:
@@ -602,16 +602,16 @@ def _render_betting_recommendations(sim_result: dict, is_dark_horse: bool = Fals
         upside_tag = ""
         if upside >= 1.5:
             upside_tag = (
-                '<span style="background:#ff5e00;color:#0a0f1a;padding:1px 6px;'
+                '<span style="background:#F9C62B;color:#0a0f1a;padding:1px 6px;'
                 'border-radius:3px;font-size:0.72rem;font-weight:700;margin-left:6px;">'
                 '🌑 DARK HORSE UPSIDE</span>'
             )
 
         rec_rows += (
             f'<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">'
-            f'<td style="padding:6px 8px;color:#c0d0e8;">{emoji} {_html.escape(stat.replace("_", " ").title())}</td>'
-            f'<td style="padding:6px 8px;color:#ff5e00;font-weight:700;">{projected}</td>'
-            f'<td style="padding:6px 8px;color:#8a9bb8;">{prop_line}'
+            f'<td style="padding:6px 8px;color:#EEF0F6;">{emoji} {_html.escape(stat.replace("_", " ").title())}</td>'
+            f'<td style="padding:6px 8px;color:#F9C62B;font-weight:700;">{projected}</td>'
+            f'<td style="padding:6px 8px;color:#6B7A9A;">{prop_line}'
             + (f'<br><span style="color:#5a8fa8;font-size:0.72rem;">{_html.escape(live_platform)}</span>' if live_platform else
                '<br><span style="color:#5a5a5a;font-size:0.72rem;">est.</span>')
             + f'</td>'
@@ -619,7 +619,7 @@ def _render_betting_recommendations(sim_result: dict, is_dark_horse: bool = Fals
             f'{direction} {upside_tag}</td>'
             f'<td style="padding:6px 8px;background:{edge_bg};color:{edge_color};font-weight:700;'
             f'border-radius:4px;">{edge_label}</td>'
-            f'<td style="padding:6px 8px;color:#8a9bb8;font-size:0.8rem;">'
+            f'<td style="padding:6px 8px;color:#6B7A9A;font-size:0.8rem;">'
             f'{p10}–{p90}</td>'
             f'</tr>'
         )
@@ -630,12 +630,12 @@ def _render_betting_recommendations(sim_result: dict, is_dark_horse: bool = Fals
     # Enhancement 12: Prop line integration indicator badge
     _prop_badge = (
         '<div style="margin-bottom:10px;">'
-        '<span style="background:rgba(0,255,157,0.15);color:#00ff9d;padding:4px 10px;'
+        '<span style="background:rgba(0,213,89,0.15);color:#00D559;padding:4px 10px;'
         'border-radius:4px;font-size:0.78rem;font-weight:600;">'
         '✅ Live Props Loaded</span></div>'
     ) if _has_live_props else (
         '<div style="margin-bottom:10px;">'
-        '<span style="background:rgba(255,215,0,0.15);color:#ffd700;padding:4px 10px;'
+        '<span style="background:rgba(255,215,0,0.15);color:#F9C62B;padding:4px 10px;'
         'border-radius:4px;font-size:0.78rem;font-weight:600;">'
         '⚠️ Using Season Avg as Proxy</span></div>'
     )
@@ -655,11 +655,11 @@ def _render_betting_recommendations(sim_result: dict, is_dark_horse: bool = Fals
         dh_stat_str = ", ".join(s.replace("_", " ").title() for s in dark_horse_stats)
         dark_horse_explain = (
             f'<div style="margin-bottom:12px;padding:10px 14px;'
-            f'background:rgba(255,94,0,0.1);border-radius:6px;border-left:3px solid #ff5e00;">'
-            f'<div style="color:#ff5e00;font-weight:700;font-size:0.88rem;margin-bottom:4px;">'
+            f'background:rgba(255,94,0,0.1);border-radius:6px;border-left:3px solid #F9C62B;">'
+            f'<div style="color:#F9C62B;font-weight:700;font-size:0.88rem;margin-bottom:4px;">'
             f'🌑 Why Dark Horse?</div>'
-            f'<div style="color:#c0d0e8;font-size:0.84rem;line-height:1.6;">'
-            f'{_html.escape(player_data.get("name", ""))} is flagged as a <strong style="color:#ff5e00;">dark horse</strong> '
+            f'<div style="color:#EEF0F6;font-size:0.84rem;line-height:1.6;">'
+            f'{_html.escape(player_data.get("name", ""))} is flagged as a <strong style="color:#F9C62B;">dark horse</strong> '
             f'for {dh_stat_str or "key stats"} — the 90th-percentile projection is ≥ 1.5× the season average. '
             f'Playing <em>{loc_label}</em> vs <strong>{_html.escape(opponent)}</strong> '
             f'in a game with an O/U of <strong>{game_total:.0f}</strong>. '
@@ -669,22 +669,22 @@ def _render_betting_recommendations(sim_result: dict, is_dark_horse: bool = Fals
 
     html_out = (
         f'<div style="background:#0f1424;border-radius:8px;padding:16px 18px;'
-        f'margin-top:6px;margin-bottom:16px;border-top:2px solid #00ff9d;">'
+        f'margin-top:6px;margin-bottom:16px;border-top:2px solid #00D559;">'
         + _prop_badge
         + dark_horse_explain +
         f'<div style="overflow-x:auto;">'
         f'<table style="width:100%;border-collapse:collapse;font-size:0.86rem;">'
-        f'<thead><tr style="border-bottom:1px solid rgba(0,255,157,0.3);">'
-        f'<th style="padding:6px 8px;text-align:left;color:#00ff9d;">Stat</th>'
-        f'<th style="padding:6px 8px;text-align:left;color:#ff5e00;">Projected</th>'
-        f'<th style="padding:6px 8px;text-align:left;color:#8a9bb8;">Prop Line</th>'
-        f'<th style="padding:6px 8px;text-align:left;color:#00ff9d;">Pick</th>'
-        f'<th style="padding:6px 8px;text-align:left;color:#c0d0e8;">Edge</th>'
-        f'<th style="padding:6px 8px;text-align:left;color:#8a9bb8;">10–90th Range</th>'
+        f'<thead><tr style="border-bottom:1px solid rgba(0,213,89,0.3);">'
+        f'<th style="padding:6px 8px;text-align:left;color:#00D559;">Stat</th>'
+        f'<th style="padding:6px 8px;text-align:left;color:#F9C62B;">Projected</th>'
+        f'<th style="padding:6px 8px;text-align:left;color:#6B7A9A;">Prop Line</th>'
+        f'<th style="padding:6px 8px;text-align:left;color:#00D559;">Pick</th>'
+        f'<th style="padding:6px 8px;text-align:left;color:#EEF0F6;">Edge</th>'
+        f'<th style="padding:6px 8px;text-align:left;color:#6B7A9A;">10–90th Range</th>'
         f'</tr></thead>'
         f'<tbody>{rec_rows}</tbody>'
         f'</table></div>'
-        f'<div style="margin-top:10px;font-size:0.75rem;color:#8a9bb8;">'
+        f'<div style="margin-top:10px;font-size:0.75rem;color:#6B7A9A;">'
         f'ℹ️ Methodology: projections based on Quantum Matrix Engine 5.6 simulation using '
         f'matchup-adjusted season averages, pace, rest, and home/away factors. '
         f'Prop line ≈ season average rounded to nearest 0.5.</div>'
@@ -713,7 +713,7 @@ def _render_sim_card(sim_result: dict):
     try:
         _team_primary, _team_secondary = get_team_colors(team)
     except Exception:
-        _team_primary, _team_secondary = "#ff5e00", "#ffffff"
+        _team_primary, _team_secondary = "#F9C62B", "#ffffff"
 
     # Dark horse check: any stat with upside_ratio ≥ 1.5 (90th pct ≥ 150% of season avg)
     is_dark_horse = any(
@@ -746,17 +746,17 @@ def _render_sim_card(sim_result: dict):
     if is_dark_horse:
         dark_horse_badge = (
             '<style>'
-            '@keyframes dark-horse-pulse{0%,100%{box-shadow:0 0 4px #ff5e00}'
-            '50%{box-shadow:0 0 16px #ff5e00,0 0 32px rgba(255,94,0,0.3)}}'
+            '@keyframes dark-horse-pulse{0%,100%{box-shadow:0 0 4px #F9C62B}'
+            '50%{box-shadow:0 0 16px #F9C62B,0 0 32px rgba(255,94,0,0.3)}}'
             '</style>'
-            '<span style="background:#ff5e00;color:#0a0f1a;padding:3px 10px;border-radius:4px;'
+            '<span style="background:#F9C62B;color:#0a0f1a;padding:3px 10px;border-radius:4px;'
             'font-size:0.78rem;font-weight:700;margin-left:8px;'
             'animation:dark-horse-pulse 2s ease-in-out infinite;">🌑 DARK HORSE</span>'
         )
         # Dark horse corner ribbon
         dark_horse_ribbon = (
             '<div style="position:absolute;top:12px;right:-30px;'
-            'background:#ff5e00;color:#0a0f1a;padding:4px 40px;'
+            'background:#F9C62B;color:#0a0f1a;padding:4px 40px;'
             'font-size:0.7rem;font-weight:700;transform:rotate(45deg);'
             'box-shadow:0 2px 8px rgba(255,94,0,0.4);z-index:2;">'
             '🌑 DARK HORSE</div>'
@@ -785,16 +785,16 @@ def _render_sim_card(sim_result: dict):
         ratio = s.get("upside_ratio", 1.0)
         emoji = _STAT_EMOJI.get(stat, "📊")
         # Upside highlight
-        upside_color = "#ff5e00" if ratio >= 1.5 else ("#00ff9d" if ratio >= 1.2 else "#c0d0e8")
+        upside_color = "#F9C62B" if ratio >= 1.5 else ("#00D559" if ratio >= 1.2 else "#EEF0F6")
         stat_label = _html.escape(stat.replace("_", " ").title())
         stat_rows += (
             f'<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">'
-            f'<td style="padding:6px 8px;color:#c0d0e8;">{emoji} {stat_label}</td>'
+            f'<td style="padding:6px 8px;color:#EEF0F6;">{emoji} {stat_label}</td>'
             f'<td style="padding:6px 8px;color:{upside_color};font-weight:700;">{proj}</td>'
-            f'<td style="padding:6px 8px;color:#8a9bb8;">{p10}</td>'
-            f'<td style="padding:6px 8px;color:#c0d0e8;">{p50}</td>'
-            f'<td style="padding:6px 8px;color:#00ff9d;">{p90}</td>'
-            f'<td style="padding:6px 8px;color:#8a9bb8;">{avg}</td>'
+            f'<td style="padding:6px 8px;color:#6B7A9A;">{p10}</td>'
+            f'<td style="padding:6px 8px;color:#EEF0F6;">{p50}</td>'
+            f'<td style="padding:6px 8px;color:#00D559;">{p90}</td>'
+            f'<td style="padding:6px 8px;color:#6B7A9A;">{avg}</td>'
             f'</tr>'
         )
 
@@ -810,13 +810,13 @@ def _render_sim_card(sim_result: dict):
                     border:2px solid {_team_primary};flex-shrink:0;"
              alt="{safe_name}">
         <div>
-            <div style="font-family:'Orbitron',sans-serif;color:{_team_primary};font-size:1.1rem;font-weight:700;">
+            <div style="font-family:'Inter', sans-serif;color:{_team_primary};font-size:1.1rem;font-weight:700;">
                 {safe_name}
                 <span style="font-size:0.8rem;background:rgba(255,255,255,0.1);padding:2px 6px;
                              border-radius:4px;color:white;font-family:inherit;">{safe_team}</span>
                 {dark_horse_badge}
             </div>
-            <div style="color:#c0d0e8;font-size:0.9rem;margin-top:4px;">
+            <div style="color:#EEF0F6;font-size:0.9rem;margin-top:4px;">
                 vs <strong style="color:white;">{safe_opp}</strong>
                 {'&nbsp;🏠 Home' if ctx.get('is_home') else '&nbsp;✈️ Away'}
                 &nbsp;| Game Total: {ctx.get('game_total', 220):.0f}
@@ -829,10 +829,10 @@ def _render_sim_card(sim_result: dict):
                 <tr style="border-bottom:1px solid rgba(255,94,0,0.4);">
                     <th style="padding:6px 8px;text-align:left;color:{_team_primary};">Stat</th>
                     <th style="padding:6px 8px;text-align:left;color:{_team_primary};">Projected</th>
-                    <th style="padding:6px 8px;text-align:left;color:#8a9bb8;">10th%</th>
-                    <th style="padding:6px 8px;text-align:left;color:#c0d0e8;">Median</th>
-                    <th style="padding:6px 8px;text-align:left;color:#00ff9d;">90th%</th>
-                    <th style="padding:6px 8px;text-align:left;color:#8a9bb8;">Season Avg</th>
+                    <th style="padding:6px 8px;text-align:left;color:#6B7A9A;">10th%</th>
+                    <th style="padding:6px 8px;text-align:left;color:#EEF0F6;">Median</th>
+                    <th style="padding:6px 8px;text-align:left;color:#00D559;">90th%</th>
+                    <th style="padding:6px 8px;text-align:left;color:#6B7A9A;">Season Avg</th>
                 </tr>
             </thead>
             <tbody>
@@ -885,8 +885,8 @@ def _render_sim_card(sim_result: dict):
                         _built += f"<strong>{_html.escape(_part)}</strong>"
                 _formatted.append(_built)
             st.markdown(
-                '<div style="background:rgba(0,255,213,0.06);border-radius:6px;padding:10px 14px;'
-                'margin-bottom:12px;border-left:3px solid #00ffd5;font-size:0.84rem;color:#c0d0e8;">'
+                '<div style="background:rgba(0,213,89,0.06);border-radius:6px;padding:10px 14px;'
+                'margin-bottom:12px;border-left:3px solid #00D559;font-size:0.84rem;color:#EEF0F6;">'
                 + "<br>".join(_formatted)
                 + '</div>',
                 unsafe_allow_html=True,
@@ -912,11 +912,11 @@ def _render_sim_card(sim_result: dict):
             ))
             fig_bar.update_layout(
                 barmode="group",
-                title=dict(text=f"{safe_name} — Projected vs Season Avg", font=dict(color="#c0d0e8")),
+                title=dict(text=f"{safe_name} — Projected vs Season Avg", font=dict(color="#EEF0F6")),
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(20,25,43,0.8)",
-                font=dict(color="#c0d0e8"),
-                legend=dict(font=dict(color="#c0d0e8")),
+                font=dict(color="#EEF0F6"),
+                legend=dict(font=dict(color="#EEF0F6")),
                 margin=dict(l=40, r=20, t=40, b=30),
                 height=300,
             )
@@ -939,11 +939,11 @@ def _render_sim_card(sim_result: dict):
                     ))
                 fig_hist.update_layout(
                     barmode="overlay",
-                    title=dict(text=f"{safe_name} — Simulation Distributions", font=dict(color="#c0d0e8")),
+                    title=dict(text=f"{safe_name} — Simulation Distributions", font=dict(color="#EEF0F6")),
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(20,25,43,0.8)",
-                    font=dict(color="#c0d0e8"),
-                    legend=dict(font=dict(color="#c0d0e8")),
+                    font=dict(color="#EEF0F6"),
+                    legend=dict(font=dict(color="#EEF0F6")),
                     margin=dict(l=40, r=20, t=40, b=30),
                     height=350,
                     xaxis_title="Stat Value",
@@ -1111,13 +1111,13 @@ if _all_sim_results:
                 fig_radar.update_layout(
                     polar=dict(
                         bgcolor="rgba(20,25,43,0.8)",
-                        radialaxis=dict(visible=True, range=[0, 1.1], color="#8a9bb8"),
-                        angularaxis=dict(color="#c0d0e8"),
+                        radialaxis=dict(visible=True, range=[0, 1.1], color="#6B7A9A"),
+                        angularaxis=dict(color="#EEF0F6"),
                     ),
-                    title=dict(text="Player Comparison — Normalized Projections", font=dict(color="#c0d0e8")),
+                    title=dict(text="Player Comparison — Normalized Projections", font=dict(color="#EEF0F6")),
                     paper_bgcolor="rgba(0,0,0,0)",
-                    font=dict(color="#c0d0e8"),
-                    legend=dict(font=dict(color="#c0d0e8")),
+                    font=dict(color="#EEF0F6"),
+                    legend=dict(font=dict(color="#EEF0F6")),
                     margin=dict(l=60, r=60, t=50, b=30),
                     height=420,
                 )
@@ -1154,7 +1154,7 @@ if _all_sim_results:
             _trend = _pdata.get("recent_trend", "")
             _trend_emoji = _pdata.get("recent_trend_emoji", "")
             if _trend and _trend != "neutral":
-                _trend_colors = {"hot": "#00ff9d", "cold": "#ff6b6b"}
+                _trend_colors = {"hot": "#00D559", "cold": "#F24336"}
                 _tc = _trend_colors.get(_trend, "#8b949e")
                 st.markdown(
                     f'<div style="display:inline-block;background:rgba(0,0,0,0.3);'
@@ -1311,7 +1311,7 @@ if _all_sim_results:
 if st.session_state.get("sim_history"):
     with st.expander("📜 Session Simulation History", expanded=False):
         st.markdown(
-            '<div style="color:#8a9bb8;font-size:0.82rem;margin-bottom:8px;">'
+            '<div style="color:#6B7A9A;font-size:0.82rem;margin-bottom:8px;">'
             'All simulations run during this session. '
             'Historical accuracy tracking will compare past projections to actual results '
             'once game outcomes are available.</div>',
@@ -1391,14 +1391,14 @@ if run_dark_horse:
         emoji = _STAT_EMOJI.get(stat, "📊")
         is_dh = ratio >= 1.5
         badge = "🌑 DARK HORSE" if is_dh else "📈 Upside"
-        color = "#ff5e00" if is_dh else "#00ff9d"
+        color = "#F9C62B" if is_dh else "#00D559"
         st.markdown(
             f'<div style="background:#14192b;border-radius:6px;padding:10px 14px;'
             f'margin-bottom:8px;border-left:3px solid {color};">'
             f'<span style="color:{color};font-weight:700;margin-right:8px;">#{rank} {badge}</span>'
             f'<strong style="color:white;">{_html.escape(pname)}</strong>'
-            f'<span style="color:#8a9bb8;margin:0 6px;">{_html.escape(team)} vs {_html.escape(opp)}</span>'
-            f'<span style="color:#c0d0e8;">'
+            f'<span style="color:#6B7A9A;margin:0 6px;">{_html.escape(team)} vs {_html.escape(opp)}</span>'
+            f'<span style="color:#EEF0F6;">'
             f'{emoji} {stat.title()} — 90th pct: <strong style="color:{color};">{p90}</strong>'
             f' vs avg {avg} (upside {ratio:.2f}x)</span>'
             f'</div>',

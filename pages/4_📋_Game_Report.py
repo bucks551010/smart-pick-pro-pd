@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/4_📋_Game_Report.py
 # PURPOSE: Generate a comprehensive QDS-styled game betting
 #          report using SmartBetPro's AI analysis results.
@@ -125,6 +125,54 @@ def _expand_teams(abbrevs: set) -> set:
             expanded.add(alias)
     return expanded
 
+# ── Backfill empty player_team from player database or opponent/game data ──
+# Props from some sources (Odds API, etc.) don't include the player's team.
+# The analysis orchestrator may inherit the empty team. Resolve it here so
+# per-game filtering works correctly.
+if analysis_results:
+    # Build player → team lookup from loaded player data
+    _player_team_lookup: dict = {}
+    for _p in (_players_raw if '_players_raw' in dir() else []):
+        _pn = _p.get("name", "").strip()
+        _pt = _p.get("team", "").strip()
+        if _pn and _pt:
+            _player_team_lookup[_pn.lower()] = _pt.upper()
+
+    # Also build opponent → team reverse lookup from game data
+    _team_opponent_map: dict = {}  # {team_upper: opponent_upper}
+    for _game in todays_games:
+        _ht = _game.get("home_team", "").upper().strip()
+        _at = _game.get("away_team", "").upper().strip()
+        if _ht and _at:
+            _team_opponent_map[_ht] = _at
+            _team_opponent_map[_at] = _ht
+
+    _backfilled = 0
+    for _r in analysis_results:
+        _rt = (_r.get("player_team") or _r.get("team") or "").strip()
+        if not _rt:
+            # Try 1: look up player name in player database
+            _rn = (_r.get("player_name") or "").strip().lower()
+            if _rn and _rn in _player_team_lookup:
+                _resolved = _player_team_lookup[_rn]
+                _r["player_team"] = _resolved
+                _r["team"] = _resolved
+                _backfilled += 1
+                continue
+            # Try 2: derive from opponent field + game data
+            _opp = (_r.get("opponent") or "").upper().strip()
+            if _opp and _opp in _team_opponent_map:
+                _resolved = _team_opponent_map[_opp]
+                _r["player_team"] = _resolved
+                _r["team"] = _resolved
+                _backfilled += 1
+    if _backfilled > 0:
+        import logging as _logging
+        _logging.getLogger(__name__).info(
+            "Game Report: backfilled team for %d result(s) with empty player_team.",
+            _backfilled,
+        )
+
 # ── Filter out stale results not matching tonight's teams ──────
 # If the user ran analysis yesterday and didn't clear session state,
 # results for teams not playing tonight are silently removed here
@@ -147,6 +195,7 @@ if todays_games and analysis_results:
             r for r in analysis_results
             if (
                 r.get("player_team", r.get("team", "")).upper().strip() in playing_teams
+                or r.get("opponent", "").upper().strip() in playing_teams
                 or not r.get("player_team", r.get("team", "")).strip()
             )
         ]
@@ -294,7 +343,10 @@ if selected_game and analysis_results:
     game_teams = _expand_teams({home, away} - {""})
     filtered = [
         r for r in analysis_results
-        if r.get("player_team", r.get("team", "")).upper().strip() in game_teams
+        if (
+            r.get("player_team", r.get("team", "")).upper().strip() in game_teams
+            or r.get("opponent", "").upper().strip() in game_teams
+        )
     ]
     report_results = filtered if filtered else analysis_results
 elif analysis_results:
@@ -765,7 +817,10 @@ with _tab_report:
             game_teams_expanded = _expand_teams({home, away} - {""})
             game_results = [
                 r for r in report_results
-                if r.get("player_team", r.get("team", "")).upper().strip() in game_teams_expanded
+                if (
+                    r.get("player_team", r.get("team", "")).upper().strip() in game_teams_expanded
+                    or r.get("opponent", "").upper().strip() in game_teams_expanded
+                )
             ]
             n_game_props = len(game_results)
             n_conf = len([r for r in game_results if r.get("confidence_score", 0) >= 70])
@@ -937,19 +992,19 @@ with _tab_report:
                         for _vc, _vp in zip(_vp_cols, _value_picks):
                             _vp_edge = _vp.get("edge_percentage", 0)
                             _vp_dir = _vp.get("direction", "OVER")
-                            _edge_color = "#00ff9d" if _vp_edge > 0 else "#ff6b6b"
+                            _edge_color = "#00D559" if _vp_edge > 0 else "#F24336"
                             _dir_icon = "📈" if _vp_dir == "OVER" else "📉"
                             _vc.markdown(
-                                f'<div style="background:rgba(0,255,213,0.05);'
+                                f'<div style="background:rgba(0,213,89,0.05);'
                                 f'border:1px solid {_edge_color}30;border-radius:10px;'
                                 f'padding:12px;text-align:center;">'
-                                f'<div style="font-weight:700;color:#c0d0e8;font-size:0.9rem;">'
+                                f'<div style="font-weight:700;color:#EEF0F6;font-size:0.9rem;">'
                                 f'{_vp.get("player_name", "?")}</div>'
-                                f'<div style="color:#8a9bb8;font-size:0.78rem;margin:4px 0;">'
+                                f'<div style="color:#6B7A9A;font-size:0.78rem;margin:4px 0;">'
                                 f'{_dir_icon} {_vp_dir} {_vp.get("line", 0)} {_vp.get("stat_type", "").title()}</div>'
                                 f'<div style="color:{_edge_color};font-weight:700;font-size:1.1rem;">'
                                 f'{_vp_edge:+.1f}% Edge</div>'
-                                f'<div style="color:#8a9bb8;font-size:0.72rem;margin-top:4px;">'
+                                f'<div style="color:#6B7A9A;font-size:0.72rem;margin-top:4px;">'
                                 f'SAFE: {_vp.get("confidence_score", 0):.0f}/100</div>'
                                 f'</div>',
                                 unsafe_allow_html=True,
@@ -1038,11 +1093,28 @@ with _tab_report:
                         _render_key_players(away, away)
                     with kp_col2:
                         _render_key_players(home, home)
-                    st.info(
-                        "📭 No props analyzed for this game yet — "
-                        "run **⚡ Neural Analysis** with props for these teams "
-                        "to see full prop predictions and parlay suggestions."
-                    )
+
+                    # Diagnostic: show why analysis isn't matching this game
+                    _raw_count = len(st.session_state.get("analysis_results", []))
+                    if _raw_count > 0:
+                        # Analysis exists in session but didn't match this game's teams
+                        _sample_teams = set()
+                        for _sr in st.session_state.get("analysis_results", [])[:20]:
+                            _st = (_sr.get("player_team") or _sr.get("team") or "").upper().strip()
+                            if _st:
+                                _sample_teams.add(_st)
+                        _team_info = f" (result teams: {', '.join(sorted(_sample_teams)[:6])})" if _sample_teams else " (result teams are empty — player team data may be missing)"
+                        st.warning(
+                            f"⚠️ {_raw_count} analysis result(s) exist in session but none matched "
+                            f"**{away} @ {home}**{_team_info}. "
+                            "Try re-running **⚡ Neural Analysis** — the report will auto-populate."
+                        )
+                    else:
+                        st.info(
+                            "📭 No props analyzed for this game yet — "
+                            "run **⚡ Neural Analysis** with props for these teams "
+                            "to see full prop predictions and parlay suggestions."
+                        )
 
         # ── Overall Entry Strategy Matrix (cross-game) ────────────────────
         if report_results and not selected_game and len(todays_games) > 1:
@@ -1226,7 +1298,7 @@ with _tab_builder:
         with col_hp_gb:
             st.markdown(
                 f"**🏠 {home_team_gb} Rotation** "
-                f"<span style='color:#8a9bb8;font-size:0.8rem;'>({len(home_rotation_gb)} players · ≥15 min/g)</span>",
+                f"<span style='color:#6B7A9A;font-size:0.8rem;'>({len(home_rotation_gb)} players · ≥15 min/g)</span>",
                 unsafe_allow_html=True,
             )
             for p in home_rotation_gb:
@@ -1240,7 +1312,7 @@ with _tab_builder:
                 )
                 if _show_home_bench:
                     st.markdown(
-                        "<span style='color:#8a9bb8;font-size:0.8rem;'>📋 Bench (&lt;15 min/game)</span>",
+                        "<span style='color:#6B7A9A;font-size:0.8rem;'>📋 Bench (&lt;15 min/game)</span>",
                         unsafe_allow_html=True,
                     )
                     for p in home_bench_gb:
@@ -1249,7 +1321,7 @@ with _tab_builder:
         with col_ap_gb:
             st.markdown(
                 f"**🚌 {away_team_gb} Rotation** "
-                f"<span style='color:#8a9bb8;font-size:0.8rem;'>({len(away_rotation_gb)} players · ≥15 min/g)</span>",
+                f"<span style='color:#6B7A9A;font-size:0.8rem;'>({len(away_rotation_gb)} players · ≥15 min/g)</span>",
                 unsafe_allow_html=True,
             )
             for p in away_rotation_gb:
@@ -1263,7 +1335,7 @@ with _tab_builder:
                 )
                 if _show_away_bench:
                     st.markdown(
-                        "<span style='color:#8a9bb8;font-size:0.8rem;'>📋 Bench (&lt;15 min/game)</span>",
+                        "<span style='color:#6B7A9A;font-size:0.8rem;'>📋 Bench (&lt;15 min/game)</span>",
                         unsafe_allow_html=True,
                     )
                     for p in away_bench_gb:
@@ -1558,11 +1630,16 @@ def _generate_game_narrative(game, _analysis_results):
     total_n     = game.get("game_total", 220)
     spread_n    = game.get("vegas_spread", 0)
 
-    # Get top picks for this game
+    # Get top picks for this game (match by player_team OR opponent)
+    _narrative_game_teams = _expand_teams(
+        {home_team_n.upper(), away_team_n.upper()} - {""}
+    )
     game_picks_n = [
         r for r in _analysis_results
-        if r.get("team", r.get("player_team", "")).upper() in
-           {home_team_n.upper(), away_team_n.upper()}
+        if (
+            r.get("player_team", r.get("team", "")).upper().strip() in _narrative_game_teams
+            or r.get("opponent", "").upper().strip() in _narrative_game_teams
+        )
         and r.get("confidence_score", 0) >= 55
         and not r.get("player_is_out", False)
     ]

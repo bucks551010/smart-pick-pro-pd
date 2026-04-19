@@ -3134,10 +3134,11 @@ def require_login() -> bool:
 @keyframes navLogoSpin{{from{{transform:rotate(0deg)}}to{{transform:rotate(360deg)}}}}
 
 .spp-nav-dock{{
-  position:fixed;top:50px;left:50%;transform:translateX(-50%);z-index:999999;
+  position:fixed;top:50px;left:0;right:0;z-index:999999;
   display:flex;align-items:center;gap:4px;
   padding:6px 8px 6px 12px;
-  width:auto;max-width:min(92vw, 960px);
+  width:fit-content;max-width:min(92vw, 960px);
+  margin-left:auto;margin-right:auto;
   background:rgba(8,12,24,0.75);
   backdrop-filter:blur(40px) saturate(2);-webkit-backdrop-filter:blur(40px) saturate(2);
   border:1px solid rgba(255,255,255,0.08);
@@ -3150,7 +3151,7 @@ def require_login() -> bool:
 .spp-nav-dock:hover{{
   box-shadow:0 12px 44px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06) inset;
 }}
-.spp-nav-dock.nav-hidden{{transform:translateX(-50%) translateY(-140%);opacity:0}}
+.spp-nav-dock.nav-hidden{{transform:translateY(-140%);opacity:0}}
 .spp-nav-dock::-webkit-scrollbar{{display:none}}
 
 /* Brand */

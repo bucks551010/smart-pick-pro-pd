@@ -783,37 +783,6 @@ html, body, .stApp, .stApp * {
 }
 .ag-price-info strong { color: rgba(255, 255, 255, 0.55); }
 
-/* ── Compare Subscriptions toggle ────────────────────────────── */
-.ag-cmp-btn {
-    display: block; width: 100%; margin: 16px 0 0;
-    background: linear-gradient(135deg, rgba(0, 213, 89, 0.08), rgba(45, 158, 255, 0.06));
-    border: 1px solid rgba(0, 213, 89, 0.2);
-    border-radius: 12px; padding: 14px 20px;
-    text-align: center; cursor: pointer;
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.85rem; font-weight: 700;
-    color: #00D559; letter-spacing: 0.02em;
-    transition: all 0.25s ease;
-    animation: agPulse 3s ease-in-out infinite;
-}
-.ag-cmp-btn:hover {
-    background: linear-gradient(135deg, rgba(0, 213, 89, 0.14), rgba(45, 158, 255, 0.1));
-    border-color: rgba(0, 213, 89, 0.35);
-    transform: translateY(-1px);
-}
-.ag-cmp-btn .arrow { display: inline-block; transition: transform 0.3s; margin-left: 6px; }
-#ag-cmp-toggle:checked ~ .ag-cmp-btn .arrow { transform: rotate(180deg); }
-
-/* Hidden checkbox trick for expand/collapse */
-#ag-cmp-toggle { display: none; }
-.ag-cmp-panel {
-    max-height: 0; overflow: hidden;
-    transition: max-height 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-}
-#ag-cmp-toggle:checked ~ .ag-cmp-panel {
-    max-height: 6000px;
-}
-
 /* Tier detail cards */
 .ag-tier-card {
     background: rgba(255, 255, 255, 0.02);
@@ -920,9 +889,12 @@ html, body, .stApp, .stApp * {
     background: rgba(0, 213, 89, 0.02);
 }
 
-/* ── Compare Subscriptions toggle ────────────────────────────── */
-.ag-cmp-btn {
-    display: block; width: 100%; margin: 16px 0 0;
+/* ── Compare Subscriptions toggle (details/summary) ──────────── */
+.ag-cmp-details {
+    margin: 16px 0 0;
+}
+.ag-cmp-details summary {
+    display: block; width: 100%;
     background: linear-gradient(135deg, rgba(0, 213, 89, 0.08), rgba(45, 158, 255, 0.06));
     border: 1px solid rgba(0, 213, 89, 0.2);
     border-radius: 12px; padding: 14px 20px;
@@ -932,24 +904,19 @@ html, body, .stApp, .stApp * {
     color: #00D559; letter-spacing: 0.02em;
     transition: all 0.25s ease;
     animation: agPulse 3s ease-in-out infinite;
+    list-style: none;
 }
-.ag-cmp-btn:hover {
+.ag-cmp-details summary::-webkit-details-marker { display: none; }
+.ag-cmp-details summary::marker { display: none; content: ''; }
+.ag-cmp-details summary:hover {
     background: linear-gradient(135deg, rgba(0, 213, 89, 0.14), rgba(45, 158, 255, 0.1));
     border-color: rgba(0, 213, 89, 0.35);
     transform: translateY(-1px);
 }
-.ag-cmp-btn .arrow { display: inline-block; transition: transform 0.3s; margin-left: 6px; }
-#ag-cmp-toggle:checked ~ .ag-cmp-btn .arrow { transform: rotate(180deg); }
-
-/* Hidden checkbox trick for expand/collapse */
-#ag-cmp-toggle { display: none; }
-.ag-cmp-panel {
-    max-height: 0; overflow: hidden;
-    transition: max-height 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+.ag-cmp-details summary .arrow {
+    display: inline-block; transition: transform 0.3s; margin-left: 6px;
 }
-#ag-cmp-toggle:checked ~ .ag-cmp-panel {
-    max-height: 6000px;
-}
+.ag-cmp-details[open] summary .arrow { transform: rotate(180deg); }
 
 /* Tier detail cards */
 .ag-tier-card {
@@ -1416,12 +1383,10 @@ def require_login() -> bool:
       </div>
 
       <!-- Compare Subscriptions toggle -->
-      <input type="checkbox" id="ag-cmp-toggle">
-      <label class="ag-cmp-btn" for="ag-cmp-toggle">
+      <details class="ag-cmp-details">
+      <summary>
         &#x1F50D; Compare Subscriptions &mdash; See Every Page &amp; Feature <span class="arrow">&#x25BC;</span>
-      </label>
-
-      <div class="ag-cmp-panel">
+      </summary>
         <!-- ── TIER 1: Smart Rookie (Free) ─────────────── -->
         <div class="ag-tier-card t-free">
           <div class="ag-tier-head">
@@ -1591,7 +1556,7 @@ def require_login() -> bool:
             </tbody>
           </table>
         </div>
-      </div><!-- end ag-cmp-panel -->
+      </details><!-- end ag-cmp-details -->
     </div>
 
     <!-- Savings callout -->

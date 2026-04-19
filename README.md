@@ -1,3 +1,412 @@
+<div align="center">
+
+<img src="assets/Smart_Pick_Pro_Logo.png" alt="Smart Pick Pro" width="180" />
+
+# Smart Pick Pro
+
+### AI-Powered NBA Prop Betting Intelligence
+
+[![Python 3.11–3.13](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue?logo=python&logoColor=white)](#python-requirements)
+[![Streamlit](https://img.shields.io/badge/built%20with-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](#)
+[![License](https://img.shields.io/badge/license-proprietary-333)](#)
+
+**Real-time prop analysis across PrizePicks · Underdog Fantasy · DraftKings Pick6**
+
+*Quantum Matrix Engine 5.6 simulation • Multi-model ML ensemble • Live in-game tracking*
+
+---
+
+</div>
+
+## What It Does
+
+Smart Pick Pro is a locally-run Streamlit web app that ingests live NBA data, simulates thousands of game outcomes per prop, and surfaces the highest-edge bets with a four-tier confidence system (**Platinum 💎 → Gold 🥇 → Silver 🥈 → Bronze 🥉**). Everything runs on your machine — no cloud dependency, no monthly API fees for core functionality.
+
+| Capability | How |
+|---|---|
+| **Prop simulation** | Quantum Matrix Engine 5.6 — Monte Carlo sim (1k–5k iterations) with directional force analysis |
+| **Machine learning** | XGBoost + CatBoost + Ridge ensemble with 6-step feature pipeline |
+| **Live tracking** | In-game pace projections, sweat cards, Joseph M. Smith AI commentary |
+| **Entry building** | Optimal parlay construction with EV-maximized combinatorics |
+| **Bet tracking** | Auto-resolve against box scores, model health monitoring, bankroll tools |
+| **Data pipeline** | ETL into local SQLite (39 tables), incremental updates, injury report parsing |
+
+---
+
+## Pages at a Glance
+
+| # | Page | Purpose |
+|---|------|---------|
+| 🏠 | **Home** | Dashboard — tonight's slate, status, quick-start workflow |
+| 💦 | **Live Sweat** | AI Panic Room — real-time bet tracking with pace projections |
+| 📡 | **Live Games** | One-Click Setup — load games, rosters, live platform props |
+| 🔬 | **Prop Scanner** | Manual entry, CSV upload, or live platform line fetch |
+| ⚡ | **Quantum Analysis Matrix** | Main engine — simulation, edge detection, tier ranking |
+| 📋 | **Game Report** | AI game reports with SAFE Score™ and entry strategy matrix |
+| 🔮 | **Player Simulator** | What-if scenario modeling (minutes, pace, matchup sliders) |
+| 🧬 | **Entry Builder** | Optimal DFS parlays across platform payout structures |
+| 🎙️ | **The Studio** | Joseph M. Smith's broadcast desk — game breakdowns, scout, bet builder |
+| 🛡️ | **Risk Shield** | Flagged props with risk explanations (trap lines, sharp action, variance) |
+| 📡 | **Smart NBA Data** | Stats hub — player/team stats, leaders, standings, playoff picture |
+| 🗺️ | **Correlation Matrix** | Prop correlation analysis for smarter parlays |
+| 📈 | **Bet Tracker** | Log & resolve bets, model health, performance predictor, bankroll |
+| 📊 | **Proving Grounds** | Historical backtesting with tier-by-tier ROI metrics |
+| ⚙️ | **Settings** | Sim depth, edge thresholds, preset profiles, API keys |
+| 💎 | **Subscription** | Premium tier management (Stripe) |
+
+---
+
+## Quick Start
+
+### Python Requirements
+
+| Version | Status |
+|---------|--------|
+| **3.11** | ✅ Recommended |
+| **3.12** | ✅ Supported |
+| **3.13** | ✅ Supported |
+| **3.14+** | ❌ Not supported — missing pre-built wheels for pandas/numpy/catboost |
+| **≤ 3.10** | ❌ Missing required language features |
+
+### Install & Run
+
+```bash
+# 1. Clone / download the repo and cd into it
+
+# 2. Create & activate a virtual environment
+python -m venv .venv
+
+# Windows PowerShell:
+.venv\Scripts\Activate.ps1
+# macOS / Linux:
+source .venv/bin/activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Bootstrap the database (first run only — pulls 2025-26 season data)
+python bootstrap.py
+
+# 5. Launch
+streamlit run Smart_Picks_Pro_Home.py
+```
+
+> **Windows note:** If PowerShell says "running scripts is disabled", run this first:
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
+
+The app opens at **http://localhost:8501**.
+
+### First Session Workflow
+
+1. **⚙️ Settings** — enter API keys (Odds API, API-NBA) if you have them
+2. **📡 Smart NBA Data** → **Smart Update** — fetch tonight's player/team data
+3. **📡 Live Games** → **⚡ One-Click Setup** — load matchups + live platform props
+4. **⚡ Quantum Analysis Matrix** → **Run Analysis** — simulate and rank every prop
+
+### Daily Workflow
+
+```bash
+# Activate venv, launch app
+.venv\Scripts\Activate.ps1        # or: source .venv/bin/activate
+streamlit run Smart_Picks_Pro_Home.py
+```
+
+Then in browser: **Live Games → One-Click Setup → Quantum Analysis Matrix → Run Analysis** → review picks.
+
+---
+
+## Docker (Alternative)
+
+```bash
+cp .env.example .env               # edit with your API keys
+docker compose up --build
+```
+
+UI on **:8501**, FastAPI on **:8000**, Caddy reverse proxy on **:80/:443**.
+
+---
+
+## Architecture
+
+```
+Smart Pick Pro/
+│
+├─ Smart_Picks_Pro_Home.py          # Entry point — home dashboard
+├─ bootstrap.py                     # First-run ETL bootstrap
+├─ webhook_server.py                # Stripe webhook server
+│
+├─ pages/                           # 15 Streamlit pages
+│  ├─ 0  Live Sweat                 #   Live AI Panic Room
+│  ├─ 1  Live Games                 #   Tonight's games + one-click setup
+│  ├─ 2  Prop Scanner               #   Prop entry / upload / fetch
+│  ├─ 3  Quantum Analysis Matrix    #   Main simulation engine
+│  ├─ 4  Game Report                #   SAFE Score AI reports
+│  ├─ 5  Player Simulator           #   What-if scenario modeling
+│  ├─ 6  Entry Builder              #   Optimal DFS parlays
+│  ├─ 7  The Studio                 #   Joseph M. Smith broadcast desk
+│  ├─ 8  Risk Shield                #   Flagged props & risk analysis
+│  ├─ 9  Smart NBA Data             #   Stats hub & data management
+│  ├─ 10 Correlation Matrix         #   Prop correlation analysis
+│  ├─ 11 Bet Tracker                #   Bet logging & model health
+│  ├─ 12 Proving Grounds            #   Historical backtesting
+│  ├─ 13 Settings                   #   Engine configuration
+│  ├─ 14 Subscription               #   Premium tier (Stripe)
+│  └─ helpers/                      #   Tab modules & shared logic
+│     └─ bet_tracker_tabs/          #   11 Bet Tracker tab modules
+│
+├─ engine/                          # Core math & ML
+│  ├─ simulation.py                 #   QME 5.6 Monte Carlo simulator
+│  ├─ projections.py                #   Player stat projections
+│  ├─ edge_detection.py             #   Edge + directional force analysis
+│  ├─ confidence.py                 #   Confidence scoring + tier system
+│  ├─ ensemble.py                   #   Multi-model combiner
+│  ├─ models/                       #   XGBoost, CatBoost, Ridge
+│  ├─ pipeline/                     #   6-step ML pipeline
+│  ├─ predict/                      #   Prediction engine
+│  ├─ features/                     #   Feature engineering
+│  ├─ scrapers/                     #   BBRef, CBS, transactions
+│  └─ joseph_brain/                 #   Joseph M. Smith AI persona
+│
+├─ data/                            # Data access layer
+│  ├─ nba_data_service.py           #   NBA data orchestration
+│  ├─ platform_fetcher.py           #   PrizePicks / Underdog / DK fetcher
+│  ├─ live_data_fetcher.py          #   Live enrichment
+│  ├─ roster_engine.py              #   Rosters & injury tracking
+│  └─ db_service.py                 #   SQLite gateway
+│
+├─ etl/                             # ETL pipeline → smartpicks.db
+│  ├─ setup_db.py                   #   39-table schema
+│  ├─ initial_pull.py               #   Full historical pull
+│  └─ data_updater.py               #   Incremental updates
+│
+├─ tracking/                        # Bet logging & model metrics
+│  ├─ bet_tracker.py                #   Bet CRUD + auto-resolve
+│  ├─ database.py                   #   SQLite wrapper
+│  └─ model_performance.py          #   Performance tracking
+│
+├─ api/                             # REST API (FastAPI + Uvicorn)
+├─ agent/                           # Live commentary persona engine
+├─ config/                          # Thresholds & settings
+├─ styles/                          # Global CSS + Live Sweat theme
+├─ utils/                           # Shared components & helpers
+├─ db/                              # SQLite databases
+└─ scripts/                         # Utility scripts
+```
+
+---
+
+## How the Engine Works
+
+### Quantum Matrix Engine 5.6
+
+For each prop, the engine runs **1,000–5,000 Monte Carlo simulations**:
+
+1. **Minutes** — randomized with variance (rest days, foul trouble, blowouts)
+2. **Stats** — drawn from a normal distribution centered on the projected line, shaped by directional forces (matchup, pace, home/away, injury context, recent form)
+3. **Tally** — count OVER vs UNDER outcomes
+
+```
+probability = games_over / total_simulations
+edge       = probability - implied_probability
+```
+
+### Confidence Tiers
+
+| Tier | Badge | Criteria |
+|------|-------|----------|
+| **Platinum** | 💎 | Edge ≥ 12%, confidence ≥ 80 |
+| **Gold** | 🥇 | Edge ≥ 8%, confidence ≥ 65 |
+| **Silver** | 🥈 | Edge ≥ 5%, confidence ≥ 50 |
+| **Bronze** | 🥉 | Below Silver thresholds |
+
+### ML Ensemble
+
+Three models vote on each prop:
+
+| Model | Type | Strength |
+|-------|------|----------|
+| **XGBoost** | Gradient boosted trees | Handles non-linear feature interactions |
+| **CatBoost** | Ordered boosting | Native categorical feature support |
+| **Ridge** | Regularized linear | Stable baseline, prevents overfitting |
+
+The ensemble output feeds into the simulation as a projection adjustment, not a replacement.
+
+### Expected Value (EV)
+
+For parlay construction:
+
+$$EV = \sum P(\text{outcome}) \times \text{payout} - \text{entry fee}$$
+
+Positive EV = profitable in the long run. The Entry Builder tests all top-pick combinations and ranks by EV.
+
+---
+
+## Data Sources
+
+| Data | Source | Storage |
+|------|--------|---------|
+| Player season stats | `nba_api` + API-NBA | `db/smartpicks.db` |
+| Team pace / ORTG / DRTG | `nba_api` + API-NBA | `db/smartpicks.db` |
+| Player game logs | `nba_api` | `db/smartpicks.db` |
+| Tonight's games + lines | API-NBA + Odds API | Session state |
+| Live platform props | PrizePicks / Underdog / DK | Session state |
+| Defensive ratings | Calculated from DRTG | `data/defensive_ratings.csv` |
+| Injury reports | NBA official PDF + CBS / Rotowire | Parsed on demand |
+
+---
+
+## Dependencies
+
+### Core
+
+| Package | Purpose |
+|---------|---------|
+| `streamlit` | Web UI framework |
+| `streamlit-autorefresh` | Auto-refresh for live pages |
+| `pandas` / `numpy` | Data manipulation & numerical computing |
+| `requests` / `aiohttp` | Sync & async HTTP |
+
+### Machine Learning
+
+| Package | Purpose |
+|---------|---------|
+| `scikit-learn` | Ridge regression |
+| `xgboost` | Gradient boosted trees |
+| `catboost` | Ordered boosting ensemble |
+| `joblib` | Model serialization |
+
+### Data & Parsing
+
+| Package | Purpose |
+|---------|---------|
+| `nba_api` | NBA.com stats client |
+| `beautifulsoup4` / `lxml` | Web scraping |
+| `pdfplumber` | Injury report PDF parsing |
+| `pyarrow` | Parquet I/O |
+| `thefuzz` | Fuzzy player name matching |
+
+### API & Infrastructure
+
+| Package | Purpose |
+|---------|---------|
+| `fastapi` / `uvicorn` | REST API |
+| `flask` | Stripe webhook server |
+| `stripe` | Payment processing |
+| `python-dotenv` | Environment variable management |
+
+---
+
+## Production Deployment
+
+### Streamlit Community Cloud
+
+1. Push to GitHub
+2. Connect at [share.streamlit.io](https://share.streamlit.io)
+3. Add secrets in **Settings → Secrets** (see `.streamlit/secrets.toml.example`)
+4. Set `SMARTAI_PRODUCTION=true` and `APP_URL`
+
+### Docker
+
+```bash
+cp .env.example .env && docker compose up --build -d
+```
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ODDS_API_KEY` | For DK props | The Odds API key |
+| `STRIPE_SECRET_KEY` | For payments | Stripe secret key |
+| `STRIPE_PUBLISHABLE_KEY` | For payments | Stripe publishable key |
+| `STRIPE_PRICE_ID` | For payments | Stripe product price ID |
+| `STRIPE_WEBHOOK_SECRET` | Recommended | Webhook signing secret |
+| `SMARTAI_PRODUCTION` | Production | `"true"` to enforce subscription gates |
+| `APP_URL` | Production | Deployed app URL |
+| `DB_PATH` | Optional | Override SQLite path |
+| `LOG_LEVEL` | Optional | DEBUG / INFO / WARNING / ERROR |
+
+### Stripe Webhook Setup
+
+1. Deploy `webhook_server.py` to a hosting platform (Railway, Render, Fly.io)
+2. In Stripe Dashboard → Developers → Webhooks, register your URL
+3. Select events: `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
+4. Copy the signing secret (`whsec_...`) → add as `STRIPE_WEBHOOK_SECRET`
+
+---
+
+## Troubleshooting
+
+<details>
+<summary><strong>pip install fails — "metadata-generation-failed" or Meson build error</strong></summary>
+
+You're on Python 3.14+. Downgrade to 3.11 or 3.12 and recreate the venv.
+
+</details>
+
+<details>
+<summary><strong>"streamlit: command not found"</strong></summary>
+
+Make sure the venv is activated (`(.venv)` in prompt). Or use: `python -m streamlit run Smart_Picks_Pro_Home.py`
+
+</details>
+
+<details>
+<summary><strong>"ModuleNotFoundError"</strong></summary>
+
+Run `pip install -r requirements.txt` inside the activated venv.
+
+</details>
+
+<details>
+<summary><strong>Port 8501 already in use</strong></summary>
+
+```bash
+streamlit run Smart_Picks_Pro_Home.py --server.port 8502
+```
+
+</details>
+
+<details>
+<summary><strong>PowerShell "running scripts is disabled"</strong></summary>
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+</details>
+
+<details>
+<summary><strong>Live data update takes a long time</strong></summary>
+
+Normal — the fetcher throttles API calls at 1.5s intervals to avoid rate limits. Full updates take 5–15 minutes.
+
+</details>
+
+<details>
+<summary><strong>App shows "No props loaded"</strong></summary>
+
+Go to **Live Games → One-Click Setup** or manually enter props on the Prop Scanner page.
+
+</details>
+
+---
+
+## Running Tests
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest tests/ -q
+```
+
+---
+
+## Disclaimer
+
+This app is for **personal entertainment and analysis** only. Always gamble responsibly. Past model performance does not guarantee future results. Never bet more than you can afford to lose.
+
+**Responsible Gambling:** If you or someone you know has a gambling problem, call **1-800-522-4700** or visit [ncpgambling.org](https://www.ncpgambling.org).
 # 🏀 Smart Pick Pro v7
 
 **Your Personal NBA Prop Betting Analysis Engine — Built Locally, No APIs Needed**

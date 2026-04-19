@@ -33,6 +33,7 @@ from pathlib import Path
 import streamlit as st
 
 from tracking.database import initialize_database, get_database_connection
+from utils.stripe_manager import is_stripe_configured, create_checkout_session
 
 _logger = logging.getLogger(__name__)
 
@@ -3466,6 +3467,194 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 <div class="sv2"><p class="st2">You&rsquo;d pay <span class="big">$1,188/yr</span> for OddsJam alone.</p><p class="ss">Smart Pick Pro gives you more features, more AI, more props &mdash; for $0. Do the math.</p></div>
 
 <div class="ic"><div class="ic-f">&#x1F525;</div><div class="ic-h">Founding Member Seats Are Going Fast</div><div class="ic-s">12 <span class="of">of 75 remaining</span></div><div class="ic-sub">Once all 75 seats are claimed, Insider Circle closes permanently. Lifetime access &mdash; one payment, never pay again.</div><div class="ic-pb">&#x1F451; $499.99 &middot; Lifetime</div></div>
+""")
+
+    # ── Subscription Purchase Section ─────────────────────────
+    st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+.sub-purchase-section {
+    background: linear-gradient(135deg, rgba(0, 213, 89, 0.04) 0%, rgba(45, 158, 255, 0.03) 50%, rgba(192, 132, 252, 0.03) 100%);
+    border: 1px solid rgba(0, 213, 89, 0.15);
+    border-radius: 24px;
+    padding: 40px 24px 32px;
+    margin: 8px 0;
+    position: relative;
+    overflow: hidden;
+}
+.sub-purchase-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, #00D559, #F9C62B, #00D559, #c084fc);
+    background-size: 300% 100%;
+    animation: subBarSlide 6s ease infinite;
+}
+@keyframes subBarSlide {
+    0%   { background-position: 300% 0; }
+    100% { background-position: -300% 0; }
+}
+.sub-purchase-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    text-align: center;
+    color: #fff;
+    margin: 0 0 6px;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+}
+.sub-purchase-sub {
+    text-align: center;
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0 0 28px;
+    line-height: 1.6;
+}
+.sub-purchase-sub strong { color: #00D559; }
+.sub-guarantee {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.22);
+}
+.sub-guarantee strong { color: rgba(255, 255, 255, 0.4); }
+</style>
+<div class="sub-purchase-section">
+    <p class="sub-purchase-title">🚀 Get Your Edge Now</p>
+    <p class="sub-purchase-sub">Subscribe instantly — <strong>secure Stripe checkout</strong>, cancel anytime, no commitment.</p>
+</div>
+""", unsafe_allow_html=True)
+
+    _stripe_ready = is_stripe_configured()
+    sub_cols = st.columns(4)
+    with sub_cols[0]:
+        st.markdown("""
+<div style="text-align:center;padding:8px 0 4px;">
+    <span style="font-size:1.8rem;">⭐</span><br>
+    <span style="font-family:'Space Grotesk',sans-serif;font-size:0.78rem;font-weight:800;color:#A0AABE;text-transform:uppercase;letter-spacing:0.06em;">Smart Rookie</span><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:1.6rem;font-weight:900;color:#A0AABE;">$0</span>
+    <span style="font-size:0.7rem;color:rgba(255,255,255,0.3);"> / forever</span>
+</div>""", unsafe_allow_html=True)
+        st.success("✅ **Free** — create an account above!")
+
+    with sub_cols[1]:
+        st.markdown("""
+<div style="text-align:center;padding:8px 0 4px;">
+    <span style="font-size:1.8rem;">🔥</span><br>
+    <span style="font-family:'Space Grotesk',sans-serif;font-size:0.78rem;font-weight:800;color:#F9C62B;text-transform:uppercase;letter-spacing:0.06em;">Sharp IQ</span><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:1.6rem;font-weight:900;color:#F9C62B;">$9<span style="font-size:0.9rem;">.99</span></span>
+    <span style="font-size:0.7rem;color:rgba(255,255,255,0.3);"> / mo</span>
+</div>""", unsafe_allow_html=True)
+        if _stripe_ready:
+            with st.form("gate_checkout_sharp", clear_on_submit=False):
+                _email_s = st.text_input("Email", placeholder="you@example.com", key="_gate_email_sharp")
+                if st.form_submit_button("🚀 Subscribe — $9.99/mo", type="primary", use_container_width=True):
+                    with st.spinner("Creating secure checkout…"):
+                        _res = create_checkout_session(customer_email=_email_s.strip() if _email_s else "", price_lookup="sharp_iq")
+                    if _res["success"]:
+                        st.markdown(f'<meta http-equiv="refresh" content="0; url={_res["url"]}">', unsafe_allow_html=True)
+                        st.info(f"Redirecting… [Click here if not redirected]({_res['url']})")
+                    else:
+                        st.error(f"Checkout error: {_res['error']}")
+        else:
+            st.info("💳 Stripe checkout — coming soon!")
+
+    with sub_cols[2]:
+        st.markdown("""
+<div style="text-align:center;padding:8px 0 4px;">
+    <span style="font-size:1.8rem;">💎</span><br>
+    <span style="font-family:'Space Grotesk',sans-serif;font-size:0.78rem;font-weight:800;color:#00D559;text-transform:uppercase;letter-spacing:0.06em;">Smart Money</span>
+    <span style="display:inline-block;font-size:0.45rem;font-weight:800;color:#0B0F19;background:#00D559;padding:1px 6px;border-radius:100px;vertical-align:middle;margin-left:4px;">POPULAR</span><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:1.6rem;font-weight:900;color:#00D559;">$24<span style="font-size:0.9rem;">.99</span></span>
+    <span style="font-size:0.7rem;color:rgba(255,255,255,0.3);"> / mo</span>
+</div>""", unsafe_allow_html=True)
+        if _stripe_ready:
+            with st.form("gate_checkout_smart", clear_on_submit=False):
+                _email_m = st.text_input("Email", placeholder="you@example.com", key="_gate_email_smart")
+                if st.form_submit_button("🚀 Subscribe — $24.99/mo", type="primary", use_container_width=True):
+                    with st.spinner("Creating secure checkout…"):
+                        _res = create_checkout_session(customer_email=_email_m.strip() if _email_m else "", price_lookup="smart_money")
+                    if _res["success"]:
+                        st.markdown(f'<meta http-equiv="refresh" content="0; url={_res["url"]}">', unsafe_allow_html=True)
+                        st.info(f"Redirecting… [Click here if not redirected]({_res['url']})")
+                    else:
+                        st.error(f"Checkout error: {_res['error']}")
+        else:
+            st.info("💳 Stripe checkout — coming soon!")
+
+    with sub_cols[3]:
+        st.markdown("""
+<div style="text-align:center;padding:8px 0 4px;">
+    <span style="font-size:1.8rem;">👑</span><br>
+    <span style="font-family:'Space Grotesk',sans-serif;font-size:0.78rem;font-weight:800;color:#c084fc;text-transform:uppercase;letter-spacing:0.06em;">Insider Circle</span><br>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:1.6rem;font-weight:900;color:#c084fc;">$499<span style="font-size:0.9rem;">.99</span></span>
+    <span style="font-size:0.7rem;color:rgba(255,255,255,0.3);"> lifetime</span>
+</div>""", unsafe_allow_html=True)
+        if _stripe_ready:
+            with st.form("gate_checkout_insider", clear_on_submit=False):
+                _email_i = st.text_input("Email", placeholder="you@example.com", key="_gate_email_insider")
+                if st.form_submit_button("👑 Lifetime — $499.99", type="primary", use_container_width=True):
+                    with st.spinner("Creating secure checkout…"):
+                        _res = create_checkout_session(customer_email=_email_i.strip() if _email_i else "", price_lookup="insider_circle")
+                    if _res["success"]:
+                        st.markdown(f'<meta http-equiv="refresh" content="0; url={_res["url"]}">', unsafe_allow_html=True)
+                        st.info(f"Redirecting… [Click here if not redirected]({_res['url']})")
+                    else:
+                        st.error(f"Checkout error: {_res['error']}")
+        else:
+            st.info("💳 Stripe checkout — coming soon!")
+
+    st.markdown("""<div style="text-align:center;margin:12px 0 4px;font-size:0.72rem;color:rgba(255,255,255,0.22);">
+🔒 <strong style="color:rgba(255,255,255,0.4);">Secure checkout by Stripe</strong> · Cancel anytime · No hidden fees
+</div>""", unsafe_allow_html=True)
+
+    # ── Below-fold: Performance, FAQ, CTA, Footer ─────────────
+    st.html("""<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,255,255,0.7)}
+.em{background:linear-gradient(135deg,#00D559 0%,#2D9EFF 50%,#c084fc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sh{text-align:center;margin-bottom:24px;position:relative}
+.sh::before{content:'';display:block;width:60px;height:4px;margin:0 auto 18px;background:linear-gradient(90deg,#00D559,#2D9EFF);border-radius:4px}
+.sh h3{font-family:'Space Grotesk',sans-serif;font-size:2.2rem;font-weight:700;color:#fff;margin:0 0 10px;letter-spacing:-0.04em;text-transform:uppercase}
+.sh p{font-size:0.85rem;color:rgba(255,255,255,0.4);margin:0;line-height:1.6}
+/* Performance */
+.pf{margin:0}
+.pf-c{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:14px;padding:18px 16px 14px}
+.pf-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.pf-t{font-family:'Space Grotesk',sans-serif;font-size:0.78rem;font-weight:700;color:rgba(255,255,255,0.7)}
+.pf-a{font-family:'JetBrains Mono',monospace;font-size:0.82rem;font-weight:800;color:#00D559}
+.sk{display:flex;align-items:flex-end;gap:3px;height:50px;width:100%}
+.sb{flex:1;border-radius:3px 3px 0 0;min-height:4px}
+.sb.w{background:linear-gradient(180deg,#00D559,rgba(0,213,89,0.3))}
+.sb.l{background:linear-gradient(180deg,rgba(242,67,54,0.5),rgba(242,67,54,0.15))}
+.sl2{display:flex;justify-content:space-between;margin-top:4px}
+.sl2 span{font-family:'JetBrains Mono',monospace;font-size:0.42rem;color:rgba(255,255,255,0.15);font-weight:600}
+/* FAQ */
+.fq{margin:28px 0 0}
+.fi{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;margin-bottom:6px}
+.fi summary{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:0.76rem;font-weight:700;color:rgba(255,255,255,0.6);list-style:none}
+.fi summary::-webkit-details-marker{display:none}
+.fi summary::marker{display:none;content:''}
+.fi summary:hover{color:rgba(255,255,255,0.8)}
+.fi summary .fa{display:inline-block;transition:transform 0.3s;color:rgba(0,213,89,0.4);font-size:0.65rem}
+.fi[open] summary .fa{transform:rotate(180deg)}
+.fi-a{padding:0 16px 14px;font-size:0.7rem;color:rgba(255,255,255,0.35);line-height:1.6}
+/* CTA2 */
+.c2{background:linear-gradient(135deg,rgba(0,213,89,0.1),rgba(45,158,255,0.06));border:2px solid rgba(0,213,89,0.2);border-radius:24px;padding:44px 28px;text-align:center;margin:36px 0 0;position:relative;overflow:hidden}
+.c2::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(0,213,89,0.08) 0%,transparent 60%);pointer-events:none}
+.c2-h{font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:800;color:#fff;margin:0 0 10px;text-transform:uppercase;letter-spacing:-0.03em;position:relative}
+.c2-s{font-size:0.85rem;color:rgba(255,255,255,0.4);margin:0 0 20px;line-height:1.6;position:relative}
+.c2-b{display:inline-block;font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:700;color:#0B0F19;background:linear-gradient(135deg,#00D559,#00B74D);padding:16px 52px;border-radius:16px;text-decoration:none;box-shadow:0 6px 32px rgba(0,213,89,0.35);position:relative}
+.c2-b:hover{transform:translateY(-4px);box-shadow:0 12px 48px rgba(0,213,89,0.5)}
+.c2-t{font-size:0.6rem;color:rgba(255,255,255,0.18);margin-top:14px;position:relative}
+/* Trust + Footer */
+.tr{display:flex;justify-content:center;gap:16px;margin:28px 0 6px;flex-wrap:wrap}
+.tr-i{font-size:0.62rem;font-weight:600;color:rgba(255,255,255,0.22);display:flex;align-items:center;gap:4px}
+.ft{text-align:center;padding:20px 0 40px;font-size:0.55rem;color:rgba(255,255,255,0.1);line-height:1.7}
+.ft a{color:rgba(255,255,255,0.15);text-decoration:underline}
+</style>
 
 <div class="pf"><div class="sh"><h3>Recent AI Performance</h3><p>Last 14 days &mdash; SAFE Score 70+ picks</p></div>
 <div class="pf-c"><div class="pf-h"><div class="pf-t">Daily Win Rate</div><div class="pf-a">62.4% avg</div></div>

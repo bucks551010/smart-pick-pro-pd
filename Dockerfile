@@ -28,4 +28,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
 
 USER appuser
-CMD ["streamlit", "run", "Smart_Picks_Pro_Home.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["python", "start.py"]

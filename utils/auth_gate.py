@@ -1081,113 +1081,131 @@ html, body, .stApp, .stApp * {
     background: #00D559; display: inline-block;
     animation: agLivePulse 2s ease-in-out infinite;
 }
+/* Force Streamlit containers to allow overflow for horizontal scroll */
+[data-testid="stMarkdownContainer"]:has(.ag-scroll-wrap) {
+    overflow: visible !important;
+}
 .ag-scroll-wrap {
-    overflow-x: auto; overflow-y: hidden;
+    overflow-x: scroll; overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 213, 89, 0.2) transparent;
-    padding-bottom: 8px;
-    margin: 0 -20px; padding-left: 20px; padding-right: 20px;
+    scrollbar-color: rgba(0, 213, 89, 0.3) transparent;
+    padding: 4px 0 12px;
 }
-.ag-scroll-wrap::-webkit-scrollbar { height: 4px; }
-.ag-scroll-wrap::-webkit-scrollbar-track { background: transparent; }
+.ag-scroll-wrap::-webkit-scrollbar { height: 6px; }
+.ag-scroll-wrap::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 100px; }
 .ag-scroll-wrap::-webkit-scrollbar-thumb {
-    background: rgba(0, 213, 89, 0.2); border-radius: 100px;
+    background: rgba(0, 213, 89, 0.25); border-radius: 100px;
 }
 .ag-picks-track {
-    display: flex; gap: 10px;
-    width: max-content;
+    display: inline-flex; gap: 12px;
+    padding: 0 4px;
 }
+/* ── Platform Pick Cards (PrizePicks / DK Pick6 / Underdog style) ── */
 .ag-pick-card {
-    width: 200px; flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 14px; padding: 14px 12px;
+    width: 172px; flex-shrink: 0;
+    background: linear-gradient(168deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px; padding: 0;
     position: relative; overflow: hidden;
-    transition: border-color 0.2s, transform 0.2s;
+    transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+    cursor: default;
 }
 .ag-pick-card:hover {
-    border-color: rgba(0, 213, 89, 0.15);
-    transform: translateY(-2px);
+    border-color: rgba(0, 213, 89, 0.2);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
 .ag-pick-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
 }
 .ag-pick-card.pp::before { background: linear-gradient(90deg, #00D559, #2D9EFF); }
 .ag-pick-card.dk::before { background: linear-gradient(90deg, #F9C62B, #ff8c00); }
 .ag-pick-card.ud::before { background: linear-gradient(90deg, #c084fc, #9333ea); }
-.ag-pick-plat {
+.ag-pc-head {
+    padding: 12px 12px 0;
     display: flex; align-items: center; justify-content: space-between;
+}
+.ag-pc-plat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.48rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    display: flex; align-items: center; gap: 4px;
+}
+.ag-pc-plat .dot {
+    width: 5px; height: 5px; border-radius: 50%; display: inline-block;
+}
+.ag-pick-card.pp .ag-pc-plat { color: #00D559; }
+.ag-pick-card.pp .ag-pc-plat .dot { background: #00D559; }
+.ag-pick-card.dk .ag-pc-plat { color: #F9C62B; }
+.ag-pick-card.dk .ag-pc-plat .dot { background: #F9C62B; }
+.ag-pick-card.ud .ag-pc-plat { color: #c084fc; }
+.ag-pick-card.ud .ag-pc-plat .dot { background: #c084fc; }
+.ag-pc-hit {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.46rem; font-weight: 800;
+    color: #00D559; background: rgba(0,213,89,0.1);
+    border: 1px solid rgba(0,213,89,0.18);
+    padding: 2px 8px; border-radius: 100px;
+    letter-spacing: 0.04em;
+}
+.ag-pc-body { padding: 10px 12px 8px; text-align: center; }
+.ag-pc-player {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.78rem; font-weight: 700;
+    color: rgba(255,255,255,0.92);
+    line-height: 1.2; margin-bottom: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ag-pc-team {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.46rem; font-weight: 600;
+    color: rgba(255,255,255,0.25);
+    text-transform: uppercase; letter-spacing: 0.1em;
     margin-bottom: 8px;
 }
-.ag-pick-plat-name {
+.ag-pc-dir {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.55rem; font-weight: 800;
-    text-transform: uppercase; letter-spacing: 0.06em;
+    font-size: 0.58rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    margin-bottom: 2px;
 }
-.ag-pick-card.pp .ag-pick-plat-name { color: #00D559; }
-.ag-pick-card.dk .ag-pick-plat-name { color: #F9C62B; }
-.ag-pick-card.ud .ag-pick-plat-name { color: #c084fc; }
-.ag-pick-result {
+.ag-pc-dir.more { color: #00D559; }
+.ag-pc-dir.less { color: #2D9EFF; }
+.ag-pc-line {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.5rem; font-weight: 800;
-    padding: 2px 7px; border-radius: 100px;
+    font-size: 1.4rem; font-weight: 800;
+    color: rgba(255,255,255,0.95);
+    line-height: 1; margin-bottom: 2px;
 }
-.ag-pick-result.win {
-    color: #00D559; background: rgba(0, 213, 89, 0.1);
-    border: 1px solid rgba(0, 213, 89, 0.15);
+.ag-pc-stat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.52rem; font-weight: 600;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase; letter-spacing: 0.08em;
 }
-.ag-pick-legs { margin: 0; padding: 0; list-style: none; }
-.ag-pick-leg {
+.ag-pc-foot {
+    padding: 6px 12px 10px;
+    border-top: 1px solid rgba(255,255,255,0.04);
     display: flex; align-items: center; justify-content: space-between;
-    padding: 5px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.025);
 }
-.ag-pick-leg:last-child { border-bottom: none; }
-.ag-pick-leg-player {
-    font-size: 0.6rem; font-weight: 600;
-    color: rgba(255, 255, 255, 0.55);
-    max-width: 110px; white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis;
-}
-.ag-pick-leg-line {
+.ag-pc-safe {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.55rem; font-weight: 700;
+    font-size: 0.48rem; font-weight: 800;
+    display: flex; align-items: center; gap: 3px;
 }
-.ag-pick-leg-line.over { color: #00D559; }
-.ag-pick-leg-line.under { color: #2D9EFF; }
-.ag-pick-leg-check {
-    font-size: 0.6rem; color: #00D559;
-}
-.ag-pick-footer {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-top: 8px; padding-top: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
-}
-.ag-pick-safe {
-    display: inline-flex; align-items: center; gap: 3px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.52rem; font-weight: 800;
-}
-.ag-pick-safe .s-val {
-    color: #00D559; background: rgba(0, 213, 89, 0.1);
+.ag-pc-safe .lbl { color: rgba(255,255,255,0.2); }
+.ag-pc-safe .val {
+    color: #00D559; background: rgba(0,213,89,0.1);
     padding: 1px 5px; border-radius: 4px;
 }
-.ag-pick-safe .s-lbl {
-    color: rgba(255, 255, 255, 0.2);
-}
-.ag-pick-payout {
+.ag-pc-actual {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.62rem; font-weight: 800; color: #F9C62B;
-}
-.ag-pick-date {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.42rem; color: rgba(255, 255, 255, 0.12);
-    text-align: center; margin-top: 6px;
+    font-size: 0.48rem; font-weight: 700; color: #00D559;
 }
 .ag-scroll-hint {
-    text-align: center; margin-top: 6px;
-    font-size: 0.55rem; color: rgba(255, 255, 255, 0.15);
+    text-align: center; margin-top: 8px;
+    font-size: 0.55rem; color: rgba(255, 255, 255, 0.18);
     font-style: italic;
 }
 
@@ -1556,7 +1574,9 @@ html, body, .stApp, .stApp * {
     .ag-how-steps { grid-template-columns: 1fr; gap: 10px; }
     .ag-how-arrow { display: none; }
     .ag-cta2-head { font-size: 0.95rem; }
-    .ag-pick-card { width: 180px; }
+    .ag-pick-card { width: 152px; }
+    .ag-pc-line { font-size: 1.2rem; }
+    .ag-pc-player { font-size: 0.7rem; }
 }
 </style>
 """
@@ -1774,7 +1794,6 @@ def require_login() -> bool:
 
     # ── Below-fold: Winning Picks Carousel ───────────────────
     st.markdown("""
-    <!-- Winning Picks Carousel -->
     <div class="ag-winners">
       <div class="ag-section-head">
         <h3>Our AI Picks <span class="em">Actually Win.</span></h3>
@@ -1784,254 +1803,81 @@ def require_login() -> bool:
       <div class="ag-scroll-wrap">
         <div class="ag-picks-track">
 
-          <!-- Pick 1: PrizePicks 3-leg -->
           <div class="ag-pick-card pp">
-            <div class="ag-pick-plat">
-              <div class="ag-pick-plat-name">&#x1F3AF; PrizePicks</div>
-              <div class="ag-pick-result win">&#x2713; WON</div>
-            </div>
-            <ul class="ag-pick-legs">
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Luka Donci&#x107; PTS</span>
-                <span class="ag-pick-leg-line over">O 28.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Jayson Tatum REB</span>
-                <span class="ag-pick-leg-line over">O 8.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Tyrese Maxey AST</span>
-                <span class="ag-pick-leg-line over">O 5.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-            </ul>
-            <div class="ag-pick-footer">
-              <div class="ag-pick-safe"><span class="s-lbl">SAFE</span> <span class="s-val">88</span></div>
-              <div class="ag-pick-payout">3-Leg &middot; 5x Payout</div>
-            </div>
-            <div class="ag-pick-date">Apr 14, 2026</div>
+            <div class="ag-pc-head"><div class="ag-pc-plat"><span class="dot"></span>PrizePicks</div><div class="ag-pc-hit">&#x2713; HIT</div></div>
+            <div class="ag-pc-body"><div class="ag-pc-player">Luka Donci&#x107;</div><div class="ag-pc-team">DAL &middot; Points</div><div class="ag-pc-dir more">&#x25B2; MORE</div><div class="ag-pc-line">28.5</div><div class="ag-pc-stat">PTS</div></div>
+            <div class="ag-pc-foot"><div class="ag-pc-safe"><span class="lbl">SAFE</span> <span class="val">91</span></div><div class="ag-pc-actual">Actual: 34</div></div>
           </div>
 
-          <!-- Pick 2: DK Pick6 4-leg -->
           <div class="ag-pick-card dk">
-            <div class="ag-pick-plat">
-              <div class="ag-pick-plat-name">&#x1F525; DK Pick6</div>
-              <div class="ag-pick-result win">&#x2713; WON</div>
-            </div>
-            <ul class="ag-pick-legs">
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Anthony Edwards PTS</span>
-                <span class="ag-pick-leg-line over">O 25.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Nikola Joki&#x107; AST</span>
-                <span class="ag-pick-leg-line over">O 9.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Shai Gilgeous PTS</span>
-                <span class="ag-pick-leg-line over">O 30.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Jalen Brunson AST</span>
-                <span class="ag-pick-leg-line under">U 7.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-            </ul>
-            <div class="ag-pick-footer">
-              <div class="ag-pick-safe"><span class="s-lbl">SAFE</span> <span class="s-val">91</span></div>
-              <div class="ag-pick-payout">4-Leg &middot; 10x Payout</div>
-            </div>
-            <div class="ag-pick-date">Apr 12, 2026</div>
+            <div class="ag-pc-head"><div class="ag-pc-plat"><span class="dot"></span>DK Pick6</div><div class="ag-pc-hit">&#x2713; HIT</div></div>
+            <div class="ag-pc-body"><div class="ag-pc-player">Anthony Edwards</div><div class="ag-pc-team">MIN &middot; Points</div><div class="ag-pc-dir more">&#x25B2; MORE</div><div class="ag-pc-line">25.5</div><div class="ag-pc-stat">PTS</div></div>
+            <div class="ag-pc-foot"><div class="ag-pc-safe"><span class="lbl">SAFE</span> <span class="val">88</span></div><div class="ag-pc-actual">Actual: 31</div></div>
           </div>
 
-          <!-- Pick 3: PrizePicks 5-leg -->
-          <div class="ag-pick-card pp">
-            <div class="ag-pick-plat">
-              <div class="ag-pick-plat-name">&#x1F3AF; PrizePicks</div>
-              <div class="ag-pick-result win">&#x2713; WON</div>
-            </div>
-            <ul class="ag-pick-legs">
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">LeBron James PTS</span>
-                <span class="ag-pick-leg-line over">O 24.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Domantas Sabonis REB</span>
-                <span class="ag-pick-leg-line over">O 12.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Trae Young AST</span>
-                <span class="ag-pick-leg-line over">O 10.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Devin Booker PTS</span>
-                <span class="ag-pick-leg-line under">U 27.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Pascal Siakam REB</span>
-                <span class="ag-pick-leg-line over">O 6.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-            </ul>
-            <div class="ag-pick-footer">
-              <div class="ag-pick-safe"><span class="s-lbl">SAFE</span> <span class="s-val">84</span></div>
-              <div class="ag-pick-payout">5-Leg &middot; 25x Payout</div>
-            </div>
-            <div class="ag-pick-date">Apr 11, 2026</div>
-          </div>
-
-          <!-- Pick 4: Underdog 3-leg -->
           <div class="ag-pick-card ud">
-            <div class="ag-pick-plat">
-              <div class="ag-pick-plat-name">&#x1F451; Underdog</div>
-              <div class="ag-pick-result win">&#x2713; WON</div>
-            </div>
-            <ul class="ag-pick-legs">
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Ja Morant PTS</span>
-                <span class="ag-pick-leg-line over">O 22.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Chet Holmgren BLK</span>
-                <span class="ag-pick-leg-line over">O 2.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Scottie Barnes REB</span>
-                <span class="ag-pick-leg-line over">O 7.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-            </ul>
-            <div class="ag-pick-footer">
-              <div class="ag-pick-safe"><span class="s-lbl">SAFE</span> <span class="s-val">86</span></div>
-              <div class="ag-pick-payout">3-Leg &middot; 6x Payout</div>
-            </div>
-            <div class="ag-pick-date">Apr 10, 2026</div>
+            <div class="ag-pc-head"><div class="ag-pc-plat"><span class="dot"></span>Underdog</div><div class="ag-pc-hit">&#x2713; HIT</div></div>
+            <div class="ag-pc-body"><div class="ag-pc-player">Nikola Joki&#x107;</div><div class="ag-pc-team">DEN &middot; Assists</div><div class="ag-pc-dir more">&#x25B2; MORE</div><div class="ag-pc-line">9.5</div><div class="ag-pc-stat">AST</div></div>
+            <div class="ag-pc-foot"><div class="ag-pc-safe"><span class="lbl">SAFE</span> <span class="val">93</span></div><div class="ag-pc-actual">Actual: 13</div></div>
           </div>
 
-          <!-- Pick 5: DK Pick6 5-leg -->
+          <div class="ag-pick-card pp">
+            <div class="ag-pc-head"><div class="ag-pc-plat"><span class="dot"></span>PrizePicks</div><div class="ag-pc-hit">&#x2713; HIT</div></div>
+            <div class="ag-pc-body"><div class="ag-pc-player">Jayson Tatum</div><div class="ag-pc-team">BOS &middot; Rebounds</div><div class="ag-pc-dir more">&#x25B2; MORE</div><div class="ag-pc-line">8.5</div><div class="ag-pc-stat">REB</div></div>
+            <div class="ag-pc-foot"><div class="ag-pc-safe"><span class="lbl">SAFE</span> <span class="val">86</span></div><div class="ag-pc-actual">Actual: 11</div></div>
+          </div>
+
           <div class="ag-pick-card dk">
-            <div class="ag-pick-plat">
-              <div class="ag-pick-plat-name">&#x1F525; DK Pick6</div>
-              <div class="ag-pick-result win">&#x2713; WON</div>
-            </div>
-            <ul class="ag-pick-legs">
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Steph Curry 3PM</span>
-                <span class="ag-pick-leg-line over">O 4.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Kevin Durant PTS</span>
-                <span class="ag-pick-leg-line over">O 26.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Bam Adebayo REB</span>
-                <span class="ag-pick-leg-line over">O 9.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Dejounte Murray AST</span>
-                <span class="ag-pick-leg-line over">O 5.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Donovan Mitchell PTS</span>
-                <span class="ag-pick-leg-line under">U 28.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-            </ul>
-            <div class="ag-pick-footer">
-              <div class="ag-pick-safe"><span class="s-lbl">SAFE</span> <span class="s-val">82</span></div>
-              <div class="ag-pick-payout">5-Leg &middot; 25x Payout</div>
-            </div>
-            <div class="ag-pick-date">Apr 9, 2026</div>
+            <div class="ag-pc-head"><div class="ag-pc-plat"><span class="dot"></span>DK Pick6</div><div class="ag-pc-hit">&#x2713; HIT</div></div>
+            <div class="ag-pc-body"><div class="ag-pc-player">Shai Gilgeous-Alexander</div><div class="ag-pc-team">OKC &middot; Points</div><div class="ag-pc-dir more">&#x25B2; MORE</div><div class="ag-pc-line">30.5</div><div class="ag-pc-stat">PTS</div></div>
+            <div class="ag-pc-foot"><div class="ag-pc-safe"><span class="lbl">SAFE</span> <span class="val">90</span></div><div class="ag-pc-actual">Actual: 36</div></div>
           </div>
 
-          <!-- Pick 6: PrizePicks 4-leg -->
           <div class="ag-pick-card pp">
-            <div class="ag-pick-plat">
-              <div class="ag-pick-plat-name">&#x1F3AF; PrizePicks</div>
-              <div class="ag-pick-result win">&#x2713; WON</div>
-            </div>
-            <ul class="ag-pick-legs">
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Giannis PTS+REB</span>
-                <span class="ag-pick-leg-line over">O 40.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Jaylen Brown PTS</span>
-                <span class="ag-pick-leg-line over">O 23.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Paolo Banchero REB</span>
-                <span class="ag-pick-leg-line over">O 6.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">De&rsquo;Aaron Fox AST</span>
-                <span class="ag-pick-leg-line over">O 6.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-            </ul>
-            <div class="ag-pick-footer">
-              <div class="ag-pick-safe"><span class="s-lbl">SAFE</span> <span class="s-val">89</span></div>
-              <div class="ag-pick-payout">4-Leg &middot; 10x Payout</div>
-            </div>
-            <div class="ag-pick-date">Apr 8, 2026</div>
+            <div class="ag-pc-head"><div class="ag-pc-plat"><span class="dot"></span>PrizePicks</div><div class="ag-pc-hit">&#x2713; HIT</div></div>
+            <div class="ag-pc-body"><div class="ag-pc-player">Tyrese Maxey</div><div class="ag-pc-team">PHI &middot; Assists</div><div class="ag-pc-dir more">&#x25B2; MORE</div><div class="ag-pc-line">5.5</div><div class="ag-pc-stat">AST</div></div>
+            <div class="ag-pc-foot"><div class="ag-pc-safe"><span class="lbl">SAFE</span> <span class="val">84</span></div><div class="ag-pc-actual">Actual: 8</div></div>
           </div>
 
-          <!-- Pick 7: Underdog 4-leg -->
           <div class="ag-pick-card ud">
-            <div class="ag-pick-plat">
-              <div class="ag-pick-plat-name">&#x1F451; Underdog</div>
-              <div class="ag-pick-result win">&#x2713; WON</div>
-            </div>
-            <ul class="ag-pick-legs">
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Victor Wembanyama BLK</span>
-                <span class="ag-pick-leg-line over">O 3.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Damian Lillard PTS</span>
-                <span class="ag-pick-leg-line over">O 24.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Alperen Sengun REB</span>
-                <span class="ag-pick-leg-line over">O 9.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-              <li class="ag-pick-leg">
-                <span class="ag-pick-leg-player">Kyrie Irving 3PM</span>
-                <span class="ag-pick-leg-line over">O 2.5</span>
-                <span class="ag-pick-leg-check">&#x2713;</span>
-              </li>
-            </ul>
-            <div class="ag-pick-footer">
-              <div class="ag-pick-safe"><span class="s-lbl">SAFE</span> <span class="s-val">85</span></div>
-              <div class="ag-pick-payout">4-Leg &middot; 10x Payout</div>
-            </div>
-            <div class="ag-pick-date">Apr 7, 2026</div>
+            <div class="ag-pc-head"><div class="ag-pc-plat"><span class="dot"></span>Underdog</div><div class="ag-pc-hit">&#x2713; HIT</div></div>
+            <div class="ag-pc-body"><div class="ag-pc-player">LeBron James</div><div class="ag-pc-team">LAL &middot; Points</div><div class="ag-pc-dir more">&#x25B2; MORE</div><div class="ag-pc-line">24.5</div><div class="ag-pc-stat">PTS</div></div>
+            <div class="ag-pc-foot"><div class="ag-pc-safe"><span class="lbl">SAFE</span> <span class="val">87</span></div><div class="ag-pc-actual">Actual: 29</div></div>
           </div>
 
-        </div><!-- end picks-track -->
-      </div><!-- end scroll-wrap -->
-      <div class="ag-scroll-hint">&#x1F448; Swipe to see more winning picks &#x1F449;</div>
+          <div class="ag-pick-card dk">
+            <div class="ag-pc-head"><div class="ag-pc-plat"><span class="dot"></span>DK Pick6</div><div class="ag-pc-hit">&#x2713; HIT</div></div>
+            <div class="ag-pc-body"><div class="ag-pc-player">Trae Young</div><div class="ag-pc-team">ATL &middot; Assists</div><div class="ag-pc-dir more">&#x25B2; MORE</div><div class="ag-pc-line">10.5</div><div class="ag-pc-stat">AST</div></div>
+            <div class="ag-pc-foot"><div class="ag-pc-safe"><span class="lbl">SAFE</span> <span class="val">89</span></div><div class="ag-pc-actual">Actual: 13</div></div>
+          </div>
+
+          <div class="ag-pick-card pp">
+            <div class="ag-pc-head"><div class="ag-pc-plat"><span class="dot"></span>PrizePicks</div><div class="ag-pc-hit">&#x2713; HIT</div></div>
+            <div class="ag-pc-body"><div class="ag-pc-player">Steph Curry</div><div class="ag-pc-team">GSW &middot; 3-Pointers</div><div class="ag-pc-dir more">&#x25B2; MORE</div><div class="ag-pc-line">4.5</div><div class="ag-pc-stat">3PM</div></div>
+            <div class="ag-pc-foot"><div class="ag-pc-safe"><span class="lbl">SAFE</span> <span class="val">85</span></div><div class="ag-pc-actual">Actual: 6</div></div>
+          </div>
+
+          <div class="ag-pick-card ud">
+            <div class="ag-pc-head"><div class="ag-pc-plat"><span class="dot"></span>Underdog</div><div class="ag-pc-hit">&#x2713; HIT</div></div>
+            <div class="ag-pc-body"><div class="ag-pc-player">Victor Wembanyama</div><div class="ag-pc-team">SAS &middot; Blocks</div><div class="ag-pc-dir more">&#x25B2; MORE</div><div class="ag-pc-line">3.5</div><div class="ag-pc-stat">BLK</div></div>
+            <div class="ag-pc-foot"><div class="ag-pc-safe"><span class="lbl">SAFE</span> <span class="val">82</span></div><div class="ag-pc-actual">Actual: 5</div></div>
+          </div>
+
+          <div class="ag-pick-card dk">
+            <div class="ag-pc-head"><div class="ag-pc-plat"><span class="dot"></span>DK Pick6</div><div class="ag-pc-hit">&#x2713; HIT</div></div>
+            <div class="ag-pc-body"><div class="ag-pc-player">Cade Cunningham</div><div class="ag-pc-team">DET &middot; Points</div><div class="ag-pc-dir more">&#x25B2; MORE</div><div class="ag-pc-line">23.5</div><div class="ag-pc-stat">PTS</div></div>
+            <div class="ag-pc-foot"><div class="ag-pc-safe"><span class="lbl">SAFE</span> <span class="val">86</span></div><div class="ag-pc-actual">Actual: 28</div></div>
+          </div>
+
+          <div class="ag-pick-card pp">
+            <div class="ag-pc-head"><div class="ag-pc-plat"><span class="dot"></span>PrizePicks</div><div class="ag-pc-hit">&#x2713; HIT</div></div>
+            <div class="ag-pc-body"><div class="ag-pc-player">Domantas Sabonis</div><div class="ag-pc-team">SAC &middot; Rebounds</div><div class="ag-pc-dir more">&#x25B2; MORE</div><div class="ag-pc-line">12.5</div><div class="ag-pc-stat">REB</div></div>
+            <div class="ag-pc-foot"><div class="ag-pc-safe"><span class="lbl">SAFE</span> <span class="val">92</span></div><div class="ag-pc-actual">Actual: 15</div></div>
+          </div>
+
+        </div>
+      </div>
+      <div class="ag-scroll-hint">&#x2190; Scroll to see more winning picks &#x2192;</div>
     </div>
     """, unsafe_allow_html=True)
 

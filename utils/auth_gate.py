@@ -3279,7 +3279,7 @@ def require_login() -> bool:
     if(mb){mb.style.paddingTop='100px';}
   },200);
 })();
-</script>""", height=0)
+</script>""")
 
     # ── Section anchor: How It Works ──
     st.markdown('<div data-section-id="how-it-works" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)

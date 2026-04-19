@@ -1738,59 +1738,71 @@ def require_login() -> bool:
         <h3>See What You Get &mdash; Free</h3>
         <p>The Quantum Analysis Matrix in action</p>
       </div>
-      <div class="ag-preview-frame">
-        <div class="ag-preview-bar">
-          <div class="ag-preview-dot r"></div>
-          <div class="ag-preview-dot y"></div>
-          <div class="ag-preview-dot g"></div>
-          <div class="ag-preview-url">smartpickpro.com &middot; Quantum Analysis Matrix</div>
-        </div>
-        <div class="ag-preview-body">
-          <div class="ag-preview-header">
-            <div class="ag-preview-title">&#x26A1; Tonight&rsquo;s Top Props</div>
-            <div class="ag-preview-badge">LIVE &middot; 347 Props</div>
-          </div>
-          <div class="ag-mock-row">
-            <div class="ag-mock-head">Player</div>
-            <div class="ag-mock-head" style="text-align:center">Line</div>
-            <div class="ag-mock-head" style="text-align:center">Edge</div>
-            <div class="ag-mock-head" style="text-align:center">SAFE</div>
-          </div>
-          <div class="ag-mock-row">
-            <div class="ag-mock-player">&#x1F525; Luka Donci&#x107; PTS</div>
-            <div class="ag-mock-stat blue">O 28.5</div>
-            <div class="ag-mock-stat green">+6.2%</div>
-            <div class="ag-mock-safe hi">92</div>
-          </div>
-          <div class="ag-mock-row">
-            <div class="ag-mock-player">&#x1F3AF; Jayson Tatum REB</div>
-            <div class="ag-mock-stat blue">O 8.5</div>
-            <div class="ag-mock-stat green">+4.8%</div>
-            <div class="ag-mock-safe hi">87</div>
-          </div>
-          <div class="ag-mock-row">
-            <div class="ag-mock-player">&#x26A1; Tyrese Haliburton AST</div>
-            <div class="ag-mock-stat blue">O 10.5</div>
-            <div class="ag-mock-stat green">+3.9%</div>
-            <div class="ag-mock-safe md">78</div>
-          </div>
-          <div class="ag-mock-row">
-            <div class="ag-mock-player">&#x1F4CA; Anthony Edwards PTS</div>
-            <div class="ag-mock-stat blue">U 26.5</div>
-            <div class="ag-mock-stat green">+5.1%</div>
-            <div class="ag-mock-safe hi">84</div>
-          </div>
-          <div class="ag-mock-row">
-            <div class="ag-mock-player">&#x1F9E0; Nikola Joki&#x107; AST</div>
-            <div class="ag-mock-stat blue">O 9.5</div>
-            <div class="ag-mock-stat green">+2.7%</div>
-            <div class="ag-mock-safe md">73</div>
-          </div>
-        </div>
-      </div>
-      <div class="ag-preview-label">&#x2191; This is real. Sign up and see tonight&rsquo;s full board.</div>
     </div>
     """, unsafe_allow_html=True)
+
+    # ── Product Preview: horizontally scrolling QAM-style cards ──
+    st.html("""<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,255,255,0.7);overflow-y:hidden}
+.fr{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden}
+.tb{display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.04)}
+.td{width:7px;height:7px;border-radius:50%}
+.td.r{background:#f24336}.td.y{background:#F9C62B}.td.g{background:#00D559}
+.tu{flex:1;text-align:center;font-family:'JetBrains Mono',monospace;font-size:0.5rem;color:rgba(255,255,255,0.2)}
+.hd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px}
+.ht2{font-family:'Space Grotesk',sans-serif;font-size:0.78rem;font-weight:700;color:rgba(255,255,255,0.7)}
+.hb{font-family:'JetBrains Mono',monospace;font-size:0.5rem;font-weight:700;color:#00D559;background:rgba(0,213,89,0.08);border:1px solid rgba(0,213,89,0.15);padding:2px 8px;border-radius:100px}
+.sw{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(0,213,89,0.3) transparent;padding:4px 14px 14px}
+.sw::-webkit-scrollbar{height:6px}
+.sw::-webkit-scrollbar-track{background:rgba(255,255,255,0.02);border-radius:100px}
+.sw::-webkit-scrollbar-thumb{background:rgba(0,213,89,0.25);border-radius:100px}
+.tk{display:inline-flex;gap:10px;padding:0}
+.cd{width:156px;flex-shrink:0;background:linear-gradient(168deg,rgba(255,255,255,0.04) 0%,rgba(255,255,255,0.01) 100%);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:0;position:relative;overflow:hidden;transition:border-color .25s,transform .25s,box-shadow .25s}
+.cd:hover{border-color:rgba(0,213,89,0.2);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.3)}
+.cd::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.cd.pp::before{background:linear-gradient(90deg,#00D559,#2D9EFF)}
+.cd.dk::before{background:linear-gradient(90deg,#F9C62B,#ff8c00)}
+.cd.ud::before{background:linear-gradient(90deg,#c084fc,#9333ea)}
+.ch{padding:10px 10px 0;display:flex;align-items:center;justify-content:space-between}
+.cp{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center;gap:4px}
+.cp .dt{width:5px;height:5px;border-radius:50%;display:inline-block}
+.cd.pp .cp{color:#00D559}.cd.pp .cp .dt{background:#00D559}
+.cd.dk .cp{color:#F9C62B}.cd.dk .cp .dt{background:#F9C62B}
+.cd.ud .cp{color:#c084fc}.cd.ud .cp .dt{background:#c084fc}
+.eg{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;color:#F9C62B;background:rgba(249,198,43,0.08);border:1px solid rgba(249,198,43,0.15);padding:2px 6px;border-radius:100px}
+.cb{padding:8px 10px 6px;text-align:center}
+.pl{font-family:'Space Grotesk',sans-serif;font-size:.72rem;font-weight:700;color:rgba(255,255,255,0.92);line-height:1.2;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:600;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+.dr{font-family:'Space Grotesk',sans-serif;font-size:.54rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;margin-bottom:2px}
+.dr.ov{color:#00D559}.dr.un{color:#2D9EFF}
+.ln{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:800;color:rgba(255,255,255,0.95);line-height:1;margin-bottom:2px}
+.st{font-family:'JetBrains Mono',monospace;font-size:.48rem;font-weight:600;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.08em}
+.cf{padding:6px 10px 8px;border-top:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:space-between}
+.sf{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;display:flex;align-items:center;gap:3px}
+.sf .lb{color:rgba(255,255,255,0.2)}.sf .vl{color:#00D559;background:rgba(0,213,89,0.1);padding:1px 5px;border-radius:4px}
+.sf .vl.md{color:#F9C62B;background:rgba(249,198,43,0.1)}
+.ev{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:700;color:#00D559}
+.hi{text-align:center;margin-top:8px;font-size:.55rem;color:rgba(255,255,255,0.18);font-style:italic}
+@media(max-width:520px){.cd{width:140px}.ln{font-size:1.1rem}.pl{font-size:.65rem}}
+</style>
+<div class="fr">
+<div class="tb"><div class="td r"></div><div class="td y"></div><div class="td g"></div><div class="tu">smartpickpro.com &middot; Quantum Analysis Matrix</div></div>
+<div class="hd"><div class="ht2">&#x26A1; Tonight&rsquo;s Top Props</div><div class="hb">LIVE &middot; 347 Props</div></div>
+<div class="sw"><div class="tk">
+<div class="cd pp"><div class="ch"><div class="cp"><span class="dt"></span>PrizePicks</div><div class="eg">+6.2%</div></div><div class="cb"><div class="pl">Luka Donci&#x107;</div><div class="tm">DAL &middot; Points</div><div class="dr ov">&#x25B2; MORE</div><div class="ln">28.5</div><div class="st">PTS</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl">92</span></div><div class="ev">&#x1F525; Top Pick</div></div></div>
+<div class="cd dk"><div class="ch"><div class="cp"><span class="dt"></span>DK Pick6</div><div class="eg">+4.8%</div></div><div class="cb"><div class="pl">Jayson Tatum</div><div class="tm">BOS &middot; Rebounds</div><div class="dr ov">&#x25B2; MORE</div><div class="ln">8.5</div><div class="st">REB</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl">87</span></div><div class="ev">+EV Edge</div></div></div>
+<div class="cd ud"><div class="ch"><div class="cp"><span class="dt"></span>Underdog</div><div class="eg">+5.1%</div></div><div class="cb"><div class="pl">Anthony Edwards</div><div class="tm">MIN &middot; Points</div><div class="dr un">&#x25BC; LESS</div><div class="ln">26.5</div><div class="st">PTS</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl">84</span></div><div class="ev">+EV Edge</div></div></div>
+<div class="cd pp"><div class="ch"><div class="cp"><span class="dt"></span>PrizePicks</div><div class="eg">+3.9%</div></div><div class="cb"><div class="pl">Trae Young</div><div class="tm">ATL &middot; Assists</div><div class="dr ov">&#x25B2; MORE</div><div class="ln">10.5</div><div class="st">AST</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl md">78</span></div><div class="ev">+EV Edge</div></div></div>
+<div class="cd dk"><div class="ch"><div class="cp"><span class="dt"></span>DK Pick6</div><div class="eg">+2.7%</div></div><div class="cb"><div class="pl">Nikola Joki&#x107;</div><div class="tm">DEN &middot; Assists</div><div class="dr ov">&#x25B2; MORE</div><div class="ln">9.5</div><div class="st">AST</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl md">73</span></div><div class="ev">+EV Edge</div></div></div>
+<div class="cd ud"><div class="ch"><div class="cp"><span class="dt"></span>Underdog</div><div class="eg">+5.3%</div></div><div class="cb"><div class="pl">Shai Gilgeous-Alexander</div><div class="tm">OKC &middot; Points</div><div class="dr ov">&#x25B2; MORE</div><div class="ln">30.5</div><div class="st">PTS</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl">90</span></div><div class="ev">&#x1F525; Top Pick</div></div></div>
+<div class="cd pp"><div class="ch"><div class="cp"><span class="dt"></span>PrizePicks</div><div class="eg">+3.4%</div></div><div class="cb"><div class="pl">Cade Cunningham</div><div class="tm">DET &middot; Points</div><div class="dr ov">&#x25B2; MORE</div><div class="ln">23.5</div><div class="st">PTS</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl">86</span></div><div class="ev">+EV Edge</div></div></div>
+<div class="cd dk"><div class="ch"><div class="cp"><span class="dt"></span>DK Pick6</div><div class="eg">+4.1%</div></div><div class="cb"><div class="pl">Tyrese Maxey</div><div class="tm">PHI &middot; Assists</div><div class="dr ov">&#x25B2; MORE</div><div class="ln">5.5</div><div class="st">AST</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl">84</span></div><div class="ev">+EV Edge</div></div></div>
+</div></div>
+</div>
+<div class="hi">&#x2190; Scroll to see tonight&rsquo;s full prop board &#x2192;</div>
+""")
 
     # ── Below-fold: Winning Picks Carousel ───────────────────
     # Uses st.html() to bypass Streamlit's markdown parser which

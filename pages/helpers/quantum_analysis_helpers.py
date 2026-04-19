@@ -595,11 +595,12 @@ def render_quantum_edge_gap_card_html(result: dict, rank: int = 0) -> str:
     )
 
     # == CARD FACE (summary) ==========================================
+    platform_span = f'<span class="qeg-prop-platform">{platform}</span>' if platform else ""
     face_html = (
         f'<div class="qeg-prop-status">'
         f'{rank_html}'
         f'<span class="qeg-tier qeg-tier-{tier_lower}">{tier}</span>'
-        f'{"<span class=\'qeg-prop-platform\'>" + platform + "</span>" if platform else ""}'
+        f'{platform_span}'
         f'</div>'
         f'<div class="qeg-prop-hs-wrap">{hs_img}</div>'
         f'<div class="qeg-prop-team-pos">{team_pos_str}</div>'

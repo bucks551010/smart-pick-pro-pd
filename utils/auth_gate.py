@@ -218,7 +218,7 @@ footer { display: none !important; }
 .stApp > [data-testid="stAppViewContainer"] > section.main .block-container {
     padding: 0 20px !important; max-width: 580px !important;
     margin: 0 auto !important;
-    position: relative; z-index: 9992;
+    position: relative; z-index: 10;
 }
 html, body, .stApp, .stApp * {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
@@ -293,7 +293,8 @@ html, body, .stApp, .stApp * {
 
 /* ── Full-screen canvas ──────────────────────────────────────── */
 .ag-canvas {
-    position:fixed; inset:0; z-index:9990;
+    position:fixed; inset:0; z-index:0;
+    pointer-events:none;
     background: linear-gradient(165deg, #020408 0%, #05091a 20%, #08102a 45%, #0a0e20 70%, #030610 100%);
     background-size:400% 400%;
     animation: agGradShift 25s ease infinite;
@@ -327,7 +328,7 @@ html, body, .stApp, .stApp * {
     animation: agOrbDrift1 24s ease-in-out infinite reverse;
 }
 .ag-scan {
-    position:absolute; left:0; width:100%; height:2px; z-index:9991;
+    position:absolute; left:0; width:100%; height:2px; z-index:1;
     background:linear-gradient(90deg, transparent, rgba(0,213,89,0.3) 20%, rgba(45,158,255,0.25) 50%, rgba(192,132,252,0.2) 80%, transparent);
     animation: agScanLine 7s linear infinite;
     pointer-events:none;
@@ -342,12 +343,7 @@ html, body, .stApp, .stApp * {
     -webkit-mask-image:radial-gradient(ellipse at 50% 40%, black 20%, transparent 75%);
 }
 
-/* ── Scroll wrapper ──────────────────────────────────────────── */
-.ag-scroll {
-    position:fixed; inset:0; z-index:9992;
-    overflow-y:auto; overflow-x:hidden;
-    -webkit-overflow-scrolling:touch;
-}
+/* ── Scroll wrapper — REMOVED, using Streamlit native scroll ── */
 
 /* ── Inner page ──────────────────────────────────────────────── */
 .ag-page {
@@ -359,7 +355,7 @@ html, body, .stApp, .stApp * {
 
 /* ── PLATFORM BANNER (animated ticker) ───────────────────────── */
 .ag-ticker-bar {
-    position:fixed; top:0; left:0; right:0; z-index:9999;
+    position:fixed; top:0; left:0; right:0; z-index:100;
     height:42px; display:flex; align-items:center;
     background: linear-gradient(90deg, #0A0E14, rgba(0,213,89,0.06) 20%, rgba(45,158,255,0.04) 50%, rgba(192,132,252,0.04) 80%, #0A0E14);
     border-bottom:1px solid rgba(255,255,255,0.05);
@@ -1037,10 +1033,6 @@ def require_login() -> bool:
       </div>
     </div>
 
-    <!-- Scroll wrapper -->
-    <div class="ag-scroll">
-    <div class="ag-page">
-
     <!-- Brand -->
     <div class="ag-brand">
       <div class="ag-logo-wrap">{_logo_tag}</div>
@@ -1071,7 +1063,7 @@ def require_login() -> bool:
       </div>
     </div>
 
-    </div></div>
+    </div>
     """, unsafe_allow_html=True)
 
     # ── Tabs (Streamlit widgets) ──────────────────────────

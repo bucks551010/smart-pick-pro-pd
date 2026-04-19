@@ -499,8 +499,8 @@ footer { display: none !important; }
 }
 
 .stApp > [data-testid="stAppViewContainer"] > section.main .block-container {
-    padding: 0 20px !important;
-    max-width: 520px !important;
+    padding: 0 24px !important;
+    max-width: 640px !important;
     margin: 0 auto !important;
     position: relative;
     z-index: 10;
@@ -552,25 +552,37 @@ html, body, .stApp, .stApp * {
 /* ── Background ──────────────────────────────────────────────── */
 .ag-bg {
     position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background: radial-gradient(ellipse at 50% 0%, rgba(0, 213, 89, 0.04) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(45, 158, 255, 0.03) 0%, transparent 40%),
-                radial-gradient(ellipse at 20% 60%, rgba(192, 132, 252, 0.02) 0%, transparent 40%),
+    background: radial-gradient(ellipse at 50% 0%, rgba(0, 213, 89, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(45, 158, 255, 0.04) 0%, transparent 40%),
+                radial-gradient(ellipse at 20% 60%, rgba(192, 132, 252, 0.03) 0%, transparent 40%),
                 #0B0F19;
     overflow: hidden;
 }
 .ag-orb {
     position: absolute; border-radius: 50%; pointer-events: none;
-    filter: blur(100px); opacity: 0.5;
+    filter: blur(120px); opacity: 0.6;
     animation: agOrbFloat 20s ease-in-out infinite;
 }
 .ag-orb-1 {
-    width: 400px; height: 400px; top: -100px; left: -80px;
-    background: rgba(0, 213, 89, 0.07);
+    width: 500px; height: 500px; top: -120px; left: -100px;
+    background: rgba(0, 213, 89, 0.09);
 }
 .ag-orb-2 {
-    width: 350px; height: 350px; bottom: -80px; right: -60px;
-    background: rgba(45, 158, 255, 0.06);
+    width: 450px; height: 450px; bottom: -100px; right: -80px;
+    background: rgba(45, 158, 255, 0.07);
     animation-delay: -7s;
+}
+.ag-orb-3 {
+    width: 350px; height: 350px; top: 40%; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(192, 132, 252, 0.04);
+    animation-delay: -12s;
+}
+
+/* \u2500\u2500 Section divider \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */
+.ag-divider {
+    height: 1px; margin: 36px 40px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
 }
 
 /* ── Ticker bar ──────────────────────────────────────────────── */
@@ -628,69 +640,84 @@ html, body, .stApp, .stApp * {
 /* ── Hero ────────────────────────────────────────────────────── */
 .ag-hero {
     text-align: center;
-    margin: 16px 0 0;
+    margin: 20px 0 0;
     animation: agFadeUp 0.6s 0.08s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .ag-hero h1 {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.85rem; font-weight: 700;
-    line-height: 1.15; letter-spacing: -0.03em;
+    font-size: 2.4rem; font-weight: 700;
+    line-height: 1.1; letter-spacing: -0.035em;
     color: #fff; margin: 0;
 }
 .ag-hero .em {
-    background: linear-gradient(135deg, #00D559, #2D9EFF);
+    background: linear-gradient(135deg, #00D559 0%, #2D9EFF 50%, #c084fc 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 .ag-hero-sub {
-    font-size: 0.88rem; color: rgba(255, 255, 255, 0.4);
-    line-height: 1.65; margin-top: 12px;
-    max-width: 560px; margin-left: auto; margin-right: auto;
+    font-size: 0.92rem; color: rgba(255, 255, 255, 0.45);
+    line-height: 1.7; margin-top: 16px;
+    max-width: 540px; margin-left: auto; margin-right: auto;
 }
 .ag-hero-sub strong {
-    color: rgba(255, 255, 255, 0.8); font-weight: 700;
+    color: rgba(255, 255, 255, 0.85); font-weight: 700;
 }
 .ag-hero-sub2 {
+    display: inline-block; margin-top: 14px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.72rem; font-weight: 700;
-    color: #00D559; margin-top: 10px;
-    text-transform: uppercase; letter-spacing: 0.05em;
+    font-size: 0.68rem; font-weight: 700;
+    color: #00D559;
+    background: rgba(0, 213, 89, 0.06);
+    border: 1px solid rgba(0, 213, 89, 0.15);
+    padding: 6px 18px; border-radius: 100px;
+    text-transform: uppercase; letter-spacing: 0.06em;
 }
 
 /* ── Proof grid (6 metric cards) ─────────────────────────────── */
 .ag-proof-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-    margin: 20px 0 24px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    margin: 24px 0 28px;
     animation: agFadeUp 0.6s 0.14s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .ag-proof-card {
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 12px; padding: 14px 10px 12px;
-    text-align: center; position: relative;
-    transition: border-color 0.25s, transform 0.25s;
+    background: linear-gradient(168deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px; padding: 18px 12px 16px;
+    text-align: center; position: relative; overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
 }
+.ag-proof-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, #00D559, #2D9EFF);
+    opacity: 0; transition: opacity 0.3s;
+}
+.ag-proof-card:hover::before { opacity: 1; }
 .ag-proof-card:hover {
-    border-color: rgba(0, 213, 89, 0.15);
-    transform: translateY(-2px);
+    border-color: rgba(0, 213, 89, 0.2);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 213, 89, 0.05);
 }
 .ag-proof-ico {
-    font-size: 1.2rem; margin-bottom: 4px;
+    font-size: 1.5rem; margin-bottom: 6px;
+    filter: drop-shadow(0 2px 8px rgba(0, 213, 89, 0.2));
 }
 .ag-proof-num {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 1.3rem; font-weight: 800;
-    color: #00D559; line-height: 1.1;
+    font-size: 1.6rem; font-weight: 800;
+    background: linear-gradient(135deg, #00D559, #2D9EFF);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
 }
 .ag-proof-lbl {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.68rem; font-weight: 700;
-    color: rgba(255, 255, 255, 0.6);
-    margin-top: 2px;
+    font-size: 0.72rem; font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 4px;
 }
 .ag-proof-detail {
-    font-size: 0.52rem; color: rgba(255, 255, 255, 0.2);
-    margin-top: 4px; line-height: 1.4;
+    font-size: 0.55rem; color: rgba(255, 255, 255, 0.25);
+    margin-top: 6px; line-height: 1.45;
 }
 
 /* Keep old proof bar for backward compat */
@@ -711,49 +738,54 @@ html, body, .stApp, .stApp * {
 
 /* ── "What's Inside" feature showcase ────────────────────────── */
 .ag-inside {
-    margin: 32px 0 0;
+    margin: 36px 0 0;
     animation: agFadeUp 0.6s 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .ag-inside-grid {
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
 }
 .ag-inside-card {
-    background: linear-gradient(168deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01));
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 14px; padding: 16px 14px 14px;
+    background: linear-gradient(168deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.008));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px; padding: 20px 16px 16px;
     position: relative; overflow: hidden;
-    transition: border-color 0.25s, transform 0.25s;
+    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
 }
 .ag-inside-card:hover {
-    border-color: rgba(192, 132, 252, 0.2);
-    transform: translateY(-2px);
+    border-color: rgba(192, 132, 252, 0.25);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 0 20px rgba(192, 132, 252, 0.04);
 }
 .ag-inside-card::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, rgba(192, 132, 252, 0.3), rgba(96, 165, 250, 0.2));
-    opacity: 0; transition: opacity 0.25s;
+    background: linear-gradient(90deg, #c084fc, #60a5fa, #00D559);
+    opacity: 0; transition: opacity 0.3s;
 }
 .ag-inside-card:hover::before { opacity: 1; }
 .ag-inside-ico {
-    font-size: 1.3rem; margin-bottom: 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, rgba(192, 132, 252, 0.1), rgba(96, 165, 250, 0.06));
+    border: 1px solid rgba(192, 132, 252, 0.1);
+    font-size: 1.3rem; margin-bottom: 10px;
 }
 .ag-inside-name {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.78rem; font-weight: 700;
-    color: rgba(255, 255, 255, 0.85);
-    margin-bottom: 4px;
+    font-size: 0.82rem; font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 6px;
 }
 .ag-inside-desc {
-    font-size: 0.62rem; color: rgba(255, 255, 255, 0.35);
-    line-height: 1.55;
+    font-size: 0.64rem; color: rgba(255, 255, 255, 0.38);
+    line-height: 1.6;
 }
 .ag-inside-tag {
-    display: inline-block; margin-top: 8px;
+    display: inline-block; margin-top: 10px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.42rem; font-weight: 800;
+    font-size: 0.44rem; font-weight: 800;
     color: #c084fc; background: rgba(192, 132, 252, 0.08);
     border: 1px solid rgba(192, 132, 252, 0.15);
-    padding: 2px 8px; border-radius: 100px;
+    padding: 3px 10px; border-radius: 100px;
     text-transform: uppercase; letter-spacing: 0.08em;
 }
 
@@ -869,56 +901,75 @@ html, body, .stApp, .stApp * {
 
 /* Section header */
 .ag-section-head {
-    text-align: center; margin-bottom: 16px;
+    text-align: center; margin-bottom: 20px;
+    position: relative;
+}
+.ag-section-head::before {
+    content: ''; display: block; width: 40px; height: 3px; margin: 0 auto 14px;
+    background: linear-gradient(90deg, #00D559, #2D9EFF);
+    border-radius: 4px;
 }
 .ag-section-head h3 {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.15rem; font-weight: 700;
-    color: #fff; margin: 0 0 4px;
-    letter-spacing: -0.02em;
+    font-size: 1.35rem; font-weight: 700;
+    color: #fff; margin: 0 0 6px;
+    letter-spacing: -0.025em;
+}
+.ag-section-head h3 .em {
+    background: linear-gradient(135deg, #00D559 0%, #2D9EFF 50%, #c084fc 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 .ag-section-head p {
-    font-size: 0.72rem; color: rgba(255, 255, 255, 0.3);
-    margin: 0;
+    font-size: 0.74rem; color: rgba(255, 255, 255, 0.35);
+    margin: 0; line-height: 1.6;
 }
 
 /* ── Competitor graveyard ────────────────────────────────────── */
 .ag-graveyard {
-    margin: 40px 0 0;
+    margin: 44px 0 0;
     animation: agFadeUp 0.6s 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .ag-gy-head {
-    text-align: center; margin-bottom: 18px;
+    text-align: center; margin-bottom: 20px; position: relative;
+}
+.ag-gy-head::before {
+    content: ''; display: block; width: 40px; height: 3px; margin: 0 auto 14px;
+    background: linear-gradient(90deg, #f24336, #F9C62B);
+    border-radius: 4px;
 }
 .ag-gy-head h3 {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.25rem; font-weight: 800;
+    font-size: 1.35rem; font-weight: 800;
     color: #fff; margin: 0 0 6px;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
 }
 .ag-gy-head h3 .em {
-    background: linear-gradient(135deg, #00D559, #2D9EFF);
+    background: linear-gradient(135deg, #00D559 0%, #2D9EFF 50%, #c084fc 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 .ag-gy-head p {
     font-size: 0.74rem; color: rgba(255, 255, 255, 0.35);
-    margin: 0; line-height: 1.5;
+    margin: 0; line-height: 1.6;
 }
 
 /* Competitor cards */
 .ag-comp-grid {
     display: grid; grid-template-columns: 1fr; gap: 8px;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 .ag-comp {
     display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px;
-    background: rgba(242, 67, 54, 0.03);
+    background: linear-gradient(168deg, rgba(242, 67, 54, 0.04), rgba(242, 67, 54, 0.01));
     border: 1px solid rgba(242, 67, 54, 0.08);
-    border-radius: 10px; padding: 12px 14px;
-    transition: border-color 0.2s;
+    border-radius: 12px; padding: 14px 16px;
+    transition: border-color 0.3s, transform 0.3s;
 }
-.ag-comp:hover { border-color: rgba(242, 67, 54, 0.15); }
+.ag-comp:hover {
+    border-color: rgba(242, 67, 54, 0.18);
+    transform: translateY(-1px);
+}
 .ag-comp-name {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 0.78rem; font-weight: 700;
@@ -940,16 +991,18 @@ html, body, .stApp, .stApp * {
 /* Our card (the winner) */
 .ag-us {
     display: flex; flex-direction: column; align-items: center;
-    background: rgba(0, 213, 89, 0.04);
-    border: 2px solid rgba(0, 213, 89, 0.2);
-    border-radius: 14px; padding: 18px 14px;
+    background: linear-gradient(168deg, rgba(0, 213, 89, 0.06), rgba(0, 213, 89, 0.02));
+    border: 2px solid rgba(0, 213, 89, 0.25);
+    border-radius: 16px; padding: 22px 16px;
     text-align: center; position: relative;
-    margin-top: 4px;
+    margin-top: 6px;
     animation: agPulse 3s ease-in-out infinite;
+    box-shadow: 0 0 40px rgba(0, 213, 89, 0.06);
 }
 .ag-us::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
     background: linear-gradient(90deg, transparent, #00D559, #2D9EFF, transparent);
+    border-radius: 16px 16px 0 0;
 }
 .ag-us-label {
     font-family: 'Space Grotesk', sans-serif;
@@ -983,9 +1036,9 @@ html, body, .stApp, .stApp * {
 }
 .ag-tbl {
     width: 100%; border-collapse: separate; border-spacing: 0;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 14px; overflow: hidden;
+    background: linear-gradient(168deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.008));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px; overflow: hidden;
     font-size: 0.72rem;
 }
 .ag-tbl thead th {
@@ -1011,16 +1064,22 @@ html, body, .stApp, .stApp * {
 
 /* ── "Bottom Line" callout ───────────────────────────────────── */
 .ag-bottom-line {
-    background: linear-gradient(135deg, rgba(0, 213, 89, 0.06), rgba(45, 158, 255, 0.04));
-    border: 1px solid rgba(0, 213, 89, 0.15);
-    border-radius: 14px; padding: 20px 18px;
-    text-align: center; margin: 24px 0 0;
+    background: linear-gradient(135deg, rgba(0, 213, 89, 0.08), rgba(45, 158, 255, 0.05));
+    border: 1px solid rgba(0, 213, 89, 0.18);
+    border-radius: 16px; padding: 24px 20px;
+    text-align: center; margin: 28px 0 0;
     animation: agFadeUp 0.6s 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+    position: relative; overflow: hidden;
+    box-shadow: 0 0 40px rgba(0, 213, 89, 0.04);
+}
+.ag-bottom-line::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #00D559, #2D9EFF, transparent);
 }
 .ag-bl-headline {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.95rem; font-weight: 800;
-    color: #fff; margin: 0 0 8px;
+    font-size: 1.05rem; font-weight: 800;
+    color: #fff; margin: 0 0 10px;
 }
 .ag-bl-headline .em {
     background: linear-gradient(135deg, #00D559, #2D9EFF);
@@ -1040,26 +1099,39 @@ html, body, .stApp, .stApp * {
     animation: agFadeUp 0.6s 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .ag-feat {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 14px; padding: 18px 10px 14px;
-    text-align: center;
-    transition: border-color 0.2s, transform 0.2s;
+    background: linear-gradient(168deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.008));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px; padding: 20px 12px 16px;
+    text-align: center; position: relative; overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
 }
 .ag-feat:hover {
-    border-color: rgba(255, 255, 255, 0.1);
-    transform: translateY(-2px);
+    border-color: rgba(0, 213, 89, 0.2);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
 }
-.ag-feat-ico { font-size: 1.3rem; margin-bottom: 6px; display: block; }
+.ag-feat::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, #00D559, #2D9EFF);
+    opacity: 0; transition: opacity 0.3s;
+}
+.ag-feat:hover::before { opacity: 1; }
+.ag-feat-ico {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border-radius: 10px;
+    background: linear-gradient(135deg, rgba(0, 213, 89, 0.1), rgba(45, 158, 255, 0.06));
+    border: 1px solid rgba(0, 213, 89, 0.08);
+    font-size: 1.2rem; margin-bottom: 8px;
+}
 .ag-feat-name {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.7rem; font-weight: 700;
-    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.72rem; font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
     line-height: 1.2;
 }
 .ag-feat-desc {
-    font-size: 0.58rem; color: rgba(255, 255, 255, 0.28);
-    margin-top: 3px;
+    font-size: 0.58rem; color: rgba(255, 255, 255, 0.32);
+    margin-top: 4px; line-height: 1.5;
 }
 
 /* ── Metric counters ─────────────────────────────────────────── */
@@ -1069,10 +1141,15 @@ html, body, .stApp, .stApp * {
     animation: agFadeUp 0.6s 0.44s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .ag-stat {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 12px; padding: 14px 8px 10px;
-    text-align: center;
+    background: linear-gradient(168deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.008));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px; padding: 16px 10px 12px;
+    text-align: center; position: relative; overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s;
+}
+.ag-stat:hover {
+    border-color: rgba(0, 213, 89, 0.15);
+    transform: translateY(-2px);
 }
 .ag-stat-val {
     font-family: 'JetBrains Mono', monospace;
@@ -1087,26 +1164,31 @@ html, body, .stApp, .stApp * {
 
 /* ── Testimonials ────────────────────────────────────────────── */
 .ag-reviews {
-    margin: 28px 0 0;
+    margin: 32px 0 0;
     animation: agFadeUp 0.6s 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .ag-review {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 12px; padding: 16px 18px;
-    margin-bottom: 8px;
+    background: linear-gradient(168deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.008));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px; padding: 18px 20px;
+    margin-bottom: 10px; position: relative;
+    transition: border-color 0.3s, transform 0.3s;
+}
+.ag-review:hover {
+    border-color: rgba(0, 213, 89, 0.15);
+    transform: translateY(-1px);
 }
 .ag-review-text {
-    font-size: 0.8rem; color: rgba(255, 255, 255, 0.55);
-    font-style: italic; line-height: 1.5;
+    font-size: 0.82rem; color: rgba(255, 255, 255, 0.55);
+    font-style: italic; line-height: 1.55;
 }
 .ag-review-author {
-    font-size: 0.66rem; font-weight: 700;
-    color: rgba(0, 213, 89, 0.6);
-    margin-top: 6px;
+    font-size: 0.68rem; font-weight: 700;
+    color: rgba(0, 213, 89, 0.7);
+    margin-top: 8px;
 }
 .ag-review-stars {
-    color: #F9C62B; font-size: 0.6rem; margin-top: 2px;
+    color: #F9C62B; font-size: 0.65rem; margin-top: 3px;
 }
 
 /* ── Pricing ─────────────────────────────────────────────────── */
@@ -1118,17 +1200,29 @@ html, body, .stApp, .stApp * {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
 }
 .ag-price {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 14px; padding: 18px 14px;
-    text-align: center;
-    transition: border-color 0.2s;
+    background: linear-gradient(168deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.008));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px; padding: 22px 16px;
+    text-align: center; position: relative; overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
 }
-.ag-price:hover { border-color: rgba(255, 255, 255, 0.1); }
+.ag-price:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    transform: translateY(-2px);
+}
 .ag-price.pop {
-    border-color: rgba(0, 213, 89, 0.25);
-    background: rgba(0, 213, 89, 0.03);
+    border-color: rgba(0, 213, 89, 0.3);
+    background: linear-gradient(168deg, rgba(0, 213, 89, 0.06), rgba(0, 213, 89, 0.015));
     position: relative;
+    box-shadow: 0 0 40px rgba(0, 213, 89, 0.05);
+}
+.ag-price.pop:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 0 40px rgba(0, 213, 89, 0.08);
+}
+.ag-price.pop::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, #00D559, #2D9EFF);
 }
 .ag-price.pop::after {
     content: 'MOST POPULAR'; position: absolute; top: -8px; left: 50%;
@@ -1317,36 +1411,49 @@ html, body, .stApp, .stApp * {
 
 /* ── How It Works (3-step) ───────────────────────────────────── */
 .ag-how {
-    margin: 36px 0 0;
+    margin: 40px 0 0;
     animation: agFadeUp 0.6s 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .ag-how-steps {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
     position: relative;
 }
 .ag-how-step {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 14px; padding: 20px 14px 16px;
-    text-align: center; position: relative;
+    background: linear-gradient(168deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px; padding: 22px 14px 18px;
+    text-align: center; position: relative; overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
 }
+.ag-how-step:hover {
+    border-color: rgba(0, 213, 89, 0.2);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+.ag-how-step::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, #00D559, #2D9EFF);
+    opacity: 0; transition: opacity 0.3s;
+}
+.ag-how-step:hover::before { opacity: 1; }
 .ag-how-num {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 28px; height: 28px; border-radius: 50%;
+    width: 32px; height: 32px; border-radius: 50%;
     background: linear-gradient(135deg, #00D559, #2D9EFF);
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem; font-weight: 800; color: #0B0F19;
-    margin-bottom: 8px;
+    font-size: 0.72rem; font-weight: 800; color: #0B0F19;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 16px rgba(0, 213, 89, 0.2);
 }
-.ag-how-ico { font-size: 1.4rem; display: block; margin-bottom: 6px; }
+.ag-how-ico { font-size: 1.5rem; display: block; margin-bottom: 8px; }
 .ag-how-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.78rem; font-weight: 700;
-    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.82rem; font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
 }
 .ag-how-desc {
-    font-size: 0.6rem; color: rgba(255, 255, 255, 0.35);
-    margin-top: 6px; line-height: 1.55;
+    font-size: 0.62rem; color: rgba(255, 255, 255, 0.38);
+    margin-top: 8px; line-height: 1.6;
 }
 .ag-how-arrow {
     position: absolute; top: 50%; right: -10px;
@@ -1478,18 +1585,18 @@ html, body, .stApp, .stApp * {
 }
 /* ── Platform Pick Cards (PrizePicks / DK Pick6 / Underdog style) ── */
 .ag-pick-card {
-    width: 172px; flex-shrink: 0;
-    background: linear-gradient(168deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 16px; padding: 0;
+    width: 180px; flex-shrink: 0;
+    background: linear-gradient(168deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.012) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px; padding: 0;
     position: relative; overflow: hidden;
-    transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
     cursor: default;
 }
 .ag-pick-card:hover {
-    border-color: rgba(0, 213, 89, 0.2);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    border-color: rgba(0, 213, 89, 0.25);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 36px rgba(0,0,0,0.35), 0 0 24px rgba(0, 213, 89, 0.05);
 }
 .ag-pick-card::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
@@ -1899,17 +2006,17 @@ html, body, .stApp, .stApp * {
 .ag-cta2-btn {
     display: inline-block;
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.82rem; font-weight: 700;
+    font-size: 0.88rem; font-weight: 700;
     color: #0B0F19; background: linear-gradient(135deg, #00D559, #00B74D);
-    padding: 12px 32px; border-radius: 12px;
+    padding: 14px 40px; border-radius: 14px;
     text-decoration: none;
     box-shadow: 0 4px 24px rgba(0, 213, 89, 0.3);
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
     animation: agPulse 3s ease-in-out infinite;
 }
 .ag-cta2-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 32px rgba(0, 213, 89, 0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 40px rgba(0, 213, 89, 0.45);
 }
 .ag-cta2-trust {
     font-size: 0.55rem; color: rgba(255, 255, 255, 0.15);
@@ -2004,6 +2111,7 @@ def require_login() -> bool:
     <div class="ag-bg">
       <div class="ag-orb ag-orb-1"></div>
       <div class="ag-orb ag-orb-2"></div>
+      <div class="ag-orb ag-orb-3"></div>
     </div>
 
     <div class="ag-ticker">
@@ -2013,14 +2121,14 @@ def require_login() -> bool:
     <div class="ag-logo-section">{_logo_html}</div>
 
     <div class="ag-hero">
-      <h1>The House Has a Problem.<br><span class="em">It&rsquo;s Us.</span></h1>
+      <h1>The House Has<br>a Problem.<br><span class="em">It&rsquo;s Us.</span></h1>
       <div class="ag-hero-sub">
         The only <strong>AI-powered NBA prop analysis platform</strong> that fuses
         <strong>6 machine-learning models</strong> into a single confidence score &mdash;
-        scanning <strong>300+ props every night</strong> so you don&rsquo;t have to.
+        scanning <strong>300+ props every night</strong> across PrizePicks, DraftKings &amp; Underdog.
       </div>
       <div class="ag-hero-sub2">
-        Free forever. No credit card. No catch.
+        &#x1F50B; Free forever &nbsp;&bull;&nbsp; No credit card &nbsp;&bull;&nbsp; No catch
       </div>
     </div>
 
@@ -2150,6 +2258,8 @@ def require_login() -> bool:
       </div>
     </div>
 
+    <div class="ag-divider"></div>
+
     <!-- What's Inside: Feature Showcase -->
     <div class="ag-inside">
       <div class="ag-section-head">
@@ -2196,6 +2306,8 @@ def require_login() -> bool:
       </div>
     </div>
 
+    <div class="ag-divider"></div>
+
     <!-- Product Preview -->
     <div class="ag-preview">
       <div class="ag-section-head">
@@ -2218,9 +2330,10 @@ def require_login() -> bool:
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,255,255,0.7);overflow-y:hidden}
 .em{color:#00D559}
-.sh{text-align:center;margin-bottom:14px}
-.sh h3{font-family:'Space Grotesk',sans-serif;font-size:1.3rem;font-weight:700;color:#fff;margin-bottom:4px}
-.sh p{font-size:0.72rem;color:rgba(255,255,255,0.35)}
+.sh{text-align:center;margin-bottom:18px;position:relative}
+.sh::before{content:'';display:block;width:40px;height:3px;margin:0 auto 14px;background:linear-gradient(90deg,#00D559,#2D9EFF);border-radius:4px}
+.sh h3{font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:700;color:#fff;margin-bottom:6px;letter-spacing:-0.025em}
+.sh p{font-size:0.74rem;color:rgba(255,255,255,0.35);line-height:1.6}
 .badge{display:block;width:fit-content;margin:0 auto 14px;font-family:'JetBrains Mono',monospace;font-size:0.55rem;font-weight:700;color:#00D559;background:rgba(0,213,89,0.06);border:1px solid rgba(0,213,89,0.12);padding:3px 10px;border-radius:100px;text-transform:uppercase;letter-spacing:0.06em}
 .badge .pulse{width:6px;height:6px;border-radius:50%;background:#00D559;display:inline-block;animation:lp 2s ease-in-out infinite}
 @keyframes lp{0%,100%{opacity:1}50%{opacity:0.3}}
@@ -2229,8 +2342,8 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 .sw::-webkit-scrollbar-track{background:rgba(255,255,255,0.02);border-radius:100px}
 .sw::-webkit-scrollbar-thumb{background:rgba(0,213,89,0.25);border-radius:100px}
 .tk{display:inline-flex;gap:12px;padding:0 4px}
-.cd{width:172px;flex-shrink:0;background:linear-gradient(168deg,rgba(255,255,255,0.04) 0%,rgba(255,255,255,0.01) 100%);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:0;position:relative;overflow:hidden;transition:border-color .25s,transform .25s,box-shadow .25s}
-.cd:hover{border-color:rgba(0,213,89,0.2);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
+.cd{width:180px;flex-shrink:0;background:linear-gradient(168deg,rgba(255,255,255,0.05) 0%,rgba(255,255,255,0.012) 100%);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:0;position:relative;overflow:hidden;transition:border-color .3s,transform .3s,box-shadow .3s}
+.cd:hover{border-color:rgba(0,213,89,0.25);transform:translateY(-4px);box-shadow:0 12px 36px rgba(0,0,0,0.35),0 0 24px rgba(0,213,89,0.05)}
 .cd::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .cd.pp::before{background:linear-gradient(90deg,#00D559,#2D9EFF)}
 .cd.dk::before{background:linear-gradient(90deg,#F9C62B,#ff8c00)}
@@ -2438,12 +2551,13 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,255,255,0.7)}
 .em{color:#00D559}
-.sh{text-align:center;margin-bottom:14px}
-.sh h3{font-family:'Space Grotesk',sans-serif;font-size:1.15rem;font-weight:700;color:#fff;margin-bottom:4px}
-.sh p{font-size:0.72rem;color:rgba(255,255,255,0.35)}
-.bdg{display:block;width:fit-content;margin:0 auto 10px;font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:800;color:#2D9EFF;background:rgba(45,158,255,0.06);border:1px solid rgba(45,158,255,0.12);padding:3px 10px;border-radius:100px;text-transform:uppercase;letter-spacing:.06em}
-.tw{background:rgba(45,158,255,0.03);border:1px solid rgba(45,158,255,0.08);border-radius:14px;padding:16px 18px;margin-bottom:12px}
-.tw-h{font-family:'Space Grotesk',sans-serif;font-size:.78rem;font-weight:800;color:rgba(255,255,255,0.7);margin:0 0 8px}
+.sh{text-align:center;margin-bottom:18px;position:relative}
+.sh::before{content:'';display:block;width:40px;height:3px;margin:0 auto 14px;background:linear-gradient(90deg,#2D9EFF,#c084fc);border-radius:4px}
+.sh h3{font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:700;color:#fff;margin-bottom:6px;letter-spacing:-0.025em}
+.sh p{font-size:0.74rem;color:rgba(255,255,255,0.35);line-height:1.6}
+.bdg{display:block;width:fit-content;margin:0 auto 12px;font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:800;color:#2D9EFF;background:rgba(45,158,255,0.06);border:1px solid rgba(45,158,255,0.12);padding:3px 10px;border-radius:100px;text-transform:uppercase;letter-spacing:.06em}
+.tw{background:linear-gradient(168deg,rgba(45,158,255,0.04),rgba(45,158,255,0.01));border:1px solid rgba(45,158,255,0.1);border-radius:16px;padding:18px 20px;margin-bottom:14px}
+.tw-h{font-family:'Space Grotesk',sans-serif;font-size:.82rem;font-weight:800;color:rgba(255,255,255,0.75);margin:0 0 10px}
 .tw-l{list-style:none;padding:0;margin:0}
 .tw-i{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:.66rem;color:rgba(255,255,255,0.4);line-height:1.5}
 .tw-ic{flex-shrink:0;font-size:.72rem;margin-top:1px}
@@ -2520,12 +2634,14 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,255,255,0.7)}
-.em{background:linear-gradient(135deg,#00D559,#2D9EFF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.sh{text-align:center;margin-bottom:16px}
-.sh h3{font-family:'Space Grotesk',sans-serif;font-size:1.15rem;font-weight:700;color:#fff;margin:0 0 4px;letter-spacing:-0.02em}
-.sh p{font-size:0.72rem;color:rgba(255,255,255,0.3);margin:0}
+.em{background:linear-gradient(135deg,#00D559 0%,#2D9EFF 50%,#c084fc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sh{text-align:center;margin-bottom:20px;position:relative}
+.sh::before{content:'';display:block;width:40px;height:3px;margin:0 auto 14px;background:linear-gradient(90deg,#00D559,#2D9EFF);border-radius:4px}
+.sh h3{font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:700;color:#fff;margin:0 0 6px;letter-spacing:-0.025em}
+.sh p{font-size:0.74rem;color:rgba(255,255,255,0.35);margin:0;line-height:1.6}
 /* Tier cards */
-.tc{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px 18px;margin:12px 0 0;position:relative;overflow:hidden}
+.tc{background:linear-gradient(168deg,rgba(255,255,255,0.04),rgba(255,255,255,0.008));border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:22px 20px;margin:14px 0 0;position:relative;overflow:hidden;transition:border-color 0.3s,transform 0.3s,box-shadow 0.3s}
+.tc:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,0.2)}
 .tc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
 .tc.tf::before{background:linear-gradient(90deg,#708090,#A0AABE)}
 .tc.ts::before{background:linear-gradient(90deg,#F9C62B,#ff8c00)}

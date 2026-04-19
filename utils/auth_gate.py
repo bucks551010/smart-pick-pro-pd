@@ -5267,9 +5267,12 @@ document.getElementById('ctaScrollBtn').addEventListener('click',function(e){
   try{
     var p=window.parent;
     if(p&&p.document){
-      var main=p.document.querySelector('[data-testid="stMainBlockContainer"]')||p.document.querySelector('.main')||p.document.querySelector('section.main');
-      if(main){main.scrollIntoView({behavior:'smooth',block:'start'});return;}
-      p.document.documentElement.scrollTop=0;
+      var tabs=p.document.querySelectorAll('button[data-baseweb="tab"]');
+      for(var i=0;i<tabs.length;i++){
+        if(tabs[i].textContent.indexOf('Create')!==-1){
+          tabs[i].click();tabs[i].scrollIntoView({behavior:'smooth',block:'center'});return;
+        }
+      }
       p.scrollTo({top:0,behavior:'smooth'});
     }
   }catch(err){

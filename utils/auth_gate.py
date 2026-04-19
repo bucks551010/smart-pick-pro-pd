@@ -77,6 +77,290 @@ def _verify_password(plain: str, hashed: str) -> bool:
 
 # ── Database helpers ──────────────────────────────────────────
 
+# ── Preview-picks loader (for the auth gate "See What You Get" section) ───
+
+import html as _html_mod
+from datetime import datetime, timezone, timedelta
+
+
+def _nba_today_str() -> str:
+    """Return today's date in ISO format using ET (NBA timezone)."""
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+    except Exception:
+        return datetime.now(timezone(timedelta(hours=-5))).strftime("%Y-%m-%d")
+
+
+def _display_stat_label(raw: str) -> str:
+    """Convert internal stat key to a short display label."""
+    _MAP = {
+        "pts": "PTS", "points": "PTS",
+        "reb": "REB", "rebounds": "REB",
+        "ast": "AST", "assists": "AST",
+        "stl": "STL", "steals": "STL",
+        "blk": "BLK", "blocks": "BLK",
+        "3pm": "3PM", "threes": "3PM", "fg3m": "3PM",
+        "pts+reb": "P+R", "pts+ast": "P+A", "pts+reb+ast": "PRA",
+        "reb+ast": "R+A", "stl+blk": "S+B",
+        "turnovers": "TO", "tov": "TO",
+        "fantasy_score": "FPTS",
+    }
+    return _MAP.get(raw.lower().strip(), raw.upper()[:6])
+
+
+def _load_top_preview_picks(limit: int = 5) -> list[dict]:
+    """Load today's top analysis picks from the database for the landing page preview.
+
+    Falls back to the latest available day if today has no picks yet.
+    Returns a list of dicts with pick data, sorted by confidence descending.
+    """
+    initialize_database()
+    try:
+        with get_database_connection() as conn:
+            conn.row_factory = sqlite3.Row
+            today = _nba_today_str()
+            # Try today first, then fall back to latest available date
+            for date_query in [today, None]:
+                if date_query:
+                    rows = conn.execute(
+                        """SELECT player_name, team, stat_type, prop_line, direction,
+                                  platform, confidence_score, probability_over,
+                                  edge_percentage, tier
+                           FROM all_analysis_picks
+                           WHERE pick_date = ?
+                           ORDER BY confidence_score DESC
+                           LIMIT ?""",
+                        (date_query, limit),
+                    ).fetchall()
+                else:
+                    rows = conn.execute(
+                        """SELECT player_name, team, stat_type, prop_line, direction,
+                                  platform, confidence_score, probability_over,
+                                  edge_percentage, tier
+                           FROM all_analysis_picks
+                           ORDER BY pick_date DESC, confidence_score DESC
+                           LIMIT ?""",
+                        (limit,),
+                    ).fetchall()
+                if rows:
+                    return [dict(r) for r in rows]
+    except Exception as exc:
+        _logger.debug("_load_top_preview_picks: %s", exc)
+    return []
+
+
+def _build_preview_section_html(picks: list[dict]) -> str:
+    """Build the 'See What You Get' horizontally-scrolling platform-pick cards.
+
+    Uses the same visual language as the QAM Platform AI Picks cards:
+    headshot, team badge, big line number, direction, and metrics row.
+    If *picks* is empty, returns a static fallback section.
+    """
+    # ── CSS (self-contained inside the st.html iframe) ──
+    css = """<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,255,255,.7);overflow-y:hidden}
+/* Frame */
+.pv-frame{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden}
+.pv-titlebar{display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.04)}
+.pv-dot{width:7px;height:7px;border-radius:50%}.pv-dot.r{background:#f24336}.pv-dot.y{background:#F9C62B}.pv-dot.g{background:#00D559}
+.pv-url{flex:1;text-align:center;font-family:'JetBrains Mono',monospace;font-size:.5rem;color:rgba(255,255,255,.2)}
+.pv-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px}
+.pv-title{font-family:'Space Grotesk',sans-serif;font-size:.78rem;font-weight:700;color:rgba(255,255,255,.7)}
+.pv-live{font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:700;color:#00D559;background:rgba(0,213,89,.08);border:1px solid rgba(0,213,89,.15);padding:2px 8px;border-radius:100px}
+/* Scroll track */
+.pv-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(192,132,252,.3) transparent;padding:4px 14px 14px}
+.pv-scroll::-webkit-scrollbar{height:6px}
+.pv-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,.02);border-radius:100px}
+.pv-scroll::-webkit-scrollbar-thumb{background:rgba(192,132,252,.25);border-radius:100px}
+.pv-track{display:inline-flex;gap:12px;padding:0}
+/* Card */
+.pv-card{width:200px;flex-shrink:0;background:linear-gradient(168deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.07);border-radius:16px;position:relative;overflow:hidden;transition:border-color .25s,transform .25s,box-shadow .25s}
+.pv-card:hover{border-color:rgba(192,132,252,.25);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.pv-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#c084fc,#60a5fa)}
+/* Rank badge */
+.pv-rank{position:absolute;top:8px;right:8px;font-family:'JetBrains Mono',monospace;font-size:.55rem;font-weight:800;color:rgba(255,255,255,.15)}
+/* Status bar */
+.pv-status{padding:10px 10px 0;display:flex;align-items:center;gap:6px}
+.pv-badge{font-family:'JetBrains Mono',monospace;font-size:.48rem;font-weight:800;color:#c084fc;display:flex;align-items:center;gap:4px}
+.pv-badge-icon{font-size:.55rem}
+/* Headshot */
+.pv-hs-wrap{text-align:center;padding:8px 0 2px}
+.pv-headshot{width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid rgba(192,132,252,.2);background:rgba(255,255,255,.03)}
+/* Info */
+.pv-team{font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:600;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.1em;text-align:center}
+.pv-name{font-family:'Space Grotesk',sans-serif;font-size:.76rem;font-weight:700;color:rgba(255,255,255,.92);text-align:center;line-height:1.2;margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px}
+/* Line area */
+.pv-line-area{text-align:center;padding:4px 0 6px}
+.pv-line{font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:800;color:rgba(255,255,255,.95);line-height:1}
+.pv-stat{font-family:'JetBrains Mono',monospace;font-size:.48rem;font-weight:600;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+/* Direction */
+.pv-dir{text-align:center;padding:4px 0 8px}
+.pv-dir span{font-family:'Space Grotesk',sans-serif;font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:3px 12px;border-radius:100px}
+.pv-dir span.more{color:#00D559;background:rgba(0,213,89,.1);border:1px solid rgba(0,213,89,.15)}
+.pv-dir span.less{color:#60a5fa;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.15)}
+/* Metrics */
+.pv-metrics{display:flex;justify-content:space-around;padding:8px 6px;border-top:1px solid rgba(255,255,255,.04)}
+.pv-metric{text-align:center}
+.pv-metric-val{font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:700;color:#c084fc}
+.pv-metric-label{font-family:'JetBrains Mono',monospace;font-size:.38rem;font-weight:600;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
+/* hint */
+.pv-hint{text-align:center;margin-top:8px;font-size:.55rem;color:rgba(255,255,255,.18);font-style:italic}
+@media(max-width:520px){.pv-card{width:170px}.pv-line{font-size:1.2rem}.pv-name{font-size:.68rem}.pv-headshot{width:60px;height:60px}}
+</style>"""
+
+    # ── Build cards ──
+    if not picks:
+        # Static fallback when no analysis data exists yet
+        _fallback = [
+            {"player_name": "Luka Dončić", "team": "DAL", "stat_type": "points",
+             "prop_line": 28.5, "direction": "OVER", "platform": "PrizePicks",
+             "confidence_score": 92, "probability_over": 0.71, "edge_percentage": 6.2, "tier": "Platinum"},
+            {"player_name": "Jayson Tatum", "team": "BOS", "stat_type": "rebounds",
+             "prop_line": 8.5, "direction": "OVER", "platform": "PrizePicks",
+             "confidence_score": 87, "probability_over": 0.66, "edge_percentage": 4.8, "tier": "Gold"},
+            {"player_name": "Anthony Edwards", "team": "MIN", "stat_type": "points",
+             "prop_line": 26.5, "direction": "UNDER", "platform": "PrizePicks",
+             "confidence_score": 84, "probability_over": 0.32, "edge_percentage": 5.1, "tier": "Gold"},
+            {"player_name": "Shai Gilgeous-Alexander", "team": "OKC", "stat_type": "points",
+             "prop_line": 30.5, "direction": "OVER", "platform": "PrizePicks",
+             "confidence_score": 90, "probability_over": 0.70, "edge_percentage": 5.3, "tier": "Platinum"},
+            {"player_name": "Nikola Jokić", "team": "DEN", "stat_type": "assists",
+             "prop_line": 9.5, "direction": "OVER", "platform": "PrizePicks",
+             "confidence_score": 78, "probability_over": 0.63, "edge_percentage": 3.4, "tier": "Gold"},
+        ]
+        picks = _fallback
+
+    # NBA headshot lookup
+    _PLAYER_IDS: dict[str, str] = {
+        "luka dončić": "1629029", "luka doncic": "1629029",
+        "jayson tatum": "1628369", "anthony edwards": "1630162",
+        "shai gilgeous-alexander": "1628983", "nikola jokić": "203999",
+        "nikola jokic": "203999", "trae young": "1629027",
+        "tyrese maxey": "1630178", "cade cunningham": "1630595",
+        "jaylen brown": "1627759", "devin booker": "1626164",
+        "lamelo ball": "1630163", "ja morant": "1629630",
+        "donovan mitchell": "1628378", "stephen curry": "201939",
+        "lebron james": "2544", "kevin durant": "201142",
+        "giannis antetokounmpo": "203507", "joel embiid": "203954",
+        "damian lillard": "203081", "bam adebayo": "1628389",
+        "jimmy butler": "202710", "karl-anthony towns": "1626157",
+        "jalen brunson": "1628973", "paolo banchero": "1631094",
+        "victor wembanyama": "1641705", "darius garland": "1629636",
+        "dejounte murray": "1627749", "franz wagner": "1630532",
+    }
+
+    cards_html = []
+    for idx, pick in enumerate(picks):
+        name = _html_mod.escape(pick.get("player_name", "Unknown"))
+        team = _html_mod.escape((pick.get("team", "") or "").upper())
+        stat_raw = (pick.get("stat_type", "") or "").lower().strip()
+        stat_label = _html_mod.escape(_display_stat_label(stat_raw))
+
+        try:
+            line_val = float(pick.get("prop_line", 0) or 0)
+            line_display = f"{line_val:g}"
+        except (ValueError, TypeError):
+            line_val = 0
+            line_display = "—"
+
+        direction = (pick.get("direction", "OVER") or "OVER").upper()
+        dir_label = "MORE" if direction == "OVER" else "LESS"
+        dir_class = "more" if direction == "OVER" else "less"
+        dir_arrow = "&#8593;" if direction == "OVER" else "&#8595;"
+
+        conf = float(pick.get("confidence_score", 0) or 0)
+        edge = float(pick.get("edge_percentage", 0) or 0)
+
+        prob_over = float(pick.get("probability_over", 0.5) or 0.5)
+        prob = (prob_over if direction == "OVER" else 1.0 - prob_over) * 100
+
+        # Confidence color
+        if conf >= 80:
+            conf_color = "#c084fc"
+        elif conf >= 65:
+            conf_color = "#fbbf24"
+        else:
+            conf_color = "#60a5fa"
+
+        # Headshot URL (NBA CDN)
+        pid = _PLAYER_IDS.get(name.lower(), "")
+        hs_html = ""
+        if pid:
+            hs_url = f"https://cdn.nba.com/headshots/nba/latest/1040x760/{pid}.png"
+            hs_html = (
+                f'<div class="pv-hs-wrap">'
+                f'<img class="pv-headshot" src="{hs_url}" alt="{name}" '
+                f'onerror="this.style.display=\'none\'">'
+                f'</div>'
+            )
+        else:
+            # Generic silhouette fallback
+            hs_html = (
+                '<div class="pv-hs-wrap">'
+                '<div class="pv-headshot" style="display:inline-block;'
+                'background:linear-gradient(135deg,rgba(192,132,252,.15),rgba(96,165,250,.1));'
+                'line-height:72px;font-size:1.5rem;color:rgba(255,255,255,.12);">&#9917;</div>'
+                '</div>'
+            )
+
+        # Platform display name
+        raw_plat = pick.get("platform", "Smart Pick") or "Smart Pick"
+        if raw_plat.lower() in ("prizepicks", ""):
+            plat_display = "Smart Pick"
+        else:
+            plat_display = _html_mod.escape(raw_plat)
+
+        cards_html.append(
+            f'<div class="pv-card" style="animation-delay:{idx * 100}ms;">'
+            f'<span class="pv-rank">#{idx + 1}</span>'
+            # Status bar
+            f'<div class="pv-status">'
+            f'<span class="pv-badge"><span class="pv-badge-icon">&#9889;</span> {plat_display} AI</span>'
+            f'</div>'
+            # Headshot
+            f'{hs_html}'
+            # Player info
+            f'<div class="pv-team">{team}</div>'
+            f'<div class="pv-name">{name}</div>'
+            # Line
+            f'<div class="pv-line-area">'
+            f'<div class="pv-line">{_html_mod.escape(line_display)}</div>'
+            f'<div class="pv-stat">{stat_label}</div>'
+            f'</div>'
+            # Direction pill
+            f'<div class="pv-dir"><span class="{dir_class}">{dir_arrow} {dir_label}</span></div>'
+            # Metrics
+            f'<div class="pv-metrics">'
+            f'<div class="pv-metric"><div class="pv-metric-val" style="color:{conf_color};">{conf:.0f}</div>'
+            f'<div class="pv-metric-label">SAFE</div></div>'
+            f'<div class="pv-metric"><div class="pv-metric-val" style="color:#c084fc;">{edge:+.1f}%</div>'
+            f'<div class="pv-metric-label">Edge</div></div>'
+            f'<div class="pv-metric"><div class="pv-metric-val">{prob:.0f}%</div>'
+            f'<div class="pv-metric-label">Prob</div></div>'
+            f'</div>'
+            f'</div>'
+        )
+
+    num_picks = len(picks)
+    cards_joined = "".join(cards_html)
+
+    return (
+        f'{css}'
+        f'<div class="pv-frame">'
+        f'<div class="pv-titlebar"><div class="pv-dot r"></div><div class="pv-dot y"></div>'
+        f'<div class="pv-dot g"></div>'
+        f'<div class="pv-url">smartpickpro.com &middot; Quantum Analysis Matrix</div></div>'
+        f'<div class="pv-header"><div class="pv-title">&#9889; Platform AI Picks</div>'
+        f'<div class="pv-live">LIVE &middot; {num_picks} Picks</div></div>'
+        f'<div class="pv-scroll"><div class="pv-track">{cards_joined}</div></div>'
+        f'</div>'
+        f'<div class="pv-hint">&#8592; Scroll to see today\'s AI picks &#8594;</div>'
+    )
+
+
 def _create_user(email: str, password: str, display_name: str = "") -> bool:
     """Create a new user account. Returns True on success."""
     initialize_database()
@@ -1741,68 +2025,10 @@ def require_login() -> bool:
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Product Preview: horizontally scrolling QAM-style cards ──
-    st.html("""<style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,255,255,0.7);overflow-y:hidden}
-.fr{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden}
-.tb{display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.04)}
-.td{width:7px;height:7px;border-radius:50%}
-.td.r{background:#f24336}.td.y{background:#F9C62B}.td.g{background:#00D559}
-.tu{flex:1;text-align:center;font-family:'JetBrains Mono',monospace;font-size:0.5rem;color:rgba(255,255,255,0.2)}
-.hd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px}
-.ht2{font-family:'Space Grotesk',sans-serif;font-size:0.78rem;font-weight:700;color:rgba(255,255,255,0.7)}
-.hb{font-family:'JetBrains Mono',monospace;font-size:0.5rem;font-weight:700;color:#00D559;background:rgba(0,213,89,0.08);border:1px solid rgba(0,213,89,0.15);padding:2px 8px;border-radius:100px}
-.sw{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(0,213,89,0.3) transparent;padding:4px 14px 14px}
-.sw::-webkit-scrollbar{height:6px}
-.sw::-webkit-scrollbar-track{background:rgba(255,255,255,0.02);border-radius:100px}
-.sw::-webkit-scrollbar-thumb{background:rgba(0,213,89,0.25);border-radius:100px}
-.tk{display:inline-flex;gap:10px;padding:0}
-.cd{width:156px;flex-shrink:0;background:linear-gradient(168deg,rgba(255,255,255,0.04) 0%,rgba(255,255,255,0.01) 100%);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:0;position:relative;overflow:hidden;transition:border-color .25s,transform .25s,box-shadow .25s}
-.cd:hover{border-color:rgba(0,213,89,0.2);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.3)}
-.cd::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-.cd.pp::before{background:linear-gradient(90deg,#00D559,#2D9EFF)}
-.cd.dk::before{background:linear-gradient(90deg,#F9C62B,#ff8c00)}
-.cd.ud::before{background:linear-gradient(90deg,#c084fc,#9333ea)}
-.ch{padding:10px 10px 0;display:flex;align-items:center;justify-content:space-between}
-.cp{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center;gap:4px}
-.cp .dt{width:5px;height:5px;border-radius:50%;display:inline-block}
-.cd.pp .cp{color:#00D559}.cd.pp .cp .dt{background:#00D559}
-.cd.dk .cp{color:#F9C62B}.cd.dk .cp .dt{background:#F9C62B}
-.cd.ud .cp{color:#c084fc}.cd.ud .cp .dt{background:#c084fc}
-.eg{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;color:#F9C62B;background:rgba(249,198,43,0.08);border:1px solid rgba(249,198,43,0.15);padding:2px 6px;border-radius:100px}
-.cb{padding:8px 10px 6px;text-align:center}
-.pl{font-family:'Space Grotesk',sans-serif;font-size:.72rem;font-weight:700;color:rgba(255,255,255,0.92);line-height:1.2;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tm{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:600;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
-.dr{font-family:'Space Grotesk',sans-serif;font-size:.54rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;margin-bottom:2px}
-.dr.ov{color:#00D559}.dr.un{color:#2D9EFF}
-.ln{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:800;color:rgba(255,255,255,0.95);line-height:1;margin-bottom:2px}
-.st{font-family:'JetBrains Mono',monospace;font-size:.48rem;font-weight:600;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.08em}
-.cf{padding:6px 10px 8px;border-top:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:space-between}
-.sf{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;display:flex;align-items:center;gap:3px}
-.sf .lb{color:rgba(255,255,255,0.2)}.sf .vl{color:#00D559;background:rgba(0,213,89,0.1);padding:1px 5px;border-radius:4px}
-.sf .vl.md{color:#F9C62B;background:rgba(249,198,43,0.1)}
-.ev{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:700;color:#00D559}
-.hi{text-align:center;margin-top:8px;font-size:.55rem;color:rgba(255,255,255,0.18);font-style:italic}
-@media(max-width:520px){.cd{width:140px}.ln{font-size:1.1rem}.pl{font-size:.65rem}}
-</style>
-<div class="fr">
-<div class="tb"><div class="td r"></div><div class="td y"></div><div class="td g"></div><div class="tu">smartpickpro.com &middot; Quantum Analysis Matrix</div></div>
-<div class="hd"><div class="ht2">&#x26A1; Tonight&rsquo;s Top Props</div><div class="hb">LIVE &middot; 347 Props</div></div>
-<div class="sw"><div class="tk">
-<div class="cd pp"><div class="ch"><div class="cp"><span class="dt"></span>PrizePicks</div><div class="eg">+6.2%</div></div><div class="cb"><div class="pl">Luka Donci&#x107;</div><div class="tm">DAL &middot; Points</div><div class="dr ov">&#x25B2; MORE</div><div class="ln">28.5</div><div class="st">PTS</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl">92</span></div><div class="ev">&#x1F525; Top Pick</div></div></div>
-<div class="cd dk"><div class="ch"><div class="cp"><span class="dt"></span>DK Pick6</div><div class="eg">+4.8%</div></div><div class="cb"><div class="pl">Jayson Tatum</div><div class="tm">BOS &middot; Rebounds</div><div class="dr ov">&#x25B2; MORE</div><div class="ln">8.5</div><div class="st">REB</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl">87</span></div><div class="ev">+EV Edge</div></div></div>
-<div class="cd ud"><div class="ch"><div class="cp"><span class="dt"></span>Underdog</div><div class="eg">+5.1%</div></div><div class="cb"><div class="pl">Anthony Edwards</div><div class="tm">MIN &middot; Points</div><div class="dr un">&#x25BC; LESS</div><div class="ln">26.5</div><div class="st">PTS</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl">84</span></div><div class="ev">+EV Edge</div></div></div>
-<div class="cd pp"><div class="ch"><div class="cp"><span class="dt"></span>PrizePicks</div><div class="eg">+3.9%</div></div><div class="cb"><div class="pl">Trae Young</div><div class="tm">ATL &middot; Assists</div><div class="dr ov">&#x25B2; MORE</div><div class="ln">10.5</div><div class="st">AST</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl md">78</span></div><div class="ev">+EV Edge</div></div></div>
-<div class="cd dk"><div class="ch"><div class="cp"><span class="dt"></span>DK Pick6</div><div class="eg">+2.7%</div></div><div class="cb"><div class="pl">Nikola Joki&#x107;</div><div class="tm">DEN &middot; Assists</div><div class="dr ov">&#x25B2; MORE</div><div class="ln">9.5</div><div class="st">AST</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl md">73</span></div><div class="ev">+EV Edge</div></div></div>
-<div class="cd ud"><div class="ch"><div class="cp"><span class="dt"></span>Underdog</div><div class="eg">+5.3%</div></div><div class="cb"><div class="pl">Shai Gilgeous-Alexander</div><div class="tm">OKC &middot; Points</div><div class="dr ov">&#x25B2; MORE</div><div class="ln">30.5</div><div class="st">PTS</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl">90</span></div><div class="ev">&#x1F525; Top Pick</div></div></div>
-<div class="cd pp"><div class="ch"><div class="cp"><span class="dt"></span>PrizePicks</div><div class="eg">+3.4%</div></div><div class="cb"><div class="pl">Cade Cunningham</div><div class="tm">DET &middot; Points</div><div class="dr ov">&#x25B2; MORE</div><div class="ln">23.5</div><div class="st">PTS</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl">86</span></div><div class="ev">+EV Edge</div></div></div>
-<div class="cd dk"><div class="ch"><div class="cp"><span class="dt"></span>DK Pick6</div><div class="eg">+4.1%</div></div><div class="cb"><div class="pl">Tyrese Maxey</div><div class="tm">PHI &middot; Assists</div><div class="dr ov">&#x25B2; MORE</div><div class="ln">5.5</div><div class="st">AST</div></div><div class="cf"><div class="sf"><span class="lb">SAFE</span><span class="vl">84</span></div><div class="ev">+EV Edge</div></div></div>
-</div></div>
-</div>
-<div class="hi">&#x2190; Scroll to see tonight&rsquo;s full prop board &#x2192;</div>
-""")
+    # ── Product Preview: live platform picks from today's analysis ──
+    _preview_picks = _load_top_preview_picks(5)
+    _preview_html = _build_preview_section_html(_preview_picks)
+    st.html(_preview_html)
 
     # ── Below-fold: Winning Picks Carousel ───────────────────
     # Uses st.html() to bypass Streamlit's markdown parser which

@@ -893,7 +893,7 @@ try:
     _user_is_premium = _is_premium()
 except Exception:
     _user_is_premium = True  # Fail open — don't block the home page
-    _PREM_PATH = "/14_%F0%9F%92%8E_Subscription_Level"
+    _PREM_PATH = "/15_%F0%9F%92%8E_Subscription_Level"
 
 with st.sidebar:
     if _user_is_premium:

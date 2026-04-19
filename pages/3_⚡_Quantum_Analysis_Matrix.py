@@ -401,7 +401,7 @@ from utils.auth import is_premium_user as _is_premium_user
 try:
     from utils.stripe_manager import _PREMIUM_PAGE_PATH as _PREM_PATH
 except Exception:
-    _PREM_PATH = "/14_%F0%9F%92%8E_Subscription_Level"
+    _PREM_PATH = "/15_%F0%9F%92%8E_Subscription_Level"
 _FREE_ANALYSIS_LIMIT = 3   # Free users can analyze up to 3 props
 _user_is_premium = _is_premium_user()
 if "selected_picks" not in st.session_state:

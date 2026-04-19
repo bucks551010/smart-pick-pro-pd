@@ -68,7 +68,7 @@ from utils.auth import is_premium_user as _is_premium_user
 try:
     from utils.stripe_manager import _PREMIUM_PAGE_PATH as _PREM_PATH
 except Exception:
-    _PREM_PATH = "/14_%F0%9F%92%8E_Subscription_Level"
+    _PREM_PATH = "/15_%F0%9F%92%8E_Subscription_Level"
 FREE_PROP_LIMIT = 5   # Free users can manually enter up to 5 props
 SMART_SCAN_PAGE_SIZE = 30  # Number of Smart Scan results per page
 user_is_premium = _is_premium_user()

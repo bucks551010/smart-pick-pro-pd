@@ -68,7 +68,7 @@ APP_URL = APP_URL.rstrip("/")
 
 # Path to the Premium page (URL-encoded emoji in page name).
 # Used in redirect URLs passed to Stripe.
-_PREMIUM_PAGE_PATH = "/14_%F0%9F%92%8E_Subscription_Level"
+_PREMIUM_PAGE_PATH = "/15_%F0%9F%92%8E_Subscription_Level"
 
 # ── Configure Stripe SDK with our secret key ─────────────────
 # This must be done before any Stripe API calls.

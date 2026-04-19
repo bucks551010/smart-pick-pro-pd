@@ -196,388 +196,586 @@ def _get_logo_b64() -> str:
 
 # ── CSS for the gate ──────────────────────────────────────────
 
-_GATE_CSS = """
+_GATE_CSS = r"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-/* ── Hide Streamlit chrome while on gate ────────────────────── */
-[data-testid="stSidebar"], header[data-testid="stHeader"],
-[data-testid="stDecoration"], .stDeployButton {
-    display: none !important;
-}
-[data-testid="stAppViewContainer"] {
-    padding-top: 0 !important;
-}
-.stApp { background: transparent !important; }
+/* ═══════════════════════════════════════════════════════════════
+   SMART PICK PRO — FULL-SCREEN AUTH GATE
+   Cinematic conversion-optimised landing + signup/login
+   ═══════════════════════════════════════════════════════════════ */
 
-/* ── Keyframes ──────────────────────────────────────────────── */
-@keyframes authOrbFloat {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    25%  { transform: translate(30px, -20px) scale(1.08); }
-    50%  { transform: translate(-15px, 15px) scale(0.95); }
-    75%  { transform: translate(20px, 25px) scale(1.04); }
+/* ── Reset Streamlit chrome ──────────────────────────────────── */
+[data-testid="stSidebar"],
+header[data-testid="stHeader"],
+[data-testid="stDecoration"],
+.stDeployButton,
+footer { display: none !important; }
+[data-testid="stAppViewContainer"] { padding-top: 0 !important; }
+.stApp { background: transparent !important; }
+.stApp > [data-testid="stAppViewContainer"] > section.main .block-container {
+    padding: 0 !important; max-width: 100% !important;
 }
-@keyframes authOrbFloat2 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33%  { transform: translate(-40px, 20px) scale(1.1); }
-    66%  { transform: translate(25px, -30px) scale(0.92); }
+
+/* ── Keyframes ───────────────────────────────────────────────── */
+@keyframes agFadeUp {
+    from { opacity:0; transform:translateY(40px); }
+    to   { opacity:1; transform:translateY(0); }
 }
-@keyframes authGradShift {
+@keyframes agFadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes agSlideRight {
+    from { opacity:0; transform:translateX(-30px); }
+    to   { opacity:1; transform:translateX(0); }
+}
+@keyframes agGradShift {
     0%   { background-position: 0% 50%; }
     50%  { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
 }
-@keyframes authFadeInUp {
-    from { opacity: 0; transform: translateY(32px); }
-    to   { opacity: 1; transform: translateY(0); }
+@keyframes agPulse {
+    0%,100% { opacity:0.5; transform:scale(1); }
+    50%     { opacity:1;   transform:scale(1.04); }
 }
-@keyframes authPulseGlow {
-    0%, 100% { box-shadow: 0 0 40px rgba(0,213,89,0.08), 0 0 80px rgba(45,158,255,0.04); }
-    50%      { box-shadow: 0 0 60px rgba(0,213,89,0.14), 0 0 120px rgba(45,158,255,0.08); }
+@keyframes agOrbDrift1 {
+    0%,100% { transform: translate(0,0) scale(1); }
+    25%     { transform: translate(60px,-40px) scale(1.15); }
+    50%     { transform: translate(-30px,50px) scale(0.9); }
+    75%     { transform: translate(40px,30px) scale(1.08); }
 }
-@keyframes authScanLine {
-    0%   { top: -2px; opacity: 0.7; }
-    100% { top: 100%; opacity: 0; }
+@keyframes agOrbDrift2 {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33%     { transform: translate(-50px,30px) scale(1.12); }
+    66%     { transform: translate(40px,-45px) scale(0.88); }
 }
-@keyframes authShimmer {
+@keyframes agOrbDrift3 {
+    0%,100% { transform: translate(0,0) scale(1) rotate(0deg); }
+    50%     { transform: translate(20px,-20px) scale(1.1) rotate(180deg); }
+}
+@keyframes agScanLine {
+    0%   { top:-3px; opacity:0.6; }
+    100% { top:100%; opacity:0; }
+}
+@keyframes agShimmer {
+    0%   { left:-100%; }
+    100% { left:200%; }
+}
+@keyframes agCountUp {
+    from { opacity:0; transform:scale(0.5); }
+    to   { opacity:1; transform:scale(1); }
+}
+@keyframes agTickerScroll {
+    0%   { transform:translateX(0); }
+    100% { transform:translateX(-50%); }
+}
+@keyframes agLogoRing {
+    from { transform:rotate(0deg); }
+    to   { transform:rotate(360deg); }
+}
+@keyframes agGlowPulse {
+    0%,100% { box-shadow:0 0 30px rgba(0,213,89,0.06), 0 20px 60px rgba(0,0,0,0.4); }
+    50%     { box-shadow:0 0 50px rgba(0,213,89,0.12), 0 20px 80px rgba(0,0,0,0.5); }
+}
+@keyframes agStarTwinkle {
+    0%,100% { opacity:0.2; transform:scale(0.8); }
+    50%     { opacity:1; transform:scale(1.2); }
+}
+@keyframes agFloat {
+    0%,100% { transform:translateY(0); }
+    50%     { transform:translateY(-8px); }
+}
+@keyframes agBarSlide {
     0%   { background-position: -200% 0; }
     100% { background-position: 200% 0; }
 }
-@keyframes authLogoSpin {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-}
-@keyframes authTickerScroll {
-    0%   { transform: translateX(0%); }
-    100% { transform: translateX(-50%); }
+@keyframes agLivePulse {
+    0%,100% { box-shadow:0 0 0 0 rgba(0,213,89,0.5); }
+    50%     { box-shadow:0 0 0 6px rgba(0,213,89,0); }
 }
 
-/* ── Full-screen dark canvas ───────────────────────────────── */
-.auth-gate-bg {
-    position: fixed; inset: 0; z-index: 9998;
-    background: linear-gradient(160deg, #04060c 0%, #080d1a 25%, #0a1428 50%, #0c1020 75%, #060a14 100%);
-    background-size: 400% 400%;
-    animation: authGradShift 20s ease infinite;
-    overflow-y: auto;
-    overflow-x: hidden;
+/* ── Full-screen canvas ──────────────────────────────────────── */
+.ag-canvas {
+    position:fixed; inset:0; z-index:9990;
+    background: linear-gradient(165deg, #020408 0%, #05091a 20%, #08102a 45%, #0a0e20 70%, #030610 100%);
+    background-size:400% 400%;
+    animation: agGradShift 25s ease infinite;
+    overflow:hidden;
 }
 
-/* Ambient orbs */
-.auth-orb {
-    position: fixed; border-radius: 50%;
-    pointer-events: none; z-index: 9998;
-    filter: blur(100px);
+/* Star field (CSS-only particles) */
+.ag-stars { position:absolute; inset:0; overflow:hidden; }
+.ag-star {
+    position:absolute; border-radius:50%; background:#fff;
+    animation: agStarTwinkle var(--dur) ease-in-out infinite;
+    animation-delay: var(--delay);
 }
-.auth-orb-1 {
-    width: 500px; height: 500px;
-    background: radial-gradient(circle, rgba(0,213,89,0.1) 0%, transparent 70%);
-    top: -120px; left: -80px;
-    animation: authOrbFloat 14s ease-in-out infinite;
+/* 30 stars generated via inline style — see HTML */
+
+/* Orbs */
+.ag-orb { position:absolute; border-radius:50%; pointer-events:none; filter:blur(120px); }
+.ag-orb-1 {
+    width:600px; height:600px; top:-200px; left:-150px;
+    background:radial-gradient(circle, rgba(0,213,89,0.12) 0%, transparent 70%);
+    animation: agOrbDrift1 18s ease-in-out infinite;
 }
-.auth-orb-2 {
-    width: 450px; height: 450px;
-    background: radial-gradient(circle, rgba(45,158,255,0.08) 0%, transparent 70%);
-    bottom: -100px; right: -100px;
-    animation: authOrbFloat2 18s ease-in-out infinite;
+.ag-orb-2 {
+    width:500px; height:500px; bottom:-180px; right:-120px;
+    background:radial-gradient(circle, rgba(45,158,255,0.10) 0%, transparent 70%);
+    animation: agOrbDrift2 22s ease-in-out infinite;
 }
-.auth-orb-3 {
-    width: 300px; height: 300px;
-    background: radial-gradient(circle, rgba(249,198,43,0.05) 0%, transparent 70%);
-    top: 40%; left: 60%;
-    animation: authOrbFloat 22s ease-in-out infinite reverse;
+.ag-orb-3 {
+    width:350px; height:350px; top:35%; right:25%;
+    background:radial-gradient(circle, rgba(192,132,252,0.07) 0%, transparent 70%);
+    animation: agOrbDrift3 28s ease-in-out infinite;
+}
+.ag-orb-4 {
+    width:280px; height:280px; bottom:20%; left:15%;
+    background:radial-gradient(circle, rgba(249,198,43,0.06) 0%, transparent 70%);
+    animation: agOrbDrift1 24s ease-in-out infinite reverse;
 }
 
 /* Scan line */
-.auth-scan-line {
-    position: fixed; left: 0; width: 100%; height: 2px; z-index: 9999;
-    background: linear-gradient(90deg, transparent 0%, rgba(0,213,89,0.25) 30%, rgba(45,158,255,0.2) 70%, transparent 100%);
-    animation: authScanLine 8s linear infinite;
-    pointer-events: none;
+.ag-scan {
+    position:absolute; left:0; width:100%; height:2px; z-index:9991;
+    background:linear-gradient(90deg, transparent, rgba(0,213,89,0.3) 20%, rgba(45,158,255,0.25) 50%, rgba(192,132,252,0.2) 80%, transparent);
+    animation: agScanLine 7s linear infinite;
+    pointer-events:none;
 }
 
-/* Grid pattern overlay */
-.auth-grid-overlay {
-    position: fixed; inset: 0; z-index: 9998; pointer-events: none;
+/* Grid */
+.ag-grid {
+    position:absolute; inset:0; pointer-events:none;
     background-image:
-        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-    background-size: 60px 60px;
-    mask-image: radial-gradient(ellipse at 50% 50%, black 30%, transparent 80%);
-    -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 30%, transparent 80%);
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    background-size:80px 80px;
+    mask-image:radial-gradient(ellipse at 50% 40%, black 20%, transparent 75%);
+    -webkit-mask-image:radial-gradient(ellipse at 50% 40%, black 20%, transparent 75%);
 }
 
-/* ── Main container ────────────────────────────────────────── */
-.auth-gate-container {
-    position: relative; z-index: 10000;
-    max-width: 480px; margin: 0 auto;
-    padding: 40px 24px 32px;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+/* ── Scroll wrapper ──────────────────────────────────────────── */
+.ag-scroll {
+    position:fixed; inset:0; z-index:9992;
+    overflow-y:auto; overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
 }
 
-/* ── Sports ticker (top) ───────────────────────────────────── */
-.auth-ticker-wrap {
-    position: relative; z-index: 10001;
-    overflow: hidden; margin-bottom: 32px;
-    background: linear-gradient(90deg, rgba(0,213,89,0.06), rgba(45,158,255,0.06), rgba(249,198,43,0.06));
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 12px; padding: 0;
-    height: 38px; display: flex; align-items: center;
-}
-.auth-ticker-track {
-    display: flex; white-space: nowrap;
-    animation: authTickerScroll 30s linear infinite;
-}
-.auth-ticker-item {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 0 28px; font-size: 0.76rem; font-weight: 600;
-    color: rgba(255,255,255,0.6); letter-spacing: 0.03em;
-}
-.auth-ticker-item .ticker-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    display: inline-block; flex-shrink: 0;
-}
-.ticker-dot-live { background: #00D559; box-shadow: 0 0 6px rgba(0,213,89,0.6); }
-.ticker-dot-soon { background: #F9C62B; opacity: 0.7; }
-
-/* ── Logo section ──────────────────────────────────────────── */
-.auth-logo-section {
-    text-align: center; margin-bottom: 8px;
-    animation: authFadeInUp 0.7s cubic-bezier(0.22,1,0.36,1) both;
-}
-.auth-logo-ring {
-    display: inline-block; position: relative;
-    width: 96px; height: 96px; margin-bottom: 16px;
-}
-.auth-logo-ring::before {
-    content: ''; position: absolute; inset: -4px;
-    border-radius: 50%;
-    background: conic-gradient(from 0deg, #00D559, #2D9EFF, #F9C62B, #c084fc, #00D559);
-    animation: authLogoSpin 6s linear infinite;
-    mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
-    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px));
-}
-.auth-logo-ring img {
-    width: 96px; height: 96px; border-radius: 50%;
-    position: relative; z-index: 1;
-}
-.auth-brand-name {
-    font-size: 1.65rem; font-weight: 900;
-    background: linear-gradient(135deg, #FFFFFF 0%, #00D559 50%, #2D9EFF 100%);
-    background-size: 200% 200%;
-    animation: authGradShift 6s ease infinite;
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
-    letter-spacing: -0.03em; line-height: 1.1;
-}
-.auth-brand-sub {
-    font-size: 0.72rem; font-weight: 500; letter-spacing: 0.18em;
-    text-transform: uppercase; margin-top: 6px;
-    color: rgba(255,255,255,0.35);
+/* ── Inner page ──────────────────────────────────────────────── */
+.ag-page {
+    max-width:520px; margin:0 auto;
+    padding:0 20px;
+    font-family:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color:#fff;
 }
 
-/* ── Headline ──────────────────────────────────────────────── */
-.auth-headline {
-    text-align: center; margin: 28px 0 6px;
-    font-size: 1.75rem; font-weight: 900; color: #FFFFFF;
-    line-height: 1.2; letter-spacing: -0.03em;
-    animation: authFadeInUp 0.7s 0.12s cubic-bezier(0.22,1,0.36,1) both;
+/* ── URGENCY BAR (fixed top) ─────────────────────────────────── */
+.ag-urgency {
+    position:fixed; top:0; left:0; right:0; z-index:9999;
+    height:40px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(90deg, #0d1117, rgba(0,213,89,0.08) 30%, rgba(45,158,255,0.06) 70%, #0d1117);
+    border-bottom:1px solid rgba(0,213,89,0.12);
+    font-size:0.74rem; font-weight:700; letter-spacing:0.02em;
+    color:rgba(255,255,255,0.8);
+    overflow:hidden;
 }
-.auth-headline .hl-accent {
-    background: linear-gradient(135deg, #00D559, #2D9EFF);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
+.ag-urgency::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background:linear-gradient(90deg, transparent, #00D559 20%, #2D9EFF 50%, #c084fc 80%, transparent);
+    background-size:400% 100%;
+    animation: agBarSlide 4s linear infinite;
 }
-.auth-subheadline {
-    text-align: center; font-size: 0.88rem; font-weight: 400;
-    color: rgba(255,255,255,0.5); margin-bottom: 28px;
-    line-height: 1.55;
-    animation: authFadeInUp 0.7s 0.2s cubic-bezier(0.22,1,0.36,1) both;
+.ag-urgency-live {
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(0,213,89,0.12); border:1px solid rgba(0,213,89,0.25);
+    padding:3px 10px; border-radius:100px; margin-right:12px;
+    font-size:0.68rem; font-weight:800; color:#00D559;
 }
-
-/* ── Stats bar ─────────────────────────────────────────────── */
-.auth-stats-bar {
-    display: flex; justify-content: center; gap: 8px;
-    margin-bottom: 28px; flex-wrap: wrap;
-    animation: authFadeInUp 0.7s 0.28s cubic-bezier(0.22,1,0.36,1) both;
-}
-.auth-stat-chip {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 7px 14px; border-radius: 100px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.06);
-    font-size: 0.74rem; font-weight: 600;
-    color: rgba(255,255,255,0.6);
-    backdrop-filter: blur(8px);
-}
-.auth-stat-chip .stat-val {
-    color: #00D559; font-weight: 800;
+.ag-urgency-dot {
+    width:7px; height:7px; border-radius:50%; background:#00D559;
+    animation: agLivePulse 2s ease-in-out infinite;
 }
 
-/* ── Glass card wrapping Streamlit forms ───────────────────── */
-/* We style the Streamlit tab container + form elements */
-.auth-gate-container [data-testid="stTabs"] {
-    animation: authFadeInUp 0.7s 0.35s cubic-bezier(0.22,1,0.36,1) both;
+/* ── LOGO + BRAND ────────────────────────────────────────────── */
+.ag-brand {
+    text-align:center; padding-top:60px; margin-bottom:4px;
+    animation: agFadeUp 0.8s cubic-bezier(0.22,1,0.36,1) both;
 }
-.auth-gate-container [data-testid="stTabs"] > [data-baseweb="tab-list"] {
-    background: rgba(255,255,255,0.03);
-    border-radius: 14px; padding: 4px;
-    border: 1px solid rgba(255,255,255,0.06);
-    gap: 4px; margin-bottom: 24px;
-    justify-content: center;
+.ag-logo-ring {
+    display:inline-block; position:relative;
+    width:88px; height:88px; margin-bottom:16px;
 }
-.auth-gate-container [data-testid="stTabs"] [data-baseweb="tab"] {
-    border-radius: 10px !important; font-weight: 700 !important;
-    font-size: 0.88rem !important; padding: 10px 28px !important;
-    color: rgba(255,255,255,0.45) !important;
-    background: transparent !important;
-    border: none !important;
-    transition: all 0.25s ease !important;
+.ag-logo-ring::before {
+    content:''; position:absolute; inset:-5px; border-radius:50%;
+    background:conic-gradient(from 0deg, #00D559, #2D9EFF, #c084fc, #F9C62B, #00D559);
+    animation:agLogoRing 8s linear infinite;
+    mask:radial-gradient(farthest-side, transparent calc(100% - 2.5px), black calc(100% - 2.5px));
+    -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 2.5px), black calc(100% - 2.5px));
 }
-.auth-gate-container [data-testid="stTabs"] [data-baseweb="tab"][aria-selected="true"] {
-    background: linear-gradient(135deg, rgba(0,213,89,0.15), rgba(45,158,255,0.12)) !important;
-    color: #FFFFFF !important;
-    box-shadow: 0 2px 12px rgba(0,213,89,0.15) !important;
-    border: 1px solid rgba(0,213,89,0.2) !important;
+.ag-logo-ring::after {
+    content:''; position:absolute; inset:-12px; border-radius:50%;
+    background:conic-gradient(from 90deg, transparent, rgba(0,213,89,0.15), transparent, rgba(45,158,255,0.1), transparent);
+    animation:agLogoRing 12s linear infinite reverse;
+    filter:blur(8px);
 }
-/* Tab highlight bar — hide default */
-.auth-gate-container [data-testid="stTabs"] [data-baseweb="tab-highlight"] {
-    display: none !important;
+.ag-logo-ring img {
+    width:88px; height:88px; border-radius:50%;
+    position:relative; z-index:2;
+    box-shadow:0 0 40px rgba(0,213,89,0.15);
 }
-.auth-gate-container [data-testid="stTabs"] [data-baseweb="tab-border"] {
-    display: none !important;
+.ag-brand-name {
+    font-size:2rem; font-weight:900; letter-spacing:-0.04em; line-height:1;
+    background:linear-gradient(135deg, #fff 0%, #00D559 45%, #2D9EFF 100%);
+    background-size:300% 300%;
+    animation:agGradShift 5s ease infinite;
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+}
+.ag-brand-tagline {
+    font-size:0.68rem; font-weight:600; letter-spacing:0.22em;
+    text-transform:uppercase; color:rgba(255,255,255,0.3);
+    margin-top:6px;
 }
 
-/* Form panel area */
-.auth-gate-container [data-testid="stForm"] {
-    background: rgba(14, 20, 38, 0.7) !important;
-    border: 1px solid rgba(255,255,255,0.06) !important;
-    border-radius: 20px !important;
-    padding: 32px 28px 28px !important;
-    backdrop-filter: blur(30px) saturate(1.2) !important;
-    -webkit-backdrop-filter: blur(30px) saturate(1.2) !important;
+/* ── HERO HEADLINE ───────────────────────────────────────────── */
+.ag-hero {
+    text-align:center; margin:30px 0 8px;
+    animation: agFadeUp 0.8s 0.1s cubic-bezier(0.22,1,0.36,1) both;
+}
+.ag-hero h1 {
+    font-size:2.1rem; font-weight:900; line-height:1.12;
+    letter-spacing:-0.04em; margin:0;
+}
+.ag-hero .accent {
+    display:inline;
+    background:linear-gradient(135deg, #00D559 0%, #2D9EFF 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+}
+.ag-hero-sub {
+    font-size:0.92rem; color:rgba(255,255,255,0.5); line-height:1.55;
+    margin-top:10px; font-weight:400;
+}
+.ag-hero-sub strong { color:rgba(255,255,255,0.85); font-weight:700; }
+
+/* ── SOCIAL PROOF COUNTER BAR ────────────────────────────────── */
+.ag-proof {
+    display:flex; justify-content:center; gap:6px; flex-wrap:wrap;
+    margin:24px 0 10px;
+    animation: agFadeUp 0.8s 0.2s cubic-bezier(0.22,1,0.36,1) both;
+}
+.ag-proof-chip {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:8px 16px; border-radius:100px;
+    background:rgba(255,255,255,0.035);
+    border:1px solid rgba(255,255,255,0.06);
+    font-size:0.76rem; font-weight:600; color:rgba(255,255,255,0.6);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    transition:all 0.3s ease;
+}
+.ag-proof-chip:hover {
+    border-color:rgba(0,213,89,0.2);
+    background:rgba(0,213,89,0.06);
+}
+.ag-proof-val {
+    font-weight:900; font-size:0.82rem;
+    background:linear-gradient(135deg, #00D559, #2D9EFF);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+}
+
+/* ── TESTIMONIAL STRIP ───────────────────────────────────────── */
+.ag-testimonial {
+    text-align:center; margin:20px 0 26px; padding:18px 24px;
+    background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.05);
+    border-radius:16px; position:relative;
+    animation: agFadeUp 0.8s 0.28s cubic-bezier(0.22,1,0.36,1) both;
+}
+.ag-testimonial::before {
+    content:'\201C'; position:absolute; top:8px; left:16px;
+    font-size:2.5rem; color:rgba(0,213,89,0.15); font-family:Georgia,serif; line-height:1;
+}
+.ag-testimonial-text {
+    font-size:0.86rem; color:rgba(255,255,255,0.7);
+    font-style:italic; line-height:1.55; margin-bottom:8px;
+}
+.ag-testimonial-author {
+    font-size:0.72rem; font-weight:700; color:rgba(0,213,89,0.7);
+    letter-spacing:0.02em;
+}
+
+/* ── FORM ZONE ───────────────────────────────────────────────── */
+/* Tabs */
+.ag-page [data-testid="stTabs"] {
+    animation: agFadeUp 0.8s 0.35s cubic-bezier(0.22,1,0.36,1) both;
+}
+.ag-page [data-testid="stTabs"] > [data-baseweb="tab-list"] {
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:16px; padding:4px; gap:4px;
+    justify-content:center; margin-bottom:20px;
+}
+.ag-page [data-testid="stTabs"] [data-baseweb="tab"] {
+    border-radius:12px !important; font-weight:800 !important;
+    font-size:0.88rem !important; padding:11px 28px !important;
+    color:rgba(255,255,255,0.4) !important;
+    background:transparent !important;
+    border:1px solid transparent !important;
+    transition:all 0.3s cubic-bezier(0.22,1,0.36,1) !important;
+}
+.ag-page [data-testid="stTabs"] [data-baseweb="tab"][aria-selected="true"] {
+    background:linear-gradient(135deg, rgba(0,213,89,0.12), rgba(45,158,255,0.08)) !important;
+    color:#fff !important;
+    border-color:rgba(0,213,89,0.2) !important;
+    box-shadow:0 4px 20px rgba(0,213,89,0.12) !important;
+}
+.ag-page [data-testid="stTabs"] [data-baseweb="tab-highlight"],
+.ag-page [data-testid="stTabs"] [data-baseweb="tab-border"] {
+    display:none !important;
+}
+
+/* Form card */
+.ag-page [data-testid="stForm"] {
+    background:linear-gradient(145deg, rgba(10,16,32,0.85), rgba(8,12,26,0.9)) !important;
+    border:1px solid rgba(255,255,255,0.06) !important;
+    border-radius:22px !important;
+    padding:34px 30px 30px !important;
+    backdrop-filter:blur(40px) saturate(1.3) !important;
+    -webkit-backdrop-filter:blur(40px) saturate(1.3) !important;
     box-shadow:
-        0 24px 80px rgba(0,0,0,0.45),
-        0 0 0 1px rgba(255,255,255,0.04) inset,
+        0 30px 100px rgba(0,0,0,0.5),
+        0 0 0 1px rgba(255,255,255,0.03) inset,
         0 1px 0 rgba(255,255,255,0.06) inset !important;
-    animation: authPulseGlow 6s ease-in-out infinite;
+    animation:agGlowPulse 8s ease-in-out infinite;
+    position:relative; overflow:hidden;
+}
+/* Top shimmer bar on form */
+.ag-page [data-testid="stForm"]::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, transparent, #00D559, #2D9EFF, #c084fc, transparent);
+    background-size:400% 100%;
+    animation: agBarSlide 3s linear infinite;
 }
 
 /* Inputs */
-.auth-gate-container [data-testid="stForm"] input {
-    background: rgba(255,255,255,0.04) !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
-    border-radius: 12px !important;
-    color: #FFFFFF !important;
-    font-family: 'Inter', sans-serif !important;
-    font-size: 0.9rem !important;
-    padding: 12px 16px !important;
-    transition: border-color 0.25s, box-shadow 0.25s !important;
+.ag-page [data-testid="stForm"] input {
+    background:rgba(255,255,255,0.035) !important;
+    border:1.5px solid rgba(255,255,255,0.07) !important;
+    border-radius:14px !important;
+    color:#FFFFFF !important;
+    font-family:'Inter', sans-serif !important;
+    font-size:0.92rem !important;
+    padding:14px 18px !important;
+    transition:all 0.3s cubic-bezier(0.22,1,0.36,1) !important;
+    caret-color:#00D559 !important;
 }
-.auth-gate-container [data-testid="stForm"] input:focus {
-    border-color: rgba(0,213,89,0.45) !important;
-    box-shadow: 0 0 0 3px rgba(0,213,89,0.1), 0 0 20px rgba(0,213,89,0.06) !important;
-    outline: none !important;
+.ag-page [data-testid="stForm"] input:focus {
+    border-color:rgba(0,213,89,0.5) !important;
+    box-shadow:0 0 0 4px rgba(0,213,89,0.08), 0 0 30px rgba(0,213,89,0.06) !important;
+    background:rgba(255,255,255,0.05) !important;
+    outline:none !important;
 }
-.auth-gate-container [data-testid="stForm"] input::placeholder {
-    color: rgba(255,255,255,0.25) !important;
+.ag-page [data-testid="stForm"] input::placeholder {
+    color:rgba(255,255,255,0.22) !important;
+    font-weight:400 !important;
 }
-/* Labels */
-.auth-gate-container [data-testid="stForm"] label {
-    color: rgba(255,255,255,0.6) !important;
-    font-weight: 600 !important; font-size: 0.82rem !important;
-    letter-spacing: 0.01em !important;
+.ag-page [data-testid="stForm"] label {
+    color:rgba(255,255,255,0.55) !important;
+    font-weight:700 !important; font-size:0.8rem !important;
+    letter-spacing:0.03em !important;
+    text-transform:uppercase !important;
 }
-
-/* Submit buttons */
-.auth-gate-container [data-testid="stForm"] button[kind="primaryFormSubmit"],
-.auth-gate-container [data-testid="stForm"] button[type="submit"] {
-    background: linear-gradient(135deg, #00D559 0%, #00B84D 40%, #00A043 100%) !important;
-    color: #FFFFFF !important;
-    font-weight: 800 !important; font-size: 1rem !important;
-    letter-spacing: -0.01em !important;
-    border: none !important; border-radius: 14px !important;
-    padding: 14px 32px !important;
-    margin-top: 8px !important;
-    box-shadow: 0 4px 24px rgba(0,213,89,0.3), 0 1px 0 rgba(255,255,255,0.1) inset !important;
-    transition: all 0.2s ease !important;
-    position: relative; overflow: hidden;
-}
-.auth-gate-container [data-testid="stForm"] button[kind="primaryFormSubmit"]:hover,
-.auth-gate-container [data-testid="stForm"] button[type="submit"]:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 32px rgba(0,213,89,0.4), 0 1px 0 rgba(255,255,255,0.15) inset !important;
+/* Password visibility toggles */
+.ag-page [data-testid="stForm"] [data-testid="stTextInputRootElement"] button {
+    color:rgba(255,255,255,0.3) !important;
 }
 
-/* ── Feature cards grid (below forms) ──────────────────────── */
-.auth-features-grid {
-    display: grid; grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px; margin-top: 28px;
-    animation: authFadeInUp 0.7s 0.5s cubic-bezier(0.22,1,0.36,1) both;
+/* CTA buttons */
+.ag-page [data-testid="stForm"] button[kind="primaryFormSubmit"],
+.ag-page [data-testid="stForm"] button[type="submit"] {
+    background:linear-gradient(135deg, #00D559 0%, #00C04E 50%, #00A843 100%) !important;
+    color:#fff !important;
+    font-weight:900 !important; font-size:1.05rem !important;
+    letter-spacing:-0.01em !important;
+    border:none !important; border-radius:16px !important;
+    padding:16px 36px !important;
+    margin-top:12px !important;
+    box-shadow:
+        0 6px 30px rgba(0,213,89,0.35),
+        0 1px 0 rgba(255,255,255,0.15) inset !important;
+    transition:all 0.25s cubic-bezier(0.22,1,0.36,1) !important;
+    position:relative; overflow:hidden;
+    text-shadow:0 1px 2px rgba(0,0,0,0.2) !important;
 }
-.auth-feat-card {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 14px; padding: 16px 12px;
-    text-align: center;
-    transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+.ag-page [data-testid="stForm"] button[kind="primaryFormSubmit"]::after,
+.ag-page [data-testid="stForm"] button[type="submit"]::after {
+    content:''; position:absolute; top:0; width:60px; height:100%;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: agShimmer 3s ease-in-out infinite;
 }
-.auth-feat-card:hover {
-    border-color: rgba(0,213,89,0.2);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-}
-.auth-feat-icon {
-    font-size: 1.4rem; margin-bottom: 6px; display: block;
-}
-.auth-feat-label {
-    font-size: 0.72rem; font-weight: 700;
-    color: rgba(255,255,255,0.75);
-    line-height: 1.3; letter-spacing: -0.01em;
-}
-.auth-feat-sublabel {
-    font-size: 0.62rem; font-weight: 500;
-    color: rgba(255,255,255,0.3); margin-top: 3px;
-}
-
-/* ── Trust strip ───────────────────────────────────────────── */
-.auth-trust-strip {
-    display: flex; justify-content: center; align-items: center;
-    gap: 20px; margin-top: 24px; flex-wrap: wrap;
-    animation: authFadeInUp 0.7s 0.6s cubic-bezier(0.22,1,0.36,1) both;
-}
-.auth-trust-item {
-    display: flex; align-items: center; gap: 5px;
-    font-size: 0.68rem; font-weight: 500;
-    color: rgba(255,255,255,0.28);
-}
-.auth-trust-icon { font-size: 0.72rem; }
-
-/* ── Footer ────────────────────────────────────────────────── */
-.auth-footer {
-    text-align: center; margin-top: 36px;
-    font-size: 0.65rem; color: rgba(255,255,255,0.18);
-    line-height: 1.6;
-    animation: authFadeInUp 0.7s 0.7s cubic-bezier(0.22,1,0.36,1) both;
+.ag-page [data-testid="stForm"] button[kind="primaryFormSubmit"]:hover,
+.ag-page [data-testid="stForm"] button[type="submit"]:hover {
+    transform:translateY(-3px) scale(1.01) !important;
+    box-shadow:
+        0 10px 40px rgba(0,213,89,0.45),
+        0 1px 0 rgba(255,255,255,0.2) inset !important;
 }
 
-/* ── Responsive ────────────────────────────────────────────── */
-@media (max-width: 520px) {
-    .auth-gate-container { padding: 28px 14px 24px; }
-    .auth-gate-container [data-testid="stForm"] {
-        padding: 24px 18px 22px !important;
-        border-radius: 16px !important;
-    }
-    .auth-headline { font-size: 1.35rem; }
-    .auth-features-grid { grid-template-columns: 1fr 1fr; }
-    .auth-logo-ring { width: 76px; height: 76px; }
-    .auth-logo-ring img { width: 76px; height: 76px; }
-    .auth-brand-name { font-size: 1.35rem; }
-    .auth-stats-bar { gap: 6px; }
-    .auth-stat-chip { font-size: 0.68rem; padding: 6px 10px; }
-    .auth-ticker-wrap { margin-bottom: 24px; }
+/* ── COMPARISON TABLE ────────────────────────────────────────── */
+.ag-compare {
+    margin:28px 0 4px;
+    animation: agFadeUp 0.8s 0.45s cubic-bezier(0.22,1,0.36,1) both;
 }
-@media (max-width: 360px) {
-    .auth-features-grid { grid-template-columns: 1fr; }
+.ag-compare-title {
+    text-align:center; font-size:0.72rem; font-weight:800;
+    text-transform:uppercase; letter-spacing:0.15em;
+    color:rgba(255,255,255,0.3); margin-bottom:12px;
+}
+.ag-compare-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+}
+.ag-compare-col {
+    border-radius:16px; padding:20px 16px;
+    text-align:center;
+}
+.ag-compare-col.them {
+    background:rgba(242,67,54,0.05);
+    border:1px solid rgba(242,67,54,0.12);
+}
+.ag-compare-col.us {
+    background:rgba(0,213,89,0.05);
+    border:1px solid rgba(0,213,89,0.15);
+    position:relative;
+}
+.ag-compare-col.us::after {
+    content:'RECOMMENDED'; position:absolute; top:-8px; left:50%; transform:translateX(-50%);
+    font-size:0.55rem; font-weight:800; letter-spacing:0.12em;
+    color:#0A0E14; background:#00D559;
+    padding:2px 10px; border-radius:100px;
+}
+.ag-compare-header {
+    font-size:0.78rem; font-weight:800; margin-bottom:14px;
+    letter-spacing:0.02em;
+}
+.ag-compare-col.them .ag-compare-header { color:rgba(242,67,54,0.8); }
+.ag-compare-col.us .ag-compare-header { color:#00D559; }
+.ag-compare-item {
+    font-size:0.72rem; color:rgba(255,255,255,0.5);
+    padding:5px 0; line-height:1.4; display:flex; align-items:center; gap:6px;
+}
+.ag-compare-col.them .ag-compare-item::before {
+    content:'✗'; color:rgba(242,67,54,0.6); font-weight:800; font-size:0.7rem; flex-shrink:0;
+}
+.ag-compare-col.us .ag-compare-item::before {
+    content:'✓'; color:#00D559; font-weight:800; font-size:0.7rem; flex-shrink:0;
+}
+
+/* ── FEATURE PILLARS ─────────────────────────────────────────── */
+.ag-pillars {
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;
+    margin:24px 0 0;
+    animation: agFadeUp 0.8s 0.55s cubic-bezier(0.22,1,0.36,1) both;
+}
+.ag-pillar {
+    background:rgba(255,255,255,0.025);
+    border:1px solid rgba(255,255,255,0.05);
+    border-radius:16px; padding:18px 10px 14px;
+    text-align:center;
+    transition:all 0.3s cubic-bezier(0.22,1,0.36,1);
+    position:relative; overflow:hidden;
+}
+.ag-pillar::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:var(--pillar-color, rgba(0,213,89,0.3));
+    opacity:0; transition:opacity 0.3s;
+}
+.ag-pillar:hover {
+    border-color:rgba(255,255,255,0.1);
+    transform:translateY(-4px);
+    box-shadow:0 12px 32px rgba(0,0,0,0.3);
+}
+.ag-pillar:hover::before { opacity:1; }
+.ag-pillar-icon { font-size:1.6rem; margin-bottom:6px; display:block; animation:agFloat 4s ease-in-out infinite; }
+.ag-pillar-name {
+    font-size:0.7rem; font-weight:800; color:rgba(255,255,255,0.8);
+    letter-spacing:-0.01em; line-height:1.2;
+}
+.ag-pillar-desc {
+    font-size:0.58rem; color:rgba(255,255,255,0.3);
+    margin-top:3px; font-weight:500;
+}
+
+/* ── TRUST STRIP ─────────────────────────────────────────────── */
+.ag-trust {
+    display:flex; justify-content:center; align-items:center;
+    gap:24px; margin:24px 0 8px; flex-wrap:wrap;
+    animation: agFadeUp 0.8s 0.65s cubic-bezier(0.22,1,0.36,1) both;
+}
+.ag-trust-item {
+    display:flex; align-items:center; gap:6px;
+    font-size:0.68rem; font-weight:600; color:rgba(255,255,255,0.3);
+}
+.ag-trust-icon {
+    width:18px; height:18px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:0.6rem;
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06);
+}
+
+/* ── USERS COUNTER ───────────────────────────────────────────── */
+.ag-users {
+    text-align:center; margin:20px 0;
+    animation: agFadeUp 0.8s 0.7s cubic-bezier(0.22,1,0.36,1) both;
+}
+.ag-users-avatars {
+    display:inline-flex; margin-right:8px;
+}
+.ag-users-avatar {
+    width:28px; height:28px; border-radius:50%;
+    border:2px solid #0A0E14;
+    margin-left:-8px;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:0.6rem; font-weight:700;
+}
+.ag-users-avatar:first-child { margin-left:0; }
+.ag-users-avatar:nth-child(1) { background:linear-gradient(135deg,#00D559,#2D9EFF); color:#fff; }
+.ag-users-avatar:nth-child(2) { background:linear-gradient(135deg,#c084fc,#2D9EFF); color:#fff; }
+.ag-users-avatar:nth-child(3) { background:linear-gradient(135deg,#F9C62B,#FF6B35); color:#fff; }
+.ag-users-avatar:nth-child(4) { background:linear-gradient(135deg,#2D9EFF,#00D559); color:#fff; }
+.ag-users-text {
+    font-size:0.74rem; color:rgba(255,255,255,0.45); font-weight:500;
+    vertical-align:middle;
+}
+.ag-users-text strong {
+    color:#00D559; font-weight:800;
+}
+
+/* ── FOOTER ──────────────────────────────────────────────────── */
+.ag-footer {
+    text-align:center; padding:24px 0 40px;
+    font-size:0.62rem; color:rgba(255,255,255,0.15); line-height:1.7;
+    animation: agFadeUp 0.8s 0.75s cubic-bezier(0.22,1,0.36,1) both;
+}
+.ag-footer a { color:rgba(255,255,255,0.25); text-decoration:underline; }
+
+/* ── RESPONSIVE ──────────────────────────────────────────────── */
+@media (max-width:520px) {
+    .ag-page { padding:0 14px; }
+    .ag-brand { padding-top:52px; }
+    .ag-hero h1 { font-size:1.55rem; }
+    .ag-hero-sub { font-size:0.84rem; }
+    .ag-logo-ring, .ag-logo-ring img { width:72px; height:72px; }
+    .ag-brand-name { font-size:1.6rem; }
+    .ag-compare-grid { gap:8px; }
+    .ag-compare-col { padding:16px 12px; }
+    .ag-pillars { grid-template-columns:repeat(2, 1fr); }
+    .ag-page [data-testid="stForm"] { padding:26px 20px 24px !important; border-radius:18px !important; }
+    .ag-proof-chip { padding:6px 12px; font-size:0.7rem; }
+    .ag-urgency { font-size:0.66rem; height:36px; }
+}
+@media (max-width:360px) {
+    .ag-pillars { grid-template-columns:1fr 1fr; }
+    .ag-hero h1 { font-size:1.35rem; }
+    .ag-compare-item { font-size:0.66rem; }
 }
 </style>
 """
@@ -607,65 +805,87 @@ def require_login() -> bool:
 
     # Logo base64
     _logo_b64 = _get_logo_b64()
-    _logo_tag = f'<img src="data:image/png;base64,{_logo_b64}" alt="Smart Pick Pro">' if _logo_b64 else '<div style="font-size:2.8rem;">🏀</div>'
+    _logo_tag = (
+        f'<img src="data:image/png;base64,{_logo_b64}" alt="Smart Pick Pro">'
+        if _logo_b64
+        else '<div style="font-size:2.8rem;">🏀</div>'
+    )
 
+    # ── Star-field particles (30 CSS-only stars) ──────────
+    import random as _rnd
+    _stars_html = ""
+    for _i in range(30):
+        _x = _rnd.randint(0, 100)
+        _y = _rnd.randint(0, 100)
+        _sz = _rnd.choice([1, 1, 1, 2, 2, 3])
+        _dur = _rnd.uniform(2.5, 7)
+        _delay = _rnd.uniform(0, 5)
+        _stars_html += (
+            f'<div class="ag-star" style="left:{_x}%;top:{_y}%;'
+            f'width:{_sz}px;height:{_sz}px;'
+            f'--dur:{_dur:.1f}s;--delay:{_delay:.1f}s;"></div>'
+        )
+
+    # ── Full-screen cinematic markup ──────────────────────
     st.markdown(f"""
-    <!-- Ambient background layers -->
-    <div class="auth-gate-bg"></div>
-    <div class="auth-orb auth-orb-1"></div>
-    <div class="auth-orb auth-orb-2"></div>
-    <div class="auth-orb auth-orb-3"></div>
-    <div class="auth-scan-line"></div>
-    <div class="auth-grid-overlay"></div>
-
-    <div class="auth-gate-container">
-
-      <!-- Sports ticker -->
-      <div class="auth-ticker-wrap">
-        <div class="auth-ticker-track">
-          <div class="auth-ticker-item"><span class="ticker-dot ticker-dot-live"></span> NBA PLAYOFFS LIVE</div>
-          <div class="auth-ticker-item"><span class="ticker-dot ticker-dot-soon"></span> MLB COMING SOON</div>
-          <div class="auth-ticker-item"><span class="ticker-dot ticker-dot-soon"></span> NFL COMING SOON</div>
-          <div class="auth-ticker-item">⚡ 300+ PROPS ANALYZED NIGHTLY</div>
-          <div class="auth-ticker-item">🧠 QUANTUM MATRIX ENGINE</div>
-          <div class="auth-ticker-item">📊 62% HIT RATE VERIFIED</div>
-          <!-- duplicate for seamless loop -->
-          <div class="auth-ticker-item"><span class="ticker-dot ticker-dot-live"></span> NBA PLAYOFFS LIVE</div>
-          <div class="auth-ticker-item"><span class="ticker-dot ticker-dot-soon"></span> MLB COMING SOON</div>
-          <div class="auth-ticker-item"><span class="ticker-dot ticker-dot-soon"></span> NFL COMING SOON</div>
-          <div class="auth-ticker-item">⚡ 300+ PROPS ANALYZED NIGHTLY</div>
-          <div class="auth-ticker-item">🧠 QUANTUM MATRIX ENGINE</div>
-          <div class="auth-ticker-item">📊 62% HIT RATE VERIFIED</div>
-        </div>
-      </div>
-
-      <!-- Logo + Brand -->
-      <div class="auth-logo-section">
-        <div class="auth-logo-ring">{_logo_tag}</div>
-        <div class="auth-brand-name">Smart Pick Pro</div>
-        <div class="auth-brand-sub">The Sharpest Prop Engine on the Internet</div>
-      </div>
-
-      <!-- Headline -->
-      <div class="auth-headline">
-        The House Has a Problem.<br><span class="hl-accent">It's Us.</span>
-      </div>
-      <div class="auth-subheadline">
-        Create your free account to access the full platform.<br>No credit card required. Ever.
-      </div>
-
-      <!-- Social proof chips -->
-      <div class="auth-stats-bar">
-        <div class="auth-stat-chip">🏀 <span class="stat-val">300+</span> Props / Night</div>
-        <div class="auth-stat-chip">🎯 <span class="stat-val">62%</span> Hit Rate</div>
-        <div class="auth-stat-chip">🤖 <span class="stat-val">AI</span> Powered</div>
-      </div>
-
+    <!-- Full-screen canvas -->
+    <div class="ag-canvas">
+      <div class="ag-stars">{_stars_html}</div>
+      <div class="ag-orb ag-orb-1"></div>
+      <div class="ag-orb ag-orb-2"></div>
+      <div class="ag-orb ag-orb-3"></div>
+      <div class="ag-orb ag-orb-4"></div>
+      <div class="ag-scan"></div>
+      <div class="ag-grid"></div>
     </div>
+
+    <!-- Urgency bar -->
+    <div class="ag-urgency">
+      <span class="ag-urgency-live"><span class="ag-urgency-dot"></span> LIVE</span>
+      NBA Playoffs &mdash; tonight's slate is being analyzed right now
+    </div>
+
+    <!-- Scroll wrapper -->
+    <div class="ag-scroll">
+    <div class="ag-page">
+
+    <!-- Brand -->
+    <div class="ag-brand">
+      <div class="ag-logo-ring">{_logo_tag}</div>
+      <div class="ag-brand-name">Smart Pick Pro</div>
+      <div class="ag-brand-tagline">AI-Powered Sports Intelligence</div>
+    </div>
+
+    <!-- Hero -->
+    <div class="ag-hero">
+      <h1>Stop Guessing.<br><span class="accent">Start Winning.</span></h1>
+      <div class="ag-hero-sub">
+        Join the sharpest prop bettors on the planet.<br>
+        <strong>Free forever</strong> &mdash; no credit card, no catches.
+      </div>
+    </div>
+
+    <!-- Social proof chips -->
+    <div class="ag-proof">
+      <div class="ag-proof-chip">🏀 <span class="ag-proof-val">300+</span>&nbsp;Props / Night</div>
+      <div class="ag-proof-chip">🎯 <span class="ag-proof-val">62%</span>&nbsp;Verified Hit Rate</div>
+      <div class="ag-proof-chip">🤖 <span class="ag-proof-val">6</span>&nbsp;AI Models</div>
+    </div>
+
+    <!-- Testimonial -->
+    <div class="ag-testimonial">
+      <div class="ag-testimonial-text">
+        I went from randomly picking parlays to having a real edge. SPP&rsquo;s
+        Quantum Matrix literally changed how I bet.
+      </div>
+      <div class="ag-testimonial-author">&mdash; @sharpbettor_mike &middot; SPP member since Jan 2025</div>
+    </div>
+
+    </div></div>
     """, unsafe_allow_html=True)
 
-    # Tabs for signup / login
-    tab_signup, tab_login = st.tabs(["⚡  Create Account", "🔓  Log In"])
+    # ── Tabs (Streamlit widgets) ──────────────────────────
+    tab_signup, tab_login = st.tabs(["⚡  Get Instant Access", "🔓  Log In"])
 
     with tab_signup:
         with st.form("signup_form", clear_on_submit=False):
@@ -673,7 +893,7 @@ def require_login() -> bool:
             su_email = st.text_input("Email Address", placeholder="you@example.com", key="_su_email")
             su_pw = st.text_input("Password", type="password", placeholder="Min 8 chars, 1 letter, 1 number", key="_su_pw")
             su_pw2 = st.text_input("Confirm Password", type="password", placeholder="Re-enter your password", key="_su_pw2")
-            su_submit = st.form_submit_button("⚡ Create Free Account", use_container_width=True, type="primary")
+            su_submit = st.form_submit_button("⚡ Create Free Account — It Takes 10 Seconds", use_container_width=True, type="primary")
 
         if su_submit:
             if not su_email or not _valid_email(su_email):
@@ -717,49 +937,85 @@ def require_login() -> bool:
                 else:
                     st.error("Invalid email or password.")
 
-    # Feature cards
+    # ── Below-fold conversion content ─────────────────────
     st.markdown("""
-    <div class="auth-features-grid">
-      <div class="auth-feat-card">
-        <span class="auth-feat-icon">🎯</span>
-        <div class="auth-feat-label">SAFE Score™</div>
-        <div class="auth-feat-sublabel">Every pick rated</div>
-      </div>
-      <div class="auth-feat-card">
-        <span class="auth-feat-icon">🧠</span>
-        <div class="auth-feat-label">Quantum Engine</div>
-        <div class="auth-feat-sublabel">AI-powered analysis</div>
-      </div>
-      <div class="auth-feat-card">
-        <span class="auth-feat-icon">📡</span>
-        <div class="auth-feat-label">Live Sweat</div>
-        <div class="auth-feat-sublabel">Real-time tracking</div>
-      </div>
-      <div class="auth-feat-card">
-        <span class="auth-feat-icon">🔬</span>
-        <div class="auth-feat-label">Prop Scanner</div>
-        <div class="auth-feat-sublabel">Find edge instantly</div>
-      </div>
-      <div class="auth-feat-card">
-        <span class="auth-feat-icon">🎙️</span>
-        <div class="auth-feat-label">The Studio</div>
-        <div class="auth-feat-sublabel">Joseph's AI brain</div>
-      </div>
-      <div class="auth-feat-card">
-        <span class="auth-feat-icon">🛡️</span>
-        <div class="auth-feat-label">Risk Shield</div>
-        <div class="auth-feat-sublabel">Protect your bankroll</div>
+    <!-- Comparison: Them vs Us -->
+    <div class="ag-compare">
+      <div class="ag-compare-title">Why Smart Bettors Switch</div>
+      <div class="ag-compare-grid">
+        <div class="ag-compare-col them">
+          <div class="ag-compare-header">❌ Gut Feeling</div>
+          <div class="ag-compare-item">Random parlays</div>
+          <div class="ag-compare-item">No data backing</div>
+          <div class="ag-compare-item">Chasing losses</div>
+          <div class="ag-compare-item">Bankroll guesswork</div>
+        </div>
+        <div class="ag-compare-col us">
+          <div class="ag-compare-header">Smart Pick Pro</div>
+          <div class="ag-compare-item">AI-scored every prop</div>
+          <div class="ag-compare-item">6 models per pick</div>
+          <div class="ag-compare-item">SAFE Score™ system</div>
+          <div class="ag-compare-item">Bankroll management</div>
+        </div>
       </div>
     </div>
 
-    <div class="auth-trust-strip">
-      <div class="auth-trust-item"><span class="auth-trust-icon">🔒</span> 256-bit Encryption</div>
-      <div class="auth-trust-item"><span class="auth-trust-icon">🚫</span> No Credit Card</div>
-      <div class="auth-trust-item"><span class="auth-trust-icon">🤝</span> Never Sold Data</div>
+    <!-- Feature pillars -->
+    <div class="ag-pillars">
+      <div class="ag-pillar" style="--pillar-color:rgba(0,213,89,0.4);">
+        <span class="ag-pillar-icon">🎯</span>
+        <div class="ag-pillar-name">SAFE Score™</div>
+        <div class="ag-pillar-desc">Every pick rated 0-100</div>
+      </div>
+      <div class="ag-pillar" style="--pillar-color:rgba(45,158,255,0.4);">
+        <span class="ag-pillar-icon">🧠</span>
+        <div class="ag-pillar-name">Quantum Engine</div>
+        <div class="ag-pillar-desc">6 AI models fused</div>
+      </div>
+      <div class="ag-pillar" style="--pillar-color:rgba(192,132,252,0.4);">
+        <span class="ag-pillar-icon">📡</span>
+        <div class="ag-pillar-name">Live Sweat</div>
+        <div class="ag-pillar-desc">Real-time tracking</div>
+      </div>
+      <div class="ag-pillar" style="--pillar-color:rgba(249,198,43,0.4);">
+        <span class="ag-pillar-icon">🔬</span>
+        <div class="ag-pillar-name">Prop Scanner</div>
+        <div class="ag-pillar-desc">Find edge in seconds</div>
+      </div>
+      <div class="ag-pillar" style="--pillar-color:rgba(0,213,89,0.4);">
+        <span class="ag-pillar-icon">🎙️</span>
+        <div class="ag-pillar-name">The Studio</div>
+        <div class="ag-pillar-desc">Joseph's AI brain</div>
+      </div>
+      <div class="ag-pillar" style="--pillar-color:rgba(45,158,255,0.4);">
+        <span class="ag-pillar-icon">🛡️</span>
+        <div class="ag-pillar-name">Risk Shield</div>
+        <div class="ag-pillar-desc">Protect your roll</div>
+      </div>
     </div>
 
-    <div class="auth-footer">
-      © 2026 Smart Pick Pro · For entertainment &amp; educational purposes only · 21+ · <a href="https://www.ncpgambling.org/" target="_blank" style="color:rgba(255,255,255,0.3);text-decoration:underline;">1-800-GAMBLER</a>
+    <!-- Trust strip -->
+    <div class="ag-trust">
+      <div class="ag-trust-item"><span class="ag-trust-icon">🔒</span> 256-bit Encrypted</div>
+      <div class="ag-trust-item"><span class="ag-trust-icon">💳</span> No Credit Card</div>
+      <div class="ag-trust-item"><span class="ag-trust-icon">🚫</span> Never Sell Data</div>
+    </div>
+
+    <!-- User counter -->
+    <div class="ag-users">
+      <span class="ag-users-avatars">
+        <span class="ag-users-avatar">J</span>
+        <span class="ag-users-avatar">M</span>
+        <span class="ag-users-avatar">K</span>
+        <span class="ag-users-avatar">A</span>
+      </span>
+      <span class="ag-users-text"><strong>500+</strong> bettors already signed up</span>
+    </div>
+
+    <!-- Footer -->
+    <div class="ag-footer">
+      &copy; 2025 Smart Pick Pro &middot; For entertainment &amp; educational purposes only &middot; 21+<br>
+      <a href="https://www.ncpgambling.org/" target="_blank">National Council on Problem Gambling &middot; 1-800-GAMBLER</a>
     </div>
     """, unsafe_allow_html=True)
 

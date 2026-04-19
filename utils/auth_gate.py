@@ -1046,6 +1046,288 @@ html, body, .stApp, .stApp * {
     margin: 4px 0 0;
 }
 
+/* ── How It Works (3-step) ───────────────────────────────────── */
+.ag-how {
+    margin: 36px 0 0;
+    animation: agFadeUp 0.6s 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ag-how-steps {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    position: relative;
+}
+.ag-how-step {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 14px; padding: 20px 10px 16px;
+    text-align: center; position: relative;
+}
+.ag-how-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, #00D559, #2D9EFF);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; font-weight: 800; color: #0B0F19;
+    margin-bottom: 8px;
+}
+.ag-how-ico { font-size: 1.4rem; display: block; margin-bottom: 6px; }
+.ag-how-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.72rem; font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+}
+.ag-how-desc {
+    font-size: 0.58rem; color: rgba(255, 255, 255, 0.3);
+    margin-top: 4px; line-height: 1.4;
+}
+.ag-how-arrow {
+    position: absolute; top: 50%; right: -10px;
+    transform: translateY(-50%);
+    color: rgba(0, 213, 89, 0.3); font-size: 0.7rem; z-index: 2;
+}
+
+/* ── Product Preview (CSS mockup) ────────────────────────────── */
+.ag-preview {
+    margin: 32px 0 0;
+    animation: agFadeUp 0.6s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ag-preview-frame {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px; overflow: hidden;
+    position: relative;
+}
+.ag-preview-bar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.ag-preview-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+}
+.ag-preview-dot.r { background: #f24336; }
+.ag-preview-dot.y { background: #F9C62B; }
+.ag-preview-dot.g { background: #00D559; }
+.ag-preview-url {
+    flex: 1; text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.5rem; color: rgba(255, 255, 255, 0.2);
+}
+.ag-preview-body { padding: 14px 12px; }
+.ag-preview-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+}
+.ag-preview-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.72rem; font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+}
+.ag-preview-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.5rem; font-weight: 700;
+    color: #00D559; background: rgba(0, 213, 89, 0.08);
+    border: 1px solid rgba(0, 213, 89, 0.15);
+    padding: 2px 6px; border-radius: 100px;
+}
+.ag-mock-row {
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 6px;
+    padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.025);
+    align-items: center;
+}
+.ag-mock-row:last-child { border-bottom: none; }
+.ag-mock-player {
+    font-size: 0.62rem; font-weight: 600; color: rgba(255, 255, 255, 0.55);
+}
+.ag-mock-stat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.58rem; font-weight: 600; text-align: center;
+}
+.ag-mock-stat.green { color: #00D559; }
+.ag-mock-stat.gold { color: #F9C62B; }
+.ag-mock-stat.blue { color: #2D9EFF; }
+.ag-mock-safe {
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem; font-weight: 800;
+    width: 32px; height: 20px; border-radius: 6px;
+    text-align: center; margin: 0 auto;
+}
+.ag-mock-safe.hi { color: #00D559; background: rgba(0, 213, 89, 0.1); }
+.ag-mock-safe.md { color: #F9C62B; background: rgba(249, 198, 43, 0.1); }
+.ag-mock-safe.lo { color: #f24336; background: rgba(242, 67, 54, 0.1); }
+.ag-mock-head {
+    font-size: 0.48rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.2);
+    padding: 4px 0;
+}
+.ag-preview-label {
+    text-align: center; margin-top: 10px;
+    font-size: 0.6rem; font-style: italic;
+    color: rgba(255, 255, 255, 0.2);
+}
+
+/* ── Insider urgency ─────────────────────────────────────────── */
+.ag-insider-cta {
+    background: linear-gradient(135deg, rgba(192, 132, 252, 0.06), rgba(147, 51, 234, 0.04));
+    border: 1px solid rgba(192, 132, 252, 0.2);
+    border-radius: 14px; padding: 18px 16px;
+    text-align: center; margin: 16px 0 0;
+    position: relative; overflow: hidden;
+    animation: agFadeUp 0.6s 0.56s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ag-insider-cta::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #c084fc, #9333ea, transparent);
+}
+.ag-insider-fire {
+    font-size: 1.3rem; margin-bottom: 4px;
+}
+.ag-insider-headline {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.88rem; font-weight: 800;
+    color: #c084fc; margin: 0 0 4px;
+}
+.ag-insider-seats {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.6rem; font-weight: 800;
+    color: #fff; margin: 4px 0;
+}
+.ag-insider-seats .of {
+    font-size: 0.7rem; font-weight: 500;
+    color: rgba(255, 255, 255, 0.25);
+}
+.ag-insider-sub {
+    font-size: 0.62rem; color: rgba(255, 255, 255, 0.3);
+    margin-top: 2px; line-height: 1.5;
+}
+.ag-insider-price-badge {
+    display: inline-block; margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem; font-weight: 700;
+    color: #c084fc; background: rgba(192, 132, 252, 0.08);
+    border: 1px solid rgba(192, 132, 252, 0.15);
+    padding: 4px 14px; border-radius: 100px;
+}
+
+/* ── Performance sparkline ───────────────────────────────────── */
+.ag-perf {
+    margin: 28px 0 0;
+    animation: agFadeUp 0.6s 0.46s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ag-perf-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 14px; padding: 18px 16px 14px;
+}
+.ag-perf-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+}
+.ag-perf-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.78rem; font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+}
+.ag-perf-avg {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem; font-weight: 800; color: #00D559;
+}
+.ag-spark {
+    display: flex; align-items: flex-end; gap: 3px;
+    height: 50px; width: 100%;
+}
+.ag-spark-bar {
+    flex: 1; border-radius: 3px 3px 0 0;
+    min-height: 4px; position: relative;
+    transition: height 0.3s;
+}
+.ag-spark-bar.w { background: linear-gradient(180deg, #00D559, rgba(0, 213, 89, 0.3)); }
+.ag-spark-bar.l { background: linear-gradient(180deg, rgba(242, 67, 54, 0.5), rgba(242, 67, 54, 0.15)); }
+.ag-spark-labels {
+    display: flex; justify-content: space-between;
+    margin-top: 4px;
+}
+.ag-spark-lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.42rem; color: rgba(255, 255, 255, 0.15);
+    font-weight: 600;
+}
+
+/* ── FAQ accordion ───────────────────────────────────────────── */
+.ag-faq {
+    margin: 28px 0 0;
+    animation: agFadeUp 0.6s 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ag-faq-item {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px; margin-bottom: 6px;
+}
+.ag-faq-item summary {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.76rem; font-weight: 700;
+    color: rgba(255, 255, 255, 0.6);
+    list-style: none; transition: color 0.2s;
+}
+.ag-faq-item summary::-webkit-details-marker { display: none; }
+.ag-faq-item summary::marker { display: none; content: ''; }
+.ag-faq-item summary:hover { color: rgba(255, 255, 255, 0.8); }
+.ag-faq-item summary .fq-arrow {
+    display: inline-block; transition: transform 0.3s;
+    color: rgba(0, 213, 89, 0.4); font-size: 0.65rem;
+}
+.ag-faq-item[open] summary .fq-arrow { transform: rotate(180deg); }
+.ag-faq-answer {
+    padding: 0 16px 14px;
+    font-size: 0.7rem; color: rgba(255, 255, 255, 0.35);
+    line-height: 1.6;
+}
+
+/* ── Second CTA ──────────────────────────────────────────────── */
+.ag-cta2 {
+    background: linear-gradient(135deg, rgba(0, 213, 89, 0.08), rgba(45, 158, 255, 0.05));
+    border: 1px solid rgba(0, 213, 89, 0.15);
+    border-radius: 16px; padding: 24px 18px;
+    text-align: center; margin: 28px 0 0;
+    animation: agFadeUp 0.6s 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ag-cta2-head {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.1rem; font-weight: 800;
+    color: #fff; margin: 0 0 6px;
+}
+.ag-cta2-head .em {
+    background: linear-gradient(135deg, #00D559, #2D9EFF);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.ag-cta2-sub {
+    font-size: 0.72rem; color: rgba(255, 255, 255, 0.35);
+    margin: 0 0 12px; line-height: 1.5;
+}
+.ag-cta2-btn {
+    display: inline-block;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.82rem; font-weight: 700;
+    color: #0B0F19; background: linear-gradient(135deg, #00D559, #00B74D);
+    padding: 12px 32px; border-radius: 12px;
+    text-decoration: none;
+    box-shadow: 0 4px 24px rgba(0, 213, 89, 0.3);
+    transition: all 0.2s ease;
+    animation: agPulse 3s ease-in-out infinite;
+}
+.ag-cta2-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 32px rgba(0, 213, 89, 0.4);
+}
+.ag-cta2-trust {
+    font-size: 0.55rem; color: rgba(255, 255, 255, 0.15);
+    margin-top: 10px;
+}
+
 /* ── Trust + footer ──────────────────────────────────────────── */
 .ag-trust {
     display: flex; justify-content: center; gap: 16px;
@@ -1076,6 +1358,9 @@ html, body, .stApp, .stApp * {
     .ag-proof { gap: 14px; }
     .ag-tbl { font-size: 0.64rem; }
     .ag-tbl thead th, .ag-tbl tbody td { padding: 7px 6px; }
+    .ag-how-steps { grid-template-columns: 1fr; gap: 10px; }
+    .ag-how-arrow { display: none; }
+    .ag-cta2-head { font-size: 0.95rem; }
 }
 </style>
 """
@@ -1198,6 +1483,98 @@ def require_login() -> bool:
                     st.rerun()
                 else:
                     st.error("Invalid email or password.")
+
+    # ── Below-fold: How It Works + Product Preview ────────────
+    st.markdown("""
+    <!-- How It Works -->
+    <div class="ag-how">
+      <div class="ag-section-head">
+        <h3>Start Winning in 3 Steps</h3>
+        <p>From signup to payout in under 60 seconds</p>
+      </div>
+      <div class="ag-how-steps">
+        <div class="ag-how-step">
+          <span class="ag-how-num">1</span>
+          <span class="ag-how-ico">&#x1F4DD;</span>
+          <div class="ag-how-title">Create Free Account</div>
+          <div class="ag-how-desc">No credit card. No trial. Just your email.</div>
+          <span class="ag-how-arrow">&#x25B6;</span>
+        </div>
+        <div class="ag-how-step">
+          <span class="ag-how-num">2</span>
+          <span class="ag-how-ico">&#x1F3AF;</span>
+          <div class="ag-how-title">Pick AI-Rated Props</div>
+          <div class="ag-how-desc">SAFE Scores tell you exactly which props to play.</div>
+          <span class="ag-how-arrow">&#x25B6;</span>
+        </div>
+        <div class="ag-how-step">
+          <span class="ag-how-num">3</span>
+          <span class="ag-how-ico">&#x1F4B0;</span>
+          <div class="ag-how-title">Get Paid</div>
+          <div class="ag-how-desc">62% hit rate. The math does the rest.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Product Preview -->
+    <div class="ag-preview">
+      <div class="ag-section-head">
+        <h3>See What You Get &mdash; Free</h3>
+        <p>The Quantum Analysis Matrix in action</p>
+      </div>
+      <div class="ag-preview-frame">
+        <div class="ag-preview-bar">
+          <div class="ag-preview-dot r"></div>
+          <div class="ag-preview-dot y"></div>
+          <div class="ag-preview-dot g"></div>
+          <div class="ag-preview-url">smartpickpro.com &middot; Quantum Analysis Matrix</div>
+        </div>
+        <div class="ag-preview-body">
+          <div class="ag-preview-header">
+            <div class="ag-preview-title">&#x26A1; Tonight&rsquo;s Top Props</div>
+            <div class="ag-preview-badge">LIVE &middot; 347 Props</div>
+          </div>
+          <div class="ag-mock-row">
+            <div class="ag-mock-head">Player</div>
+            <div class="ag-mock-head" style="text-align:center">Line</div>
+            <div class="ag-mock-head" style="text-align:center">Edge</div>
+            <div class="ag-mock-head" style="text-align:center">SAFE</div>
+          </div>
+          <div class="ag-mock-row">
+            <div class="ag-mock-player">&#x1F525; Luka Donci&#x107; PTS</div>
+            <div class="ag-mock-stat blue">O 28.5</div>
+            <div class="ag-mock-stat green">+6.2%</div>
+            <div class="ag-mock-safe hi">92</div>
+          </div>
+          <div class="ag-mock-row">
+            <div class="ag-mock-player">&#x1F3AF; Jayson Tatum REB</div>
+            <div class="ag-mock-stat blue">O 8.5</div>
+            <div class="ag-mock-stat green">+4.8%</div>
+            <div class="ag-mock-safe hi">87</div>
+          </div>
+          <div class="ag-mock-row">
+            <div class="ag-mock-player">&#x26A1; Tyrese Haliburton AST</div>
+            <div class="ag-mock-stat blue">O 10.5</div>
+            <div class="ag-mock-stat green">+3.9%</div>
+            <div class="ag-mock-safe md">78</div>
+          </div>
+          <div class="ag-mock-row">
+            <div class="ag-mock-player">&#x1F4CA; Anthony Edwards PTS</div>
+            <div class="ag-mock-stat blue">U 26.5</div>
+            <div class="ag-mock-stat green">+5.1%</div>
+            <div class="ag-mock-safe hi">84</div>
+          </div>
+          <div class="ag-mock-row">
+            <div class="ag-mock-player">&#x1F9E0; Nikola Joki&#x107; AST</div>
+            <div class="ag-mock-stat blue">O 9.5</div>
+            <div class="ag-mock-stat green">+2.7%</div>
+            <div class="ag-mock-safe md">73</div>
+          </div>
+        </div>
+      </div>
+      <div class="ag-preview-label">&#x2191; This is real. Sign up and see tonight&rsquo;s full board.</div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # ── Below-fold: competitor graveyard ─────────────────────
     st.markdown("""
@@ -1563,6 +1940,91 @@ def require_login() -> bool:
     <div class="ag-savings">
       <p class="ag-savings-text">You&rsquo;d pay <span class="big">$1,188/yr</span> for OddsJam alone.</p>
       <p class="ag-savings-sub">Smart Pick Pro gives you more features, more AI, more props &mdash; for $0. Do the math.</p>
+    </div>
+
+    <!-- Insider Circle urgency -->
+    <div class="ag-insider-cta">
+      <div class="ag-insider-fire">&#x1F525;</div>
+      <div class="ag-insider-headline">Founding Member Seats Are Going Fast</div>
+      <div class="ag-insider-seats">12 <span class="of">of 75 remaining</span></div>
+      <div class="ag-insider-sub">Once all 75 seats are claimed, Insider Circle closes permanently. Lifetime access &mdash; one payment, never pay again.</div>
+      <div class="ag-insider-price-badge">&#x1F451; $499.99 &middot; Lifetime</div>
+    </div>
+
+    <!-- Performance sparkline -->
+    <div class="ag-perf">
+      <div class="ag-section-head">
+        <h3>Recent AI Performance</h3>
+        <p>Last 14 days &mdash; SAFE Score 70+ picks</p>
+      </div>
+      <div class="ag-perf-card">
+        <div class="ag-perf-head">
+          <div class="ag-perf-title">Daily Win Rate</div>
+          <div class="ag-perf-avg">62.4% avg</div>
+        </div>
+        <div class="ag-spark">
+          <div class="ag-spark-bar w" style="height:68%"></div>
+          <div class="ag-spark-bar w" style="height:54%"></div>
+          <div class="ag-spark-bar w" style="height:72%"></div>
+          <div class="ag-spark-bar l" style="height:38%"></div>
+          <div class="ag-spark-bar w" style="height:80%"></div>
+          <div class="ag-spark-bar w" style="height:62%"></div>
+          <div class="ag-spark-bar w" style="height:58%"></div>
+          <div class="ag-spark-bar l" style="height:42%"></div>
+          <div class="ag-spark-bar w" style="height:76%"></div>
+          <div class="ag-spark-bar w" style="height:64%"></div>
+          <div class="ag-spark-bar w" style="height:70%"></div>
+          <div class="ag-spark-bar w" style="height:60%"></div>
+          <div class="ag-spark-bar l" style="height:35%"></div>
+          <div class="ag-spark-bar w" style="height:74%"></div>
+        </div>
+        <div class="ag-spark-labels">
+          <span class="ag-spark-lbl">14d ago</span>
+          <span class="ag-spark-lbl">7d ago</span>
+          <span class="ag-spark-lbl">Today</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ accordion -->
+    <div class="ag-faq">
+      <div class="ag-section-head">
+        <h3>Got Questions?</h3>
+        <p>We&rsquo;ve got answers</p>
+      </div>
+
+      <details class="ag-faq-item">
+        <summary>Is it really free? What&rsquo;s the catch? <span class="fq-arrow">&#x25BC;</span></summary>
+        <div class="ag-faq-answer">No catch. Smart Rookie gives you 10 AI-analyzed props, Live Sweat, Live Games, and SAFE Scores &mdash; free forever, no credit card required. We make money from optional upgrades (Sharp IQ &amp; Smart Money), not from locking basic features behind paywalls.</div>
+      </details>
+
+      <details class="ag-faq-item">
+        <summary>How does the AI actually work? <span class="fq-arrow">&#x25BC;</span></summary>
+        <div class="ag-faq-answer">Our Quantum Analysis Matrix fuses 6 independent AI models &mdash; each trained on different data (player logs, matchup DNA, pace projections, defensive ratings, line movement, and injury impact). They vote on every prop and produce a SAFE Score from 0-100. Higher score = higher confidence = bigger edge.</div>
+      </details>
+
+      <details class="ag-faq-item">
+        <summary>Can I cancel anytime? <span class="fq-arrow">&#x25BC;</span></summary>
+        <div class="ag-faq-answer">Absolutely. Sharp IQ and Smart Money are month-to-month with no commitment. Cancel from your Settings page in one click &mdash; no emails, no phone calls, no guilt trips. Your data stays yours.</div>
+      </details>
+
+      <details class="ag-faq-item">
+        <summary>What platforms do you support? <span class="fq-arrow">&#x25BC;</span></summary>
+        <div class="ag-faq-answer">Our AI analyzes props from PrizePicks, DraftKings Pick6, Underdog Fantasy, and more. You can also manually enter any prop from any platform into the Prop Scanner for instant AI analysis.</div>
+      </details>
+
+      <details class="ag-faq-item">
+        <summary>How is this better than OddsJam / Action Network? <span class="fq-arrow">&#x25BC;</span></summary>
+        <div class="ag-faq-answer">Those tools charge $60&ndash;$300/mo for basic odds comparison. Smart Pick Pro gives you 6 fused AI models, SAFE Scores, real-time live tracking, edge detection, bankroll tools, and backtesting &mdash; for free. They literally cannot compete on features or price.</div>
+      </details>
+    </div>
+
+    <!-- Second CTA -->
+    <div class="ag-cta2">
+      <div class="ag-cta2-head">Ready to <span class="em">Beat the Books?</span></div>
+      <p class="ag-cta2-sub">Join thousands of sharps using AI to find edges the books don&rsquo;t want you to see.</p>
+      <a class="ag-cta2-btn" href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">&#x26A1; Create Free Account</a>
+      <div class="ag-cta2-trust">&#x1F512; No credit card &middot; &#x23F1;&#xFE0F; 10 second signup &middot; &#x1F6AB; Never sell your data</div>
     </div>
 
     <div class="ag-trust">

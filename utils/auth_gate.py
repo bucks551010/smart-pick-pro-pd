@@ -4229,15 +4229,16 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
 @keyframes subBarSlide{0%{background-position:300% 0}100%{background-position:-300% 0}}
 @keyframes subGlow{0%,100%{box-shadow:0 0 0 0 rgba(0,213,89,0.08)}50%{box-shadow:0 0 40px 12px rgba(0,213,89,0.04)}}
+@keyframes subFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes subPulseRing{0%{transform:scale(0.95);opacity:0.5}50%{transform:scale(1.05);opacity:0.2}100%{transform:scale(0.95);opacity:0.5}}
 .sub-purchase-section {
-    background: linear-gradient(168deg, rgba(0, 213, 89, 0.06) 0%, rgba(45, 158, 255, 0.03) 50%, rgba(192, 132, 252, 0.03) 100%);
-    border: 1.5px solid rgba(0, 213, 89, 0.15);
-    border-radius: 28px;
-    padding: 48px 28px 36px;
-    margin: 12px 0;
+    background: linear-gradient(168deg, rgba(0, 213, 89, 0.04) 0%, rgba(8, 12, 24, 0.95) 30%, rgba(8, 12, 24, 0.95) 70%, rgba(192, 132, 252, 0.04) 100%);
+    border: 1.5px solid rgba(255, 255, 255, 0.06);
+    border-radius: 32px;
+    padding: 56px 32px 16px;
+    margin: 12px 0 0;
     position: relative;
     overflow: hidden;
-    animation: subGlow 6s ease infinite;
 }
 .sub-purchase-section::before {
     content: '';
@@ -4250,72 +4251,252 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 .sub-purchase-section::after {
     content: '';
     position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at 50% 0%, rgba(0, 213, 89, 0.06), transparent 60%);
+    top: -80px; left: 50%; transform: translateX(-50%);
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(0, 213, 89, 0.06), transparent 65%);
     pointer-events: none;
 }
 .sub-purchase-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 2.2rem;
+    font-size: 2.6rem;
     font-weight: 800;
     text-align: center;
     color: #fff;
-    margin: 0 0 8px;
-    letter-spacing: -0.03em;
+    margin: 0 0 6px;
+    letter-spacing: -0.04em;
     position: relative;
+    line-height: 1.15;
+}
+.sub-purchase-title .sub-em {
+    background: linear-gradient(135deg, #00D559 0%, #2D9EFF 50%, #c084fc 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 .sub-purchase-sub {
     text-align: center;
-    font-size: 0.92rem;
-    color: rgba(255, 255, 255, 0.4);
-    margin: 0 0 32px;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.35);
+    margin: 0 0 8px;
     line-height: 1.7;
     position: relative;
 }
 .sub-purchase-sub strong { color: #00D559; }
-.sub-guarantee {
-    text-align: center;
-    margin-top: 16px;
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.22);
+.sub-purchase-trust {
+    display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;
+    margin: 0 0 4px; position: relative;
 }
-.sub-guarantee strong { color: rgba(255, 255, 255, 0.4); }
+.sub-purchase-trust span {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.6rem; font-weight: 700;
+    color: rgba(255, 255, 255, 0.2);
+    display: flex; align-items: center; gap: 5px;
+}
 </style>
 <div class="sub-purchase-section">
-    <p class="sub-purchase-title">&#x1F680; Get Your Edge Now</p>
+    <p class="sub-purchase-title">Get Your <span class="sub-em">Edge</span> Now</p>
     <p class="sub-purchase-sub">Subscribe instantly &mdash; <strong>secure Stripe checkout</strong>, cancel anytime, no commitment.</p>
+    <div class="sub-purchase-trust">
+      <span>&#x1F512; 256-bit encrypted</span>
+      <span>&#x26A1; Instant access</span>
+      <span>&#x1F6AB; Cancel anytime</span>
+      <span>&#x1F4B3; Powered by Stripe</span>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
     _stripe_ready = is_stripe_configured()
 
-    # Inject premium checkout card styles
+    # Inject premium checkout card + column override styles
     st.markdown("""<style>
-.sub-card{
-  background:linear-gradient(168deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01));
-  border:1.5px solid rgba(255,255,255,0.07);
-  border-radius:20px;padding:20px 12px 16px;text-align:center;
-  position:relative;overflow:hidden;transition:all 0.35s;
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
+
+/* Override Streamlit column gaps */
+[data-testid="stHorizontalBlock"]:has(.sub-card) {
+    gap: 12px !important;
+    padding: 0 4px;
 }
-.sub-card:hover{border-color:rgba(255,255,255,0.12);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,0.3)}
-.sub-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:3px 3px 0 0}
-.sub-card.free::before{background:linear-gradient(90deg,#A0AABE,#6B7280)}
-.sub-card.sharp::before{background:linear-gradient(90deg,#F9C62B,#f59e0b)}
-.sub-card.smart::before{background:linear-gradient(90deg,#00D559,#10b981)}
-.sub-card.insider::before{background:linear-gradient(90deg,#c084fc,#8b5cf6)}
-.sub-card .sc-ico{font-size:2rem;display:block;margin:0 0 6px}
-.sub-card .sc-name{font-family:'Space Grotesk',sans-serif;font-size:0.82rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em}
-.sub-card .sc-price{font-family:'JetBrains Mono',monospace;font-size:1.8rem;font-weight:900;line-height:1.2;margin:4px 0 2px}
-.sub-card .sc-period{font-size:0.65rem;color:rgba(255,255,255,0.3)}
-.sub-card .sc-pop{position:absolute;top:10px;right:10px;font-size:0.4rem;font-weight:800;color:#0B0F19;background:#00D559;padding:2px 8px;border-radius:100px;letter-spacing:0.06em}
-.sub-card.free .sc-name{color:#A0AABE}
-.sub-card.free .sc-price{color:#A0AABE}
-.sub-card.sharp .sc-name{color:#F9C62B}
-.sub-card.sharp .sc-price{color:#F9C62B}
-.sub-card.smart .sc-name{color:#00D559}
-.sub-card.smart .sc-price{color:#00D559}
-.sub-card.insider .sc-name{color:#c084fc}
-.sub-card.insider .sc-price{color:#c084fc}
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"] {
+    background: linear-gradient(168deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.008) 100%);
+    border: 1.5px solid rgba(255,255,255,0.06);
+    border-radius: 24px;
+    padding: 0 0 16px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:hover {
+    border-color: rgba(255,255,255,0.12);
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04) inset;
+}
+/* Smart Money column glow */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(3) {
+    border-color: rgba(0, 213, 89, 0.2);
+    box-shadow: 0 0 30px rgba(0, 213, 89, 0.06), 0 0 0 1px rgba(0, 213, 89, 0.05) inset;
+}
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(3):hover {
+    border-color: rgba(0, 213, 89, 0.35);
+    box-shadow: 0 16px 48px rgba(0, 213, 89, 0.12), 0 0 40px rgba(0, 213, 89, 0.08);
+}
+/* Insider column glow */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(4) {
+    border-color: rgba(192, 132, 252, 0.15);
+}
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(4):hover {
+    border-color: rgba(192, 132, 252, 0.3);
+    box-shadow: 0 16px 48px rgba(192, 132, 252, 0.1);
+}
+
+/* Card header styling */
+.sub-card {
+    text-align: center;
+    padding: 24px 16px 16px;
+    position: relative;
+}
+.sub-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+}
+.sub-card.free::after { background: linear-gradient(90deg, #6B7280, #A0AABE, #6B7280); }
+.sub-card.sharp::after { background: linear-gradient(90deg, #f59e0b, #F9C62B, #f59e0b); }
+.sub-card.smart::after { background: linear-gradient(90deg, #10b981, #00D559, #10b981); }
+.sub-card.insider::after { background: linear-gradient(90deg, #8b5cf6, #c084fc, #8b5cf6); }
+
+.sub-card .sc-ico {
+    font-size: 2.4rem; display: block; margin: 0 0 8px;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+}
+.sub-card .sc-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.72rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin: 0 0 8px;
+}
+.sub-card .sc-price {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2.2rem; font-weight: 900;
+    line-height: 1; margin: 0 0 4px;
+}
+.sub-card .sc-price .cents {
+    font-size: 1rem; font-weight: 700;
+    vertical-align: super; margin-left: -2px;
+}
+.sub-card .sc-period {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.58rem; color: rgba(255,255,255,0.25);
+    letter-spacing: 0.04em;
+}
+.sub-card .sc-yearly {
+    font-size: 0.5rem; color: rgba(255,255,255,0.15);
+    margin-top: 4px; display: block;
+}
+.sub-card .sc-divider {
+    width: 40px; height: 1px; margin: 12px auto 10px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+}
+.sub-card .sc-features {
+    list-style: none; padding: 0; margin: 0;
+    text-align: left;
+}
+.sub-card .sc-features li {
+    font-size: 0.58rem; color: rgba(255,255,255,0.4);
+    padding: 3px 0; display: flex; align-items: center; gap: 6px;
+    font-family: 'Inter', sans-serif;
+}
+.sub-card .sc-features li .ck { color: #00D559; font-size: 0.55rem; flex-shrink: 0; }
+.sub-card .sc-features li .lm { color: #F9C62B; font-size: 0.55rem; flex-shrink: 0; }
+.sub-card .sc-features li .nx { color: rgba(255,255,255,0.12); font-size: 0.55rem; flex-shrink: 0; }
+
+/* Popular badge */
+.sub-card .sc-pop {
+    position: absolute; top: 12px; right: 12px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.42rem; font-weight: 800;
+    color: #0B0F19; background: #00D559;
+    padding: 3px 10px; border-radius: 100px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    box-shadow: 0 2px 12px rgba(0, 213, 89, 0.3);
+}
+
+/* Color assignments */
+.sub-card.free .sc-name { color: #A0AABE; }
+.sub-card.free .sc-price { color: #A0AABE; }
+.sub-card.sharp .sc-name { color: #F9C62B; }
+.sub-card.sharp .sc-price { color: #F9C62B; }
+.sub-card.smart .sc-name { color: #00D559; }
+.sub-card.smart .sc-price { color: #00D559; }
+.sub-card.insider .sc-name { color: #c084fc; }
+.sub-card.insider .sc-price { color: #c084fc; }
+
+/* Style the Streamlit form inputs inside checkout cols */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stTextInput"] label {
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 0.6rem !important;
+    font-weight: 700 !important;
+    color: rgba(255,255,255,0.3) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+}
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stTextInput"] input {
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 12px !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.7rem !important;
+    color: rgba(255,255,255,0.7) !important;
+    padding: 10px 14px !important;
+}
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stTextInput"] input:focus {
+    border-color: rgba(0, 213, 89, 0.3) !important;
+    box-shadow: 0 0 16px rgba(0, 213, 89, 0.08) !important;
+}
+/* Style form submit buttons */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stFormSubmitButton"] button {
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-weight: 800 !important;
+    font-size: 0.78rem !important;
+    letter-spacing: 0.01em !important;
+    border-radius: 14px !important;
+    padding: 12px 20px !important;
+    border: none !important;
+    transition: all 0.3s !important;
+}
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stFormSubmitButton"] button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 28px rgba(0, 213, 89, 0.3) !important;
+}
+/* Style success/info alerts inside cols */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stAlert"] {
+    border-radius: 12px !important;
+    font-size: 0.7rem !important;
+}
+
+/* Checkout footer */
+.sub-footer {
+    text-align: center; margin: 16px 0 4px;
+    padding: 14px 0;
+    border-top: 1px solid rgba(255,255,255,0.04);
+}
+.sub-footer-inner {
+    display: inline-flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    justify-content: center;
+}
+.sub-footer-inner span {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.58rem; font-weight: 600;
+    color: rgba(255,255,255,0.18);
+    display: flex; align-items: center; gap: 4px;
+}
+.sub-footer-stripe {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.62rem; font-weight: 700;
+    color: rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 5px 14px; border-radius: 100px;
+}
 </style>""", unsafe_allow_html=True)
 
     sub_cols = st.columns(4)
@@ -4325,6 +4506,15 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
   <div class="sc-name">Smart Rookie</div>
   <div class="sc-price">$0</div>
   <div class="sc-period">free forever</div>
+  <div class="sc-divider"></div>
+  <ul class="sc-features">
+    <li><span class="ck">&#x2713;</span> 10 AI-analyzed props</li>
+    <li><span class="ck">&#x2713;</span> Live Sweat mode</li>
+    <li><span class="ck">&#x2713;</span> SAFE Score system</li>
+    <li><span class="ck">&#x2713;</span> Live Games &amp; NBA Data</li>
+    <li><span class="nx">&#x2717;</span> Bet Tracker</li>
+    <li><span class="nx">&#x2717;</span> Entry Builder</li>
+  </ul>
 </div>""", unsafe_allow_html=True)
         st.success("✅ **Free** — create an account above!")
 
@@ -4332,8 +4522,18 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
         st.markdown("""<div class="sub-card sharp">
   <span class="sc-ico">🔥</span>
   <div class="sc-name">Sharp IQ</div>
-  <div class="sc-price">$9<span style="font-size:1rem">.99</span></div>
+  <div class="sc-price">$9<span class="cents">.99</span></div>
   <div class="sc-period">per month</div>
+  <span class="sc-yearly">~$107/yr &middot; save 10% annual</span>
+  <div class="sc-divider"></div>
+  <ul class="sc-features">
+    <li><span class="ck">&#x2713;</span> 25 AI-analyzed props</li>
+    <li><span class="ck">&#x2713;</span> Unlimited Prop Scanner</li>
+    <li><span class="ck">&#x2713;</span> Bet Tracker + ROI</li>
+    <li><span class="ck">&#x2713;</span> Entry Builder</li>
+    <li><span class="ck">&#x2713;</span> Player Simulator</li>
+    <li><span class="nx">&#x2717;</span> Smart Money Bets</li>
+  </ul>
 </div>""", unsafe_allow_html=True)
         if _stripe_ready:
             with st.form("gate_checkout_sharp", clear_on_submit=False):
@@ -4354,8 +4554,18 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
   <span class="sc-pop">POPULAR</span>
   <span class="sc-ico">💎</span>
   <div class="sc-name">Smart Money</div>
-  <div class="sc-price">$24<span style="font-size:1rem">.99</span></div>
+  <div class="sc-price">$24<span class="cents">.99</span></div>
   <div class="sc-period">per month</div>
+  <span class="sc-yearly">~$269/yr &middot; save 10% annual</span>
+  <div class="sc-divider"></div>
+  <ul class="sc-features">
+    <li><span class="ck">&#x2713;</span> Unlimited AI props</li>
+    <li><span class="ck">&#x2713;</span> Smart Money Bets</li>
+    <li><span class="ck">&#x2713;</span> Arbitrage Scanner</li>
+    <li><span class="ck">&#x2713;</span> Game Predictions</li>
+    <li><span class="ck">&#x2713;</span> Bankroll Manager</li>
+    <li><span class="ck">&#x2713;</span> All Sharp IQ features</li>
+  </ul>
 </div>""", unsafe_allow_html=True)
         if _stripe_ready:
             with st.form("gate_checkout_smart", clear_on_submit=False):
@@ -4375,8 +4585,18 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
         st.markdown("""<div class="sub-card insider">
   <span class="sc-ico">👑</span>
   <div class="sc-name">Insider Circle</div>
-  <div class="sc-price">$499<span style="font-size:1rem">.99</span></div>
+  <div class="sc-price">$499<span class="cents">.99</span></div>
   <div class="sc-period">lifetime access</div>
+  <span class="sc-yearly">One-time payment &middot; forever</span>
+  <div class="sc-divider"></div>
+  <ul class="sc-features">
+    <li><span class="ck">&#x2713;</span> Everything, forever</li>
+    <li><span class="ck">&#x2713;</span> Priority support</li>
+    <li><span class="ck">&#x2713;</span> Early feature access</li>
+    <li><span class="ck">&#x2713;</span> Custom alerts</li>
+    <li><span class="ck">&#x2713;</span> Founder badge</li>
+    <li><span class="ck">&#x2713;</span> All future updates</li>
+  </ul>
 </div>""", unsafe_allow_html=True)
         if _stripe_ready:
             with st.form("gate_checkout_insider", clear_on_submit=False):
@@ -4392,8 +4612,13 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
         else:
             st.info("💳 Stripe checkout — coming soon!")
 
-    st.markdown("""<div style="text-align:center;margin:12px 0 4px;font-size:0.72rem;color:rgba(255,255,255,0.22);">
-🔒 <strong style="color:rgba(255,255,255,0.4);">Secure checkout by Stripe</strong> · Cancel anytime · No hidden fees
+    st.markdown("""<div class="sub-footer">
+  <div class="sub-footer-inner">
+    <span class="sub-footer-stripe">&#x1F512; Secure checkout by Stripe</span>
+    <span>&#x1F504; Cancel anytime</span>
+    <span>&#x2714;&#xFE0F; No hidden fees</span>
+    <span>&#x26A1; Instant activation</span>
+  </div>
 </div>""", unsafe_allow_html=True)
 
     # ── Section anchor: FAQ ──

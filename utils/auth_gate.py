@@ -2477,24 +2477,26 @@ def require_login() -> bool:
                     st.error("Invalid email or password.")
 
     # ── Sticky Navigation Bar ────────────────────────────────
-    st.html("""<style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{background:transparent;overflow:visible}
-.nav-dock{
-  position:sticky;top:0;z-index:9999;
+    # Injected via st.markdown so it lives in the parent DOM (not an iframe)
+    # and can use position:fixed to stick to the viewport.
+    st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
+.spp-nav-dock{
+  position:fixed;top:0;left:0;right:0;z-index:999999;
   display:flex;align-items:center;justify-content:center;gap:6px;
   padding:10px 16px;
-  background:rgba(8,12,24,0.85);
-  backdrop-filter:blur(20px) saturate(1.8);-webkit-backdrop-filter:blur(20px) saturate(1.8);
+  background:rgba(8,12,24,0.92);
+  backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);
   border-bottom:1px solid rgba(255,255,255,0.06);
   overflow-x:auto;scrollbar-width:none;
+  box-shadow:0 4px 24px rgba(0,0,0,0.4);
 }
-.nav-dock::-webkit-scrollbar{display:none}
-.nav-pill{
+.spp-nav-dock::-webkit-scrollbar{display:none}
+.spp-nav-pill{
   flex-shrink:0;
-  font-family:'Space Grotesk',sans-serif;font-size:0.68rem;font-weight:700;
-  color:rgba(255,255,255,0.4);
+  font-family:'Space Grotesk',sans-serif;font-size:0.7rem;font-weight:700;
+  color:rgba(255,255,255,0.45);
   background:rgba(255,255,255,0.04);
   border:1px solid rgba(255,255,255,0.06);
   border-radius:100px;padding:7px 16px;
@@ -2502,32 +2504,46 @@ html,body{background:transparent;overflow:visible}
   text-decoration:none;white-space:nowrap;
   letter-spacing:0.01em;
 }
-.nav-pill:hover{
-  color:#fff;background:rgba(0,213,89,0.1);
-  border-color:rgba(0,213,89,0.3);
+.spp-nav-pill:hover{
+  color:#fff;background:rgba(0,213,89,0.12);
+  border-color:rgba(0,213,89,0.35);
   box-shadow:0 0 20px rgba(0,213,89,0.15);
   transform:translateY(-1px);
 }
-.nav-pill.active{
-  color:#0B0F19;background:linear-gradient(135deg,#00D559,#00B74D);
-  border-color:transparent;
-  box-shadow:0 4px 20px rgba(0,213,89,0.35);
-}
-.nav-pill .nav-ico{margin-right:4px;font-size:0.72rem}
+.spp-nav-pill .ni{margin-right:4px;font-size:0.72rem}
 @media(max-width:768px){
-  .nav-dock{gap:4px;padding:8px 10px}
-  .nav-pill{font-size:0.6rem;padding:6px 12px}
+  .spp-nav-dock{gap:4px;padding:8px 10px}
+  .spp-nav-pill{font-size:0.6rem;padding:6px 12px}
 }
 </style>
-<nav class="nav-dock">
-  <a class="nav-pill" onclick="(function(){try{var d=window.parent.document;var els=d.querySelectorAll('[data-section-id]');for(var i=0;i<els.length;i++){if(els[i].getAttribute('data-section-id')==='how-it-works'){els[i].scrollIntoView({behavior:'smooth',block:'start'});return;}}}catch(e){}})();return false;" href="#"><span class="nav-ico">&#x1F3AF;</span>How It Works</a>
-  <a class="nav-pill" onclick="(function(){try{var d=window.parent.document;var els=d.querySelectorAll('[data-section-id]');for(var i=0;i<els.length;i++){if(els[i].getAttribute('data-section-id')==='features'){els[i].scrollIntoView({behavior:'smooth',block:'start'});return;}}}catch(e){}})();return false;" href="#"><span class="nav-ico">&#x26A1;</span>Features</a>
-  <a class="nav-pill" onclick="(function(){try{var d=window.parent.document;var els=d.querySelectorAll('[data-section-id]');for(var i=0;i<els.length;i++){if(els[i].getAttribute('data-section-id')==='picks'){els[i].scrollIntoView({behavior:'smooth',block:'start'});return;}}}catch(e){}})();return false;" href="#"><span class="nav-ico">&#x1F4CA;</span>Free Picks</a>
-  <a class="nav-pill" onclick="(function(){try{var d=window.parent.document;var els=d.querySelectorAll('[data-section-id]');for(var i=0;i<els.length;i++){if(els[i].getAttribute('data-section-id')==='tracker'){els[i].scrollIntoView({behavior:'smooth',block:'start'});return;}}}catch(e){}})();return false;" href="#"><span class="nav-ico">&#x1F4C8;</span>Bet Tracker</a>
-  <a class="nav-pill" onclick="(function(){try{var d=window.parent.document;var els=d.querySelectorAll('[data-section-id]');for(var i=0;i<els.length;i++){if(els[i].getAttribute('data-section-id')==='pricing'){els[i].scrollIntoView({behavior:'smooth',block:'start'});return;}}}catch(e){}})();return false;" href="#"><span class="nav-ico">&#x1F4B0;</span>Pricing</a>
-  <a class="nav-pill" onclick="(function(){try{var d=window.parent.document;var els=d.querySelectorAll('[data-section-id]');for(var i=0;i<els.length;i++){if(els[i].getAttribute('data-section-id')==='faq'){els[i].scrollIntoView({behavior:'smooth',block:'start'});return;}}}catch(e){}})();return false;" href="#"><span class="nav-ico">&#x2753;</span>FAQ</a>
+<nav class="spp-nav-dock" id="spp-nav-dock">
+  <a class="spp-nav-pill" href="javascript:void(0)" id="nav-how"><span class="ni">&#x1F3AF;</span>How It Works</a>
+  <a class="spp-nav-pill" href="javascript:void(0)" id="nav-features"><span class="ni">&#x26A1;</span>Features</a>
+  <a class="spp-nav-pill" href="javascript:void(0)" id="nav-picks"><span class="ni">&#x1F4CA;</span>Free Picks</a>
+  <a class="spp-nav-pill" href="javascript:void(0)" id="nav-tracker"><span class="ni">&#x1F4C8;</span>Bet Tracker</a>
+  <a class="spp-nav-pill" href="javascript:void(0)" id="nav-pricing"><span class="ni">&#x1F4B0;</span>Pricing</a>
+  <a class="spp-nav-pill" href="javascript:void(0)" id="nav-faq"><span class="ni">&#x2753;</span>FAQ</a>
 </nav>
-""")
+<script>
+(function(){
+  function scrollToSection(sectionId){
+    var el = document.querySelector('[data-section-id="'+sectionId+'"]');
+    if(el){el.scrollIntoView({behavior:'smooth',block:'start'});}
+  }
+  var map = {
+    'nav-how':'how-it-works','nav-features':'features','nav-picks':'picks',
+    'nav-tracker':'tracker','nav-pricing':'pricing','nav-faq':'faq'
+  };
+  Object.keys(map).forEach(function(btnId){
+    var btn = document.getElementById(btnId);
+    if(btn){btn.addEventListener('click',function(e){e.preventDefault();scrollToSection(map[btnId]);});}
+  });
+  /* Add top padding to first content block so hero isn't hidden behind fixed nav */
+  var mainBlock = document.querySelector('section.main .block-container');
+  if(mainBlock){mainBlock.style.paddingTop='56px';}
+})();
+</script>
+""", unsafe_allow_html=True)
 
     # ── Section anchor: How It Works ──
     st.markdown('<div data-section-id="how-it-works" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)

@@ -1133,55 +1133,108 @@ html, body, .stApp, .stApp * {
 }
 .ag-tbl {
     width: 100%; border-collapse: separate; border-spacing: 0;
-    background: linear-gradient(168deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012));
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(168deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015));
+    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 24px; overflow: hidden;
     font-size: 0.85rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03) inset;
 }
 .ag-tbl thead th {
-    padding: 18px 14px; font-size: 0.68rem; font-weight: 800;
+    padding: 20px 14px; font-size: 0.62rem; font-weight: 800;
     text-transform: uppercase; letter-spacing: 0.1em;
-    color: rgba(255, 255, 255, 0.35);
-    border-bottom: 2px solid rgba(255, 255, 255, 0.06);
+    color: rgba(255,255,255,0.3);
+    border-bottom: 2px solid rgba(255,255,255,0.06);
     font-family: 'Space Grotesk', sans-serif;
+    background: rgba(255,255,255,0.02);
 }
-.ag-tbl thead th:first-child { text-align: left; width: 28%; padding-left: 24px; }
-.ag-tbl thead th:not(:first-child) { text-align: center; }
+.ag-tbl thead th:first-child { text-align: left; width: 26%; padding-left: 24px; }
+.ag-tbl thead th:not(:first-child) { text-align: center; width: 18.5%; }
 .ag-tbl thead th:last-child {
-    color: #00D559; background: rgba(0, 213, 89, 0.06);
-    position: relative;
+    color: #00D559; background: linear-gradient(180deg, rgba(0,213,89,0.1), rgba(0,213,89,0.03));
+    position: relative; width: 22%;
+    text-shadow: 0 0 20px rgba(0,213,89,0.3);
 }
 .ag-tbl thead th:last-child::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
     background: linear-gradient(90deg, #00D559, #2D9EFF);
 }
+/* Glowing column borders */
+.ag-tbl tbody td:last-child::before,
+.ag-tbl thead th:last-child::after {
+    content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 1px;
+    background: linear-gradient(180deg, rgba(0,213,89,0.3), rgba(0,213,89,0.05));
+}
 .ag-tbl tbody td {
-    padding: 14px 14px; color: rgba(255, 255, 255, 0.35);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    font-weight: 500; text-align: center;
-    transition: background 0.2s;
+    padding: 16px 14px; color: rgba(255,255,255,0.3);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-weight: 600; text-align: center;
+    transition: background 0.3s, transform 0.2s;
+    position: relative;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
 }
 .ag-tbl tbody td:first-child {
-    font-weight: 700; color: rgba(255, 255, 255, 0.65); text-align: left; padding-left: 24px;
+    font-weight: 700; color: rgba(255,255,255,0.7); text-align: left; padding-left: 24px;
     font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem;
 }
+.ag-tbl tbody td:first-child .ft-ico {
+    display: inline-block; width: 22px; text-align: center; margin-right: 8px;
+    font-size: 0.82rem; vertical-align: middle;
+}
 .ag-tbl tbody td:last-child {
-    color: #00D559; background: rgba(0, 213, 89, 0.04);
+    color: #00D559; background: rgba(0,213,89,0.04);
     font-weight: 800; font-family: 'JetBrains Mono', monospace;
-    font-size: 0.88rem;
+    font-size: 0.78rem; position: relative;
 }
+.ag-tbl tbody tr { transition: background 0.2s; }
 .ag-tbl tbody tr:last-child td { border-bottom: none; }
-.ag-tbl tbody tr:hover td { background: rgba(255, 255, 255, 0.02); }
-.ag-tbl tbody tr:hover td:last-child { background: rgba(0, 213, 89, 0.06); }
-.ag-tbl .x { color: rgba(242, 67, 54, 0.5); font-weight: 700; }
-.ag-tbl .ch { color: #00D559; font-weight: 800; }
-.ag-tbl .hi {
-    background: rgba(0, 213, 89, 0.07);
-    border-top: 2px solid rgba(0, 213, 89, 0.2);
+.ag-tbl tbody tr:hover td { background: rgba(255,255,255,0.025); }
+.ag-tbl tbody tr:hover td:last-child { background: rgba(0,213,89,0.08); }
+/* X marks — dim red with subtle glow */
+.ag-tbl .x {
+    color: rgba(242,67,54,0.45); font-weight: 700;
+    font-size: 0.9rem;
 }
-.ag-tbl .hi td { font-size: 0.95rem; padding: 16px 14px; }
-.ag-tbl .hi td:first-child { padding-left: 24px; }
-.ag-tbl .hi td:last-child { font-size: 1.1rem; }
+/* Checkmarks — bright green */
+.ag-tbl .ch {
+    color: #00D559; font-weight: 800;
+    text-shadow: 0 0 12px rgba(0,213,89,0.15);
+}
+/* Partial/limited — muted amber */
+.ag-tbl .pt { color: rgba(249,198,43,0.5); font-weight: 600; }
+/* Price highlight row */
+.ag-tbl .hi {
+    background: linear-gradient(90deg, rgba(0,213,89,0.06), rgba(0,213,89,0.12));
+    border-top: 2px solid rgba(0,213,89,0.25);
+}
+.ag-tbl .hi td {
+    font-size: 0.95rem; padding: 20px 14px;
+    font-family: 'Space Grotesk', sans-serif;
+}
+.ag-tbl .hi td:first-child { padding-left: 24px; font-size: 0.95rem; }
+.ag-tbl .hi td:last-child {
+    font-size: 1.3rem; color: #00D559;
+    text-shadow: 0 0 30px rgba(0,213,89,0.3), 0 0 60px rgba(0,213,89,0.1);
+    letter-spacing: 0.04em;
+}
+.ag-tbl .hi td.x {
+    color: rgba(242,67,54,0.6); font-size: 0.92rem;
+    text-decoration: line-through; text-decoration-color: rgba(242,67,54,0.3);
+}
+/* Row animation */
+@keyframes agRowSlide { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+.ag-tbl tbody tr { animation: agRowSlide 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+.ag-tbl tbody tr:nth-child(1) { animation-delay: 0.05s; }
+.ag-tbl tbody tr:nth-child(2) { animation-delay: 0.08s; }
+.ag-tbl tbody tr:nth-child(3) { animation-delay: 0.11s; }
+.ag-tbl tbody tr:nth-child(4) { animation-delay: 0.14s; }
+.ag-tbl tbody tr:nth-child(5) { animation-delay: 0.17s; }
+.ag-tbl tbody tr:nth-child(6) { animation-delay: 0.20s; }
+.ag-tbl tbody tr:nth-child(7) { animation-delay: 0.23s; }
+.ag-tbl tbody tr:nth-child(8) { animation-delay: 0.26s; }
+.ag-tbl tbody tr:nth-child(9) { animation-delay: 0.29s; }
+.ag-tbl tbody tr:nth-child(10) { animation-delay: 0.32s; }
+.ag-tbl tbody tr:nth-child(11) { animation-delay: 0.35s; }
 
 /* ── "Bottom Line" callout ───────────────────────────────────── */
 .ag-bottom-line {
@@ -2069,7 +2122,8 @@ html, body, .stApp, .stApp * {
     .ag-comp { grid-template-columns: auto 1fr auto; }
     .ag-comp-miss { display: none; }
     .ag-tbl { font-size: 0.75rem; }
-    .ag-tbl thead th, .ag-tbl tbody td { padding: 10px 8px; }
+    .ag-tbl thead th, .ag-tbl tbody td { padding: 12px 8px; }
+    .ag-tbl tbody td:first-child .ft-ico { font-size: 0.72rem; margin-right: 5px; }
     .ag-review-text { font-size: 0.92rem; }
     .ag-review-avatar { width: 30px; height: 30px; font-size: 0.72rem; }
 }
@@ -2086,8 +2140,11 @@ html, body, .stApp, .stApp * {
     .ag-proof-big { font-size: 1.8rem; }
     .ag-proof-label { font-size: 0.6rem; }
     .ag-tbl { font-size: 0.6rem; }
-    .ag-tbl thead th, .ag-tbl tbody td { padding: 8px 6px; }
+    .ag-tbl thead th, .ag-tbl tbody td { padding: 9px 5px; }
     .ag-tbl thead th:first-child, .ag-tbl tbody td:first-child { padding-left: 10px; }
+    .ag-tbl tbody td:first-child .ft-ico { display: none; }
+    .ag-tbl .hi td { padding: 14px 5px; }
+    .ag-tbl .hi td:last-child { font-size: 1rem; }
     .ag-cta2-head { font-size: 1.4rem; }
     .ag-pick-card { width: 152px; }
     .ag-pc-line { font-size: 1.2rem; }
@@ -2479,21 +2536,21 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
             <th>OddsJam</th>
             <th>Action</th>
             <th>Unabated</th>
-            <th>&#x2B50; Smart Pick Pro</th>
+            <th>&#x2B50; Smart&nbsp;Pick&nbsp;Pro</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td>AI Prop Models</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="x">1 basic</td><td class="ch">&#x2713; 6 Fused</td></tr>
-          <tr><td>Confidence Score</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="ch">&#x2713; SAFE 0-100</td></tr>
-          <tr><td>Props/Night</td><td>50</td><td>~30</td><td>~80</td><td class="ch">&#x2713; 300+</td></tr>
-          <tr><td>Live Sweat Tracking</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="ch">&#x2713; Real-Time</td></tr>
-          <tr><td>Bankroll/Kelly</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td>Basic</td><td class="ch">&#x2713; Full Suite</td></tr>
-          <tr><td>Matchup DNA</td><td class="x">&#x2717;</td><td>Basic</td><td class="x">&#x2717;</td><td class="ch">&#x2713; Defensive DNA</td></tr>
-          <tr><td>Line Movement</td><td>Delayed</td><td>Delayed</td><td>Near-RT</td><td class="ch">&#x2713; Real-Time</td></tr>
-          <tr><td>Edge Detection</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td>Manual</td><td class="ch">&#x2713; AI-Automated</td></tr>
-          <tr><td>Backtesting</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="ch">&#x2713; Full Archive</td></tr>
-          <tr><td>CLV Tracking</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td>Basic</td><td class="ch">&#x2713; 92% Capture</td></tr>
-          <tr class="hi"><td><strong>Monthly Price</strong></td><td class="x"><strong>$99</strong></td><td class="x"><strong>$59.99</strong></td><td class="x"><strong>$149</strong></td><td class="ch"><strong>FREE</strong></td></tr>
+          <tr><td><span class="ft-ico">&#x1F9E0;</span>AI Prop Models</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="pt">1 basic</td><td class="ch">&#x2713; 6 Fused</td></tr>
+          <tr><td><span class="ft-ico">&#x1F3AF;</span>Confidence Score</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="ch">&#x2713; SAFE 0-100</td></tr>
+          <tr><td><span class="ft-ico">&#x1F4CA;</span>Props/Night</td><td class="pt">50</td><td class="pt">~30</td><td class="pt">~80</td><td class="ch">&#x2713; 300+</td></tr>
+          <tr><td><span class="ft-ico">&#x1F4E1;</span>Live Sweat Tracking</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="ch">&#x2713; Real-Time</td></tr>
+          <tr><td><span class="ft-ico">&#x1F4B0;</span>Bankroll/Kelly</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="pt">Basic</td><td class="ch">&#x2713; Full Suite</td></tr>
+          <tr><td><span class="ft-ico">&#x1F9EC;</span>Matchup DNA</td><td class="x">&#x2717;</td><td class="pt">Basic</td><td class="x">&#x2717;</td><td class="ch">&#x2713; Defensive DNA</td></tr>
+          <tr><td><span class="ft-ico">&#x1F4C8;</span>Line Movement</td><td class="pt">Delayed</td><td class="pt">Delayed</td><td class="pt">Near-RT</td><td class="ch">&#x2713; Real-Time</td></tr>
+          <tr><td><span class="ft-ico">&#x26A1;</span>Edge Detection</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="pt">Manual</td><td class="ch">&#x2713; AI-Automated</td></tr>
+          <tr><td><span class="ft-ico">&#x1F4DA;</span>Backtesting</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="ch">&#x2713; Full Archive</td></tr>
+          <tr><td><span class="ft-ico">&#x1F4C9;</span>CLV Tracking</td><td class="x">&#x2717;</td><td class="x">&#x2717;</td><td class="pt">Basic</td><td class="ch">&#x2713; 92% Capture</td></tr>
+          <tr class="hi"><td><span class="ft-ico">&#x1F4B5;</span><strong>Monthly Price</strong></td><td class="x"><strong>$99</strong></td><td class="x"><strong>$59.99</strong></td><td class="x"><strong>$149</strong></td><td class="ch"><strong>FREE</strong></td></tr>
         </tbody>
       </table>
     </div>

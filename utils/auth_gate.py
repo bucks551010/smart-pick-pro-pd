@@ -41,6 +41,138 @@ _logger = logging.getLogger(__name__)
 _DB_RETRY_ATTEMPTS = 3
 _DB_RETRY_DELAY_SECONDS = 0.15
 
+# ── PostgreSQL / SQLite auto-detection ───────────────────────
+# When Railway PostgreSQL plugin is added, DATABASE_URL is set automatically.
+# The auth layer uses Postgres when available, SQLite otherwise.
+_DATABASE_URL = os.environ.get("DATABASE_URL", "")
+_HAS_PSYCOPG2 = False
+if _DATABASE_URL:
+    try:
+        import psycopg2  # type: ignore
+        import psycopg2.extras  # type: ignore
+        _HAS_PSYCOPG2 = True
+        _logger.info("Auth DB: PostgreSQL mode (DATABASE_URL found)")
+    except ImportError:
+        _logger.warning(
+            "DATABASE_URL is set but psycopg2 is not installed — "
+            "falling back to SQLite. Add psycopg2-binary to requirements.txt."
+        )
+
+_PG_USERS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS users (
+    user_id SERIAL PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    display_name TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    last_login_at TIMESTAMPTZ,
+    reset_token TEXT,
+    reset_token_expires TIMESTAMPTZ,
+    failed_login_count INTEGER DEFAULT 0,
+    lockout_until TIMESTAMPTZ,
+    is_admin INTEGER DEFAULT 0
+);
+"""
+_pg_users_initialized = False
+
+
+def _ensure_pg_users_table() -> None:
+    """Create the users table in PostgreSQL if it doesn't exist (idempotent)."""
+    global _pg_users_initialized
+    if _pg_users_initialized:
+        return
+    try:
+        conn = psycopg2.connect(_DATABASE_URL)
+        try:
+            with conn.cursor() as cur:
+                cur.execute(_PG_USERS_TABLE_SQL)
+            conn.commit()
+            _pg_users_initialized = True
+        finally:
+            conn.close()
+    except Exception as exc:
+        _logger.error("Failed to initialise PostgreSQL users table: %s", exc)
+
+
+class _AuthConn:
+    """Unified context-manager connection wrapper for SQLite or PostgreSQL.
+
+    Usage::
+
+        with _AuthConn() as db:
+            row = db.fetchone("SELECT ... WHERE email = ?", (email,))
+            db.execute("UPDATE users SET ... WHERE email = ?", (email,))
+            # auto-committed on __exit__
+
+    - SQLite: uses ``get_database_connection()`` from tracking.database.
+    - PostgreSQL: opens a fresh psycopg2 connection, converts ``?`` → ``%s``
+      and ``datetime('now')`` → ``NOW()``.
+    """
+
+    def __init__(self) -> None:
+        self._pg = _HAS_PSYCOPG2
+        self._conn = None
+        self._sqlite_ctx = None
+
+    def __enter__(self) -> "_AuthConn":
+        if self._pg:
+            _ensure_pg_users_table()
+            self._conn = psycopg2.connect(
+                _DATABASE_URL,
+                cursor_factory=psycopg2.extras.RealDictCursor,
+            )
+        else:
+            initialize_database()
+            self._sqlite_ctx = get_database_connection()
+            self._conn = self._sqlite_ctx.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        if self._pg:
+            try:
+                if exc_type is None:
+                    self._conn.commit()
+                else:
+                    self._conn.rollback()
+            finally:
+                self._conn.close()
+        else:
+            self._sqlite_ctx.__exit__(exc_type, exc_val, exc_tb)
+
+    def _adapt(self, sql: str) -> str:
+        """Translate SQLite SQL dialect to PostgreSQL when needed."""
+        if not self._pg:
+            return sql
+        return (
+            sql.replace("?", "%s")
+               .replace("datetime('now')", "NOW()")
+               .replace(" COLLATE NOCASE", "")
+        )
+
+    def execute(self, sql: str, params: tuple = ()) -> None:
+        """Execute a write statement (INSERT / UPDATE / DELETE)."""
+        adapted = self._adapt(sql)
+        if self._pg:
+            with self._conn.cursor() as cur:
+                cur.execute(adapted, params)
+        else:
+            self._conn.execute(adapted, params)
+
+    def fetchone(self, sql: str, params: tuple = ()):
+        """Execute a SELECT and return the first row as a dict, or None."""
+        adapted = self._adapt(sql)
+        if self._pg:
+            with self._conn.cursor() as cur:
+                cur.execute(adapted, params)
+                return cur.fetchone()  # RealDictCursor → dict or None
+        else:
+            row = self._conn.execute(adapted, params).fetchone()
+            return dict(row) if row is not None else None
+
+    def commit(self) -> None:
+        """Explicit commit (usually handled by __exit__)."""
+        self._conn.commit()
+
 # ── Session-state keys ────────────────────────────────────────
 _SS_LOGGED_IN     = "_auth_logged_in"      # bool
 _SS_USER_EMAIL    = "_auth_user_email"     # str
@@ -572,26 +704,22 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 
 def _create_user(email: str, password: str, display_name: str = "") -> bool:
     """Create a new user account. Returns True on success."""
-    initialize_database()
     pw_hash = _hash_password(password)
     for attempt in range(_DB_RETRY_ATTEMPTS):
         try:
-            with get_database_connection() as conn:
-                conn.execute(
+            with _AuthConn() as db:
+                db.execute(
                     "INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)",
                     (email.strip().lower(), pw_hash, display_name.strip() or email.split("@")[0]),
                 )
-                conn.commit()
             return True
-        except sqlite3.IntegrityError:
-            return False  # Email already registered
-        except sqlite3.OperationalError as exc:
-            if "locked" in str(exc).lower() and attempt < _DB_RETRY_ATTEMPTS - 1:
+        except Exception as exc:
+            exc_str = str(exc).lower()
+            if ("unique" in exc_str or "duplicate" in exc_str or "integrity" in exc_str):
+                return False  # Email already registered
+            if "locked" in exc_str and attempt < _DB_RETRY_ATTEMPTS - 1:
                 time.sleep(_DB_RETRY_DELAY_SECONDS * (2 ** attempt))
                 continue
-            _logger.error("Failed to create user: %s", exc)
-            return False
-        except Exception as exc:
             _logger.error("Failed to create user: %s", exc)
             return False
     return False
@@ -616,26 +744,21 @@ def seed_admin_account() -> None:
     if len(admin_password) < 8:
         _logger.warning("ADMIN_PASSWORD is too short (< 8 chars) — skipping admin seed.")
         return
-    initialize_database()
     pw_hash = _hash_password(admin_password)
     try:
-        with get_database_connection() as conn:
-            existing = conn.execute(
-                "SELECT user_id FROM users WHERE email = ?",
-                (admin_email,),
-            ).fetchone()
+        with _AuthConn() as db:
+            existing = db.fetchone("SELECT user_id FROM users WHERE email = ?", (admin_email,))
             if existing:
-                conn.execute(
+                db.execute(
                     "UPDATE users SET password_hash = ?, is_admin = 1 WHERE email = ?",
                     (pw_hash, admin_email),
                 )
             else:
-                conn.execute(
+                db.execute(
                     "INSERT INTO users (email, password_hash, display_name, is_admin) "
                     "VALUES (?, ?, ?, 1)",
                     (admin_email, pw_hash, "Admin"),
                 )
-            conn.commit()
         _logger.info("Admin account seeded for %s", admin_email)
     except Exception as exc:
         _logger.error("Failed to seed admin account: %s", exc)
@@ -645,21 +768,16 @@ def is_admin_user() -> bool:
     """Return True if the currently logged-in user has the admin flag."""
     if not is_logged_in():
         return False
-    # Fast path: cached in session state
     cached = st.session_state.get("_auth_is_admin")
     if cached is not None:
         return bool(cached)
-    # Check DB
     email = get_logged_in_email()
     if not email:
         return False
     try:
-        with get_database_connection() as conn:
-            row = conn.execute(
-                "SELECT is_admin FROM users WHERE email = ?",
-                (email,),
-            ).fetchone()
-            is_adm = bool(row and row[0])
+        with _AuthConn() as db:
+            row = db.fetchone("SELECT is_admin FROM users WHERE email = ?", (email,))
+            is_adm = bool(row and row["is_admin"])
             st.session_state["_auth_is_admin"] = is_adm
             return is_adm
     except Exception:
@@ -668,34 +786,26 @@ def is_admin_user() -> bool:
 
 def _authenticate_user(email: str, password: str) -> dict | None:
     """Verify credentials. Returns user dict on success, None on failure."""
-    initialize_database()
     for attempt in range(_DB_RETRY_ATTEMPTS):
         try:
-            with get_database_connection() as conn:
-                cursor = conn.execute(
+            with _AuthConn() as db:
+                user = db.fetchone(
                     "SELECT user_id, email, password_hash, display_name, is_admin FROM users WHERE email = ?",
                     (email.strip().lower(),),
                 )
-                row = cursor.fetchone()
-                if not row:
+                if not user:
                     return None
-                user = dict(row)
                 if _verify_password(password, user["password_hash"]):
-                    # Update last_login_at
-                    conn.execute(
+                    db.execute(
                         "UPDATE users SET last_login_at = datetime('now') WHERE user_id = ?",
                         (user["user_id"],),
                     )
-                    conn.commit()
-                    return user
+                    return dict(user)
                 return None
-        except sqlite3.OperationalError as exc:
+        except Exception as exc:
             if "locked" in str(exc).lower() and attempt < _DB_RETRY_ATTEMPTS - 1:
                 time.sleep(_DB_RETRY_DELAY_SECONDS * (2 ** attempt))
                 continue
-            _logger.error("Authentication error: %s", exc)
-            return None
-        except Exception as exc:
             _logger.error("Authentication error: %s", exc)
             return None
     return None
@@ -703,21 +813,15 @@ def _authenticate_user(email: str, password: str) -> dict | None:
 
 def _email_exists(email: str) -> bool:
     """Check if an email is already registered."""
-    initialize_database()
     for attempt in range(_DB_RETRY_ATTEMPTS):
         try:
-            with get_database_connection() as conn:
-                row = conn.execute(
-                    "SELECT 1 FROM users WHERE email = ?",
-                    (email.strip().lower(),),
-                ).fetchone()
+            with _AuthConn() as db:
+                row = db.fetchone("SELECT 1 FROM users WHERE email = ?", (email.strip().lower(),))
                 return row is not None
-        except sqlite3.OperationalError as exc:
+        except Exception as exc:
             if "locked" in str(exc).lower() and attempt < _DB_RETRY_ATTEMPTS - 1:
                 time.sleep(_DB_RETRY_DELAY_SECONDS * (2 ** attempt))
                 continue
-            return False
-        except Exception:
             return False
     return False
 
@@ -730,21 +834,19 @@ def _generate_reset_token(email: str) -> str | None:
     Token expires after 15 minutes. Returns None if email not found.
     """
     from datetime import datetime, timezone, timedelta
-    initialize_database()
     email_lower = email.strip().lower()
     try:
-        with get_database_connection() as conn:
-            row = conn.execute("SELECT user_id FROM users WHERE email = ?", (email_lower,)).fetchone()
+        with _AuthConn() as db:
+            row = db.fetchone("SELECT user_id FROM users WHERE email = ?", (email_lower,))
             if not row:
                 return None
             code = f"{secrets.randbelow(900000) + 100000}"
             token_hash = hashlib.sha256(code.encode()).hexdigest()
             expires = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
-            conn.execute(
+            db.execute(
                 "UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE email = ?",
                 (token_hash, expires, email_lower),
             )
-            conn.commit()
             return code
     except Exception as exc:
         _logger.error("Failed to generate reset token: %s", exc)
@@ -754,20 +856,27 @@ def _generate_reset_token(email: str) -> str | None:
 def _verify_reset_token(email: str, code: str) -> bool:
     """Check if the reset code is valid and not expired."""
     from datetime import datetime, timezone
-    initialize_database()
     email_lower = email.strip().lower()
     try:
-        with get_database_connection() as conn:
-            row = conn.execute(
+        with _AuthConn() as db:
+            row = db.fetchone(
                 "SELECT reset_token, reset_token_expires FROM users WHERE email = ?",
                 (email_lower,),
-            ).fetchone()
+            )
             if not row or not row["reset_token"] or not row["reset_token_expires"]:
                 return False
             token_hash = hashlib.sha256(code.strip().encode()).hexdigest()
             if not secrets.compare_digest(token_hash, row["reset_token"]):
                 return False
-            expires = datetime.fromisoformat(row["reset_token_expires"])
+            expires_raw = row["reset_token_expires"]
+            # Postgres returns a datetime object; SQLite returns a string
+            if isinstance(expires_raw, str):
+                expires = datetime.fromisoformat(expires_raw)
+            else:
+                expires = expires_raw
+            if expires.tzinfo is None:
+                from datetime import timezone as _tz
+                expires = expires.replace(tzinfo=_tz.utc)
             if datetime.now(timezone.utc) > expires:
                 return False
             return True
@@ -777,17 +886,15 @@ def _verify_reset_token(email: str, code: str) -> bool:
 
 def _reset_user_password(email: str, new_password: str) -> bool:
     """Set a new password and clear the reset token."""
-    initialize_database()
     email_lower = email.strip().lower()
     try:
         pw_hash = _hash_password(new_password)
-        with get_database_connection() as conn:
-            conn.execute(
+        with _AuthConn() as db:
+            db.execute(
                 "UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL, "
                 "failed_login_count = 0, lockout_until = NULL WHERE email = ?",
                 (pw_hash, email_lower),
             )
-            conn.commit()
         return True
     except Exception as exc:
         _logger.error("Failed to reset password: %s", exc)
@@ -799,14 +906,10 @@ def change_user_password(email: str, current_password: str, new_password: str) -
 
     Returns (success: bool, message: str).
     """
-    initialize_database()
     email_lower = email.strip().lower()
     try:
-        with get_database_connection() as conn:
-            row = conn.execute(
-                "SELECT password_hash FROM users WHERE email = ?",
-                (email_lower,),
-            ).fetchone()
+        with _AuthConn() as db:
+            row = db.fetchone("SELECT password_hash FROM users WHERE email = ?", (email_lower,))
             if not row:
                 return False, "Account not found."
             if not _verify_password(current_password, row["password_hash"]):
@@ -817,11 +920,7 @@ def change_user_password(email: str, current_password: str, new_password: str) -
             if current_password == new_password:
                 return False, "New password must be different from your current password."
             pw_hash = _hash_password(new_password)
-            conn.execute(
-                "UPDATE users SET password_hash = ? WHERE email = ?",
-                (pw_hash, email_lower),
-            )
-            conn.commit()
+            db.execute("UPDATE users SET password_hash = ? WHERE email = ?", (pw_hash, email_lower))
         return True, "Password changed successfully!"
     except Exception as exc:
         _logger.error("Failed to change password: %s", exc)
@@ -836,30 +935,32 @@ _LOCKOUT_MINUTES = 15
 def _check_login_lockout(email: str) -> str | None:
     """Return a lockout message if user is rate-limited, else None."""
     from datetime import datetime, timezone
-    initialize_database()
     email_lower = email.strip().lower()
     try:
-        with get_database_connection() as conn:
-            conn.row_factory = sqlite3.Row
-            row = conn.execute(
+        with _AuthConn() as db:
+            row = db.fetchone(
                 "SELECT failed_login_count, lockout_until FROM users WHERE email = ?",
                 (email_lower,),
-            ).fetchone()
+            )
             if not row:
                 return None
             lockout_until = row["lockout_until"]
             if lockout_until:
-                lock_dt = datetime.fromisoformat(lockout_until)
+                if isinstance(lockout_until, str):
+                    lock_dt = datetime.fromisoformat(lockout_until)
+                else:
+                    lock_dt = lockout_until
+                if lock_dt.tzinfo is None:
+                    lock_dt = lock_dt.replace(tzinfo=timezone.utc)
                 now = datetime.now(timezone.utc)
                 if now < lock_dt:
                     mins_left = max(1, int((lock_dt - now).total_seconds() / 60))
                     return f"Too many failed attempts. Try again in {mins_left} minute{'s' if mins_left > 1 else ''}."
                 # Lockout expired — reset
-                conn.execute(
+                db.execute(
                     "UPDATE users SET failed_login_count = 0, lockout_until = NULL WHERE email = ?",
                     (email_lower,),
                 )
-                conn.commit()
     except Exception:
         pass
     return None
@@ -868,39 +969,32 @@ def _check_login_lockout(email: str) -> str | None:
 def _record_failed_login(email: str) -> None:
     """Increment failed login count; lockout after threshold."""
     from datetime import datetime, timezone, timedelta
-    initialize_database()
     email_lower = email.strip().lower()
     try:
-        with get_database_connection() as conn:
-            conn.execute(
+        with _AuthConn() as db:
+            db.execute(
                 "UPDATE users SET failed_login_count = COALESCE(failed_login_count, 0) + 1 WHERE email = ?",
                 (email_lower,),
             )
-            row = conn.execute(
-                "SELECT failed_login_count FROM users WHERE email = ?",
-                (email_lower,),
-            ).fetchone()
-            if row and row[0] >= _MAX_LOGIN_ATTEMPTS:
+            row = db.fetchone("SELECT failed_login_count FROM users WHERE email = ?", (email_lower,))
+            if row and (row["failed_login_count"] or 0) >= _MAX_LOGIN_ATTEMPTS:
                 lockout = (datetime.now(timezone.utc) + timedelta(minutes=_LOCKOUT_MINUTES)).isoformat()
-                conn.execute(
+                db.execute(
                     "UPDATE users SET lockout_until = ? WHERE email = ?",
                     (lockout, email_lower),
                 )
-            conn.commit()
     except Exception:
         pass
 
 
 def _clear_failed_logins(email: str) -> None:
     """Reset failed login counter on successful login."""
-    initialize_database()
     try:
-        with get_database_connection() as conn:
-            conn.execute(
+        with _AuthConn() as db:
+            db.execute(
                 "UPDATE users SET failed_login_count = 0, lockout_until = NULL WHERE email = ?",
                 (email.strip().lower(),),
             )
-            conn.commit()
     except Exception:
         pass
 

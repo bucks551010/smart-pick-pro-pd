@@ -44,18 +44,28 @@ _DB_RETRY_DELAY_SECONDS = 0.15
 # ── PostgreSQL / SQLite auto-detection ───────────────────────
 # When Railway PostgreSQL plugin is added, DATABASE_URL is set automatically.
 # The auth layer uses Postgres when available, SQLite otherwise.
-_DATABASE_URL = os.environ.get("DATABASE_URL", "")
+# Railway provides URLs with the "postgres://" scheme; psycopg2 needs "postgresql://".
+_DATABASE_URL = os.environ.get("DATABASE_URL", "").replace("postgres://", "postgresql://", 1)
 _HAS_PSYCOPG2 = False
 if _DATABASE_URL:
     try:
         import psycopg2  # type: ignore
         import psycopg2.extras  # type: ignore
+        # Verify the connection actually works before committing to PG mode.
+        _test_conn = psycopg2.connect(_DATABASE_URL)
+        _test_conn.close()
+        del _test_conn
         _HAS_PSYCOPG2 = True
-        _logger.info("Auth DB: PostgreSQL mode (DATABASE_URL found)")
+        _logger.info("Auth DB: PostgreSQL mode active (DATABASE_URL connected successfully)")
     except ImportError:
         _logger.warning(
             "DATABASE_URL is set but psycopg2 is not installed — "
             "falling back to SQLite. Add psycopg2-binary to requirements.txt."
+        )
+    except Exception as _pg_err:
+        _logger.error(
+            "DATABASE_URL is set but PostgreSQL connection failed (%s) — "
+            "falling back to SQLite.", _pg_err
         )
 
 _PG_USERS_TABLE_SQL = """

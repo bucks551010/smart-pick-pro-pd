@@ -923,9 +923,19 @@ html, body {
 }
 
 .stApp {
-    background: #050910 !important;
+    background: #03060E !important;
     overflow-x: hidden !important;
     max-width: 100% !important;
+}
+/* Subtle dot-grid — the AI matrix texture */
+.stApp::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(circle at 1px 1px, rgba(0,213,89,0.055) 1px, transparent 0);
+    background-size: 44px 44px;
+    pointer-events: none;
+    z-index: 0;
 }
 
 .stApp > [data-testid="stAppViewContainer"] {
@@ -1443,23 +1453,25 @@ html, body, .stApp, .stApp * {
 .ag-proof-stat {
     text-align: center;
     padding: 28px 16px 24px;
-    background: linear-gradient(168deg, rgba(10, 16, 32, 0.95), rgba(8, 12, 24, 0.98));
-    border: 1px solid rgba(0, 213, 89, 0.08);
-    border-radius: 18px;
+    background: linear-gradient(168deg, rgba(10,16,30,0.98), rgba(7,11,22,0.99));
+    border: 1px solid rgba(0,213,89,0.1);
+    border-top: 1px solid rgba(0,213,89,0.22);
+    border-radius: 16px;
     animation: agProofCardReveal 0.7s 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
     position: relative; overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,213,89,0.06);
 }
 .ag-proof-stat::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(0, 213, 89, 0.5), transparent);
+    background: linear-gradient(90deg, transparent, rgba(0, 213, 89, 0.6), transparent);
     opacity: 0; transition: opacity 0.3s;
 }
 .ag-proof-stat:hover::before { opacity: 1; }
 .ag-proof-stat:hover {
-    border-color: rgba(0, 213, 89, 0.15);
-    transform: translateY(-4px);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3), 0 0 30px rgba(0, 213, 89, 0.04);
+    border-color: rgba(0,213,89,0.25);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 56px rgba(0,0,0,0.4), 0 0 40px rgba(0,213,89,0.08);
 }
 .ag-proof-stat:nth-child(2) { animation-delay: 0.35s; }
 .ag-proof-stat:nth-child(3) { animation-delay: 0.5s; }
@@ -1643,55 +1655,56 @@ html, body, .stApp, .stApp * {
     color: rgba(255, 255, 255, 0.3) !important;
 }
 
-/* ── CTA button ──────────────────────────────────────────────── */
+/* ── CTA button — premium shimmer ──────────────────────────────── */
 [data-testid="stForm"] button[kind="primaryFormSubmit"],
 [data-testid="stForm"] button[type="submit"] {
-    background: linear-gradient(135deg, #00D559 0%, #00B74D 100%) !important;
-    color: #fff !important;
+    background: linear-gradient(135deg, #00E865 0%, #00D559 45%, #00B74D 100%) !important;
+    color: #050910 !important;
     font-family: 'Space Grotesk', sans-serif !important;
-    font-weight: 700 !important;
-    font-size: 0.95rem !important;
-    border: none !important;
-    border-radius: 12px !important;
+    font-weight: 800 !important;
+    font-size: 0.88rem !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    border-radius: 10px !important;
     padding: 14px 28px !important;
     margin-top: 8px !important;
-    box-shadow: 0 4px 24px rgba(0, 213, 89, 0.3) !important;
-    transition: all 0.2s ease !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    box-shadow: 0 0 28px rgba(0,213,89,0.35), 0 4px 20px rgba(0,213,89,0.18), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+    transition: all 0.25s cubic-bezier(0.16,1,0.3,1) !important;
     position: relative; overflow: hidden;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
 }
 [data-testid="stForm"] button[kind="primaryFormSubmit"]::after,
 [data-testid="stForm"] button[type="submit"]::after {
-    content: ''; position: absolute; top: 0; width: 60px; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
-    animation: agShimmer 3s ease-in-out infinite;
+    content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transform: skewX(-20deg);
+    animation: agShimmer 3.5s ease-in-out infinite;
 }
 [data-testid="stForm"] button[kind="primaryFormSubmit"]:hover,
 [data-testid="stForm"] button[type="submit"]:hover {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 6px 32px rgba(0, 213, 89, 0.4) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 0 44px rgba(0,213,89,0.5), 0 6px 28px rgba(0,213,89,0.25), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+    background: linear-gradient(135deg, #00FF75 0%, #00E865 45%, #00C04B 100%) !important;
 }
 
-/* ── Below-fold sections ─────────────────────────────────────── */
-
-/* Section header */
+/* ── Section header ─────────────────────────────────────────── */
 .ag-section-head {
-    text-align: center; margin-bottom: 28px;
+    text-align: center; margin-bottom: 32px;
     position: relative;
 }
 .ag-section-head::before {
-    content: ''; display: block; width: 80px; height: 3px; margin: 0 auto 18px;
-    background: linear-gradient(90deg, #00D559, #2D9EFF, #c084fc);
+    content: ''; display: block; width: 60px; height: 2px; margin: 0 auto 20px;
+    background: linear-gradient(90deg, transparent, #00D559, #2D9EFF, #c084fc, transparent);
     border-radius: 4px;
-    box-shadow: 0 0 20px rgba(0, 213, 89, 0.25), 0 0 60px rgba(0, 213, 89, 0.08);
+    box-shadow: 0 0 24px rgba(0, 213, 89, 0.35), 0 0 60px rgba(0, 213, 89, 0.1);
 }
 .ag-section-head h3 {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 2.2rem; font-weight: 700;
+    font-size: 2rem; font-weight: 800;
     color: #fff; margin: 0 0 10px;
     letter-spacing: -0.04em;
     text-transform: uppercase;
-    text-shadow: 0 0 40px rgba(0, 213, 89, 0.06);
+    text-shadow: 0 0 60px rgba(0, 213, 89, 0.08);
 }
 .ag-section-head h3 .em {
     background: linear-gradient(135deg, #00D559 0%, #2D9EFF 50%, #c084fc 100%);
@@ -1856,12 +1869,12 @@ html, body, .stApp, .stApp * {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
 }
 .ag-fcard {
-    background: linear-gradient(168deg, rgba(8,14,28,0.97), rgba(5,9,16,0.99));
-    border: 1.5px solid rgba(255,255,255,0.04);
-    border-radius: 20px; padding: 28px 22px 24px;
+    background: linear-gradient(168deg, rgba(10,16,30,0.98), rgba(5,9,18,0.99));
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 18px; padding: 28px 22px 24px;
     position: relative; overflow: hidden;
-    transition: border-color 0.4s, transform 0.4s, box-shadow 0.4s;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.02);
+    transition: border-color 0.35s, transform 0.35s, box-shadow 0.35s;
+    box-shadow: 0 4px 28px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 .ag-fcard::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
@@ -1872,8 +1885,9 @@ html, body, .stApp, .stApp * {
     opacity: 0; transition: opacity 0.4s; pointer-events: none;
 }
 .ag-fcard:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 40px var(--fc-glow, rgba(0,213,89,0.08));
+    transform: translateY(-8px);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.55), 0 0 50px var(--fc-glow, rgba(0,213,89,0.1));
+    border-color: rgba(255,255,255,0.1);
 }
 .ag-fcard:hover::after { opacity: 1; }
 /* Color variants */
@@ -2773,19 +2787,35 @@ html, body, .stApp, .stApp * {
 .ag-cta2-btn {
     display: inline-block;
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1rem; font-weight: 700;
-    color: #0B0F19; background: linear-gradient(135deg, #00D559, #00B74D);
-    padding: 16px 52px; border-radius: 16px;
-    text-decoration: none;
-    box-shadow: 0 6px 32px rgba(0, 213, 89, 0.35);
-    transition: all 0.25s ease;
-    animation: agPulse 3s ease-in-out infinite;
-    position: relative;
+    font-size: 0.92rem; font-weight: 800;
+    color: #050910;
+    background: linear-gradient(135deg, #00E865 0%, #00D559 45%, #00B74D 100%);
+    padding: 18px 58px; border-radius: 12px;
+    text-decoration: none; letter-spacing: 0.07em; text-transform: uppercase;
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow:
+        0 0 40px rgba(0,213,89,0.35),
+        0 8px 32px rgba(0,213,89,0.2),
+        inset 0 1px 0 rgba(255,255,255,0.25);
+    transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+    position: relative; overflow: hidden;
+}
+.ag-cta2-btn::before {
+    content: '';
+    position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.55s cubic-bezier(0.16,1,0.3,1);
 }
 .ag-cta2-btn:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 48px rgba(0, 213, 89, 0.5);
+    transform: translateY(-4px) scale(1.015);
+    box-shadow:
+        0 0 70px rgba(0,213,89,0.55),
+        0 14px 52px rgba(0,213,89,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.25);
+    background: linear-gradient(135deg, #00FF75 0%, #00E865 45%, #00C04B 100%);
 }
+.ag-cta2-btn:hover::before { left: 150%; }
 .ag-cta2-trust {
     font-size: 0.6rem; color: rgba(255, 255, 255, 0.18);
     margin-top: 14px; position: relative;
@@ -3689,17 +3719,18 @@ a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
   padding:6px 8px 6px 12px;
   width:fit-content;max-width:min(92vw, 960px);
   margin-left:auto;margin-right:auto;
-  background:rgba(8,12,24,0.75);
-  backdrop-filter:blur(40px) saturate(2);-webkit-backdrop-filter:blur(40px) saturate(2);
-  border:1px solid rgba(255,255,255,0.08);
+  background:rgba(5,8,18,0.88);
+  backdrop-filter:blur(48px) saturate(1.8);-webkit-backdrop-filter:blur(48px) saturate(1.8);
+  border:1px solid rgba(255,255,255,0.1);
+  border-top:1px solid rgba(0,213,89,0.18);
   border-radius:100px;
   scrollbar-width:none;
-  box-shadow:0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03) inset;
+  box-shadow:0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 30px rgba(0,213,89,0.04);
   animation:navSlideDown 0.5s cubic-bezier(0.16,1,0.3,1) both;
   transition:transform 0.4s cubic-bezier(0.16,1,0.3,1), opacity 0.3s, box-shadow 0.3s;
 }}
 .spp-nav-dock:hover{{
-  box-shadow:0 12px 44px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06) inset;
+  box-shadow:0 12px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.07) inset, 0 0 40px rgba(0,213,89,0.06);
 }}
 .spp-nav-dock.nav-hidden{{transform:translateY(-140%);opacity:0}}
 .spp-nav-dock::-webkit-scrollbar{{display:none}}
@@ -3746,47 +3777,69 @@ a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
 .spp-nav-pill{{
   flex-shrink:0;
   font-family:'Space Grotesk',sans-serif;font-size:0.68rem;font-weight:600;
-  color:rgba(255,255,255,0.4);
+  color:rgba(255,255,255,0.5);
   background:transparent;
   border:1px solid transparent;
   border-radius:100px;padding:6px 14px;
-  cursor:pointer;transition:all 0.25s cubic-bezier(0.16,1,0.3,1);
+  cursor:pointer;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);
   text-decoration:none;white-space:nowrap;
-  letter-spacing:0.01em;
+  letter-spacing:0.02em;
   position:relative;
 }}
 .spp-nav-pill:hover{{
-  color:rgba(255,255,255,0.75);
-  background:rgba(255,255,255,0.05);
+  color:rgba(255,255,255,0.9);
+  background:rgba(255,255,255,0.06);
+  border-color:rgba(255,255,255,0.08);
 }}
 .spp-nav-pill.active{{
   color:#fff;
-  background:rgba(0,213,89,0.12);
-  border-color:rgba(0,213,89,0.25);
-  box-shadow:0 0 20px rgba(0,213,89,0.1), 0 0 0 1px rgba(0,213,89,0.08) inset;
+  background:rgba(0,213,89,0.14);
+  border-color:rgba(0,213,89,0.3);
+  box-shadow:0 0 20px rgba(0,213,89,0.12), 0 0 0 1px rgba(0,213,89,0.1) inset;
   font-weight:700;
 }}
 .spp-nav-pill .ni{{margin-right:3px;font-size:0.68rem}}
+/* Log In nav pill — outlined style */
+#nav-login-cta{{
+  color:rgba(255,255,255,0.65);
+  border:1px solid rgba(255,255,255,0.14);
+  background:rgba(255,255,255,0.03);
+}}
+#nav-login-cta:hover{{
+  color:#fff;
+  border-color:rgba(255,255,255,0.28);
+  background:rgba(255,255,255,0.07);
+}}
 
-/* CTA pill */
+/* CTA pill — premium shimmer button */
 .spp-nav-cta{{
   flex-shrink:0;
   font-family:'Space Grotesk',sans-serif;font-size:0.62rem;font-weight:800;
-  color:#0B0F19;
-  background:linear-gradient(135deg,#00D559,#00C04B);
-  border:none;border-radius:100px;
-  padding:7px 16px;
+  color:#050910;
+  background:linear-gradient(135deg,#00E865 0%,#00D559 50%,#00B74D 100%);
+  border:1px solid rgba(255,255,255,0.18);
+  border-radius:100px;
+  padding:7px 18px;
   cursor:pointer;text-decoration:none;white-space:nowrap;
-  letter-spacing:0.02em;text-transform:uppercase;
-  box-shadow:0 2px 12px rgba(0,213,89,0.3);
+  letter-spacing:0.06em;text-transform:uppercase;
+  box-shadow:0 0 18px rgba(0,213,89,0.4), 0 2px 8px rgba(0,213,89,0.25), inset 0 1px 0 rgba(255,255,255,0.2);
   transition:all 0.25s;
-  margin-left:4px;
+  margin-left:6px;
+  position:relative;overflow:hidden;
+}}
+.spp-nav-cta::after{{
+  content:'';
+  position:absolute;top:0;left:-100%;width:55%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent);
+  transform:skewX(-20deg);
+  transition:left 0.45s;
 }}
 .spp-nav-cta:hover{{
   transform:translateY(-1px);
-  box-shadow:0 4px 20px rgba(0,213,89,0.45);
-  background:linear-gradient(135deg,#00E861,#00D559);
+  box-shadow:0 0 28px rgba(0,213,89,0.55), 0 4px 16px rgba(0,213,89,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  background:linear-gradient(135deg,#00FF75 0%,#00E865 50%,#00C04B 100%);
 }}
+.spp-nav-cta:hover::after{{left:150%}}
 
 /* Back to top */
 .spp-btt{{
@@ -5910,20 +5963,26 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
     border-color: rgba(0, 213, 89, 0.3) !important;
     box-shadow: 0 0 16px rgba(0, 213, 89, 0.08) !important;
 }
-/* Style form submit buttons */
+/* Style form submit buttons — premium shimmer */
 [data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stFormSubmitButton"] button {
     font-family: 'Space Grotesk', sans-serif !important;
     font-weight: 800 !important;
-    font-size: 0.78rem !important;
-    letter-spacing: 0.01em !important;
-    border-radius: 14px !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    border-radius: 10px !important;
     padding: 12px 20px !important;
-    border: none !important;
-    transition: all 0.3s !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    background: linear-gradient(135deg, #00E865 0%, #00D559 45%, #00B74D 100%) !important;
+    color: #050910 !important;
+    box-shadow: 0 0 24px rgba(0,213,89,0.3), 0 4px 16px rgba(0,213,89,0.15), inset 0 1px 0 rgba(255,255,255,0.18) !important;
+    transition: all 0.25s cubic-bezier(0.16,1,0.3,1) !important;
+    position: relative !important; overflow: hidden !important;
 }
 [data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stFormSubmitButton"] button:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 8px 28px rgba(0, 213, 89, 0.3) !important;
+    box-shadow: 0 0 36px rgba(0,213,89,0.45), 0 8px 24px rgba(0,213,89,0.22), inset 0 1px 0 rgba(255,255,255,0.18) !important;
+    background: linear-gradient(135deg, #00FF75 0%, #00E865 45%, #00C04B 100%) !important;
 }
 /* Style success/info alerts inside cols */
 [data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stAlert"] {
@@ -6203,8 +6262,10 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 .ft-cta::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#00D559,#2D9EFF,#c084fc,transparent);background-size:200% 100%;animation:ftShimmer 3s ease infinite}
 .ft-cta-h{font-family:'Space Grotesk',sans-serif;font-size:2.6rem;font-weight:800;color:#fff;margin:0 0 12px;letter-spacing:-0.04em;position:relative;line-height:1.2}
 .ft-cta-s{font-size:0.95rem;color:rgba(255,255,255,0.4);margin:0 0 28px;line-height:1.7;position:relative;max-width:480px;margin-left:auto;margin-right:auto}
-.ft-cta-btn{display:inline-block;font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:800;color:#0B0F19;background:linear-gradient(135deg,#00D559,#00B74D);padding:18px 56px;border-radius:16px;text-decoration:none;box-shadow:0 8px 40px rgba(0,213,89,0.35);position:relative;transition:all 0.3s;cursor:pointer;border:none}
-.ft-cta-btn:hover{transform:translateY(-4px);box-shadow:0 16px 56px rgba(0,213,89,0.5)}
+.ft-cta-btn{display:inline-block;font-family:'Space Grotesk',sans-serif;font-size:0.95rem;font-weight:800;color:#050910;background:linear-gradient(135deg,#00E865 0%,#00D559 45%,#00B74D 100%);padding:20px 62px;border-radius:12px;text-decoration:none;letter-spacing:0.07em;text-transform:uppercase;border:1px solid rgba(255,255,255,0.18);box-shadow:0 0 50px rgba(0,213,89,0.4),0 10px 40px rgba(0,213,89,0.22),inset 0 1px 0 rgba(255,255,255,0.22);position:relative;overflow:hidden;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);cursor:pointer}
+.ft-cta-btn::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent);transform:skewX(-20deg);transition:left 0.55s cubic-bezier(0.16,1,0.3,1)}
+.ft-cta-btn:hover{transform:translateY(-5px) scale(1.01);background:linear-gradient(135deg,#00FF75 0%,#00E865 45%,#00C04B 100%);box-shadow:0 0 80px rgba(0,213,89,0.6),0 16px 60px rgba(0,213,89,0.32),inset 0 1px 0 rgba(255,255,255,0.25)}
+.ft-cta-btn:hover::before{left:150%}
 .ft-cta-trust{display:flex;justify-content:center;gap:18px;margin-top:20px;position:relative;flex-wrap:wrap}
 .ft-cta-trust span{font-size:0.65rem;font-weight:600;color:rgba(255,255,255,0.2);display:flex;align-items:center;gap:4px}
 
@@ -6222,7 +6283,7 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
   .ft-perf-head h2,.ft-faq-head h2{font-size:1.8rem}
   .ft-cta-h{font-size:1.8rem}
   .ft-cta{padding:36px 20px}
-  .ft-cta-btn{padding:14px 36px;font-size:0.92rem}
+  .ft-cta-btn{padding:16px 40px;font-size:0.88rem}
   .ft-qi summary{padding:14px 16px;font-size:.76rem}
   .ft-qi-ans{padding:0 16px 14px;font-size:.7rem}
   .ft-cta-s{font-size:.85rem}
@@ -6234,7 +6295,7 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
   .ft-perf-head p,.ft-faq-head p{font-size:.75rem}
   .ft-cta-h{font-size:1.4rem}
   .ft-cta{padding:28px 14px;border-radius:18px}
-  .ft-cta-btn{padding:12px 28px;font-size:.82rem;border-radius:12px}
+  .ft-cta-btn{padding:14px 28px;font-size:.8rem;border-radius:10px}
   .ft-cta-s{font-size:.78rem}
   .ft-qi summary{padding:12px 12px;font-size:.7rem}
   .ft-qi-ans{padding:0 12px 12px;font-size:.66rem}

@@ -114,61 +114,58 @@ def _display_stat_label(raw: str) -> str:
 def _load_top_preview_picks(limit: int = 5) -> list[dict]:
     """Load today's top analysis picks from the database for the landing page preview.
 
-    Falls back to the JSON cache file (``cache/latest_picks.json``), then
-    to the latest available day in the DB.  This ensures the landing page
-    always shows real picks — even on fresh Railway deploys where the
-    SQLite DB is empty but the cache file shipped with the Docker image.
+    Falls back to the JSON cache file (``cache/latest_picks.json``) only when
+    it contains today's picks.  Returns an empty list when no picks exist for
+    today — the landing page renders a "check back soon" state in that case,
+    rather than showing stale picks from a previous day.
     Returns a list of dicts with pick data, sorted by confidence descending.
     """
     initialize_database()
+    today = _nba_today_str()
     try:
         with get_database_connection() as conn:
             conn.row_factory = sqlite3.Row
-            today = _nba_today_str()
-            # Try today first, then fall back to latest available date
-            for date_query in [today, None]:
-                if date_query:
-                    rows = conn.execute(
-                        """SELECT player_name, team, stat_type, prop_line, direction,
-                                  platform, confidence_score, probability_over,
-                                  edge_percentage, tier
-                           FROM all_analysis_picks
-                           WHERE pick_date = ?
-                           ORDER BY confidence_score DESC
-                           LIMIT ?""",
-                        (date_query, limit),
-                    ).fetchall()
-                else:
-                    rows = conn.execute(
-                        """SELECT player_name, team, stat_type, prop_line, direction,
-                                  platform, confidence_score, probability_over,
-                                  edge_percentage, tier
-                           FROM all_analysis_picks
-                           ORDER BY pick_date DESC, confidence_score DESC
-                           LIMIT ?""",
-                        (limit,),
-                    ).fetchall()
-                if rows:
-                    return [dict(r) for r in rows]
+            rows = conn.execute(
+                """SELECT player_name, team, stat_type, prop_line, direction,
+                          platform, confidence_score, probability_over,
+                          edge_percentage, tier
+                   FROM all_analysis_picks
+                   WHERE pick_date = ?
+                   ORDER BY confidence_score DESC
+                   LIMIT ?""",
+                (today, limit),
+            ).fetchall()
+            if rows:
+                return [dict(r) for r in rows]
     except Exception as exc:
         _logger.debug("_load_top_preview_picks DB: %s", exc)
 
-    # ── JSON cache fallback (survives empty DB on Railway) ──
-    return _load_picks_from_cache(limit)
+    # ── JSON cache fallback — only use if the file is dated TODAY ──
+    # Never show picks from a previous day as if they are current.
+    return _load_picks_from_cache(limit, require_date=today)
 
 
-def _load_picks_from_cache(limit: int = 5) -> list[dict]:
+def _load_picks_from_cache(limit: int = 5, require_date: str | None = None) -> list[dict]:
     """Read top picks from ``cache/latest_picks.json``.
 
-    This file is written by ``tracking.database.insert_analysis_picks``
-    every time analysis runs and is also committed to the repo so fresh
-    Docker images always ship with recent picks.
+    Args:
+        limit: Maximum number of picks to return.
+        require_date: When provided, only return picks if the cache file's
+            ``date`` field matches this ISO date string (YYYY-MM-DD).  Pass
+            today's date to prevent stale picks from a previous day being
+            shown as current.
     """
     import json as _json
     try:
         cache_path = Path(__file__).resolve().parent.parent / "cache" / "latest_picks.json"
         if cache_path.exists():
             data = _json.loads(cache_path.read_text(encoding="utf-8"))
+            if require_date and data.get("date") != require_date:
+                _logger.debug(
+                    "_load_picks_from_cache: skipping stale cache (cache=%s, today=%s)",
+                    data.get("date"), require_date,
+                )
+                return []
             picks = data.get("picks", [])
             if picks:
                 _logger.debug("Loaded %d picks from cache/latest_picks.json", len(picks))

@@ -122,18 +122,20 @@ if not st.session_state.get("_picks_seeded"):
         pass
     try:
         # 2) Seed analysis picks from DB/cache → session state
-        from tracking.database import initialize_database as _init_db
+        from tracking.database import initialize_database as _init_db, _nba_today_iso as _today_iso2
         _init_db()
         import sqlite3 as _sq2
         from pathlib import Path as _P2
-        from datetime import date as _d2
         _db2 = _P2(os.environ.get(
             "DB_DIR", str(_P2(__file__).resolve().parent / "db")
         )) / "smartpicks.db"
+        # Use NBA ET-anchored date (not UTC server date) so Railway doesn't
+        # query the wrong day when it's after midnight UTC but still the
+        # previous NBA day in Eastern Time.
+        _today2 = _today_iso2()
         if _db2.exists():
             _conn2 = _sq2.connect(str(_db2), check_same_thread=False)
             _conn2.row_factory = _sq2.Row
-            _today2 = _d2.today().isoformat()
             _rows2 = _conn2.execute(
                 "SELECT * FROM all_analysis_picks WHERE pick_date = ? "
                 "ORDER BY confidence_score DESC",
@@ -144,15 +146,18 @@ if not st.session_state.get("_picks_seeded"):
                 _picks2 = [dict(r) for r in _rows2]
                 if not st.session_state.get("analysis_results"):
                     st.session_state["analysis_results"] = _picks2
-        # Fallback: cache/latest_picks.json
+        # Fallback: cache/latest_picks.json — only if it contains TODAY's picks.
+        # Never seed yesterday's cached picks as today's results; that would
+        # show stale data across the entire app.
         if not st.session_state.get("analysis_results"):
             import json as _j2
             _cache2 = _P2(__file__).resolve().parent / "cache" / "latest_picks.json"
             if _cache2.exists():
                 _cdata = _j2.loads(_cache2.read_text(encoding="utf-8"))
-                _cpicks = _cdata.get("picks", [])
-                if _cpicks:
-                    st.session_state["analysis_results"] = _cpicks
+                if _cdata.get("date") == _today2:
+                    _cpicks = _cdata.get("picks", [])
+                    if _cpicks:
+                        st.session_state["analysis_results"] = _cpicks
     except Exception:
         pass
 

@@ -1214,6 +1214,197 @@ st.markdown("""
     }
 }
 
+/* ── Neural Grid Background ─────────────────────────────────── */
+.neural-grid {
+    position: fixed; top:0; left:0; width:100%; height:100vh;
+    pointer-events: none; z-index: 0;
+    background-image:
+        linear-gradient(rgba(0,213,89,0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,213,89,0.045) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, rgba(0,0,0,0.55) 0%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, rgba(0,0,0,0.55) 0%, transparent 100%);
+}
+
+/* ── Live Analysis Bar ───────────────────────────────────────── */
+.live-analysis-bar {
+    background: rgba(0,213,89,0.04);
+    border: 1px solid rgba(0,213,89,0.18);
+    border-radius: 100px;
+    padding: 9px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 0.80rem;
+    color: rgba(255,255,255,0.65);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.03em;
+    margin-bottom: 14px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.live-dot {
+    width: 7px; height: 7px;
+    background: #00D559;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 7px rgba(0,213,89,0.7);
+    animation: thePulse 1.6s ease-in-out infinite;
+}
+.live-analysis-bar .lab-accent { color: #00D559; font-weight: 700; }
+.live-analysis-bar .lab-dim    { color: rgba(107,122,154,0.7); }
+
+/* ── Hero Badge Row ──────────────────────────────────────────── */
+.hero-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 11px;
+    border-radius: 100px;
+    font-size: 0.70rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
+}
+.hero-badge-ai   { background: rgba(45,158,255,0.10);  color: #2D9EFF; border: 1px solid rgba(45,158,255,0.26); }
+.hero-badge-free { background: rgba(0,213,89,0.10);    color: #00D559; border: 1px solid rgba(0,213,89,0.26); }
+.hero-badge-dfs  { background: rgba(249,198,43,0.08);  color: #F9C62B; border: 1px solid rgba(249,198,43,0.22); }
+
+/* ── Social Proof Strip ──────────────────────────────────────── */
+.spp-proof-strip {
+    background: rgba(255,255,255,0.022);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    gap: 12px;
+    margin: 12px 0 26px;
+    flex-wrap: wrap;
+}
+.spp-proof-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.spp-proof-num {
+    font-size: 1.55rem; font-weight: 900;
+    font-family: 'Bebas Neue', 'Inter', sans-serif;
+    color: #FFFFFF; line-height: 1;
+}
+.spp-proof-num.green { color: #00D559; }
+.spp-proof-num.blue  { color: #2D9EFF; }
+.spp-proof-num.gold  { color: #F9C62B; }
+.spp-proof-label { font-size: 0.66rem; color: #6B7A9A; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; text-align: center; }
+.spp-proof-divider { width: 1px; height: 30px; background: rgba(255,255,255,0.07); flex-shrink: 0; }
+@media (max-width: 640px) { .spp-proof-divider { display: none; } }
+
+/* ── Section Header XL — centered, large ────────────────────── */
+.section-eyebrow {
+    font-size: 0.72rem; font-weight: 700; color: #00D559;
+    text-transform: uppercase; letter-spacing: 0.15em;
+    text-align: center; margin-bottom: 8px;
+    font-family: 'Inter', sans-serif;
+}
+.section-header-xl {
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    font-weight: 900; font-family: 'Inter', sans-serif;
+    text-align: center; color: #FFFFFF;
+    letter-spacing: -0.025em; line-height: 1.15;
+    margin: 0 0 5px;
+}
+.section-header-xl .xl-accent {
+    background: linear-gradient(135deg, #00D559, #2D9EFF);
+    background-size: 200% 200%;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: lpGradShift 6s ease infinite;
+}
+.section-subheader-center {
+    font-size: 0.92rem; color: rgba(160,170,190,0.88);
+    font-family: 'Inter', sans-serif; text-align: center;
+    max-width: 680px; margin: 0 auto 30px;
+    line-height: 1.65; letter-spacing: 0.01em;
+}
+
+/* ── Urgency / Conversion Block ──────────────────────────────── */
+.urgency-block {
+    background: linear-gradient(135deg, rgba(0,213,89,0.05) 0%, rgba(45,158,255,0.04) 50%, rgba(0,0,0,0) 100%);
+    border: 1px solid rgba(0,213,89,0.22);
+    border-radius: 16px; padding: 22px 32px;
+    text-align: center; position: relative; overflow: hidden;
+    margin: 24px 0 8px;
+}
+.urgency-block::before {
+    content: '';
+    position: absolute; top:0; left:0; right:0; height:2px;
+    background: linear-gradient(90deg, transparent, #00D559 30%, #2D9EFF 70%, transparent);
+}
+.urgency-title { font-size: 1.08rem; font-weight: 800; color: #FFFFFF; font-family: 'Inter', sans-serif; margin-bottom: 6px; letter-spacing: -0.01em; }
+.urgency-subtitle { font-size: 0.88rem; color: rgba(160,170,190,0.82); line-height: 1.58; }
+.urgency-subtitle strong { color: #00D559; font-weight: 700; }
+.urgency-subtitle .blue  { color: #2D9EFF; font-weight: 700; }
+
+/* ── Pillar Card Accent Variants ─────────────────────────────── */
+.pillar-card.accent-cyan  { border-color: rgba(45,158,255,0.16); }
+.pillar-card.accent-green { border-color: rgba(0,213,89,0.16); }
+.pillar-card.accent-gold  { border-color: rgba(249,198,43,0.15); }
+.pillar-card.accent-cyan:hover  { border-color: rgba(45,158,255,0.40); box-shadow: 0 8px 28px rgba(45,158,255,0.12), 0 12px 36px rgba(0,0,0,0.45); }
+.pillar-card.accent-green:hover { border-color: rgba(0,213,89,0.40);   box-shadow: 0 8px 28px rgba(0,213,89,0.12),  0 12px 36px rgba(0,0,0,0.45); }
+.pillar-card.accent-gold:hover  { border-color: rgba(249,198,43,0.35); box-shadow: 0 8px 28px rgba(249,198,43,0.10), 0 12px 36px rgba(0,0,0,0.45); }
+.pillar-accent {
+    position: absolute; top:0; left:0; right:0; height:3px;
+}
+.pillar-card.accent-cyan  .pillar-accent { background: linear-gradient(90deg, #2D9EFF 0%, transparent 70%); }
+.pillar-card.accent-green .pillar-accent { background: linear-gradient(90deg, #00D559 0%, transparent 70%); }
+.pillar-card.accent-gold  .pillar-accent { background: linear-gradient(90deg, #F9C62B 0%, transparent 70%); }
+.pillar-card-inner { display: flex; flex-direction: column; gap: 10px; height: 100%; }
+.pillar-icon-halo {
+    width: 52px; height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 14px; flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+.pillar-card.accent-cyan  .pillar-icon-halo { background: rgba(45,158,255,0.10); }
+.pillar-card.accent-green .pillar-icon-halo { background: rgba(0,213,89,0.10); }
+.pillar-card.accent-gold  .pillar-icon-halo { background: rgba(249,198,43,0.10); }
+.pillar-subtitle { font-size: 0.80rem; color: #6B7A9A; font-style: italic; margin-top: -4px; line-height: 1.4; }
+.pillar-footer   { font-size: 0.75rem; color: #6B7A9A; margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); font-style: italic; }
+
+/* ── HIW Stage Cards ─────────────────────────────────────────── */
+.hiw-stage {
+    background: #161B27;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px; padding: 18px 16px;
+    text-align: center;
+    transition: border-color 0.22s ease, transform 0.22s ease;
+    height: 100%;
+}
+.hiw-stage:hover { border-color: rgba(0,213,89,0.25); transform: translateY(-3px); }
+.hiw-stage-num   { font-size: 0.68rem; font-weight: 800; color: #6B7A9A; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+.hiw-stage-icon  { font-size: 1.8rem; margin-bottom: 8px; }
+.hiw-stage-title { font-size: 0.88rem; font-weight: 800; color: #FFFFFF; margin-bottom: 4px; }
+.hiw-stage-desc  { font-size: 0.76rem; color: #A0AABE; line-height: 1.5; }
+.hiw-connector   { display: flex; align-items: center; justify-content: center; color: #2D9EFF; font-size: 1.4rem; opacity: 0.35; height: 100%; }
+
+/* ── Joseph welcome card name + AI badge ─────────────────────── */
+.joseph-welcome-name { font-size: 0.88rem; font-weight: 800; color: #FFFFFF; margin-bottom: 2px; }
+.badge-ai {
+    display: inline-block;
+    background: rgba(45,158,255,0.12); color: #2D9EFF;
+    border: 1px solid rgba(45,158,255,0.25);
+    font-size: 0.60rem; font-weight: 700;
+    padding: 1px 6px; border-radius: 4px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    vertical-align: middle; margin-left: 5px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1400,6 +1591,7 @@ game_count_text = (
 
 # Ambient floating orbs behind the page
 st.markdown("""
+<div class="neural-grid"></div>
 <div class="lp-orbs-container">
   <div class="lp-orb lp-orb-1"></div>
   <div class="lp-orb lp-orb-2"></div>
@@ -1408,9 +1600,23 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown(f"""
+<div class="live-analysis-bar lp-anim">
+  <span class="live-dot"></span>
+  <span class="lab-accent">LIVE</span>
+  <span class="lab-dim">&nbsp;&mdash;&nbsp;</span>
+  <span>NBA prop engine active &nbsp;&bull;&nbsp; {game_count_text} &nbsp;&bull;&nbsp; <span class="lab-accent">Monte Carlo online</span></span>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown(f"""
 <div class="hero-hud lp-anim">
   <div class="hero-hud-inner-glow"></div>
   <div class="hero-hud-text">
+    <div class="hero-badge-row">
+      <span class="hero-badge hero-badge-ai">🤖 Monte Carlo AI</span>
+      <span class="hero-badge hero-badge-free">✅ Free Picks Daily</span>
+      <span class="hero-badge hero-badge-dfs">🏀 PrizePicks + Underdog</span>
+    </div>
     <div class="hero-tagline">THE NBA PROP ENGINE THAT SHOWS ITS WORK</div>
     <div class="hero-subtext"><strong>5,000+ Live Props. 1,000 Simulations Each. Zero Black Boxes.</strong> Know the edge before you enter.</div>
     <div class="hero-date">📅 {today_str} &nbsp;&bull;&nbsp; <span class="game-count-live">{game_count_text}</span></div>
@@ -1576,6 +1782,36 @@ if _home_one_click:
 # ============================================================
 # END SECTION 1: Cinematic Hero
 # ============================================================
+
+# ── Social Proof Strip — credibility numbers under the CTA ────
+st.markdown("""
+<div class="spp-proof-strip lp-anim lp-anim-d2">
+  <div class="spp-proof-item">
+    <div class="spp-proof-num green">5,000+</div>
+    <div class="spp-proof-label">Live Props Nightly</div>
+  </div>
+  <div class="spp-proof-divider"></div>
+  <div class="spp-proof-item">
+    <div class="spp-proof-num blue">1,000</div>
+    <div class="spp-proof-label">Sims Per Prop</div>
+  </div>
+  <div class="spp-proof-divider"></div>
+  <div class="spp-proof-item">
+    <div class="spp-proof-num gold">16</div>
+    <div class="spp-proof-label">NBA Signals</div>
+  </div>
+  <div class="spp-proof-divider"></div>
+  <div class="spp-proof-item">
+    <div class="spp-proof-num">100%</div>
+    <div class="spp-proof-label">Transparent Reasoning</div>
+  </div>
+  <div class="spp-proof-divider"></div>
+  <div class="spp-proof-item">
+    <div class="spp-proof-num green">FREE</div>
+    <div class="spp-proof-label">Top Picks Every Night</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 # ============================================================
 # SECTION 1-ONBOARD: First-Time User Getting Started Guide
@@ -1783,8 +2019,9 @@ st.markdown(f"""
 # ============================================================
 
 st.markdown("""
-<div class="section-header lp-anim lp-anim-d2">Other Tools Guess. We Simulate.</div>
-<div class="section-subheader">The only prop engine purpose-built for NBA DFS — live data from PrizePicks &amp; Underdog, Monte Carlo simulation, and full transparent reasoning. No human bias. No black box.</div>
+<div class="section-eyebrow lp-anim lp-anim-d1">The Unfair Advantage</div>
+<div class="section-header-xl lp-anim lp-anim-d2">Other Tools Guess. <span class="xl-accent">We Simulate.</span></div>
+<div class="section-subheader-center lp-anim lp-anim-d3">The only prop engine purpose-built for NBA DFS — live data from PrizePicks &amp; Underdog, Monte Carlo simulation, and full transparent reasoning. No human bias. No black box.</div>
 """, unsafe_allow_html=True)
 
 # ── 3A: Three Pillars ───────────────────────────────────────────
@@ -1953,6 +2190,17 @@ st.markdown("""
     </tr>
   </tbody>
 </table>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<div class="urgency-block lp-anim lp-anim-d3">
+  <div class="urgency-title">⚡ Tonight's Edge Window Closes at Tip-Off</div>
+  <div class="urgency-subtitle">
+    Prop lines shift as lineups confirm and sharp money moves.
+    <strong>Load tonight's slate now</strong> to lock in the best edges
+    before the books adjust. <span class="blue">Free. No credit card. No per-pick fees.</span>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 

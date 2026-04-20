@@ -99,9 +99,9 @@ def _seed_user_from_env():
 def _run_daily_update():
     """Run the ETL daily updater to refresh data on deploy."""
     try:
-        from etl.data_updater import run_daily_update
+        from etl.data_updater import run_update
         _logger.info("Running ETL daily update...")
-        run_daily_update()
+        run_update()
         _logger.info("ETL daily update complete.")
     except Exception as exc:
         _logger.warning("ETL daily update failed (non-fatal): %s", exc)

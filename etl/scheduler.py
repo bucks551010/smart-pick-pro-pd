@@ -146,6 +146,7 @@ def _run_auto_analysis(today_str: str) -> int:
         return 0
 
     _logger.info("[ETL Scheduler] Starting QAM auto-analysis for %s …", today_str)
+    injury_map = None
     try:
         # ── 1. Load game schedule ──
         from data.nba_data_service import get_todays_games

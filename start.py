@@ -58,6 +58,50 @@ def _seed_volume():
             _logger.info("No seed %s in image — will be created on first use", db_name)
 
 
+def _seed_user_from_env():
+    """Create or reset a specific user account from env vars.
+
+    Set these Railway environment variables to restore a user's access:
+      SEED_USER_EMAIL    = their email address
+      SEED_USER_PASSWORD = a temporary password (min 8 chars, 1 letter, 1 number)
+
+    On next deploy the account will be created (if missing) or its password
+    updated (if it already exists). Remove the env vars after the user logs in.
+    """
+    email = os.environ.get("SEED_USER_EMAIL", "").strip().lower()
+    password = os.environ.get("SEED_USER_PASSWORD", "")
+    if not email or not password:
+        return
+    if len(password) < 8:
+        _logger.warning("SEED_USER_PASSWORD too short — skipping user seed for %s", email)
+        return
+    try:
+        from utils.auth_gate import _hash_password
+        from tracking.database import initialize_database, get_database_connection
+        import sqlite3
+        initialize_database()
+        pw_hash = _hash_password(password)
+        with get_database_connection() as conn:
+            existing = conn.execute(
+                "SELECT user_id FROM users WHERE email = ?", (email,)
+            ).fetchone()
+            if existing:
+                conn.execute(
+                    "UPDATE users SET password_hash = ?, failed_login_count = 0, lockout_until = NULL WHERE email = ?",
+                    (pw_hash, email),
+                )
+                _logger.info("SEED_USER: password reset for %s", email)
+            else:
+                conn.execute(
+                    "INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)",
+                    (email, pw_hash, email.split("@")[0]),
+                )
+                _logger.info("SEED_USER: created account for %s", email)
+            conn.commit()
+    except Exception as exc:
+        _logger.error("SEED_USER: failed for %s — %s", email, exc)
+
+
 def _run_daily_update():
     """Run the ETL daily updater to refresh data on deploy."""
     try:
@@ -71,6 +115,7 @@ def _run_daily_update():
 
 if __name__ == "__main__":
     _seed_volume()
+    _seed_user_from_env()
     _run_daily_update()
 
     # Launch Streamlit

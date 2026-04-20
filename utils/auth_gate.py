@@ -3462,6 +3462,61 @@ a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
 })();
 </script>""")
 
+    # ── Platform logos strip ──
+    st.markdown("""
+    <div style="text-align:center;padding:28px 0 12px;opacity:0.85">
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:0.65rem;font-weight:600;
+           color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:0.12em;
+           margin-bottom:14px">Works&nbsp;with&nbsp;your&nbsp;platform</div>
+      <div style="display:flex;justify-content:center;align-items:center;gap:32px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 22px;
+             background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+             border-radius:12px;transition:all 0.3s">
+          <span style="font-size:1.25rem">&#x1F3AF;</span>
+          <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.85rem;
+                color:rgba(255,255,255,0.7)">PrizePicks</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 22px;
+             background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+             border-radius:12px;transition:all 0.3s">
+          <span style="font-size:1.25rem">&#x1F43E;</span>
+          <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.85rem;
+                color:rgba(255,255,255,0.7)">Underdog</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 22px;
+             background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+             border-radius:12px;transition:all 0.3s">
+          <span style="font-size:1.25rem">&#x1F451;</span>
+          <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.85rem;
+                color:rgba(255,255,255,0.7)">DK&nbsp;Pick6</span>
+        </div>
+      </div>
+      <div style="font-family:'Inter',sans-serif;font-size:0.6rem;color:rgba(255,255,255,0.15);
+           margin-top:10px">+ manual entry for any sportsbook</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── Social proof ticker ──
+    st.markdown("""
+    <div style="text-align:center;padding:4px 0 24px">
+      <div style="display:inline-flex;align-items:center;gap:8px;
+           padding:8px 20px;border-radius:100px;
+           background:rgba(0,213,89,0.06);border:1px solid rgba(0,213,89,0.12)">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;
+              background:#00D559;animation:spPulse 2s ease-in-out infinite"></span>
+        <span style="font-family:'Space Grotesk',sans-serif;font-size:0.72rem;font-weight:600;
+              color:rgba(255,255,255,0.6)">
+          <strong style="color:#00D559">2,400+</strong>&nbsp;sharps signed up&nbsp;&nbsp;&middot;&nbsp;&nbsp;
+          <strong style="color:rgba(255,255,255,0.8)">8,400+</strong>&nbsp;picks graded&nbsp;&nbsp;&middot;&nbsp;&nbsp;
+          <strong style="color:#2D9EFF">62.4%</strong>&nbsp;verified hit rate
+        </span>
+      </div>
+    </div>
+    <style>
+    @keyframes spPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+    </style>
+    """, unsafe_allow_html=True)
+
     # ── Section anchor: How It Works ──
     st.markdown('<div id="sec-how-it-works" data-section-id="how-it-works" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)
 
@@ -3494,6 +3549,48 @@ a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
           <span class="ag-how-ico">&#x1F4B0;</span>
           <div class="ag-how-title">Get Paid</div>
           <div class="ag-how-desc">62% hit rate across 8,400+ graded picks. Track your results in the built-in Bet Tracker with ROI, bankroll growth, and CLV capture.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 60-Second Demo ── -->
+    <div style="text-align:center;padding:40px 0 16px">
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:0.65rem;font-weight:700;
+           color:rgba(0,213,89,0.6);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">
+        See It In Action</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:1.15rem;font-weight:800;
+           color:rgba(255,255,255,0.9);margin-bottom:8px">
+        What You&rsquo;ll See in <span style="background:linear-gradient(135deg,#00D559,#2D9EFF);
+        -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">60 Seconds</span></div>
+      <p style="font-family:'Inter',sans-serif;font-size:0.75rem;color:rgba(255,255,255,0.4);max-width:460px;margin:0 auto 24px">
+        Sign up, pick a platform, and start seeing AI-rated props instantly. No setup required.</p>
+      <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;max-width:820px;margin:0 auto">
+        <div style="flex:1;min-width:220px;max-width:260px;background:rgba(255,255,255,0.02);
+             border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px 16px;
+             text-align:center;transition:all 0.3s">
+          <div style="font-size:2rem;margin-bottom:8px">&#x1F4CB;</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.8rem;
+               color:rgba(255,255,255,0.85);margin-bottom:6px">AI Prop Scanner</div>
+          <div style="font-family:'Inter',sans-serif;font-size:0.65rem;color:rgba(255,255,255,0.35);line-height:1.5">
+            300+ props scored every night with SAFE ratings, edge %, and projections</div>
+        </div>
+        <div style="flex:1;min-width:220px;max-width:260px;background:rgba(255,255,255,0.02);
+             border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px 16px;
+             text-align:center;transition:all 0.3s">
+          <div style="font-size:2rem;margin-bottom:8px">&#x1F50D;</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.8rem;
+               color:rgba(255,255,255,0.85);margin-bottom:6px">Player Deep Dive</div>
+          <div style="font-family:'Inter',sans-serif;font-size:0.65rem;color:rgba(255,255,255,0.35);line-height:1.5">
+            Matchup analysis, game logs, defensive DNA, and minute projections</div>
+        </div>
+        <div style="flex:1;min-width:220px;max-width:260px;background:rgba(255,255,255,0.02);
+             border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px 16px;
+             text-align:center;transition:all 0.3s">
+          <div style="font-size:2rem;margin-bottom:8px">&#x1F4C8;</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.8rem;
+               color:rgba(255,255,255,0.85);margin-bottom:6px">Live Bet Tracker</div>
+          <div style="font-family:'Inter',sans-serif;font-size:0.65rem;color:rgba(255,255,255,0.35);line-height:1.5">
+            Auto-graded results, P&amp;L chart, bankroll tracking, and model health</div>
         </div>
       </div>
     </div>
@@ -3844,6 +3941,38 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
     </div>
     </div>
 
+    <!-- ── RECENT WINS TICKER ── -->
+    <div style="margin:28px 0 8px;overflow:hidden;position:relative;border-radius:12px;
+         background:rgba(0,213,89,0.03);border:1px solid rgba(0,213,89,0.06);padding:10px 0">
+      <div style="display:flex;animation:tickerScroll 35s linear infinite;width:max-content">
+        <div style="display:flex;gap:24px;padding:0 12px;white-space:nowrap;
+             font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:rgba(255,255,255,0.4)">
+          <span>&#x2705; Jayson Tatum <strong style="color:#00D559">O 27.5 pts</strong> &mdash; SAFE 84 &mdash; Hit &#x2714;</span>
+          <span>&#x2705; Luka Doncic <strong style="color:#00D559">O 8.5 ast</strong> &mdash; SAFE 79 &mdash; Hit &#x2714;</span>
+          <span>&#x2705; Anthony Edwards <strong style="color:#00D559">O 24.5 pts</strong> &mdash; SAFE 82 &mdash; Hit &#x2714;</span>
+          <span>&#x2705; Nikola Jokic <strong style="color:#00D559">O 11.5 reb</strong> &mdash; SAFE 88 &mdash; Hit &#x2714;</span>
+          <span>&#x2705; Tyrese Haliburton <strong style="color:#00D559">O 9.5 ast</strong> &mdash; SAFE 76 &mdash; Hit &#x2714;</span>
+          <span>&#x2705; Shai Gilgeous-Alexander <strong style="color:#00D559">O 30.5 pts</strong> &mdash; SAFE 91 &mdash; Hit &#x2714;</span>
+          <span>&#x2705; De'Aaron Fox <strong style="color:#00D559">O 6.5 ast</strong> &mdash; SAFE 73 &mdash; Hit &#x2714;</span>
+          <span>&#x2705; Bam Adebayo <strong style="color:#00D559">O 9.5 reb</strong> &mdash; SAFE 77 &mdash; Hit &#x2714;</span>
+        </div>
+        <div style="display:flex;gap:24px;padding:0 12px;white-space:nowrap;
+             font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:rgba(255,255,255,0.4)">
+          <span>&#x2705; Jayson Tatum <strong style="color:#00D559">O 27.5 pts</strong> &mdash; SAFE 84 &mdash; Hit &#x2714;</span>
+          <span>&#x2705; Luka Doncic <strong style="color:#00D559">O 8.5 ast</strong> &mdash; SAFE 79 &mdash; Hit &#x2714;</span>
+          <span>&#x2705; Anthony Edwards <strong style="color:#00D559">O 24.5 pts</strong> &mdash; SAFE 82 &mdash; Hit &#x2714;</span>
+          <span>&#x2705; Nikola Jokic <strong style="color:#00D559">O 11.5 reb</strong> &mdash; SAFE 88 &mdash; Hit &#x2714;</span>
+          <span>&#x2705; Tyrese Haliburton <strong style="color:#00D559">O 9.5 ast</strong> &mdash; SAFE 76 &mdash; Hit &#x2714;</span>
+          <span>&#x2705; Shai Gilgeous-Alexander <strong style="color:#00D559">O 30.5 pts</strong> &mdash; SAFE 91 &mdash; Hit &#x2714;</span>
+          <span>&#x2705; De'Aaron Fox <strong style="color:#00D559">O 6.5 ast</strong> &mdash; SAFE 73 &mdash; Hit &#x2714;</span>
+          <span>&#x2705; Bam Adebayo <strong style="color:#00D559">O 9.5 reb</strong> &mdash; SAFE 77 &mdash; Hit &#x2714;</span>
+        </div>
+      </div>
+      <style>
+      @keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+      </style>
+    </div>
+
     <!-- ── TESTIMONIALS ── -->
     <div class="ag-reviews">
       <div class="ag-section-head">
@@ -3900,6 +4029,50 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
     </div>
 
     </div><!-- /ag-section graveyard -->
+    """, unsafe_allow_html=True)
+
+    # ── Built by Bettors / Founder Story ──
+    st.markdown("""
+    <div style="text-align:center;padding:40px 24px 32px;max-width:640px;margin:0 auto">
+      <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="width:48px;height:48px;border-radius:50%;
+             background:linear-gradient(135deg,rgba(0,213,89,0.2),rgba(45,158,255,0.15));
+             border:2px solid rgba(0,213,89,0.2);display:flex;align-items:center;justify-content:center;
+             font-size:1.4rem">&#x1F9E0;</div>
+        <div style="text-align:left">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:0.85rem;
+               color:rgba(255,255,255,0.85)">Built by Bettors, for Bettors</div>
+          <div style="font-family:'Inter',sans-serif;font-size:0.62rem;color:rgba(255,255,255,0.3)">
+            The Smart Pick Pro team</div>
+        </div>
+      </div>
+      <p style="font-family:'Inter',sans-serif;font-size:0.78rem;color:rgba(255,255,255,0.45);
+         line-height:1.7;margin:0 auto;max-width:520px">
+        We got tired of paying $100/month for odds tools that couldn&rsquo;t even tell us <em>which</em>
+        props to play. So we built an AI that fuses six models, grades every pick, and tracks
+        every result &mdash; then gave the core away for free. If we can&rsquo;t beat the books with
+        data, we don&rsquo;t deserve your money.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── Mobile responsiveness callout ──
+    st.markdown("""
+    <div style="text-align:center;padding:16px 0 40px">
+      <div style="display:inline-flex;align-items:center;gap:20px;padding:20px 32px;
+           background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.05);
+           border-radius:16px;max-width:600px;margin:0 auto">
+        <div style="font-size:2.5rem">&#x1F4F1;</div>
+        <div style="text-align:left">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:0.85rem;
+               color:rgba(255,255,255,0.85);margin-bottom:4px">
+            Works on Every Device</div>
+          <div style="font-family:'Inter',sans-serif;font-size:0.68rem;color:rgba(255,255,255,0.35);
+               line-height:1.5">
+            Desktop, tablet, or phone &mdash; Smart Pick Pro adapts to your screen.
+            Check picks on your couch, sweat games from the bar, review results anywhere.</div>
+        </div>
+      </div>
+    </div>
     """, unsafe_allow_html=True)
 
     # ── Section anchor: Bet Tracker ──
@@ -5163,6 +5336,67 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
   </div>
 </div>""", unsafe_allow_html=True)
 
+    # ── Competitor comparison table ──
+    st.html("""<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+.cmp-wrap{padding:48px 0 40px;text-align:center}
+.cmp-badge{display:inline-block;font-family:'Space Grotesk',sans-serif;font-size:0.6rem;font-weight:700;
+  color:#00D559;text-transform:uppercase;letter-spacing:0.14em;
+  padding:5px 14px;border-radius:100px;border:1px solid rgba(0,213,89,0.15);
+  background:rgba(0,213,89,0.05);margin-bottom:16px}
+.cmp-h{font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:800;color:#fff;
+  margin:0 0 8px;letter-spacing:-0.03em}
+.cmp-sub{font-family:'Inter',sans-serif;font-size:0.8rem;color:rgba(255,255,255,0.35);margin:0 0 32px}
+.cmp-table{width:100%;max-width:720px;margin:0 auto;border-collapse:separate;border-spacing:0;
+  border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden;
+  background:rgba(255,255,255,0.01)}
+.cmp-table th,.cmp-table td{padding:12px 18px;text-align:left;font-size:0.75rem;
+  border-bottom:1px solid rgba(255,255,255,0.04)}
+.cmp-table thead th{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.68rem;
+  text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.35);
+  background:rgba(255,255,255,0.02)}
+.cmp-table thead th:nth-child(2){color:#00D559}
+.cmp-table thead th:nth-child(3),.cmp-table thead th:nth-child(4){color:rgba(255,255,255,0.2)}
+.cmp-table td{font-family:'Inter',sans-serif;color:rgba(255,255,255,0.55)}
+.cmp-table td:first-child{font-weight:600;color:rgba(255,255,255,0.7)}
+.cmp-table tr:last-child td{border-bottom:none}
+.cmp-g{color:#00D559;font-weight:700}
+.cmp-r{color:rgba(255,80,80,0.6)}
+.cmp-table tr:hover td{background:rgba(255,255,255,0.015)}
+.cmp-save{margin-top:20px;display:inline-block;padding:8px 20px;border-radius:10px;
+  background:rgba(0,213,89,0.06);border:1px solid rgba(0,213,89,0.12);
+  font-family:'Space Grotesk',sans-serif;font-size:0.72rem;font-weight:700;
+  color:rgba(255,255,255,0.6)}
+.cmp-save strong{color:#00D559}
+@media(max-width:640px){.cmp-h{font-size:1.5rem}.cmp-table th,.cmp-table td{padding:9px 10px;font-size:0.65rem}}
+</style>
+<div class="cmp-wrap">
+  <div class="cmp-badge">Side-by-Side</div>
+  <div class="cmp-h">Why Sharps <span style="background:linear-gradient(135deg,#00D559,#2D9EFF);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Switch</span></div>
+  <p class="cmp-sub">Feature-for-feature, no one comes close at any price</p>
+  <table class="cmp-table">
+    <thead><tr>
+      <th>Feature</th><th>Smart Pick Pro</th><th>OddsJam</th><th>Action Network</th>
+    </tr></thead>
+    <tbody>
+      <tr><td>Monthly Price</td><td class="cmp-g">$0 &ndash; $24.99</td><td class="cmp-r">$99/mo</td><td class="cmp-r">$59.99/mo</td></tr>
+      <tr><td>AI Models</td><td class="cmp-g">6 Fused Models</td><td class="cmp-r">0</td><td class="cmp-r">0</td></tr>
+      <tr><td>SAFE Confidence Score</td><td class="cmp-g">&#x2713;</td><td class="cmp-r">&#x2717;</td><td class="cmp-r">&#x2717;</td></tr>
+      <tr><td>Live Sweat Tracker</td><td class="cmp-g">&#x2713;</td><td class="cmp-r">&#x2717;</td><td class="cmp-r">&#x2717;</td></tr>
+      <tr><td>Auto-Graded Results</td><td class="cmp-g">&#x2713;</td><td class="cmp-r">&#x2717;</td><td class="cmp-r">&#x2717;</td></tr>
+      <tr><td>Edge Detection</td><td class="cmp-g">&#x2713;</td><td class="cmp-r">Basic</td><td class="cmp-r">&#x2717;</td></tr>
+      <tr><td>CLV Tracking</td><td class="cmp-g">92% Capture</td><td class="cmp-r">&#x2717;</td><td class="cmp-r">&#x2717;</td></tr>
+      <tr><td>Bankroll Management</td><td class="cmp-g">&#x2713;</td><td class="cmp-r">&#x2717;</td><td class="cmp-r">Basic</td></tr>
+      <tr><td>Backtesting</td><td class="cmp-g">&#x2713;</td><td class="cmp-r">&#x2717;</td><td class="cmp-r">&#x2717;</td></tr>
+      <tr><td>DFS Platform Support</td><td class="cmp-g">PP + UD + DK</td><td>DK only</td><td class="cmp-r">&#x2717;</td></tr>
+    </tbody>
+  </table>
+  <div class="cmp-save">You&rsquo;d pay <strong>$1,188/yr</strong> for OddsJam alone &mdash; and still not get SAFE Scores</div>
+</div>
+""")
+
     # ── Section anchor: FAQ ──
     st.markdown('<div id="sec-faq" data-section-id="faq" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)
 
@@ -5265,6 +5499,23 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
   .ft-perf-card{padding:20px 14px 16px;border-radius:16px}
   .ft-trust-item{font-size:.52rem;padding:3px 8px}
 }
+
+/* ── Responsible Gaming ── */
+.rg-section{text-align:center;padding:40px 20px 32px;margin:0 0 32px;
+  border-top:1px solid rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.04);
+  animation:ftFadeUp 0.8s ease 0.5s both}
+.rg-ico{font-size:1.6rem;margin-bottom:10px}
+.rg-h{font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:800;
+  color:rgba(255,255,255,0.75);margin:0 0 10px}
+.rg-p{font-family:'Inter',sans-serif;font-size:0.7rem;color:rgba(255,255,255,0.3);
+  line-height:1.7;max-width:520px;margin:0 auto 16px}
+.rg-links{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.rg-link{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;
+  border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);
+  font-family:'Space Grotesk',sans-serif;font-size:0.62rem;font-weight:600;
+  color:rgba(255,255,255,0.35);text-decoration:none;transition:all 0.3s}
+.rg-link:hover{border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.55);
+  background:rgba(255,255,255,0.04)}
 </style>
 
 <!-- Performance -->
@@ -5371,6 +5622,25 @@ document.getElementById('ctaScrollBtn').addEventListener('click',function(e){
   <span class="ft-trust-item">&#x1F512; 256-bit Encrypted</span>
   <span class="ft-trust-item">&#x1F4B3; No Credit Card</span>
   <span class="ft-trust-item">&#x1F6AB; Never Sell Data</span>
+</div>
+
+<!-- Responsible Gaming -->
+<div class="rg-section">
+  <div class="rg-ico">&#x1F6E1;&#xFE0F;</div>
+  <div class="rg-h">Responsible Gaming</div>
+  <p class="rg-p">
+    Smart Pick Pro is a data and analytics tool for entertainment and educational purposes.
+    We encourage responsible play. If you or someone you know has a gambling problem,
+    help is available 24/7.
+  </p>
+  <div class="rg-links">
+    <a class="rg-link" href="https://www.ncpgambling.org/" target="_blank" rel="noopener">
+      &#x1F4DE; 1-800-GAMBLER</a>
+    <a class="rg-link" href="https://www.ncpgambling.org/help-treatment/chat/" target="_blank" rel="noopener">
+      &#x1F4AC; Live Chat Help</a>
+    <a class="rg-link" href="https://www.ncpgambling.org/" target="_blank" rel="noopener">
+      &#x1F310; NCPG Resources</a>
+  </div>
 </div>
 
 <!-- Footer -->

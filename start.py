@@ -76,28 +76,22 @@ def _seed_user_from_env():
         _logger.warning("SEED_USER_PASSWORD too short — skipping user seed for %s", email)
         return
     try:
-        from utils.auth_gate import _hash_password
-        from tracking.database import initialize_database, get_database_connection
-        import sqlite3
-        initialize_database()
+        from utils.auth_gate import _hash_password, _AuthConn
         pw_hash = _hash_password(password)
-        with get_database_connection() as conn:
-            existing = conn.execute(
-                "SELECT user_id FROM users WHERE email = ?", (email,)
-            ).fetchone()
+        with _AuthConn() as db:
+            existing = db.fetchone("SELECT user_id FROM users WHERE email = ?", (email,))
             if existing:
-                conn.execute(
+                db.execute(
                     "UPDATE users SET password_hash = ?, failed_login_count = 0, lockout_until = NULL WHERE email = ?",
                     (pw_hash, email),
                 )
                 _logger.info("SEED_USER: password reset for %s", email)
             else:
-                conn.execute(
+                db.execute(
                     "INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)",
                     (email, pw_hash, email.split("@")[0]),
                 )
                 _logger.info("SEED_USER: created account for %s", email)
-            conn.commit()
     except Exception as exc:
         _logger.error("SEED_USER: failed for %s — %s", email, exc)
 

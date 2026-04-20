@@ -180,6 +180,90 @@ _SS_USER_EMAIL    = "_auth_user_email"     # str
 _SS_USER_NAME     = "_auth_user_name"      # str
 _SS_USER_ID       = "_auth_user_id"        # int
 
+# ── Persistent login session (cookie + DB) ───────────────────
+# When a user logs in we store a signed token in the browser
+# cookie AND in the login_sessions table.  On every page load
+# require_login() reads the cookie and looks up the token so
+# the user stays logged in across F5 reloads and page navigation.
+
+_COOKIE_NAME       = "spp_session"
+_SESSION_TTL_DAYS  = 30
+_sessions_table_ok = False
+
+
+def _ensure_sessions_table() -> None:
+    global _sessions_table_ok
+    if _sessions_table_ok:
+        return
+    try:
+        with _AuthConn() as db:
+            db.execute("""
+                CREATE TABLE IF NOT EXISTS login_sessions (
+                    token       TEXT PRIMARY KEY,
+                    user_id     INTEGER NOT NULL,
+                    email       TEXT NOT NULL,
+                    display_name TEXT,
+                    is_admin    INTEGER DEFAULT 0,
+                    expires_at  TEXT NOT NULL,
+                    created_at  TEXT DEFAULT (datetime('now'))
+                )
+            """)
+        _sessions_table_ok = True
+    except Exception as _exc:
+        _logger.error("Failed to create login_sessions table: %s", _exc)
+
+
+def _save_login_session(token: str, user: dict) -> None:
+    import datetime as _dt
+    expires = (_dt.datetime.utcnow() + _dt.timedelta(days=_SESSION_TTL_DAYS)).isoformat()
+    _ensure_sessions_table()
+    try:
+        with _AuthConn() as db:
+            db.execute(
+                """INSERT INTO login_sessions
+                       (token, user_id, email, display_name, is_admin, expires_at)
+                   VALUES (?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(token) DO NOTHING""",
+                (token, user.get("user_id", 0), user.get("email", ""),
+                 user.get("display_name", ""), int(bool(user.get("is_admin", 0))), expires),
+            )
+    except Exception as _exc:
+        _logger.error("Failed to save login session: %s", _exc)
+
+
+def _load_session_by_token(token: str) -> dict | None:
+    if not token:
+        return None
+    _ensure_sessions_table()
+    try:
+        with _AuthConn() as db:
+            return db.fetchone(
+                "SELECT * FROM login_sessions WHERE token = ? AND expires_at > datetime('now')",
+                (token,),
+            )
+    except Exception as _exc:
+        _logger.error("Failed to load session by token: %s", _exc)
+    return None
+
+
+def _delete_session_token(token: str) -> None:
+    if not token:
+        return
+    try:
+        with _AuthConn() as db:
+            db.execute("DELETE FROM login_sessions WHERE token = ?", (token,))
+    except Exception as _exc:
+        _logger.error("Failed to delete session token: %s", _exc)
+
+
+def _get_cookie_ctrl():
+    """Return a CookieController instance, or None if the package is absent."""
+    try:
+        from streamlit_cookies_controller import CookieController  # type: ignore
+        return CookieController()
+    except Exception:
+        return None
+
 # ── Password hashing helpers ──────────────────────────────────
 
 try:
@@ -1022,7 +1106,7 @@ def _valid_password(pw: str) -> str | None:
 
 # ── Session helpers ───────────────────────────────────────────
 
-def _set_logged_in(user: dict) -> None:
+def _set_logged_in(user: dict, _write_cookie: bool = True) -> None:
     st.session_state[_SS_LOGGED_IN]  = True
     st.session_state[_SS_USER_EMAIL] = user.get("email", "")
     st.session_state[_SS_USER_NAME]  = user.get("display_name", "")
@@ -1035,6 +1119,15 @@ def _set_logged_in(user: dict) -> None:
         _restore_sub(user.get("email", ""))
     except Exception:
         pass
+    # Write a persistent session cookie so the user stays logged in
+    # across F5 reloads.  Skip when restoring from an existing cookie
+    # (to avoid generating a new token on every page load).
+    if _write_cookie:
+        _tok = secrets.token_urlsafe(32)
+        _save_login_session(_tok, user)
+        _ctrl = _get_cookie_ctrl()
+        if _ctrl is not None:
+            _ctrl.set(_COOKIE_NAME, _tok, max_age=_SESSION_TTL_DAYS * 86400)
 
 
 def is_logged_in() -> bool:
@@ -1049,6 +1142,16 @@ def get_logged_in_email() -> str:
 
 def logout_user() -> None:
     """Clear the login session."""
+    # Delete the persistent cookie and its DB record.
+    try:
+        _ctrl = _get_cookie_ctrl()
+        if _ctrl is not None:
+            _tok = _ctrl.get(_COOKIE_NAME)
+            if _tok:
+                _delete_session_token(_tok)
+            _ctrl.remove(_COOKIE_NAME)
+    except Exception:
+        pass
     for key in (_SS_LOGGED_IN, _SS_USER_EMAIL, _SS_USER_NAME, _SS_USER_ID, "_auth_is_admin"):
         st.session_state.pop(key, None)
 
@@ -3751,6 +3854,25 @@ def require_login() -> bool:
 
     if is_logged_in():
         return True
+
+    # ── Try restoring from persistent session cookie ───────────────────────
+    # CookieController renders a hidden component; on the very first call it
+    # returns None and triggers a single rerun to load the cookie value.
+    # After that it returns the stored token immediately.
+    try:
+        _ctrl = _get_cookie_ctrl()
+        if _ctrl is not None:
+            _tok = _ctrl.get(_COOKIE_NAME)
+            if _tok:
+                _user = _load_session_by_token(_tok)
+                if _user:
+                    _set_logged_in(_user, _write_cookie=False)
+                    return True
+                else:
+                    # Token expired or not found — clear the stale cookie.
+                    _ctrl.remove(_COOKIE_NAME)
+    except Exception:
+        pass
 
     # ── Portal routing: dedicated sign-in / sign-up view ──────────────────
     # If ?auth=signup or ?auth=login is in the URL, show the focused portal

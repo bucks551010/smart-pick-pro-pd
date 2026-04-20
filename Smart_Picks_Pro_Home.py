@@ -64,6 +64,10 @@ from utils.analytics import inject_ga4, track_page_view
 inject_ga4()
 track_page_view("Home")
 
+# ─── SEO: Meta tags, OG, JSON-LD, canonical ──────────────────
+from utils.seo import inject_page_seo
+inject_page_seo("Home")
+
 # ─── Background ETL staleness guard (once per session) ────────
 # If the ETL database is more than 1 day stale, kick off an
 # incremental update in a background thread so users always

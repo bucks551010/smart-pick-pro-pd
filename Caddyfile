@@ -4,10 +4,55 @@
 }
 
 :443, :80 {
+    # ── SEO: Serve static files (robots.txt, sitemap.xml, manifest.json) ──
+    handle /robots.txt {
+        root * /app/static
+        file_server
+        header Cache-Control "public, max-age=86400"
+    }
+    handle /sitemap.xml {
+        root * /app/static
+        file_server
+        header Cache-Control "public, max-age=3600"
+        header Content-Type "application/xml; charset=utf-8"
+    }
+    handle /manifest.json {
+        root * /app/static
+        file_server
+        header Cache-Control "public, max-age=604800"
+    }
+
+    # ── Serve logo/assets for OG image crawlers ──
+    handle /assets/* {
+        root * /app
+        file_server
+        header Cache-Control "public, max-age=2592000, immutable"
+    }
+
+    # ── API proxy ──
     handle /api/* {
         reverse_proxy api:8000
     }
+
+    # ── App proxy ──
     handle {
         reverse_proxy app:8501
     }
+
+    # ── Global SEO + Security Headers ──
+    header {
+        # Security
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+        # SEO Performance
+        X-Robots-Tag "index, follow"
+        Link "</manifest.json>; rel=manifest"
+    }
+
+    # ── Compression ──
+    encode gzip zstd
 }

@@ -35,6 +35,8 @@ if not _require_login():
 from utils.analytics import inject_ga4, track_page_view
 inject_ga4()
 track_page_view("Live Sweat")
+from utils.seo import inject_page_seo
+inject_page_seo("Live Sweat")
 
 # ── Global CSS ────────────────────────────────────────────────
 

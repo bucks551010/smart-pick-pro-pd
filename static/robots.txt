@@ -1,0 +1,32 @@
+# User-agent rules
+User-agent: *
+Allow: /
+Disallow: /settings
+Disallow: /api/
+Disallow: /_stcore/
+Disallow: /static/
+Disallow: /component/
+
+# Crawl-delay (be polite)
+Crawl-delay: 2
+
+# Sitemaps
+Sitemap: https://smartpickpro.app/sitemap.xml
+
+# Common bot-specific rules
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 2
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /

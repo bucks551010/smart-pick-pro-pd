@@ -60,6 +60,8 @@ if not _require_login():
 from utils.analytics import inject_ga4, track_page_view
 inject_ga4()
 track_page_view("Game Report")
+from utils.seo import inject_page_seo
+inject_page_seo("Game Report")
 
 # ── Tier Gate ─────────────────────────────────────────────────
 from utils.tier_gate import require_tier

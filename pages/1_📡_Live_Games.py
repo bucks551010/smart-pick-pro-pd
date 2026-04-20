@@ -51,6 +51,8 @@ if not _require_login():
 from utils.analytics import inject_ga4, track_page_view
 inject_ga4()
 track_page_view("Live Games")
+from utils.seo import inject_page_seo
+inject_page_seo("Live Games")
 
 # ─── Inject Global CSS Theme ──────────────────────────────────
 from styles.theme import get_global_css, get_education_box_html, get_logo_img_tag, GOLD_LOGO_PATH

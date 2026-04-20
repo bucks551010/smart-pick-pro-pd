@@ -282,6 +282,8 @@ if not _require_login():
 from utils.analytics import inject_ga4, track_page_view
 inject_ga4()
 track_page_view("Quantum Analysis")
+from utils.seo import inject_page_seo
+inject_page_seo("Quantum Analysis")
 
 # Inject global CSS + QDS CSS
 st.markdown(get_global_css(), unsafe_allow_html=True)

@@ -1,0 +1,23 @@
+{
+  "name": "Smart Pick Pro",
+  "short_name": "SmartPick",
+  "description": "AI-powered NBA prop betting analytics. Neural edge detection, quantum analysis, real-time line movement tracking.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070A13",
+  "theme_color": "#00f0ff",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["sports", "finance", "utilities"],
+  "icons": [
+    {
+      "src": "/assets/Gold_Logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

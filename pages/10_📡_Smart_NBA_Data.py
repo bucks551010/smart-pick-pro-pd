@@ -68,6 +68,8 @@ if not _require_login():
 from utils.analytics import inject_ga4, track_page_view
 inject_ga4()
 track_page_view("Smart NBA Data")
+from utils.seo import inject_page_seo
+inject_page_seo("Smart NBA Data")
 
 from styles.theme import (
     get_global_css,

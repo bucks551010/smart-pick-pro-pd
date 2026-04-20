@@ -29,6 +29,8 @@ if not _require_login():
 from utils.analytics import inject_ga4, track_page_view
 inject_ga4()
 track_page_view("Subscription")
+from utils.seo import inject_page_seo
+inject_page_seo("Subscription")
 
 # ─── Inject Global CSS Theme ──────────────────────────────────
 from styles.theme import get_global_css, get_premium_footer_html

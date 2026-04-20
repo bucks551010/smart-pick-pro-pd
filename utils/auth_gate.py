@@ -111,20 +111,25 @@ def _display_stat_label(raw: str) -> str:
     return _MAP.get(raw.lower().strip(), raw.upper()[:6])
 
 
-def _load_top_preview_picks(limit: int = 5) -> list[dict]:
-    """Load today's top analysis picks from the database for the landing page preview.
+def _load_top_preview_picks(limit: int = 5) -> tuple[list[dict], str]:
+    """Load the most recent analysis picks for the landing page preview.
 
-    Falls back to the JSON cache file (``cache/latest_picks.json``) only when
-    it contains today's picks.  Returns an empty list when no picks exist for
-    today — the landing page renders a "check back soon" state in that case,
-    rather than showing stale picks from a previous day.
-    Returns a list of dicts with pick data, sorted by confidence descending.
+    Priority:
+      1. Today's picks from the SQLite DB (best case — analysis ran today).
+      2. Most recent date's picks from the SQLite DB (catches same-day Railway
+         restart where cache hasn't been re-written yet).
+      3. JSON cache file ``cache/latest_picks.json`` regardless of date.
+    
+    Returns:
+        (picks, pick_date) — list of pick dicts and the ISO date they belong to.
+        Returns ([], "") when no data exists at all.
     """
     initialize_database()
     today = _nba_today_str()
     try:
         with get_database_connection() as conn:
             conn.row_factory = sqlite3.Row
+            # Try today first
             rows = conn.execute(
                 """SELECT player_name, team, stat_type, prop_line, direction,
                           platform, confidence_score, probability_over,
@@ -136,51 +141,61 @@ def _load_top_preview_picks(limit: int = 5) -> list[dict]:
                 (today, limit),
             ).fetchall()
             if rows:
-                return [dict(r) for r in rows]
+                return [dict(r) for r in rows], today
+            # Fall back to most recent date in DB
+            latest_date_row = conn.execute(
+                "SELECT MAX(pick_date) FROM all_analysis_picks"
+            ).fetchone()
+            latest_date = latest_date_row[0] if latest_date_row else None
+            if latest_date:
+                rows = conn.execute(
+                    """SELECT player_name, team, stat_type, prop_line, direction,
+                              platform, confidence_score, probability_over,
+                              edge_percentage, tier
+                       FROM all_analysis_picks
+                       WHERE pick_date = ?
+                       ORDER BY confidence_score DESC
+                       LIMIT ?""",
+                    (latest_date, limit),
+                ).fetchall()
+                if rows:
+                    return [dict(r) for r in rows], latest_date
     except Exception as exc:
         _logger.debug("_load_top_preview_picks DB: %s", exc)
 
-    # ── JSON cache fallback — only use if the file is dated TODAY ──
-    # Never show picks from a previous day as if they are current.
-    return _load_picks_from_cache(limit, require_date=today)
+    # ── JSON cache fallback — use regardless of date (show real picks, not fake) ──
+    return _load_picks_from_cache(limit)
 
 
-def _load_picks_from_cache(limit: int = 5, require_date: str | None = None) -> list[dict]:
+def _load_picks_from_cache(limit: int = 5) -> tuple[list[dict], str]:
     """Read top picks from ``cache/latest_picks.json``.
 
-    Args:
-        limit: Maximum number of picks to return.
-        require_date: When provided, only return picks if the cache file's
-            ``date`` field matches this ISO date string (YYYY-MM-DD).  Pass
-            today's date to prevent stale picks from a previous day being
-            shown as current.
+    Returns:
+        (picks, date_str) — picks list and the ISO date from the cache file.
+        Returns ([], "") if the file doesn't exist or is malformed.
     """
     import json as _json
     try:
         cache_path = Path(__file__).resolve().parent.parent / "cache" / "latest_picks.json"
         if cache_path.exists():
             data = _json.loads(cache_path.read_text(encoding="utf-8"))
-            if require_date and data.get("date") != require_date:
-                _logger.debug(
-                    "_load_picks_from_cache: skipping stale cache (cache=%s, today=%s)",
-                    data.get("date"), require_date,
-                )
-                return []
             picks = data.get("picks", [])
+            date_str = data.get("date", "")
             if picks:
-                _logger.debug("Loaded %d picks from cache/latest_picks.json", len(picks))
-                return picks[:limit]
+                _logger.debug("Loaded %d picks from cache/latest_picks.json (date=%s)", len(picks), date_str)
+                return picks[:limit], date_str
     except Exception as exc:
         _logger.debug("_load_picks_from_cache: %s", exc)
-    return []
+    return [], ""
 
 
-def _build_preview_section_html(picks: list[dict]) -> str:
+def _build_preview_section_html(picks: list[dict], pick_date: str = "") -> str:
     """Build the 'See What You Get' horizontally-scrolling platform-pick cards.
 
     Uses the same visual language as the QAM Platform AI Picks cards:
     headshot, team badge, big line number, direction, and metrics row.
-    If *picks* is empty, returns a static fallback section.
+    If *picks* is empty, returns a static "no picks yet" state.
+    pick_date: ISO date string (YYYY-MM-DD) the picks belong to.
     """
     # ── CSS (self-contained inside the st.html iframe) ──
     css = """<style>
@@ -244,25 +259,22 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 
     # ── Build cards ──
     if not picks:
-        # Static fallback when no analysis data exists yet
-        _fallback = [
-            {"player_name": "Luka Dončić", "team": "DAL", "stat_type": "points",
-             "prop_line": 28.5, "direction": "OVER", "platform": "PrizePicks",
-             "confidence_score": 92, "probability_over": 0.71, "edge_percentage": 6.2, "tier": "Platinum"},
-            {"player_name": "Jayson Tatum", "team": "BOS", "stat_type": "rebounds",
-             "prop_line": 8.5, "direction": "OVER", "platform": "PrizePicks",
-             "confidence_score": 87, "probability_over": 0.66, "edge_percentage": 4.8, "tier": "Gold"},
-            {"player_name": "Anthony Edwards", "team": "MIN", "stat_type": "points",
-             "prop_line": 26.5, "direction": "UNDER", "platform": "PrizePicks",
-             "confidence_score": 84, "probability_over": 0.32, "edge_percentage": 5.1, "tier": "Gold"},
-            {"player_name": "Shai Gilgeous-Alexander", "team": "OKC", "stat_type": "points",
-             "prop_line": 30.5, "direction": "OVER", "platform": "PrizePicks",
-             "confidence_score": 90, "probability_over": 0.70, "edge_percentage": 5.3, "tier": "Platinum"},
-            {"player_name": "Nikola Jokić", "team": "DEN", "stat_type": "assists",
-             "prop_line": 9.5, "direction": "OVER", "platform": "PrizePicks",
-             "confidence_score": 78, "probability_over": 0.63, "edge_percentage": 3.4, "tier": "Gold"},
-        ]
-        picks = _fallback
+        # No data yet — show "updating" state, never fake player names
+        return (
+            f'{css}'
+            f'<div class="pv-frame">'
+            f'<div class="pv-titlebar"><div class="pv-dot r"></div><div class="pv-dot y"></div>'
+            f'<div class="pv-dot g"></div>'
+            f'<div class="pv-url">smartpickspro.com &middot; Neural Engine v3.2</div></div>'
+            f'<div class="pv-header"><div class="pv-title">&#9889; AI Picks Today</div>'
+            f'<div class="pv-live">&#x23F3; UPDATING</div></div>'
+            f'<div style="text-align:center;padding:48px 24px 52px;">'
+            f'<div style="font-family:\'JetBrains Mono\',monospace;font-size:2rem;margin-bottom:14px;opacity:.25;">&#9889;</div>'
+            f'<div style="font-family:\'Space Grotesk\',sans-serif;font-weight:700;font-size:.85rem;color:rgba(255,255,255,.5);margin-bottom:8px;">Analysis runs tonight</div>'
+            f'<div style="font-family:\'JetBrains Mono\',monospace;font-size:.55rem;color:rgba(0,213,89,.3);letter-spacing:.08em;">QAM processes game lines each evening &mdash; check back after 6 PM ET</div>'
+            f'</div>'
+            f'</div>'
+        )
 
     # NBA headshot lookup — comprehensive 2024-26 roster
     _PLAYER_IDS: dict[str, str] = {
@@ -517,14 +529,33 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
     num_picks = len(picks)
     cards_joined = "".join(cards_html)
 
+    # Date display in header
+    today = _nba_today_str()
+    if pick_date == today:
+        date_badge = '<span class="ai-tag">LIVE</span>'
+        header_date = ""
+    elif pick_date:
+        try:
+            from datetime import datetime as _dt
+            _d = _dt.strptime(pick_date, "%Y-%m-%d")
+            header_date = f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.42rem;color:rgba(255,255,255,.3);margin-left:8px;font-weight:600;">{_d.strftime("%b").upper()} {_d.day}</span>'
+        except Exception:
+            header_date = f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.42rem;color:rgba(255,255,255,.3);margin-left:8px;">{pick_date}</span>'
+        date_badge = ''
+    else:
+        date_badge = ''
+        header_date = ''
+
+    live_badge = f'<div class="pv-live">&#x25CF; {num_picks} ACTIVE</div>' if pick_date == today else f'<div class="pv-live" style="color:rgba(255,200,50,.8);border-color:rgba(255,200,50,.2);background:rgba(255,200,50,.07);">&#x21BB; {num_picks} PICKS</div>'
+
     return (
         f'{css}'
         f'<div class="pv-frame">'
         f'<div class="pv-titlebar"><div class="pv-dot r"></div><div class="pv-dot y"></div>'
         f'<div class="pv-dot g"></div>'
-        f'<div class="pv-url">smartpickpro.com &middot; Neural Engine v3.2</div></div>'
-        f'<div class="pv-header"><div class="pv-title">&#9889; AI Picks Today <span class="ai-tag">LIVE</span></div>'
-        f'<div class="pv-live">&#x25CF; {num_picks} ACTIVE</div></div>'
+        f'<div class="pv-url">smartpickspro.com &middot; Neural Engine v3.2</div></div>'
+        f'<div class="pv-header"><div class="pv-title">&#9889; AI Picks Today {date_badge}{header_date}</div>'
+        f'{live_badge}</div>'
         f'<div class="pv-scroll"><div class="pv-track">{cards_joined}</div></div>'
         f'</div>'
         f'<div class="pv-hint">&#x2190; SWIPE TO SEE ALL AI PICKS &#x2192;</div>'
@@ -4408,8 +4439,8 @@ html,body{background:transparent;overflow-y:hidden}
     """, unsafe_allow_html=True)
 
     # ── Product Preview: live platform picks from today's analysis ──
-    _preview_picks = _load_top_preview_picks(5)
-    _preview_html = _build_preview_section_html(_preview_picks)
+    _preview_picks, _preview_date = _load_top_preview_picks(5)
+    _preview_html = _build_preview_section_html(_preview_picks, _preview_date)
     st.html(_preview_html)
 
     # ── Section anchor: Free Picks ──

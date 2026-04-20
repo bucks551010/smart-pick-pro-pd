@@ -2431,6 +2431,9 @@ def _write_latest_picks_cache(date_str: str, limit: int = 5) -> None:
     Called automatically after ``insert_analysis_picks`` succeeds.
     The auth-gate landing page reads this file when the DB query returns
     nothing (common on Railway ephemeral deploys).
+
+    Also attempts to git-commit the cache file so Railway picks up the latest
+    data on the next deploy without needing a manual push.
     """
     import json as _json
     try:
@@ -2453,8 +2456,42 @@ def _write_latest_picks_cache(date_str: str, limit: int = 5) -> None:
             cache_path.parent.mkdir(parents=True, exist_ok=True)
             cache_path.write_text(_json.dumps(cache_data, indent=2), encoding="utf-8")
             _logger.debug("Wrote %d picks to %s", len(rows), cache_path)
+            # Auto-commit the cache file to git so Railway deploys carry today's picks.
+            _git_commit_cache(cache_path, date_str)
     except Exception as exc:
         _logger.debug("_write_latest_picks_cache: %s", exc)
+
+
+def _git_commit_cache(cache_path: Path, date_str: str) -> None:
+    """Stage and commit cache/latest_picks.json to git (best-effort, non-blocking).
+
+    This ensures that when Railway redeploys from git the landing page always
+    shows the most recent real picks rather than the previous deploy's snapshot.
+    Silently skips if git is not available or the repo has no remote configured.
+    """
+    import subprocess as _sp
+    try:
+        repo_root = cache_path.parent.parent
+        _sp.run(
+            ["git", "add", str(cache_path.relative_to(repo_root))],
+            cwd=str(repo_root), capture_output=True, timeout=10, check=False,
+        )
+        result = _sp.run(
+            ["git", "diff", "--cached", "--quiet"],
+            cwd=str(repo_root), capture_output=True, timeout=5,
+        )
+        if result.returncode != 0:  # there are staged changes
+            _sp.run(
+                ["git", "commit", "-m", f"chore: update picks cache {date_str} [skip ci]"],
+                cwd=str(repo_root), capture_output=True, timeout=15, check=False,
+            )
+            _sp.run(
+                ["git", "push", "origin", "HEAD"],
+                cwd=str(repo_root), capture_output=True, timeout=30, check=False,
+            )
+            _logger.debug("_git_commit_cache: committed and pushed picks for %s", date_str)
+    except Exception as exc:
+        _logger.debug("_git_commit_cache (non-fatal): %s", exc)
 
 
 def load_all_analysis_picks(days=30):

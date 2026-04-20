@@ -1411,8 +1411,8 @@ st.markdown(f"""
 <div class="hero-hud lp-anim">
   <div class="hero-hud-inner-glow"></div>
   <div class="hero-hud-text">
-    <div class="hero-tagline">THE SMARTEST NBA PLAYER PROP ENGINE ONLINE</div>
-    <div class="hero-subtext"><strong>Find Tonight's Best Bets in 60 Seconds.</strong> Every Pick Tells You Why.</div>
+    <div class="hero-tagline">THE NBA PROP ENGINE THAT SHOWS ITS WORK</div>
+    <div class="hero-subtext"><strong>5,000+ Live Props. 1,000 Simulations Each. Zero Black Boxes.</strong> Know the edge before you enter.</div>
     <div class="hero-date">📅 {today_str} &nbsp;&bull;&nbsp; <span class="game-count-live">{game_count_text}</span></div>
   </div>
 </div>
@@ -1760,8 +1760,8 @@ elif _games_loaded:
 else:
     _joseph_msg = (
         "The board is dark. Hit that button and load tonight's slate — "
-        "I've been watching the lines ALL DAY and I already see where the books slipped up. "
-        "Let's go to work."
+        "I've been watching the lines all day and I already know where the books made mistakes. "
+        "Let's run the engine and find your edge."
     )
 
 st.markdown(f"""
@@ -1783,8 +1783,8 @@ st.markdown(f"""
 # ============================================================
 
 st.markdown("""
-<div class="section-header lp-anim lp-anim-d2">Most Prop Tools Give You a Number. We Give You the Proof.</div>
-<div class="section-subheader">Three things no other prop tool on the internet can match.</div>
+<div class="section-header lp-anim lp-anim-d2">Other Tools Guess. We Simulate.</div>
+<div class="section-subheader">The only prop engine purpose-built for NBA DFS — live data from PrizePicks &amp; Underdog, Monte Carlo simulation, and full transparent reasoning. No human bias. No black box.</div>
 """, unsafe_allow_html=True)
 
 # ── 3A: Three Pillars ───────────────────────────────────────────
@@ -1796,29 +1796,26 @@ with _p1:
       <div class="pillar-accent"></div>
       <div class="pillar-card-inner">
         <div class="pillar-icon-halo"><span class="pillar-icon">🎲</span></div>
-        <div class="pillar-title">Quantum Matrix Engine</div>
-        <div class="pillar-subtitle">Thousands of Simulated Games Per Prop</div>
+        <div class="pillar-title">Monte Carlo Simulation Engine</div>
+        <div class="pillar-subtitle">Up to 1,000 Simulated Games Per Prop — Tonight's Matchup, Not a Generic Average</div>
         <div class="pillar-body">
-          Every prop runs through thousands of simulated game scenarios — randomized
-          minutes, game flow, momentum swings, and real-world chaos.
+          Every prop runs through up to 1,000 simulated game scenarios —
+          randomized minutes, real NBA pace data, matchup-specific defensive
+          ratings, fatigue, and game-flow volatility.
           <br><br>
-          The result: a probability distribution built from YOUR player in TONIGHT'S
-          specific matchup — not a generic average.
+          The result: a <strong>probability distribution</strong> built for
+          YOUR player in TONIGHT'S specific context — not recycled season averages.
           <br><br>
-          <strong>You choose the depth:</strong>
+          <strong>Choose simulation depth:</strong>
           <ul>
-            <li>⚡ Fast (seconds)</li>
-            <li>🎯 Standard (recommended)</li>
-            <li>🔬 Deep Scan (maximum accuracy)</li>
+            <li>⚡ Fast — instant results</li>
+            <li>🎯 Standard — recommended balance</li>
+            <li>🔬 Deep Scan — maximum accuracy</li>
           </ul>
-          <ul>
-            <li>Percentile ranges (10th–90th)</li>
-            <li>Probability gauges</li>
-            <li>Confidence intervals</li>
-            <li>Distribution histograms</li>
-          </ul>
+          Every result includes percentile ranges, confidence intervals,
+          and visual histograms — so you see the full picture, not just a number.
         </div>
-        <div class="pillar-footer">Other tools: one number. No context.</div>
+        <div class="pillar-footer">Dimers, Action Network: editorial picks. No simulation depth.</div>
       </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1830,24 +1827,22 @@ with _p2:
       <div class="pillar-card-inner">
         <div class="pillar-icon-halo"><span class="pillar-icon">🔬</span></div>
         <div class="pillar-title">Force Analysis</div>
-        <div class="pillar-subtitle">Every Pick Tells You WHY</div>
+        <div class="pillar-subtitle">16 NBA-Specific Signals. Every Pick Tells You Exactly WHY.</div>
         <div class="pillar-body">
-          Every prop shows the exact factors pushing performance UP or DOWN:
+          Every prop shows the exact forces pushing performance UP or DOWN —
+          pulled from live NBA data no other prop tool integrates:
           <br><br>
-          ✅ Matchup quality<br>
-          ✅ Game environment &amp; pace<br>
-          ✅ Rest &amp; fatigue impact<br>
-          ✅ Blowout / garbage time risk<br>
-          ✅ Market consensus signals<br>
-          ✅ Trend &amp; regression detection
+          ✅ Defensive matchup ratings &amp; hustle stats<br>
+          ✅ Clutch-time performance splits<br>
+          ✅ Pace, game environment &amp; blowout risk<br>
+          ✅ Rest, back-to-back fatigue &amp; load signals<br>
+          ✅ Injury impact on usage share<br>
+          ✅ Trap Line Detection — catches lines designed to bait the public
           <br><br>
-          Plus our proprietary <strong>Trap Line Detection</strong> system that catches lines
-          designed to bait public money on the wrong side.
-          <br><br>
-          You see OVER forces vs UNDER forces, each with a strength rating.
-          No black box. Full transparency.
+          You see OVER forces vs UNDER forces with strength ratings.
+          No "trust us" scores. <strong>Full transparency on every single pick.</strong>
         </div>
-        <div class="pillar-footer">Other tools: "63% confidence." That's it.</div>
+        <div class="pillar-footer">Other tools give you a score. We show you the actual math.</div>
       </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1859,24 +1854,26 @@ with _p3:
       <div class="pillar-card-inner">
         <div class="pillar-icon-halo"><span class="pillar-icon">🏆</span></div>
         <div class="pillar-title">SAFE Score™</div>
-        <div class="pillar-subtitle">Institutional-Grade Scoring</div>
+        <div class="pillar-subtitle">Statistical Analysis of Force &amp; Edge — Not a Capper's Opinion</div>
         <div class="pillar-body">
-          <em>Statistical Analysis of Force &amp; Edge</em>
+          A proprietary 0–100 composite score that blends multiple independent
+          signals — simulation probability, edge magnitude, matchup quality,
+          consistency, momentum, and market consensus — into one actionable number.
           <br><br>
-          A proprietary 0–100 composite score that weighs multiple independent signals
-          — probability, edge quality, matchup, consistency, momentum, and more —
-          into one actionable number.
-          <br><br>
-          <strong>Built-in safeguards</strong> prevent the engine from being overconfident:
+          <strong>Built-in anti-overconfidence safeguards:</strong>
           <br><br>
           🛡️ Automatic tier demotion triggers<br>
           🛡️ Variance-aware scoring<br>
           🛡️ Sample-size adjustments<br>
-          🛡️ Tier distribution enforcement
+          🛡️ Tier distribution enforcement<br>
+          🛡️ No picks inflated by narrative or recency bias
           <br><br>
           💎 Platinum · 🥇 Gold · 🥈 Silver · 🥉 Bronze · ⛔ Avoid
+          <br><br>
+          No pay-per-pick capper. No guru with a hot streak.
+          Pure statistical rigor, automated every night.
         </div>
-        <div class="pillar-footer">Other tools: one number, no safeguards.</div>
+        <div class="pillar-footer">StatSalt cappers charge $30–$89 per pick. This runs free.</div>
       </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1887,72 +1884,72 @@ st.markdown("""
 <table class="comp-table">
   <thead>
     <tr>
-      <th>What You Get</th>
-      <th>Free Spreadsheet</th>
-      <th>Typical Prop Tool</th>
+      <th>Feature</th>
+      <th>Dimers / Action Network</th>
+      <th>StatSalt / Cappers</th>
       <th>Smart Pick Pro</th>
     </tr>
   </thead>
   <tbody>
     <tr>
+      <td>NBA-Specific Depth</td>
+      <td class="cross">✗ Multi-sport, spread thin</td>
+      <td class="cross">✗ Generic sports coverage</td>
+      <td class="check">✓ Hustle stats, clutch splits, defensive ratings, bio data</td>
+    </tr>
+    <tr>
       <td>Simulation Engine</td>
-      <td>❌ None</td>
-      <td>❌ None</td>
-      <td class="spp-col">✅ Proprietary Quantum Matrix Simulation</td>
+      <td class="cross">✗ Editorial picks, no simulation</td>
+      <td class="cross">✗ Human handicapper opinion</td>
+      <td class="check">✓ Monte Carlo — up to 1,000 sims per prop</td>
     </tr>
     <tr>
-      <td>Why a Pick Wins</td>
-      <td>❌ Guessing</td>
-      <td>❌ "63% confidence"</td>
-      <td class="spp-col">✅ Full force breakdown — every factor shown</td>
+      <td>PrizePicks + Underdog Integration</td>
+      <td class="cross">✗ Not integrated</td>
+      <td class="cross">✗ Not integrated</td>
+      <td class="check">✓ Live 5,000+ props pulled directly from both platforms</td>
     </tr>
     <tr>
-      <td>Trap Detection</td>
-      <td>❌ None</td>
-      <td>❌ None</td>
-      <td class="spp-col">✅ Proprietary multi-pattern trap system</td>
+      <td>Transparent Reasoning</td>
+      <td class="partial">⚠ Article with opinion</td>
+      <td class="cross">✗ "Trust my record"</td>
+      <td class="check">✓ Force breakdown — every factor shown with strength rating</td>
     </tr>
     <tr>
-      <td>Scoring System</td>
-      <td>❌ None</td>
-      <td>❌ Single number</td>
-      <td class="spp-col">✅ SAFE Score™ — multi-signal composite with tier safeguards</td>
+      <td>Automated Daily Pipeline</td>
+      <td class="cross">✗ Human writers, not automated</td>
+      <td class="cross">✗ Manual picks posted per game</td>
+      <td class="check">✓ Auto-runs ETL → simulation → picks every day at 5pm ET</td>
     </tr>
     <tr>
-      <td>AI Analyst</td>
-      <td>❌ None</td>
-      <td>❌ None</td>
-      <td class="spp-col">✅ Joseph M. Smith — pre-game, in-game, and post-game commentary</td>
+      <td>Trap Line Detection</td>
+      <td class="cross">✗ None</td>
+      <td class="cross">✗ None</td>
+      <td class="check">✓ Proprietary multi-pattern trap detection system</td>
     </tr>
     <tr>
-      <td>Risk Assessment</td>
-      <td>❌ None</td>
-      <td>❌ None</td>
-      <td class="spp-col">✅ Risk ratings + auto-flagging on every pick</td>
+      <td>Risk Shield + Avoid Flags</td>
+      <td class="cross">✗ No auto-avoidance</td>
+      <td class="cross">✗ No auto-avoidance</td>
+      <td class="check">✓ Auto-flags injured, DNP risk, trap, and garbage-time props</td>
     </tr>
     <tr>
-      <td>Parlay Optimizer</td>
-      <td>❌ Manual</td>
-      <td>❌ Basic</td>
-      <td class="spp-col">✅ EV-optimized Entry Builder across all major platforms</td>
+      <td>Entry Builder (Parlay Optimizer)</td>
+      <td class="partial">⚠ Basic parlay picker</td>
+      <td class="cross">✗ None</td>
+      <td class="check">✓ EV-optimized builder for PrizePicks, Underdog, Pick6</td>
     </tr>
     <tr>
-      <td>Live Tracking</td>
-      <td>❌ Box score</td>
-      <td>❌ Box score</td>
-      <td class="spp-col">✅ Live Sweat Room with real-time pace and projection tracking</td>
+      <td>Live In-Game Sweat Tracking</td>
+      <td class="cross">✗ Box score only</td>
+      <td class="cross">✗ Box score only</td>
+      <td class="check">✓ Live Sweat Room — real-time pace and projection updates</td>
     </tr>
     <tr>
-      <td>Performance Tracking</td>
-      <td>❌ None</td>
-      <td>❌ None</td>
-      <td class="spp-col">✅ Bet Tracker + Model Health Dashboard</td>
-    </tr>
-    <tr>
-      <td>Platforms Supported</td>
-      <td>❌ One</td>
-      <td>❌ One or two</td>
-      <td class="spp-col">✅ PrizePicks · Underdog · DraftKings Pick6 and more</td>
+      <td>Cost Per Pick</td>
+      <td class="partial">⚠ $29.99/month (all sports)</td>
+      <td class="cross">✗ $15–$89 per pick</td>
+      <td class="check">✓ Free top picks daily. No per-pick fees.</td>
     </tr>
   </tbody>
 </table>
@@ -1965,16 +1962,16 @@ st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 # SECTION 4: The Proof Points — Animated Metric Cards
 # ============================================================
 
-st.markdown('<div class="section-header lp-anim lp-anim-d3">The Numbers Speak</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header lp-anim lp-anim-d3">Built Different. Proven By Design.</div>', unsafe_allow_html=True)
 
 _proof_cols = st.columns(5)
 
 _proof_data = [
-    ("THOUSANDS", "Simulated Games Per Prop"),
-    ("MULTIPLE", "Analysis Models Blended"),
-    ("EVERY", "Pick Explains WHY"),
-    ("15", "Pages of Tools"),
-    ("REAL TIME", "Live Props"),
+    ("5,000+", "Live Props Analyzed Daily"),
+    ("1,000", "Monte Carlo Sims Per Prop"),
+    ("16", "NBA-Specific Data Signals"),
+    ("100%", "Transparent Reasoning"),
+    ("FREE", "Top Picks Every Night"),
 ]
 
 _proof_colors = ["#00D559", "#2D9EFF", "#F9C62B", "#FFD700", "#F24336"]
@@ -2131,20 +2128,20 @@ st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 
 st.markdown("""
 <div class="section-header lp-anim lp-anim-d2">How It Works</div>
-<div class="section-subheader">Five stages. Full transparency on what happens. Zero implementation details exposed.</div>
+<div class="section-subheader">From raw NBA data to ranked, explained picks — automated every night, no human bias involved.</div>
 """, unsafe_allow_html=True)
 
 _hiw_stages = [
-    ("📡", "Data Ingest",
-     "We pull real-time NBA data from multiple sources — player stats, team ratings, injuries, and live prop lines from every major platform."),
-    ("📐", "Smart Projections",
-     "Our engine adjusts each player's baseline for tonight's specific matchup, game environment, rest, and real-time conditions."),
-    ("🎲", "Quantum Matrix Engine",
-     "Thousands of game simulations for each prop — every sim randomizes the chaos of a real NBA game to build a true probability distribution."),
-    ("🔬", "Edge Analysis",
-     "Every directional force is identified, strength-rated, and balanced against opposing signals. Trap lines are flagged. Coin-flip bets are caught."),
-    ("🏆", "SAFE Score™",
-     "A proprietary multi-signal composite score with built-in safeguards assigns every pick a tier: Platinum, Gold, Silver, Bronze, or Avoid."),
+    ("📡", "Live Data Pull",
+     "Real-time NBA data ingested: player stats, hustle metrics, clutch splits, defensive ratings, injuries, and 5,000+ live prop lines from PrizePicks and Underdog."),
+    ("📐", "Matchup Projection",
+     "Each player's baseline is adjusted for tonight's specific opponent, pace, game environment, rest days, and injury-impacted usage — no generic season averages."),
+    ("🎲", "Monte Carlo Simulation",
+     "Up to 1,000 simulated games per prop. Every sim randomizes real NBA game chaos — minutes volatility, momentum swings, blowout risk — to build a true probability distribution."),
+    ("🔬", "Force Analysis",
+     "16 NBA-specific signals are measured, strength-rated, and balanced. Trap lines are flagged. Coin-flip props are caught and filtered before they reach your picks list."),
+    ("🏆", "SAFE Score™ + Tier Assignment",
+     "A proprietary multi-signal composite with anti-overconfidence safeguards assigns every prop a ranked tier: Platinum, Gold, Silver, Bronze, or Avoid — with full reasoning attached."),
 ]
 
 _hiw_cols = st.columns(len(_hiw_stages) * 2 - 1)  # stages + arrows between them
@@ -2163,17 +2160,16 @@ for idx, (icon, title, desc) in enumerate(_hiw_stages):
         with _hiw_cols[col_idx + 1]:
             st.markdown('<div class="hiw-connector" style="height:100%;">&#8203;</div>', unsafe_allow_html=True)
 
-with st.expander("📖 How to Use Smart Pick Pro", expanded=False):
+with st.expander("📖 How to Use Smart Pick Pro — Getting Started in 60 Seconds", expanded=False):
     st.markdown("""
-    **Recommended Workflow**
-    1. **📡 Live Games** — Click "⚡ Load Tonight's Slate" for a one-click setup
-    2. **🔬 Prop Scanner** — Enter props manually or load live lines from all platforms
-    3. **⚡ Quantum Analysis** — Run the engine on your props
-    4. **🧬 Entry Builder** — Build EV-optimized parlays
-    5. **📈 Bet Tracker** — Log results and track performance over time
+    **The 3-Step Workflow**
+    1. **📡 Load Tonight's Slate** — Click "⚡ Load Tonight's Slate" above. Auto-fetches games, rosters, injuries, and 5,000+ live props from PrizePicks and Underdog.
+    2. **⚡ Run the Engine** — Go to **⚡ Quantum Analysis** in the sidebar and click **Run Analysis**. The engine simulates each prop up to 1,000 times and ranks every one.
+    3. **🏆 Review Your Edge** — Your top picks appear here with full Force Analysis reasoning — know exactly WHY each pick is rated, not just a score.
 
-    💡 **Pro Tip:** Use the one-click button at the top of this page to load games + props in a single action.
-    Then head straight to ⚡ Quantum Analysis to run the engine.
+    💡 **Pro Tip:** Use the one-click button above to load everything in a single action, then head to Quantum Analysis to run the engine.
+    
+    ⚙️ Visit **Settings** to tune simulation depth, edge threshold, and platform preferences for your betting style.
     """)
 
 st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
@@ -2187,8 +2183,8 @@ st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 # ============================================================
 
 st.markdown("""
-<div class="section-header lp-anim lp-anim-d2">🗺️ Your Toolkit — 16 Pages of Analysis</div>
-<div class="section-subheader">Every tool you need, from data loading to bet tracking.</div>
+<div class="section-header lp-anim lp-anim-d2">🗺️ Your Unfair Advantage — 16 Pages of NBA Intelligence</div>
+<div class="section-subheader">Every tool you need to go from raw prop lines to confident, data-backed entries. No spreadsheets. No gut feels.</div>
 """, unsafe_allow_html=True)
 
 # Row 1 — Tonight's Workflow

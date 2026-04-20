@@ -96,7 +96,87 @@ def _seed_user_from_env():
         _logger.error("SEED_USER: failed for %s — %s", email, exc)
 
 
-def _run_daily_update():
+def _seed_subscriptions_from_env():
+    """Upsert subscription rows from env var SEED_SUBSCRIPTIONS.
+
+    Format (Railway env var):
+        SEED_SUBSCRIPTIONS=email1:Plan Name,email2:Plan Name,...
+
+    Examples:
+        SEED_SUBSCRIPTIONS=joseph_moten@yahoo.com:Insider Circle,sharpiq@test.com:Sharp IQ
+
+    Each entry creates/updates a row in the subscriptions table with an
+    'otp_' prefixed ID so Stripe re-verification is bypassed (perpetual access).
+    Safe to run on every deploy — uses ON CONFLICT DO UPDATE.
+    """
+    raw = os.environ.get("SEED_SUBSCRIPTIONS", "").strip()
+    if not raw:
+        return
+    try:
+        from utils.auth import _ensure_pg_subscriptions_table, _HAS_PG_SUB, _PG_SUB_URL
+        from tracking.database import initialize_database, get_database_connection
+        import hashlib as _hl
+        import datetime as _dt
+
+        entries = [e.strip() for e in raw.split(",") if ":" in e.strip()]
+        if not entries:
+            _logger.warning("SEED_SUBSCRIPTIONS set but no valid 'email:Plan' entries found")
+            return
+
+        for entry in entries:
+            email, _, plan = entry.partition(":")
+            email = email.strip().lower()
+            plan = plan.strip()
+            if not email or not plan:
+                continue
+            # Deterministic otp_ ID so the same email always gets the same row
+            sub_id = "otp_" + _hl.md5(email.encode()).hexdigest()[:16]
+            cus_id = "cus_" + _hl.md5(email.encode()).hexdigest()[:16]
+            params = (sub_id, cus_id, email, "active", plan)
+
+            if _HAS_PG_SUB:
+                try:
+                    import psycopg2 as _pg2  # type: ignore
+                    _ensure_pg_subscriptions_table()
+                    conn = _pg2.connect(_PG_SUB_URL)
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            INSERT INTO subscriptions
+                                (subscription_id, customer_id, customer_email, status, plan_name, updated_at)
+                            VALUES (%s, %s, %s, %s, %s, NOW())
+                            ON CONFLICT(subscription_id) DO UPDATE SET
+                                status       = EXCLUDED.status,
+                                plan_name    = EXCLUDED.plan_name,
+                                updated_at   = NOW()
+                        """, params)
+                    conn.commit()
+                    conn.close()
+                    _logger.info("SEED_SUB (PG): %s → %s", email, plan)
+                except Exception as exc:
+                    _logger.error("SEED_SUB (PG) failed for %s: %s", email, exc)
+            else:
+                try:
+                    initialize_database()
+                    with get_database_connection() as conn:
+                        conn.execute("""
+                            INSERT INTO subscriptions
+                                (subscription_id, customer_id, customer_email, status, plan_name,
+                                 updated_at)
+                            VALUES (?, ?, ?, ?, ?, datetime('now'))
+                            ON CONFLICT(subscription_id) DO UPDATE SET
+                                status     = excluded.status,
+                                plan_name  = excluded.plan_name,
+                                updated_at = datetime('now')
+                        """, params)
+                        conn.commit()
+                    _logger.info("SEED_SUB (SQLite): %s → %s", email, plan)
+                except Exception as exc:
+                    _logger.error("SEED_SUB (SQLite) failed for %s: %s", email, exc)
+    except Exception as exc:
+        _logger.error("SEED_SUBSCRIPTIONS: unexpected error — %s", exc)
+
+
+
     """Run the ETL daily updater to refresh data on deploy."""
     try:
         from etl.data_updater import run_update
@@ -131,6 +211,7 @@ if __name__ == "__main__":
         _logger.error("Failed to initialise PG subscriptions table: %s", exc)
 
     _seed_user_from_env()
+    _seed_subscriptions_from_env()
     _run_daily_update()
 
     # Launch Streamlit

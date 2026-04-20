@@ -1475,7 +1475,23 @@ def populate_standings(
     if "season_id" not in result.columns:
         result["season_id"] = season
 
-    conn.execute("DELETE FROM Standings WHERE season_id = ?", (season,))
+    # Deduplicate in case the API returns the same team twice
+    result = result.drop_duplicates(subset=["season_id", "team_id"], keep="last")
+
+    # DELETE using the actual season_id values in the data (the API may return
+    # a numeric code like "22025" instead of "2025-26", so we can't rely on the
+    # season parameter matching what's already stored).
+    season_ids = result["season_id"].dropna().unique().tolist()
+    if season_ids:
+        placeholders = ",".join("?" * len(season_ids))
+        conn.execute(
+            f"DELETE FROM Standings WHERE season_id IN ({placeholders})",
+            season_ids,
+        )
+    else:
+        conn.execute("DELETE FROM Standings WHERE season_id = ?", (season,))
+    conn.commit()
+
     result.to_sql("Standings", conn, if_exists="append", index=False)
     logger.info("Standings: inserted %d rows.", len(result))
 

@@ -47,6 +47,26 @@ st.set_page_config(
     initial_sidebar_state="auto",
 )
 
+# ─── Verify DB volume is persistent (log once per session) ───
+if not st.session_state.get("_db_volume_checked"):
+    import logging as _logging, os as _os
+    _db_logger = _logging.getLogger("smartai.startup")
+    _db_dir = _os.environ.get("DB_DIR", "")
+    from tracking.database import DB_FILE_PATH as _DB_FILE_PATH
+    _db_logger.info(
+        "DB path: %s | exists: %s | size: %s bytes",
+        _DB_FILE_PATH,
+        _DB_FILE_PATH.exists(),
+        _DB_FILE_PATH.stat().st_size if _DB_FILE_PATH.exists() else 0,
+    )
+    if _db_dir and not _os.path.ismount(_db_dir):
+        _db_logger.warning(
+            "DB_DIR=%s is NOT a mount point — user data will be lost on container restart. "
+            "Create a Railway volume named 'smartai_data' mounted at /data.",
+            _db_dir,
+        )
+    st.session_state["_db_volume_checked"] = True
+
 # ─── Seed admin account from env vars (idempotent) ────────────
 try:
     from utils.auth_gate import seed_admin_account as _seed_admin

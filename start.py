@@ -22,10 +22,27 @@ _VOLUME_DIR = Path(os.environ.get("DB_DIR", ""))
 def _seed_volume():
     """Copy seed databases from the Docker image to the persistent volume if missing."""
     if not _VOLUME_DIR or not _VOLUME_DIR.is_absolute():
-        _logger.info("DB_DIR not set — using local db/ (non-persistent)")
+        _logger.warning(
+            "DB_DIR not set or not absolute — user accounts will NOT persist across restarts!"
+        )
         return
 
     _VOLUME_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Persistence check: write a sentinel file and read it back to confirm
+    # the directory is actually persistent (i.e., a real volume is mounted).
+    _sentinel = _VOLUME_DIR / ".volume_check"
+    try:
+        _sentinel.write_text("ok")
+        assert _sentinel.read_text() == "ok"
+        _logger.info("Volume persistence check PASSED at %s", _VOLUME_DIR)
+    except Exception as e:
+        _logger.error(
+            "Volume persistence check FAILED at %s: %s — "
+            "user accounts will be lost on container restart. "
+            "Make sure the Railway 'smartai_data' volume is created and mounted at /data.",
+            _VOLUME_DIR, e,
+        )
 
     for db_name in ("smartpicks.db", "smartai_nba.db"):
         src = _APP_DB_DIR / db_name

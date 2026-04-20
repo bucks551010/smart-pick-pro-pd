@@ -28,6 +28,7 @@ import os
 import re
 import secrets
 import sqlite3
+import time
 from pathlib import Path
 
 import streamlit as st
@@ -36,6 +37,9 @@ from tracking.database import initialize_database, get_database_connection
 from utils.stripe_manager import is_stripe_configured, create_checkout_session
 
 _logger = logging.getLogger(__name__)
+
+_DB_RETRY_ATTEMPTS = 3
+_DB_RETRY_DELAY_SECONDS = 0.15
 
 # ── Session-state keys ────────────────────────────────────────
 _SS_LOGGED_IN     = "_auth_logged_in"      # bool
@@ -65,7 +69,11 @@ def _hash_password(plain: str) -> str:
 
 def _verify_password(plain: str, hashed: str) -> bool:
     """Verify a plaintext password against a stored hash."""
-    if _HAS_BCRYPT and hashed.startswith("$2"):
+    if hashed.startswith("$2"):
+        if not _HAS_BCRYPT:
+            # Existing bcrypt-hashed accounts require bcrypt to be installed.
+            _logger.error("bcrypt hash encountered but bcrypt is not installed")
+            return False
         return _bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
     if hashed.startswith("pbkdf2:"):
         parts = hashed.split("$")
@@ -566,19 +574,27 @@ def _create_user(email: str, password: str, display_name: str = "") -> bool:
     """Create a new user account. Returns True on success."""
     initialize_database()
     pw_hash = _hash_password(password)
-    try:
-        with get_database_connection() as conn:
-            conn.execute(
-                "INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)",
-                (email.strip().lower(), pw_hash, display_name.strip() or email.split("@")[0]),
-            )
-            conn.commit()
-        return True
-    except sqlite3.IntegrityError:
-        return False  # Email already registered
-    except Exception as exc:
-        _logger.error("Failed to create user: %s", exc)
-        return False
+    for attempt in range(_DB_RETRY_ATTEMPTS):
+        try:
+            with get_database_connection() as conn:
+                conn.execute(
+                    "INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)",
+                    (email.strip().lower(), pw_hash, display_name.strip() or email.split("@")[0]),
+                )
+                conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False  # Email already registered
+        except sqlite3.OperationalError as exc:
+            if "locked" in str(exc).lower() and attempt < _DB_RETRY_ATTEMPTS - 1:
+                time.sleep(_DB_RETRY_DELAY_SECONDS * (2 ** attempt))
+                continue
+            _logger.error("Failed to create user: %s", exc)
+            return False
+        except Exception as exc:
+            _logger.error("Failed to create user: %s", exc)
+            return False
+    return False
 
 
 # ── Admin account helpers ─────────────────────────────────────
@@ -653,41 +669,57 @@ def is_admin_user() -> bool:
 def _authenticate_user(email: str, password: str) -> dict | None:
     """Verify credentials. Returns user dict on success, None on failure."""
     initialize_database()
-    try:
-        with get_database_connection() as conn:
-            cursor = conn.execute(
-                "SELECT user_id, email, password_hash, display_name, is_admin FROM users WHERE email = ?",
-                (email.strip().lower(),),
-            )
-            row = cursor.fetchone()
-            if not row:
-                return None
-            user = dict(row)
-            if _verify_password(password, user["password_hash"]):
-                # Update last_login_at
-                conn.execute(
-                    "UPDATE users SET last_login_at = datetime('now') WHERE user_id = ?",
-                    (user["user_id"],),
+    for attempt in range(_DB_RETRY_ATTEMPTS):
+        try:
+            with get_database_connection() as conn:
+                cursor = conn.execute(
+                    "SELECT user_id, email, password_hash, display_name, is_admin FROM users WHERE email = ?",
+                    (email.strip().lower(),),
                 )
-                conn.commit()
-                return user
-    except Exception as exc:
-        _logger.error("Authentication error: %s", exc)
+                row = cursor.fetchone()
+                if not row:
+                    return None
+                user = dict(row)
+                if _verify_password(password, user["password_hash"]):
+                    # Update last_login_at
+                    conn.execute(
+                        "UPDATE users SET last_login_at = datetime('now') WHERE user_id = ?",
+                        (user["user_id"],),
+                    )
+                    conn.commit()
+                    return user
+                return None
+        except sqlite3.OperationalError as exc:
+            if "locked" in str(exc).lower() and attempt < _DB_RETRY_ATTEMPTS - 1:
+                time.sleep(_DB_RETRY_DELAY_SECONDS * (2 ** attempt))
+                continue
+            _logger.error("Authentication error: %s", exc)
+            return None
+        except Exception as exc:
+            _logger.error("Authentication error: %s", exc)
+            return None
     return None
 
 
 def _email_exists(email: str) -> bool:
     """Check if an email is already registered."""
     initialize_database()
-    try:
-        with get_database_connection() as conn:
-            row = conn.execute(
-                "SELECT 1 FROM users WHERE email = ?",
-                (email.strip().lower(),),
-            ).fetchone()
-            return row is not None
-    except Exception:
-        return False
+    for attempt in range(_DB_RETRY_ATTEMPTS):
+        try:
+            with get_database_connection() as conn:
+                row = conn.execute(
+                    "SELECT 1 FROM users WHERE email = ?",
+                    (email.strip().lower(),),
+                ).fetchone()
+                return row is not None
+        except sqlite3.OperationalError as exc:
+            if "locked" in str(exc).lower() and attempt < _DB_RETRY_ATTEMPTS - 1:
+                time.sleep(_DB_RETRY_DELAY_SECONDS * (2 ** attempt))
+                continue
+            return False
+        except Exception:
+            return False
+    return False
 
 
 # ── Password Reset ────────────────────────────────────────────

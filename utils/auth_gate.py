@@ -2947,6 +2947,606 @@ html, body, .stApp, .stApp * {
 """
 
 
+# ── Form helpers (shared by landing-page tabs AND the auth portal) ───────────
+
+def _render_signup_form() -> None:
+    """Render the two-step sign-up form. Safe to call from any rendering context."""
+    _SU_STAGE = "_signup_stage"
+    _SU_EMAIL = "_signup_email"
+    _SU_NAME  = "_signup_name"
+    if _SU_STAGE not in st.session_state:
+        st.session_state[_SU_STAGE] = 1
+
+    _stage = st.session_state[_SU_STAGE]
+    step1_color = "#00D559" if _stage >= 1 else "rgba(255,255,255,0.15)"
+    step2_color = "#00D559" if _stage >= 2 else "rgba(255,255,255,0.15)"
+    line_color  = "#00D559" if _stage >= 2 else "rgba(255,255,255,0.08)"
+    st.markdown(f"""
+    <div style="display:flex;align-items:center;justify-content:center;gap:0;margin:0 auto 18px;max-width:280px;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:{step1_color};display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:0.75rem;font-weight:800;color:#0B0F19;transition:all 0.3s;">1</div>
+        <span style="font-size:0.55rem;font-weight:700;color:{step1_color};font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;">Info</span>
+      </div>
+      <div style="flex:1;height:2px;background:{line_color};margin:0 10px 16px;border-radius:2px;transition:all 0.3s;"></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:{step2_color};display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:0.75rem;font-weight:800;color:#0B0F19;transition:all 0.3s;">2</div>
+        <span style="font-size:0.55rem;font-weight:700;color:{step2_color};font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;">Secure</span>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if _stage == 1:
+        st.markdown("""
+        <div style="text-align:center;margin-bottom:14px;">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:800;color:#fff;margin-bottom:4px;">Let&rsquo;s get you started</div>
+          <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);">Enter your name and email to create your free account.</div>
+        </div>
+        """, unsafe_allow_html=True)
+        with st.form("signup_step1", clear_on_submit=False):
+            su_name  = st.text_input("Display Name", placeholder="e.g. Joseph", key="_su_name")
+            su_email = st.text_input("Email Address", placeholder="you@example.com", key="_su_email")
+            step1_submit = st.form_submit_button("\u27A1 Continue", use_container_width=True, type="primary")
+        if step1_submit:
+            if not su_name or len(su_name.strip()) < 2:
+                st.error("Please enter your display name (at least 2 characters).")
+            elif not su_email or not _valid_email(su_email):
+                st.error("Please enter a valid email address.")
+            elif _email_exists(su_email):
+                st.error("An account with this email already exists. Please log in instead.")
+            else:
+                st.session_state[_SU_NAME]  = su_name.strip()
+                st.session_state[_SU_EMAIL] = su_email.strip().lower()
+                st.session_state[_SU_STAGE] = 2
+                st.rerun()
+
+    elif _stage == 2:
+        _saved_name  = st.session_state.get(_SU_NAME, "")
+        _saved_email = st.session_state.get(_SU_EMAIL, "")
+        st.markdown(f"""
+        <div style="text-align:center;margin-bottom:14px;">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:800;color:#fff;margin-bottom:4px;">Secure your account</div>
+          <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);">
+            Creating account for <strong style="color:#00D559;">{_saved_email}</strong>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+        with st.form("signup_step2", clear_on_submit=False):
+            su_pw  = st.text_input("Password", type="password", placeholder="Min 8 chars, 1 letter, 1 number", key="_su_pw")
+            su_pw2 = st.text_input("Confirm Password", type="password", placeholder="Re-enter password", key="_su_pw2")
+            step2_submit = st.form_submit_button("\u26A1 Create Free Account", use_container_width=True, type="primary")
+        col_back, _ = st.columns([1, 3])
+        with col_back:
+            if st.button("\u2190 Back", key="_su_back", use_container_width=True):
+                st.session_state[_SU_STAGE] = 1
+                st.rerun()
+        if step2_submit:
+            if pw_err := _valid_password(su_pw):
+                st.error(pw_err)
+            elif su_pw != su_pw2:
+                st.error("Passwords don't match.")
+            elif _email_exists(_saved_email):
+                st.error("An account with this email already exists. Please log in instead.")
+                st.session_state[_SU_STAGE] = 1
+            else:
+                ok = _create_user(_saved_email, su_pw, _saved_name)
+                if ok:
+                    user = _authenticate_user(_saved_email, su_pw)
+                    if user:
+                        _set_logged_in(user)
+                        try:
+                            from utils.analytics import track_signup
+                            track_signup(_saved_email)
+                        except Exception:
+                            pass
+                        for k in (_SU_STAGE, _SU_EMAIL, _SU_NAME):
+                            st.session_state.pop(k, None)
+                        st.success("Account created! Welcome to Smart Pick Pro.")
+                        st.rerun()
+                    else:
+                        st.error("Account created but login failed. Please try logging in.")
+                else:
+                    st.error("Could not create account. Please try again.")
+
+
+def _render_login_form() -> None:
+    """Render the login form with forgot-password flow."""
+    with st.form("login_form", clear_on_submit=False):
+        li_email = st.text_input("Email Address", placeholder="you@example.com", key="_li_email")
+        li_pw = st.text_input("Password", type="password", placeholder="Enter your password", key="_li_pw")
+        li_submit = st.form_submit_button("\U0001F513 Log In", use_container_width=True, type="primary")
+
+    if li_submit:
+        if not li_email or not _valid_email(li_email):
+            st.error("Please enter a valid email address.")
+        elif not li_pw:
+            st.error("Please enter your password.")
+        else:
+            lockout_msg = _check_login_lockout(li_email)
+            if lockout_msg:
+                st.error(f"\U0001F512 {lockout_msg}")
+            else:
+                user = _authenticate_user(li_email, li_pw)
+                if user:
+                    _clear_failed_logins(li_email)
+                    _set_logged_in(user)
+                    try:
+                        from utils.analytics import track_login
+                        track_login(li_email)
+                    except Exception:
+                        pass
+                    st.success(f"Welcome back, {user.get('display_name', '')}!")
+                    st.rerun()
+                else:
+                    _record_failed_login(li_email)
+                    st.error("Invalid email or password.")
+
+    st.markdown("---")
+    _reset_state = st.session_state.get("_pw_reset_stage", "idle")
+
+    if _reset_state == "idle":
+        if st.button("\U0001F511 Forgot Password?", key="_btn_forgot", use_container_width=True):
+            st.session_state["_pw_reset_stage"] = "email"
+            st.rerun()
+
+    elif _reset_state == "email":
+        st.info("\U0001F4E7 Enter your email and we'll generate a reset code.")
+        with st.form("reset_email_form", clear_on_submit=False):
+            rst_email = st.text_input("Email Address", placeholder="you@example.com", key="_rst_email")
+            rst_send = st.form_submit_button("\U0001F4E8 Send Reset Code", use_container_width=True)
+        if rst_send:
+            if not rst_email or not _valid_email(rst_email):
+                st.error("Enter a valid email address.")
+            else:
+                code = _generate_reset_token(rst_email)
+                if code:
+                    st.session_state["_pw_reset_stage"] = "code"
+                    st.session_state["_pw_reset_email"] = rst_email.strip().lower()
+                    st.session_state["_pw_reset_code"] = code
+                    st.rerun()
+                else:
+                    st.warning("If this email is registered, a reset code has been generated. Check below.")
+                    st.session_state["_pw_reset_stage"] = "idle"
+        if st.button("Cancel", key="_btn_rst_cancel1"):
+            st.session_state["_pw_reset_stage"] = "idle"
+            st.rerun()
+
+    elif _reset_state == "code":
+        _rst_em = st.session_state.get("_pw_reset_email", "")
+        _rst_code = st.session_state.get("_pw_reset_code", "")
+        st.success(f"\U0001F4AC Your reset code: **{_rst_code}**")
+        st.caption(f"Code sent for `{_rst_em}` — expires in 15 minutes")
+        with st.form("reset_code_form", clear_on_submit=False):
+            entered_code = st.text_input("Enter 6-digit code", placeholder="123456", key="_rst_code_input")
+            rst_verify = st.form_submit_button("\u2705 Verify Code", use_container_width=True)
+        if rst_verify:
+            if _verify_reset_token(_rst_em, entered_code):
+                st.session_state["_pw_reset_stage"] = "newpw"
+                st.rerun()
+            else:
+                st.error("Invalid or expired code. Try again.")
+        if st.button("Cancel", key="_btn_rst_cancel2"):
+            st.session_state["_pw_reset_stage"] = "idle"
+            st.rerun()
+
+    elif _reset_state == "newpw":
+        _rst_em = st.session_state.get("_pw_reset_email", "")
+        st.info(f"\U0001F512 Set a new password for `{_rst_em}`")
+        with st.form("reset_newpw_form", clear_on_submit=False):
+            new_pw = st.text_input("New Password", type="password", placeholder="Min 8 chars, 1 letter, 1 number", key="_rst_new_pw")
+            new_pw2 = st.text_input("Confirm New Password", type="password", placeholder="Re-enter password", key="_rst_new_pw2")
+            rst_save = st.form_submit_button("\U0001F4BE Save New Password", use_container_width=True, type="primary")
+        if rst_save:
+            if pw_err := _valid_password(new_pw):
+                st.error(pw_err)
+            elif new_pw != new_pw2:
+                st.error("Passwords don't match.")
+            elif _reset_user_password(_rst_em, new_pw):
+                st.success("\u2705 Password reset! You can now log in with your new password.")
+                st.session_state["_pw_reset_stage"] = "idle"
+                for k in ("_pw_reset_email", "_pw_reset_code"):
+                    st.session_state.pop(k, None)
+                st.rerun()
+            else:
+                st.error("Failed to reset password. Try again.")
+
+
+def _render_auth_portal(mode: str, logo_b64: str) -> None:
+    """Render a focused, full-screen sign-in / sign-up portal.
+
+    Activated when ``?auth=signup`` or ``?auth=login`` appears in the URL.
+    Shows only the background, a centred card header, and the relevant form —
+    exactly like a real protected-website auth page.
+    """
+    other_mode  = "login" if mode == "signup" else "signup"
+    other_label = "Log In" if mode == "signup" else "Sign Up Free"
+    switch_msg  = "Already have an account?" if mode == "signup" else "Don't have an account?"
+    headline    = "Create Account" if mode == "signup" else "Welcome Back"
+    sub         = (
+        "Free forever &mdash; no credit card required."
+        if mode == "signup"
+        else "Log in to your AI picks dashboard."
+    )
+
+    # Narrow centred layout — overrides the default block-container width
+    st.markdown("""<style>
+.stApp > [data-testid="stAppViewContainer"] > section.main .block-container {
+    padding: 20px 0 60px !important;
+    max-width: 500px !important;
+    margin: 0 auto !important;
+}
+[data-testid="stTabs"] { max-width: 100% !important; }
+</style>""", unsafe_allow_html=True)
+
+    logo_html = (
+        f'<img src="data:image/png;base64,{logo_b64}" '
+        'style="width:72px;height:72px;object-fit:contain;'
+        'animation:agLogoGlow 4s ease-in-out infinite;" alt="Smart Pick Pro">'
+        if logo_b64
+        else '<span style="font-size:3.5rem">&#x1F3AF;</span>'
+    )
+
+    # Animated background orbs (same theme as landing page)
+    st.markdown("""<div class="ag-bg">
+  <div class="ag-orb ag-orb-1"></div>
+  <div class="ag-orb ag-orb-2"></div>
+</div>""", unsafe_allow_html=True)
+
+    # Portal header: back link → logo → brand wordmark → headline → sub-text
+    st.markdown(f"""
+<div style="text-align:center;padding-top:56px;margin-bottom:28px;">
+  <div style="margin-bottom:28px;">
+    <a href="."
+       style="display:inline-flex;align-items:center;gap:6px;
+              font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:600;
+              color:rgba(255,255,255,0.3);text-decoration:none;
+              border:1px solid rgba(255,255,255,0.06);border-radius:100px;
+              padding:6px 16px;background:rgba(255,255,255,0.02);
+              transition:all 0.2s;">
+      &#x2190; Back to Home
+    </a>
+  </div>
+  {logo_html}
+  <div style="font-family:'Space Grotesk',sans-serif;font-size:1.35rem;
+              font-weight:800;color:#fff;letter-spacing:-0.04em;margin-top:10px;">
+    Smart<span style="background:linear-gradient(135deg,#00D559,#2D9EFF);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      background-clip:text;">Pick</span>Pro
+  </div>
+  <div style="font-family:'Space Grotesk',sans-serif;font-size:2rem;
+              font-weight:800;color:#fff;letter-spacing:-0.04em;margin-top:20px;
+              text-transform:uppercase;">{headline}</div>
+  <div style="font-size:0.85rem;color:rgba(255,255,255,0.4);
+              margin-top:6px;line-height:1.6;">{sub}</div>
+</div>
+""", unsafe_allow_html=True)
+
+    # Render the appropriate form
+    if mode == "signup":
+        _render_signup_form()
+    else:
+        _render_login_form()
+
+    # Mode-switch footer + trust badges
+    st.markdown(f"""
+<div style="text-align:center;margin-top:28px;
+            font-size:0.82rem;color:rgba(255,255,255,0.35);
+            font-family:'Inter',sans-serif;">
+  {switch_msg}
+  <a href="?auth={other_mode}"
+     style="color:#00D559;font-weight:700;text-decoration:none;margin-left:6px;">
+    {other_label}
+  </a>
+</div>
+<div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;
+            margin-top:20px;font-size:0.65rem;color:rgba(255,255,255,0.18);
+            font-family:'JetBrains Mono',monospace;">
+  <span>&#x1F512; Encrypted &amp; Secure</span>
+  <span>&#x26A1; Free Forever</span>
+  <span>&#x1F6AB; No Credit Card</span>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ── Form helpers (shared by landing-page tabs AND the auth portal) ───────────
+
+def _render_signup_form() -> None:
+    """Render the two-step sign-up form. Safe to call from any rendering context."""
+    _SU_STAGE = "_signup_stage"
+    _SU_EMAIL = "_signup_email"
+    _SU_NAME  = "_signup_name"
+    if _SU_STAGE not in st.session_state:
+        st.session_state[_SU_STAGE] = 1
+
+    _stage = st.session_state[_SU_STAGE]
+    step1_color = "#00D559" if _stage >= 1 else "rgba(255,255,255,0.15)"
+    step2_color = "#00D559" if _stage >= 2 else "rgba(255,255,255,0.15)"
+    line_color  = "#00D559" if _stage >= 2 else "rgba(255,255,255,0.08)"
+    st.markdown(f"""
+    <div style="display:flex;align-items:center;justify-content:center;gap:0;margin:0 auto 18px;max-width:280px;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:{step1_color};display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:0.75rem;font-weight:800;color:#0B0F19;transition:all 0.3s;">1</div>
+        <span style="font-size:0.55rem;font-weight:700;color:{step1_color};font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;">Info</span>
+      </div>
+      <div style="flex:1;height:2px;background:{line_color};margin:0 10px 16px;border-radius:2px;transition:all 0.3s;"></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:{step2_color};display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:0.75rem;font-weight:800;color:#0B0F19;transition:all 0.3s;">2</div>
+        <span style="font-size:0.55rem;font-weight:700;color:{step2_color};font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;">Secure</span>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if _stage == 1:
+        st.markdown("""
+        <div style="text-align:center;margin-bottom:14px;">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:800;color:#fff;margin-bottom:4px;">Let&rsquo;s get you started</div>
+          <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);">Enter your name and email to create your free account.</div>
+        </div>
+        """, unsafe_allow_html=True)
+        with st.form("signup_step1", clear_on_submit=False):
+            su_name  = st.text_input("Display Name", placeholder="e.g. Joseph", key="_su_name")
+            su_email = st.text_input("Email Address", placeholder="you@example.com", key="_su_email")
+            step1_submit = st.form_submit_button("\u27A1 Continue", use_container_width=True, type="primary")
+        if step1_submit:
+            if not su_name or len(su_name.strip()) < 2:
+                st.error("Please enter your display name (at least 2 characters).")
+            elif not su_email or not _valid_email(su_email):
+                st.error("Please enter a valid email address.")
+            elif _email_exists(su_email):
+                st.error("An account with this email already exists. Please log in instead.")
+            else:
+                st.session_state[_SU_NAME]  = su_name.strip()
+                st.session_state[_SU_EMAIL] = su_email.strip().lower()
+                st.session_state[_SU_STAGE] = 2
+                st.rerun()
+
+    elif _stage == 2:
+        _saved_name  = st.session_state.get(_SU_NAME, "")
+        _saved_email = st.session_state.get(_SU_EMAIL, "")
+        st.markdown(f"""
+        <div style="text-align:center;margin-bottom:14px;">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:800;color:#fff;margin-bottom:4px;">Secure your account</div>
+          <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);">
+            Creating account for <strong style="color:#00D559;">{_saved_email}</strong>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+        with st.form("signup_step2", clear_on_submit=False):
+            su_pw  = st.text_input("Password", type="password", placeholder="Min 8 chars, 1 letter, 1 number", key="_su_pw")
+            su_pw2 = st.text_input("Confirm Password", type="password", placeholder="Re-enter password", key="_su_pw2")
+            step2_submit = st.form_submit_button("\u26A1 Create Free Account", use_container_width=True, type="primary")
+        col_back, _ = st.columns([1, 3])
+        with col_back:
+            if st.button("\u2190 Back", key="_su_back", use_container_width=True):
+                st.session_state[_SU_STAGE] = 1
+                st.rerun()
+        if step2_submit:
+            if pw_err := _valid_password(su_pw):
+                st.error(pw_err)
+            elif su_pw != su_pw2:
+                st.error("Passwords don't match.")
+            elif _email_exists(_saved_email):
+                st.error("An account with this email already exists. Please log in instead.")
+                st.session_state[_SU_STAGE] = 1
+            else:
+                ok = _create_user(_saved_email, su_pw, _saved_name)
+                if ok:
+                    user = _authenticate_user(_saved_email, su_pw)
+                    if user:
+                        _set_logged_in(user)
+                        try:
+                            from utils.analytics import track_signup
+                            track_signup(_saved_email)
+                        except Exception:
+                            pass
+                        for k in (_SU_STAGE, _SU_EMAIL, _SU_NAME):
+                            st.session_state.pop(k, None)
+                        st.success("Account created! Welcome to Smart Pick Pro.")
+                        st.rerun()
+                    else:
+                        st.error("Account created but login failed. Please try logging in.")
+                else:
+                    st.error("Could not create account. Please try again.")
+
+
+def _render_login_form() -> None:
+    """Render the login form with forgot-password flow."""
+    with st.form("login_form", clear_on_submit=False):
+        li_email = st.text_input("Email Address", placeholder="you@example.com", key="_li_email")
+        li_pw = st.text_input("Password", type="password", placeholder="Enter your password", key="_li_pw")
+        li_submit = st.form_submit_button("\U0001F513 Log In", use_container_width=True, type="primary")
+
+    if li_submit:
+        if not li_email or not _valid_email(li_email):
+            st.error("Please enter a valid email address.")
+        elif not li_pw:
+            st.error("Please enter your password.")
+        else:
+            lockout_msg = _check_login_lockout(li_email)
+            if lockout_msg:
+                st.error(f"\U0001F512 {lockout_msg}")
+            else:
+                user = _authenticate_user(li_email, li_pw)
+                if user:
+                    _clear_failed_logins(li_email)
+                    _set_logged_in(user)
+                    try:
+                        from utils.analytics import track_login
+                        track_login(li_email)
+                    except Exception:
+                        pass
+                    st.success(f"Welcome back, {user.get('display_name', '')}!")
+                    st.rerun()
+                else:
+                    _record_failed_login(li_email)
+                    st.error("Invalid email or password.")
+
+    st.markdown("---")
+    _reset_state = st.session_state.get("_pw_reset_stage", "idle")
+
+    if _reset_state == "idle":
+        if st.button("\U0001F511 Forgot Password?", key="_btn_forgot", use_container_width=True):
+            st.session_state["_pw_reset_stage"] = "email"
+            st.rerun()
+
+    elif _reset_state == "email":
+        st.info("\U0001F4E7 Enter your email and we'll generate a reset code.")
+        with st.form("reset_email_form", clear_on_submit=False):
+            rst_email = st.text_input("Email Address", placeholder="you@example.com", key="_rst_email")
+            rst_send = st.form_submit_button("\U0001F4E8 Send Reset Code", use_container_width=True)
+        if rst_send:
+            if not rst_email or not _valid_email(rst_email):
+                st.error("Enter a valid email address.")
+            else:
+                code = _generate_reset_token(rst_email)
+                if code:
+                    st.session_state["_pw_reset_stage"] = "code"
+                    st.session_state["_pw_reset_email"] = rst_email.strip().lower()
+                    st.session_state["_pw_reset_code"] = code
+                    st.rerun()
+                else:
+                    st.warning("If this email is registered, a reset code has been generated. Check below.")
+                    st.session_state["_pw_reset_stage"] = "idle"
+        if st.button("Cancel", key="_btn_rst_cancel1"):
+            st.session_state["_pw_reset_stage"] = "idle"
+            st.rerun()
+
+    elif _reset_state == "code":
+        _rst_em = st.session_state.get("_pw_reset_email", "")
+        _rst_code = st.session_state.get("_pw_reset_code", "")
+        st.success(f"\U0001F4AC Your reset code: **{_rst_code}**")
+        st.caption(f"Code sent for `{_rst_em}` — expires in 15 minutes")
+        with st.form("reset_code_form", clear_on_submit=False):
+            entered_code = st.text_input("Enter 6-digit code", placeholder="123456", key="_rst_code_input")
+            rst_verify = st.form_submit_button("\u2705 Verify Code", use_container_width=True)
+        if rst_verify:
+            if _verify_reset_token(_rst_em, entered_code):
+                st.session_state["_pw_reset_stage"] = "newpw"
+                st.rerun()
+            else:
+                st.error("Invalid or expired code. Try again.")
+        if st.button("Cancel", key="_btn_rst_cancel2"):
+            st.session_state["_pw_reset_stage"] = "idle"
+            st.rerun()
+
+    elif _reset_state == "newpw":
+        _rst_em = st.session_state.get("_pw_reset_email", "")
+        st.info(f"\U0001F512 Set a new password for `{_rst_em}`")
+        with st.form("reset_newpw_form", clear_on_submit=False):
+            new_pw = st.text_input("New Password", type="password", placeholder="Min 8 chars, 1 letter, 1 number", key="_rst_new_pw")
+            new_pw2 = st.text_input("Confirm New Password", type="password", placeholder="Re-enter password", key="_rst_new_pw2")
+            rst_save = st.form_submit_button("\U0001F4BE Save New Password", use_container_width=True, type="primary")
+        if rst_save:
+            if pw_err := _valid_password(new_pw):
+                st.error(pw_err)
+            elif new_pw != new_pw2:
+                st.error("Passwords don't match.")
+            elif _reset_user_password(_rst_em, new_pw):
+                st.success("\u2705 Password reset! You can now log in with your new password.")
+                st.session_state["_pw_reset_stage"] = "idle"
+                for k in ("_pw_reset_email", "_pw_reset_code"):
+                    st.session_state.pop(k, None)
+                st.rerun()
+            else:
+                st.error("Failed to reset password. Try again.")
+
+
+def _render_auth_portal(mode: str, logo_b64: str) -> None:
+    """Render a focused, full-screen sign-in / sign-up portal.
+
+    Activated when ``?auth=signup`` or ``?auth=login`` appears in the URL.
+    Shows only the background, a centred card header, and the relevant form —
+    exactly like a real protected-website auth page.
+    """
+    other_mode  = "login" if mode == "signup" else "signup"
+    other_label = "Log In" if mode == "signup" else "Sign Up Free"
+    switch_msg  = "Already have an account?" if mode == "signup" else "Don't have an account?"
+    headline    = "Create Account" if mode == "signup" else "Welcome Back"
+    sub         = (
+        "Free forever &mdash; no credit card required."
+        if mode == "signup"
+        else "Log in to your AI picks dashboard."
+    )
+
+    # Narrow centred layout — overrides the default block-container width
+    st.markdown("""<style>
+.stApp > [data-testid="stAppViewContainer"] > section.main .block-container {
+    padding: 20px 0 60px !important;
+    max-width: 500px !important;
+    margin: 0 auto !important;
+}
+[data-testid="stTabs"] { max-width: 100% !important; }
+</style>""", unsafe_allow_html=True)
+
+    logo_html = (
+        f'<img src="data:image/png;base64,{logo_b64}" '
+        'style="width:72px;height:72px;object-fit:contain;'
+        'animation:agLogoGlow 4s ease-in-out infinite;" alt="Smart Pick Pro">'
+        if logo_b64
+        else '<span style="font-size:3.5rem">&#x1F3AF;</span>'
+    )
+
+    # Animated background orbs (same theme as landing page)
+    st.markdown("""<div class="ag-bg">
+  <div class="ag-orb ag-orb-1"></div>
+  <div class="ag-orb ag-orb-2"></div>
+</div>""", unsafe_allow_html=True)
+
+    # Portal header: back link → logo → brand wordmark → headline → sub-text
+    st.markdown(f"""
+<div style="text-align:center;padding-top:56px;margin-bottom:28px;">
+  <div style="margin-bottom:28px;">
+    <a href="."
+       style="display:inline-flex;align-items:center;gap:6px;
+              font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:600;
+              color:rgba(255,255,255,0.3);text-decoration:none;
+              border:1px solid rgba(255,255,255,0.06);border-radius:100px;
+              padding:6px 16px;background:rgba(255,255,255,0.02);
+              transition:all 0.2s;">
+      &#x2190; Back to Home
+    </a>
+  </div>
+  {logo_html}
+  <div style="font-family:'Space Grotesk',sans-serif;font-size:1.35rem;
+              font-weight:800;color:#fff;letter-spacing:-0.04em;margin-top:10px;">
+    Smart<span style="background:linear-gradient(135deg,#00D559,#2D9EFF);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      background-clip:text;">Pick</span>Pro
+  </div>
+  <div style="font-family:'Space Grotesk',sans-serif;font-size:2rem;
+              font-weight:800;color:#fff;letter-spacing:-0.04em;margin-top:20px;
+              text-transform:uppercase;">{headline}</div>
+  <div style="font-size:0.85rem;color:rgba(255,255,255,0.4);
+              margin-top:6px;line-height:1.6;">{sub}</div>
+</div>
+""", unsafe_allow_html=True)
+
+    # Render the appropriate form
+    if mode == "signup":
+        _render_signup_form()
+    else:
+        _render_login_form()
+
+    # Mode-switch footer + trust badges
+    st.markdown(f"""
+<div style="text-align:center;margin-top:28px;
+            font-size:0.82rem;color:rgba(255,255,255,0.35);
+            font-family:'Inter',sans-serif;">
+  {switch_msg}
+  <a href="?auth={other_mode}"
+     style="color:#00D559;font-weight:700;text-decoration:none;margin-left:6px;">
+    {other_label}
+  </a>
+</div>
+<div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;
+            margin-top:20px;font-size:0.65rem;color:rgba(255,255,255,0.18);
+            font-family:'JetBrains Mono',monospace;">
+  <span>&#x1F512; Encrypted &amp; Secure</span>
+  <span>&#x26A1; Free Forever</span>
+  <span>&#x1F6AB; No Credit Card</span>
+</div>
+""", unsafe_allow_html=True)
+
+
 # ── Main gate function ────────────────────────────────────────
 
 def require_login() -> bool:
@@ -2959,6 +3559,16 @@ def require_login() -> bool:
 
     if is_logged_in():
         return True
+
+    # ── Portal routing: dedicated sign-in / sign-up view ──────────────────
+    # If ?auth=signup or ?auth=login is in the URL, show the focused portal
+    # instead of the full marketing landing page.  This is the "Sign Up" /
+    # "Log In" destination linked from the nav bar buttons.
+    _auth_mode = st.query_params.get("auth", "")
+    if _auth_mode in ("signup", "login"):
+        st.markdown(_GATE_CSS, unsafe_allow_html=True)
+        _render_auth_portal(_auth_mode, _get_logo_b64())
+        return False
 
     # ── Inject CSS ────────────────────────────────────────
     st.markdown(_GATE_CSS, unsafe_allow_html=True)
@@ -3048,219 +3658,11 @@ def require_login() -> bool:
     # ── Auth tabs + forms ─────────────────────────────────
     tab_signup, tab_login = st.tabs(["\u26A1  Create Free Account", "\U0001F513  Log In"])
 
-    # ── Session-state for multi-step sign-up ──────────────
-    _SU_STAGE = "_signup_stage"     # 1 = info, 2 = password
-    _SU_EMAIL = "_signup_email"
-    _SU_NAME  = "_signup_name"
-    if _SU_STAGE not in st.session_state:
-        st.session_state[_SU_STAGE] = 1
-
     with tab_signup:
-        _stage = st.session_state[_SU_STAGE]
-
-        # ── Progress indicator ────────────────────────────
-        step1_color = "#00D559" if _stage >= 1 else "rgba(255,255,255,0.15)"
-        step2_color = "#00D559" if _stage >= 2 else "rgba(255,255,255,0.15)"
-        line_color  = "#00D559" if _stage >= 2 else "rgba(255,255,255,0.08)"
-        st.markdown(f"""
-        <div style="display:flex;align-items:center;justify-content:center;gap:0;margin:0 auto 18px;max-width:280px;">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-            <div style="width:32px;height:32px;border-radius:50%;background:{step1_color};display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:0.75rem;font-weight:800;color:#0B0F19;transition:all 0.3s;">1</div>
-            <span style="font-size:0.55rem;font-weight:700;color:{step1_color};font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;">Info</span>
-          </div>
-          <div style="flex:1;height:2px;background:{line_color};margin:0 10px 16px;border-radius:2px;transition:all 0.3s;"></div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-            <div style="width:32px;height:32px;border-radius:50%;background:{step2_color};display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:0.75rem;font-weight:800;color:#0B0F19;transition:all 0.3s;">2</div>
-            <span style="font-size:0.55rem;font-weight:700;color:{step2_color};font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;">Secure</span>
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # ── STEP 1: Name + Email ──────────────────────────
-        if _stage == 1:
-            st.markdown("""
-            <div style="text-align:center;margin-bottom:14px;">
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:800;color:#fff;margin-bottom:4px;">Let&rsquo;s get you started</div>
-              <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);">Enter your name and email to create your free account.</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            with st.form("signup_step1", clear_on_submit=False):
-                su_name  = st.text_input("Display Name", placeholder="e.g. Joseph", key="_su_name")
-                su_email = st.text_input("Email Address", placeholder="you@example.com", key="_su_email")
-                step1_submit = st.form_submit_button("\u27A1 Continue", use_container_width=True, type="primary")
-
-            if step1_submit:
-                if not su_name or len(su_name.strip()) < 2:
-                    st.error("Please enter your display name (at least 2 characters).")
-                elif not su_email or not _valid_email(su_email):
-                    st.error("Please enter a valid email address.")
-                elif _email_exists(su_email):
-                    st.error("An account with this email already exists. Please log in instead.")
-                else:
-                    st.session_state[_SU_NAME]  = su_name.strip()
-                    st.session_state[_SU_EMAIL] = su_email.strip().lower()
-                    st.session_state[_SU_STAGE] = 2
-                    st.rerun()
-
-        # ── STEP 2: Password + Create Account ────────────
-        elif _stage == 2:
-            _saved_name  = st.session_state.get(_SU_NAME, "")
-            _saved_email = st.session_state.get(_SU_EMAIL, "")
-
-            st.markdown(f"""
-            <div style="text-align:center;margin-bottom:14px;">
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:800;color:#fff;margin-bottom:4px;">Secure your account</div>
-              <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);">
-                Creating account for <strong style="color:#00D559;">{_saved_email}</strong>
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            with st.form("signup_step2", clear_on_submit=False):
-                su_pw  = st.text_input("Password", type="password", placeholder="Min 8 chars, 1 letter, 1 number", key="_su_pw")
-                su_pw2 = st.text_input("Confirm Password", type="password", placeholder="Re-enter password", key="_su_pw2")
-                step2_submit = st.form_submit_button("\u26A1 Create Free Account", use_container_width=True, type="primary")
-
-            col_back, _ = st.columns([1, 3])
-            with col_back:
-                if st.button("\u2190 Back", key="_su_back", use_container_width=True):
-                    st.session_state[_SU_STAGE] = 1
-                    st.rerun()
-
-            if step2_submit:
-                if pw_err := _valid_password(su_pw):
-                    st.error(pw_err)
-                elif su_pw != su_pw2:
-                    st.error("Passwords don't match.")
-                elif _email_exists(_saved_email):
-                    st.error("An account with this email already exists. Please log in instead.")
-                    st.session_state[_SU_STAGE] = 1
-                else:
-                    ok = _create_user(_saved_email, su_pw, _saved_name)
-                    if ok:
-                        user = _authenticate_user(_saved_email, su_pw)
-                        if user:
-                            _set_logged_in(user)
-                            # Analytics: track signup
-                            try:
-                                from utils.analytics import track_signup
-                                track_signup(_saved_email)
-                            except Exception:
-                                pass
-                            # Clean up sign-up state
-                            for k in (_SU_STAGE, _SU_EMAIL, _SU_NAME):
-                                st.session_state.pop(k, None)
-                            st.success("Account created! Welcome to Smart Pick Pro.")
-                            st.rerun()
-                        else:
-                            st.error("Account created but login failed. Please try logging in.")
-                    else:
-                        st.error("Could not create account. Please try again.")
+        _render_signup_form()
 
     with tab_login:
-        with st.form("login_form", clear_on_submit=False):
-            li_email = st.text_input("Email Address", placeholder="you@example.com", key="_li_email")
-            li_pw = st.text_input("Password", type="password", placeholder="Enter your password", key="_li_pw")
-            li_submit = st.form_submit_button("\U0001F513 Log In", use_container_width=True, type="primary")
-
-        if li_submit:
-            if not li_email or not _valid_email(li_email):
-                st.error("Please enter a valid email address.")
-            elif not li_pw:
-                st.error("Please enter your password.")
-            else:
-                # Check rate limiting
-                lockout_msg = _check_login_lockout(li_email)
-                if lockout_msg:
-                    st.error(f"\U0001F512 {lockout_msg}")
-                else:
-                    user = _authenticate_user(li_email, li_pw)
-                    if user:
-                        _clear_failed_logins(li_email)
-                        _set_logged_in(user)
-                        # Analytics: track login
-                        try:
-                            from utils.analytics import track_login
-                            track_login(li_email)
-                        except Exception:
-                            pass
-                        st.success(f"Welcome back, {user.get('display_name', '')}!")
-                        st.rerun()
-                    else:
-                        _record_failed_login(li_email)
-                        st.error("Invalid email or password.")
-
-        # ── Forgot Password ──
-        st.markdown("---")
-        _reset_state = st.session_state.get("_pw_reset_stage", "idle")
-
-        if _reset_state == "idle":
-            if st.button("\U0001F511 Forgot Password?", key="_btn_forgot", use_container_width=True):
-                st.session_state["_pw_reset_stage"] = "email"
-                st.rerun()
-
-        elif _reset_state == "email":
-            st.info("\U0001F4E7 Enter your email and we'll generate a reset code.")
-            with st.form("reset_email_form", clear_on_submit=False):
-                rst_email = st.text_input("Email Address", placeholder="you@example.com", key="_rst_email")
-                rst_send = st.form_submit_button("\U0001F4E8 Send Reset Code", use_container_width=True)
-            if rst_send:
-                if not rst_email or not _valid_email(rst_email):
-                    st.error("Enter a valid email address.")
-                else:
-                    code = _generate_reset_token(rst_email)
-                    if code:
-                        st.session_state["_pw_reset_stage"] = "code"
-                        st.session_state["_pw_reset_email"] = rst_email.strip().lower()
-                        st.session_state["_pw_reset_code"] = code
-                        st.rerun()
-                    else:
-                        # Don't reveal whether email exists
-                        st.warning("If this email is registered, a reset code has been generated. Check below.")
-                        st.session_state["_pw_reset_stage"] = "idle"
-            if st.button("Cancel", key="_btn_rst_cancel1"):
-                st.session_state["_pw_reset_stage"] = "idle"
-                st.rerun()
-
-        elif _reset_state == "code":
-            _rst_em = st.session_state.get("_pw_reset_email", "")
-            _rst_code = st.session_state.get("_pw_reset_code", "")
-            st.success(f"\U0001F4AC Your reset code: **{_rst_code}**")
-            st.caption(f"Code sent for `{_rst_em}` — expires in 15 minutes")
-            with st.form("reset_code_form", clear_on_submit=False):
-                entered_code = st.text_input("Enter 6-digit code", placeholder="123456", key="_rst_code_input")
-                rst_verify = st.form_submit_button("\u2705 Verify Code", use_container_width=True)
-            if rst_verify:
-                if _verify_reset_token(_rst_em, entered_code):
-                    st.session_state["_pw_reset_stage"] = "newpw"
-                    st.rerun()
-                else:
-                    st.error("Invalid or expired code. Try again.")
-            if st.button("Cancel", key="_btn_rst_cancel2"):
-                st.session_state["_pw_reset_stage"] = "idle"
-                st.rerun()
-
-        elif _reset_state == "newpw":
-            _rst_em = st.session_state.get("_pw_reset_email", "")
-            st.info(f"\U0001F512 Set a new password for `{_rst_em}`")
-            with st.form("reset_newpw_form", clear_on_submit=False):
-                new_pw = st.text_input("New Password", type="password", placeholder="Min 8 chars, 1 letter, 1 number", key="_rst_new_pw")
-                new_pw2 = st.text_input("Confirm New Password", type="password", placeholder="Re-enter password", key="_rst_new_pw2")
-                rst_save = st.form_submit_button("\U0001F4BE Save New Password", use_container_width=True, type="primary")
-            if rst_save:
-                if pw_err := _valid_password(new_pw):
-                    st.error(pw_err)
-                elif new_pw != new_pw2:
-                    st.error("Passwords don't match.")
-                elif _reset_user_password(_rst_em, new_pw):
-                    st.success("\u2705 Password reset! You can now log in with your new password.")
-                    st.session_state["_pw_reset_stage"] = "idle"
-                    for k in ("_pw_reset_email", "_pw_reset_code"):
-                        st.session_state.pop(k, None)
-                    st.rerun()
-                else:
-                    st.error("Failed to reset password. Try again.")
+        _render_login_form()
 
     # ── Sticky Navigation Bar ────────────────────────────────
     # Injected via st.markdown so it lives in the parent DOM (not an iframe)
@@ -3464,7 +3866,8 @@ a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
     <a class="spp-nav-pill" id="nav-pricing" href="#sec-pricing"><span class="ni">&#x1F4B0;</span>Pricing</a>
     <a class="spp-nav-pill" id="nav-faq" href="#sec-faq"><span class="ni">&#x2753;</span>FAQ</a>
   </div>
-  <a class="spp-nav-cta" id="nav-signup-cta" href="#">Sign Up Free</a>
+  <a class="spp-nav-pill" id="nav-login-cta" href="?auth=login" style="flex-shrink:0;">&#x1F513; Log In</a>
+  <a class="spp-nav-cta" id="nav-signup-cta" href="?auth=signup">Sign Up Free</a>
 </nav>
 <a class="spp-btt" id="spp-btt" href="#" title="Back to top">&#x2191;</a>
 """, unsafe_allow_html=True)
@@ -3493,24 +3896,13 @@ a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
     function getScrollY(){return sc?sc.scrollTop:(window.pageYOffset||document.documentElement.scrollTop);}
     function smoothTo(el){if(!el)return;if(sc){sc.scrollTo({top:el.offsetTop-80,behavior:'smooth'});}else{el.scrollIntoView({behavior:'smooth',block:'start'});}}
     function scrollTop(){if(sc){sc.scrollTo({top:0,behavior:'smooth'});}else{window.scrollTo({top:0,behavior:'smooth'});}}
-    function clickCreateTab(){
-      var sel='button[data-baseweb="tab"], button[role="tab"], button[data-testid="stTab"]';
-      var tabs=document.querySelectorAll(sel);
-      for(var i=0;i<tabs.length;i++){
-        if(tabs[i].textContent.indexOf('Create')!==-1){
-          tabs[i].click();tabs[i].scrollIntoView({behavior:'smooth',block:'center'});return true;
-        }
-      }
-      return false;
-    }
     var map={'nav-how':'sec-how-it-works','nav-features':'sec-features','nav-picks':'sec-picks',
              'nav-tracker':'sec-tracker','nav-pricing':'sec-pricing','nav-faq':'sec-faq'};
     Object.keys(map).forEach(function(k){
       var b=document.getElementById(k);
       if(b){b.addEventListener('click',function(e){e.preventDefault();var t=document.getElementById(map[k]);if(t)smoothTo(t);});}
     });
-    var cta=document.getElementById('nav-signup-cta');
-    if(cta){cta.addEventListener('click',function(e){e.preventDefault();if(!clickCreateTab())scrollTop();});}
+    /* nav-signup-cta now uses a real URL (?auth=signup) — no JS override needed */
     var brand=document.getElementById('nav-top-btn');
     if(brand){brand.addEventListener('click',function(e){e.preventDefault();scrollTop();});}
     var btt=document.getElementById('spp-btt');
@@ -3531,8 +3923,6 @@ a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
     }
     (sc||window).addEventListener('scroll',onScroll,{passive:true});
     onScroll();
-    /* Expose clickCreateTab globally so footer CTA can reuse it */
-    window.__sppClickCreateTab=clickCreateTab;
     window.__sppScrollTop=scrollTop;
   }
   init();
@@ -5972,39 +6362,13 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 <div class="ft-cta">
   <div class="ft-cta-h">Ready to <span class="em">Beat the Books?</span></div>
   <p class="ft-cta-s">Join thousands of sharps using AI to find edges the books don&rsquo;t want you to see.</p>
-  <a class="ft-cta-btn" href="javascript:void(0)" id="ctaScrollBtn">&#x26A1; Create Free Account</a>
+  <a class="ft-cta-btn" href="?auth=signup">&#x26A1; Create Free Account</a>
   <div class="ft-cta-trust">
     <span>&#x1F512; No credit card</span>
     <span>&#x23F1;&#xFE0F; 10 second signup</span>
     <span>&#x1F6AB; Never sell your data</span>
   </div>
 </div>
-<script>
-document.getElementById('ctaScrollBtn').addEventListener('click',function(e){
-  e.preventDefault();
-  try{
-    var pwin=window.parent;
-    /* Use the global helper injected by the nav script */
-    if(pwin.__sppClickCreateTab){
-      if(!pwin.__sppClickCreateTab()) pwin.__sppScrollTop();
-      return;
-    }
-    /* Fallback: direct parent DOM access */
-    var sel='button[data-baseweb="tab"], button[role="tab"], button[data-testid="stTab"]';
-    var doc=pwin.document;
-    var tabs=doc.querySelectorAll(sel);
-    if(!tabs.length){try{doc=pwin.parent.document;tabs=doc.querySelectorAll(sel);}catch(e2){}}
-    for(var i=0;i<tabs.length;i++){
-      if(tabs[i].textContent.indexOf('Create')!==-1){
-        tabs[i].click();tabs[i].scrollIntoView({behavior:'smooth',block:'center'});return;
-      }
-    }
-    pwin.scrollTo({top:0,behavior:'smooth'});
-  }catch(err){
-    try{window.parent.scrollTo({top:0,behavior:'smooth'});}catch(e3){}
-  }
-});
-</script>
 
 <!-- Trust -->
 <div class="ft-trust">

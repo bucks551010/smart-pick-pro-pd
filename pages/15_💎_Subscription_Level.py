@@ -687,12 +687,362 @@ if params.get("cancelled"):
 
 # Process successful checkout redirect
 newly_subscribed = handle_checkout_redirect()
-if newly_subscribed:
-    st.balloons()
-    st.success(
-        "**Welcome to Smart Pick Pro Premium!** "
-        "Your subscription is now active. All premium features are unlocked."
+
+# ── Profile Setup Imports ─────────────────────────────────────
+from tracking.database import save_user_profile, load_user_profile, is_profile_complete
+from utils.auth_gate import get_logged_in_email as _get_profile_email
+
+_profile_email = st.session_state.get("_sub_customer_email", "") or _get_profile_email() or ""
+
+# ── Helper: Check if profile wizard should be shown ──────────
+def _should_show_profile_setup() -> bool:
+    """Return True when a premium user hasn't completed the onboarding profile."""
+    if st.session_state.get("_profile_just_completed"):
+        return False
+    if not _profile_email:
+        return False
+    sub = get_subscription_status()
+    if not sub.get("is_premium"):
+        return False
+    return not is_profile_complete(_profile_email)
+
+_show_profile_wizard = newly_subscribed or _should_show_profile_setup()
+
+if _show_profile_wizard:
+    if newly_subscribed:
+        st.balloons()
+
+    # ── Premium Profile Setup CSS ─────────────────────────────
+    st.markdown("""
+<style>
+/* ── Profile Wizard — Premium Glassmorphism ──────────────── */
+@keyframes profFadeIn   { from{ opacity:0; transform:translateY(24px); } to{ opacity:1; transform:translateY(0); } }
+@keyframes profGradShift { 0%{ background-position:0% 50%; } 50%{ background-position:100% 50%; } 100%{ background-position:0% 50%; } }
+@keyframes profPulse { 0%,100%{ box-shadow: 0 0 20px rgba(0,213,89,0.15); } 50%{ box-shadow: 0 0 40px rgba(0,213,89,0.30), 0 0 60px rgba(45,158,255,0.10); } }
+@keyframes profConfetti { 0%{ opacity:0; transform:scale(0.5) rotate(-10deg); } 50%{ opacity:1; transform:scale(1.05) rotate(2deg); } 100%{ opacity:1; transform:scale(1) rotate(0); } }
+
+.prof-wizard {
+    background: linear-gradient(135deg, rgba(22,27,39,0.92) 0%, rgba(13,15,20,0.95) 100%);
+    backdrop-filter: blur(32px) saturate(1.3);
+    -webkit-backdrop-filter: blur(32px) saturate(1.3);
+    border: 1px solid rgba(0,213,89,0.20);
+    border-radius: 24px;
+    padding: 0;
+    margin: 0 auto 32px;
+    max-width: 720px;
+    overflow: hidden;
+    animation: profFadeIn 0.7s cubic-bezier(0.22,1,0.36,1) both, profPulse 4s ease-in-out infinite;
+    position: relative;
+}
+.prof-wizard::before {
+    content: '';
+    position: absolute; top:0; left:0; right:0; height:4px;
+    background: linear-gradient(90deg, #00D559, #2D9EFF, #F9C62B, #00D559);
+    background-size: 300% 100%;
+    animation: profGradShift 5s ease infinite;
+}
+.prof-wizard-header {
+    text-align: center;
+    padding: 40px 32px 20px;
+    position: relative;
+}
+.prof-wizard-badge {
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(0,213,89,0.12) 0%, rgba(45,158,255,0.08) 100%);
+    border: 2px solid rgba(0,213,89,0.35);
+    font-size: 2.4rem;
+    margin-bottom: 16px;
+    animation: profConfetti 0.8s cubic-bezier(0.22,1,0.36,1) 0.3s both;
+    box-shadow: 0 0 30px rgba(0,213,89,0.20);
+}
+.prof-wizard-title {
+    font-size: 1.6rem;
+    font-weight: 900;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #FFFFFF 0%, #00D559 50%, #2D9EFF 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: profGradShift 6s ease infinite;
+    margin: 0; line-height: 1.3;
+}
+.prof-wizard-subtitle {
+    font-size: 0.92rem;
+    color: rgba(160,180,208,0.90);
+    margin-top: 8px;
+    line-height: 1.5;
+}
+.prof-wizard-subtitle strong { color: #00D559; font-weight: 700; }
+.prof-wizard-body {
+    padding: 8px 40px 36px;
+}
+.prof-wizard-body .stSelectbox > div > div,
+.prof-wizard-body .stMultiSelect > div > div,
+.prof-wizard-body .stTextInput > div > div > input {
+    background: rgba(22,27,39,0.80) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    border-radius: 12px !important;
+    color: #E0E8FF !important;
+    font-family: 'Inter', sans-serif !important;
+}
+.prof-wizard-body .stSelectbox > div > div:hover,
+.prof-wizard-body .stMultiSelect > div > div:hover,
+.prof-wizard-body .stTextInput > div > div > input:focus {
+    border-color: rgba(0,213,89,0.40) !important;
+    box-shadow: 0 0 12px rgba(0,213,89,0.10) !important;
+}
+.prof-wizard-body label {
+    color: #A0B4D0 !important;
+    font-weight: 700 !important;
+    font-size: 0.82rem !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+}
+.prof-step-label {
+    display: inline-flex;
+    align-items: center; gap: 8px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: rgba(0,213,89,0.70);
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    margin-bottom: 4px;
+}
+.prof-step-num {
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(0,213,89,0.12);
+    border: 1px solid rgba(0,213,89,0.30);
+    font-size: 0.68rem; font-weight: 900;
+    color: #00D559;
+}
+.prof-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,213,89,0.15), rgba(45,158,255,0.10), transparent);
+    margin: 20px 0;
+}
+
+/* ── Save Button Override (inside wizard) ────────────────── */
+.prof-wizard-body .stButton > button[kind="primary"] {
+    font-size: 1.05rem !important;
+    padding: 16px 36px !important;
+    min-height: 54px !important;
+    background: linear-gradient(135deg, #00D559 0%, #00C04B 40%, #2D9EFF 100%) !important;
+    background-size: 250% 250% !important;
+    animation: profGradShift 5s ease infinite !important;
+    color: #0D0F14 !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    border-radius: 100px !important;
+    border: none !important;
+    box-shadow: 0 4px 24px rgba(0,213,89,0.35) !important;
+    transition: all 0.22s cubic-bezier(0.22,1,0.36,1) !important;
+}
+.prof-wizard-body .stButton > button[kind="primary"]:hover {
+    transform: translateY(-3px) scale(1.02) !important;
+    box-shadow: 0 8px 36px rgba(0,213,89,0.50), 0 0 60px rgba(0,213,89,0.15) !important;
+}
+
+/* ── Skip Link ────────────────────────────────────────────── */
+.prof-skip-link {
+    text-align: center;
+    margin-top: 12px;
+}
+.prof-skip-link a {
+    color: #6B7A9A;
+    font-size: 0.78rem;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+.prof-skip-link a:hover { color: #A0B4D0; }
+
+@media (max-width: 640px) {
+    .prof-wizard { margin: 0 -8px 24px; border-radius: 16px; }
+    .prof-wizard-header { padding: 28px 20px 14px; }
+    .prof-wizard-body { padding: 8px 20px 28px; }
+    .prof-wizard-title { font-size: 1.25rem; }
+    .prof-wizard-badge { width: 64px; height: 64px; font-size: 1.8rem; }
+}
+</style>
+""", unsafe_allow_html=True)
+
+    # ── Profile Wizard Header ─────────────────────────────────
+    _plan = st.session_state.get("_sub_plan_name", "Premium")
+    _tier_icon = "👑" if "insider" in _plan.lower() else ("💎" if "smart money" in _plan.lower() else "🔥")
+
+    st.markdown(f"""
+<div class="prof-wizard">
+  <div class="prof-wizard-header">
+    <div class="prof-wizard-badge">{_tier_icon}</div>
+    <div class="prof-wizard-title">Welcome to {_plan}!</div>
+    <div class="prof-wizard-subtitle">
+        {"<strong>Payment confirmed.</strong> " if newly_subscribed else ""}Let's personalize your experience.<br>
+        Set up your profile so Smart Pick Pro works exactly how you want it.
+    </div>
+  </div>
+  <div class="prof-wizard-body" id="prof-wizard-form">
+""", unsafe_allow_html=True)
+
+    # ── Step 1: Identity ──────────────────────────────────────
+    st.markdown('<div class="prof-step-label"><span class="prof-step-num">1</span> YOUR IDENTITY</div>', unsafe_allow_html=True)
+
+    _existing_profile = load_user_profile(_profile_email) or {}
+    _default_name = _existing_profile.get("display_name", "") or st.session_state.get("_auth_user_name", "") or ""
+
+    prof_display_name = st.text_input(
+        "Display Name",
+        value=_default_name,
+        placeholder="e.g. SharpShooter23",
+        key="_prof_display_name",
+        help="This is how you'll appear in the app",
     )
+
+    st.markdown('<div class="prof-divider"></div>', unsafe_allow_html=True)
+
+    # ── Step 2: Favorite Team ─────────────────────────────────
+    st.markdown('<div class="prof-step-label"><span class="prof-step-num">2</span> FAVORITE TEAM</div>', unsafe_allow_html=True)
+
+    _NBA_TEAMS = [
+        "Atlanta Hawks", "Boston Celtics", "Brooklyn Nets", "Charlotte Hornets",
+        "Chicago Bulls", "Cleveland Cavaliers", "Dallas Mavericks", "Denver Nuggets",
+        "Detroit Pistons", "Golden State Warriors", "Houston Rockets", "Indiana Pacers",
+        "LA Clippers", "Los Angeles Lakers", "Memphis Grizzlies", "Miami Heat",
+        "Milwaukee Bucks", "Minnesota Timberwolves", "New Orleans Pelicans",
+        "New York Knicks", "Oklahoma City Thunder", "Orlando Magic",
+        "Philadelphia 76ers", "Phoenix Suns", "Portland Trail Blazers",
+        "Sacramento Kings", "San Antonio Spurs", "Toronto Raptors",
+        "Utah Jazz", "Washington Wizards",
+    ]
+    _saved_team = _existing_profile.get("favorite_team", "")
+    _team_idx = (_NBA_TEAMS.index(_saved_team) + 1) if _saved_team in _NBA_TEAMS else 0
+    prof_team = st.selectbox(
+        "Favorite NBA Team",
+        options=["— Select a team —"] + _NBA_TEAMS,
+        index=_team_idx,
+        key="_prof_favorite_team",
+    )
+
+    st.markdown('<div class="prof-divider"></div>', unsafe_allow_html=True)
+
+    # ── Step 3: Preferred Platforms ───────────────────────────
+    st.markdown('<div class="prof-step-label"><span class="prof-step-num">3</span> BETTING PLATFORMS</div>', unsafe_allow_html=True)
+
+    _PLATFORMS = ["PrizePicks", "Underdog Fantasy", "DraftKings Pick6", "Sleeper", "Betr", "Chalkboard"]
+    _saved_plats = (_existing_profile.get("preferred_platforms") or "").split(",") if _existing_profile.get("preferred_platforms") else ["PrizePicks", "Underdog Fantasy", "DraftKings Pick6"]
+    _saved_plats = [p for p in _saved_plats if p in _PLATFORMS]
+    prof_platforms = st.multiselect(
+        "Which platforms do you use?",
+        options=_PLATFORMS,
+        default=_saved_plats,
+        key="_prof_platforms",
+        help="We'll prioritize lines from these platforms",
+    )
+
+    st.markdown('<div class="prof-divider"></div>', unsafe_allow_html=True)
+
+    # ── Step 4: Experience & Style ────────────────────────────
+    st.markdown('<div class="prof-step-label"><span class="prof-step-num">4</span> BETTING PROFILE</div>', unsafe_allow_html=True)
+
+    _exp_opts = ["Beginner — Just getting started", "Intermediate — I know the basics", "Advanced — Seasoned bettor", "Pro — I do this full-time"]
+    _saved_exp = _existing_profile.get("experience_level", "")
+    _exp_idx = next((i for i, o in enumerate(_exp_opts) if o.startswith(_saved_exp.split(" —")[0] if _saved_exp else "")), 0)
+    prof_c1, prof_c2 = st.columns(2)
+    with prof_c1:
+        prof_experience = st.selectbox(
+            "Experience Level",
+            options=_exp_opts,
+            index=_exp_idx,
+            key="_prof_experience",
+        )
+    with prof_c2:
+        _style_opts = ["Conservative — Low risk, steady gains", "Balanced — Mix of safe & aggressive", "Aggressive — High risk, high reward", "Sniper — Selective, high-conviction only"]
+        _saved_style = _existing_profile.get("betting_style", "")
+        _style_idx = next((i for i, o in enumerate(_style_opts) if o.startswith(_saved_style.split(" —")[0] if _saved_style else "")), 1)
+        prof_style = st.selectbox(
+            "Betting Style",
+            options=_style_opts,
+            index=_style_idx,
+            key="_prof_style",
+        )
+
+    st.markdown('<div class="prof-divider"></div>', unsafe_allow_html=True)
+
+    # ── Step 5: Daily Budget ──────────────────────────────────
+    st.markdown('<div class="prof-step-label"><span class="prof-step-num">5</span> DAILY BUDGET</div>', unsafe_allow_html=True)
+
+    _budget_opts = ["$5 – $25", "$25 – $50", "$50 – $100", "$100 – $250", "$250+", "Prefer not to say"]
+    _saved_budget = _existing_profile.get("daily_budget", "")
+    _budget_idx = _budget_opts.index(_saved_budget) if _saved_budget in _budget_opts else 0
+    prof_budget = st.selectbox(
+        "Typical daily betting budget",
+        options=_budget_opts,
+        index=_budget_idx,
+        key="_prof_budget",
+        help="Helps us calibrate bankroll recommendations",
+    )
+
+    # ── Save Profile Button ───────────────────────────────────
+    st.markdown("")  # spacer
+    if st.button("🚀 COMPLETE SETUP & ENTER APP", type="primary", use_container_width=True, key="_prof_save_btn"):
+        _profile_data = {
+            "display_name": prof_display_name.strip() or _profile_email.split("@")[0],
+            "favorite_team": prof_team if prof_team != "— Select a team —" else "",
+            "preferred_platforms": ",".join(prof_platforms),
+            "experience_level": prof_experience.split(" —")[0],
+            "betting_style": prof_style.split(" —")[0],
+            "daily_budget": prof_budget,
+        }
+        _saved_ok = save_user_profile(_profile_email, _profile_data)
+        if _saved_ok:
+            # Apply platform selection to session
+            if prof_platforms:
+                st.session_state["selected_platforms"] = prof_platforms
+            st.session_state["_profile_just_completed"] = True
+            st.rerun()
+        else:
+            st.error("Could not save profile. Please try again.")
+
+    # ── Skip link ─────────────────────────────────────────────
+    _skip_c1, _skip_c2, _skip_c3 = st.columns([1, 2, 1])
+    with _skip_c2:
+        if st.button("Skip for now →", key="_prof_skip_btn", use_container_width=True):
+            st.session_state["_profile_just_completed"] = True
+            st.rerun()
+
+    # Close the wizard div
+    st.markdown('</div></div>', unsafe_allow_html=True)
+
+# ── Profile completed success toast ───────────────────────────
+if st.session_state.get("_profile_just_completed") and not _show_profile_wizard:
+    _p = load_user_profile(_profile_email)
+    if _p and _p.get("profile_complete"):
+        _welcome_name = _p.get("display_name") or _profile_email.split("@")[0]
+        st.markdown(f"""
+<div style="
+    background: linear-gradient(135deg, rgba(0,213,89,0.08) 0%, rgba(45,158,255,0.04) 100%);
+    border: 1px solid rgba(0,213,89,0.25);
+    border-radius: 16px;
+    padding: 20px 28px;
+    text-align: center;
+    margin-bottom: 20px;
+    animation: profFadeIn 0.5s ease both;
+">
+    <span style="font-size:1.5rem;">✨</span>
+    <span style="color:#FFFFFF; font-weight:800; font-size:1.05rem; margin-left:8px;">
+        Welcome, {_welcome_name}!
+    </span>
+    <span style="color:#A0B4D0; font-size:0.88rem; margin-left:8px;">
+        Your profile is set up. All premium features are unlocked.
+    </span>
+</div>
+""", unsafe_allow_html=True)
 
 # ============================================================
 # SECTION: Subscriber Dashboard (already premium)

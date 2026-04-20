@@ -861,6 +861,240 @@ st.markdown("""
 
 }
 
+
+
+/* ══════════════════════════════════════════════════════════════
+   UPGRADED BUTTON STYLES — Landing Page
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Hero CTA — Animated gradient glow pulse ──────────────── */
+
+@keyframes lpCtaPulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(0,213,89,0.30), 0 0 40px rgba(0,213,89,0.08); }
+    50%      { box-shadow: 0 4px 28px rgba(0,213,89,0.50), 0 0 60px rgba(0,213,89,0.16), 0 0 80px rgba(45,158,255,0.08); }
+}
+
+@keyframes lpCtaShine {
+    0%   { left: -100%; }
+    100% { left: 200%; }
+}
+
+.main .stButton > button[kind="primary"] {
+    font-size: 1.1rem !important;
+    padding: 18px 40px !important;
+    min-height: 58px !important;
+    background: linear-gradient(135deg, #00D559 0%, #00C04B 35%, #00E86A 65%, #2D9EFF 100%) !important;
+    background-size: 250% 250% !important;
+    animation: lpGradShift 5s ease infinite, lpCtaPulse 3s ease-in-out infinite !important;
+    color: #0D0F14 !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    border-radius: 100px !important;
+    border: none !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transition: transform 0.22s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s ease !important;
+}
+
+.main .stButton > button[kind="primary"]::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    transform: skewX(-25deg);
+    animation: lpCtaShine 4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.main .stButton > button[kind="primary"]:hover {
+    transform: translateY(-3px) scale(1.02) !important;
+    box-shadow: 0 8px 36px rgba(0,213,89,0.55), 0 0 70px rgba(0,213,89,0.18), 0 0 100px rgba(45,158,255,0.10) !important;
+    animation: lpGradShift 5s ease infinite !important;
+}
+
+.main .stButton > button[kind="primary"]:active {
+    transform: translateY(1px) scale(0.98) !important;
+    box-shadow: 0 2px 12px rgba(0,213,89,0.30) !important;
+}
+
+
+
+/* ── Page Link Buttons — Glassmorphism nav style ─────────── */
+
+[data-testid="stPageLink-NavLink"] {
+    background: linear-gradient(135deg, rgba(22,27,39,0.92) 0%, rgba(28,34,50,0.92) 100%) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    border-radius: 14px !important;
+    padding: 12px 18px !important;
+    color: #E0E8FF !important;
+    font-weight: 700 !important;
+    font-size: 0.88rem !important;
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: 0.02em !important;
+    text-decoration: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    min-height: 48px !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transition: all 0.28s cubic-bezier(0.22,1,0.36,1) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04) !important;
+}
+
+[data-testid="stPageLink-NavLink"]::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important; left: 0 !important; right: 0 !important;
+    height: 2px !important;
+    background: linear-gradient(90deg, #00D559, #2D9EFF) !important;
+    opacity: 0 !important;
+    transition: opacity 0.28s ease !important;
+}
+
+[data-testid="stPageLink-NavLink"]::after {
+    content: '→' !important;
+    font-size: 1rem !important;
+    color: rgba(255,255,255,0.30) !important;
+    transition: color 0.28s ease, transform 0.28s ease !important;
+    margin-left: auto !important;
+}
+
+[data-testid="stPageLink-NavLink"]:hover {
+    border-color: rgba(0,213,89,0.40) !important;
+    background: linear-gradient(135deg, rgba(0,213,89,0.08) 0%, rgba(45,158,255,0.04) 50%, rgba(28,34,50,0.95) 100%) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 8px 28px rgba(0,213,89,0.14), 0 4px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(0,213,89,0.10) !important;
+    color: #FFFFFF !important;
+}
+
+[data-testid="stPageLink-NavLink"]:hover::before {
+    opacity: 1 !important;
+}
+
+[data-testid="stPageLink-NavLink"]:hover::after {
+    color: #00D559 !important;
+    transform: translateX(3px) !important;
+}
+
+[data-testid="stPageLink-NavLink"]:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.30) !important;
+}
+
+
+
+/* ── Nav Row Labels — category badges ─────────────────────── */
+
+.nav-row-label {
+    font-size: 0.82rem !important;
+    font-weight: 800 !important;
+    font-family: 'Inter', sans-serif !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.10em !important;
+    padding: 6px 16px !important;
+    border-radius: 100px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin: 24px 0 14px !important;
+}
+
+.nav-row-label.workflow {
+    background: rgba(0,213,89,0.08) !important;
+    color: #00D559 !important;
+    border: 1px solid rgba(0,213,89,0.20) !important;
+}
+
+.nav-row-label.analysis {
+    background: rgba(45,158,255,0.08) !important;
+    color: #2D9EFF !important;
+    border: 1px solid rgba(45,158,255,0.20) !important;
+}
+
+.nav-row-label.manage {
+    background: rgba(249,198,43,0.08) !important;
+    color: #F9C62B !important;
+    border: 1px solid rgba(249,198,43,0.20) !important;
+}
+
+
+
+/* ── Sidebar Log Out Button — Distinct red accent ─────────── */
+
+[data-testid="stSidebar"] .stButton > button {
+    background: rgba(242,67,54,0.06) !important;
+    border: 1px solid rgba(242,67,54,0.22) !important;
+    color: #E8B4B0 !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    border-radius: 100px !important;
+    padding: 10px 20px !important;
+    min-height: 44px !important;
+    transition: all 0.22s ease !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.20) !important;
+}
+
+[data-testid="stSidebar"] .stButton > button:hover {
+    background: rgba(242,67,54,0.14) !important;
+    border-color: rgba(242,67,54,0.45) !important;
+    color: #F24336 !important;
+    box-shadow: 0 4px 18px rgba(242,67,54,0.22), 0 2px 8px rgba(0,0,0,0.30) !important;
+    transform: translateY(-2px) !important;
+}
+
+[data-testid="stSidebar"] .stButton > button:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25) !important;
+}
+
+
+
+/* ── Section Sub-header ───────────────────────────────────── */
+
+.section-subheader {
+    font-size: 0.88rem;
+    color: #6B7A9A;
+    font-family: 'Inter', sans-serif;
+    margin-top: -10px;
+    margin-bottom: 18px;
+    letter-spacing: 0.01em;
+}
+
+
+
+/* ── Responsive overrides for upgraded buttons ────────────── */
+
+@media (max-width: 768px) {
+    .main .stButton > button[kind="primary"] {
+        font-size: 0.92rem !important;
+        padding: 14px 24px !important;
+        min-height: 50px !important;
+        letter-spacing: 0.04em !important;
+    }
+    [data-testid="stPageLink-NavLink"] {
+        padding: 10px 14px !important;
+        font-size: 0.82rem !important;
+        min-height: 42px !important;
+        border-radius: 12px !important;
+    }
+    [data-testid="stPageLink-NavLink"]::after {
+        display: none !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .main .stButton > button[kind="primary"] {
+        font-size: 0.84rem !important;
+        padding: 12px 16px !important;
+        min-height: 46px !important;
+    }
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -906,8 +1140,9 @@ try:
     _user_tier = _get_user_tier()
     _user_tier_label = _get_tier_label(_user_tier)
     if _checkout_ok:
-        st.success("✅ Payment confirmed! Your premium subscription is now active.")
         st.balloons()
+        st.success("✅ Payment confirmed! Your premium subscription is now active.")
+        st.info("👉 **Next step:** Head to your [💎 Subscription page](pages/15_💎_Subscription_Level.py) to set up your premium profile.")
 except Exception:
     _user_is_premium = True  # Fail open — don't block the home page
     _user_tier = "insider_circle"

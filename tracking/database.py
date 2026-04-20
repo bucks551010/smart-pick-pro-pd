@@ -365,6 +365,26 @@ CREATE TABLE IF NOT EXISTS page_state (
 );
 """
 
+# SQL to create the user_profiles table.
+# Stores premium subscriber profile preferences collected during
+# the post-checkout onboarding wizard.  Keyed by email (NOCASE)
+# so it survives session resets.
+CREATE_USER_PROFILES_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS user_profiles (
+    profile_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    display_name TEXT,
+    favorite_team TEXT,
+    preferred_platforms TEXT,
+    experience_level TEXT,
+    betting_style TEXT,
+    daily_budget TEXT,
+    profile_complete INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+);
+"""
+
 # ============================================================
 # END SECTION: Database Configuration
 # ============================================================
@@ -437,6 +457,7 @@ def initialize_database():
             cursor.execute(CREATE_BET_AUDIT_LOG_TABLE_SQL)         # Bet edit/delete audit log
             cursor.execute(CREATE_USER_SETTINGS_TABLE_SQL)        # User settings persistence
             cursor.execute(CREATE_PAGE_STATE_TABLE_SQL)             # Page state persistence
+            cursor.execute(CREATE_USER_PROFILES_TABLE_SQL)          # Premium profile onboarding
 
             # â”€â”€ Indexes for performance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             _TRACKING_INDEXES = (
@@ -3145,6 +3166,93 @@ def load_page_state():
 
 # ============================================================
 # END SECTION: Page State Persistence
+# ============================================================
+
+
+# ============================================================
+# SECTION: User Profile Persistence (Premium Onboarding)
+# ============================================================
+
+def save_user_profile(email: str, profile_data: dict) -> bool:
+    """Save or update a premium subscriber's profile.
+
+    Args:
+        email: Subscriber email (case-insensitive key).
+        profile_data: Dict with keys matching user_profiles columns.
+
+    Returns:
+        True on success, False on error.
+    """
+    if not email:
+        return False
+    try:
+        initialize_database()
+        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False, timeout=30) as conn:
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute(
+                """
+                INSERT INTO user_profiles
+                    (email, display_name, favorite_team, preferred_platforms,
+                     experience_level, betting_style, daily_budget, profile_complete)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+                ON CONFLICT(email) DO UPDATE SET
+                    display_name        = excluded.display_name,
+                    favorite_team       = excluded.favorite_team,
+                    preferred_platforms  = excluded.preferred_platforms,
+                    experience_level    = excluded.experience_level,
+                    betting_style       = excluded.betting_style,
+                    daily_budget        = excluded.daily_budget,
+                    profile_complete    = 1,
+                    updated_at          = datetime('now')
+                """,
+                (
+                    email.strip().lower(),
+                    profile_data.get("display_name", ""),
+                    profile_data.get("favorite_team", ""),
+                    profile_data.get("preferred_platforms", ""),
+                    profile_data.get("experience_level", ""),
+                    profile_data.get("betting_style", ""),
+                    profile_data.get("daily_budget", ""),
+                ),
+            )
+            conn.commit()
+        return True
+    except Exception as _err:
+        _logger.warning("save_user_profile error: %s", _err)
+        return False
+
+
+def load_user_profile(email: str) -> dict | None:
+    """Load a subscriber's profile from the database.
+
+    Returns:
+        Profile dict if found, None otherwise.
+    """
+    if not email:
+        return None
+    try:
+        initialize_database()
+        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False, timeout=30) as conn:
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA journal_mode=WAL")
+            row = conn.execute(
+                "SELECT * FROM user_profiles WHERE email = ?",
+                (email.strip().lower(),),
+            ).fetchone()
+            return dict(row) if row else None
+    except Exception as _err:
+        _logger.warning("load_user_profile error: %s", _err)
+        return None
+
+
+def is_profile_complete(email: str) -> bool:
+    """Check if a subscriber has completed their profile setup."""
+    profile = load_user_profile(email)
+    return bool(profile and profile.get("profile_complete"))
+
+
+# ============================================================
+# END SECTION: User Profile Persistence
 # ============================================================
 
 # ============================================================

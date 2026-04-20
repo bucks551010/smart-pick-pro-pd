@@ -3163,6 +3163,18 @@ def require_login() -> bool:
     st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+/* Smooth scrolling for all Streamlit scroll containers */
+html, body,
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"],
+section.main,
+.main .block-container {{
+  scroll-behavior: smooth !important;
+}}
+a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
+  text-decoration: none !important;
+  color: inherit;
+}}
 @keyframes navSlideDown{{from{{opacity:0;transform:translateY(-100%)}}to{{opacity:1;transform:translateY(0)}}}}
 @keyframes navPillGlow{{0%,100%{{box-shadow:0 0 0 0 rgba(0,213,89,0)}}50%{{box-shadow:0 0 16px 4px rgba(0,213,89,0.12)}}}}
 @keyframes navLogoSpin{{from{{transform:rotate(0deg)}}to{{transform:rotate(360deg)}}}}
@@ -3340,36 +3352,70 @@ def require_login() -> bool:
     <span class="spp-nav-wordmark">Smart<span class="gr">Pick</span>Pro</span>
   </div>
   <div class="spp-nav-pills">
-    <span class="spp-nav-pill" id="nav-how"><span class="ni">&#x1F3AF;</span>How</span>
-    <span class="spp-nav-pill" id="nav-features"><span class="ni">&#x26A1;</span>Features</span>
-    <span class="spp-nav-pill" id="nav-picks"><span class="ni">&#x1F4CA;</span>Picks</span>
-    <span class="spp-nav-pill" id="nav-tracker"><span class="ni">&#x1F4C8;</span>Tracker</span>
-    <span class="spp-nav-pill" id="nav-pricing"><span class="ni">&#x1F4B0;</span>Pricing</span>
-    <span class="spp-nav-pill" id="nav-faq"><span class="ni">&#x2753;</span>FAQ</span>
+    <a class="spp-nav-pill" id="nav-how" href="#sec-how-it-works"><span class="ni">&#x1F3AF;</span>How</a>
+    <a class="spp-nav-pill" id="nav-features" href="#sec-features"><span class="ni">&#x26A1;</span>Features</a>
+    <a class="spp-nav-pill" id="nav-picks" href="#sec-picks"><span class="ni">&#x1F4CA;</span>Picks</a>
+    <a class="spp-nav-pill" id="nav-tracker" href="#sec-tracker"><span class="ni">&#x1F4C8;</span>Tracker</a>
+    <a class="spp-nav-pill" id="nav-pricing" href="#sec-pricing"><span class="ni">&#x1F4B0;</span>Pricing</a>
+    <a class="spp-nav-pill" id="nav-faq" href="#sec-faq"><span class="ni">&#x2753;</span>FAQ</a>
   </div>
-  <span class="spp-nav-cta" id="nav-signup-cta">Sign Up Free</span>
+  <a class="spp-nav-cta" id="nav-signup-cta" href="#">Sign Up Free</a>
 </nav>
-<div class="spp-btt" id="spp-btt" title="Back to top">&#x2191;</div>
+<a class="spp-btt" id="spp-btt" href="#" title="Back to top">&#x2191;</a>
 """, unsafe_allow_html=True)
 
-    # ── Nav + Back-to-top JS (st.html so <script> actually executes) ──
+    # ── Nav + Back-to-top JS (enhancement: active pill + hide-on-scroll) ──
+    # Uses st.html() which runs in an iframe.  The script tries to reach the
+    # parent document for scroll-spy & active-pill highlighting.  If cross-frame
+    # access is blocked (production sandboxed iframes), the <a href> anchor
+    # links still handle navigation natively — JS is only an enhancement.
     st.html("""<script>
 (function(){
-  setTimeout(function(){
+  var MAX_TRIES=50, INTERVAL=100, tries=0;
+  function init(){
     var pdoc,pwin;
-    try{pdoc=window.parent.document;pwin=window.parent;}catch(e){return;}
-    function goToSec(id){
-      var el=pdoc.querySelector('[data-section-id="'+id+'"]');
-      if(el){el.scrollIntoView({behavior:'smooth',block:'start'});}
+    try{
+      pdoc=window.parent.document;
+      pwin=window.parent;
+      // verify access actually works
+      if(!pdoc||!pdoc.getElementById){throw new Error('no access');}
+    }catch(e){return;}
+    var dock=pdoc.getElementById('spp-nav-dock');
+    if(!dock){
+      if(++tries<MAX_TRIES){setTimeout(init,INTERVAL);}
+      return;
     }
+    // Scroll helper — find the real Streamlit scroll container
+    var sc=pdoc.querySelector('[data-testid="stMain"]')
+        ||pdoc.querySelector('section.main')
+        ||pdoc.querySelector('[data-testid="stAppViewContainer"]');
+    function getScrollY(){
+      if(sc) return sc.scrollTop;
+      return pwin.pageYOffset||pdoc.documentElement.scrollTop;
+    }
+    function smoothTo(el){
+      if(!el) return;
+      if(sc){sc.scrollTo({top:el.offsetTop-80,behavior:'smooth'});}
+      else{el.scrollIntoView({behavior:'smooth',block:'start'});}
+    }
+    function scrollTop(){
+      if(sc){sc.scrollTo({top:0,behavior:'smooth'});}
+      else{pwin.scrollTo({top:0,behavior:'smooth'});}
+    }
+    // Nav pill click → smooth-scroll the right container
     var map={
-      'nav-how':'how-it-works','nav-features':'features','nav-picks':'picks',
-      'nav-tracker':'tracker','nav-pricing':'pricing','nav-faq':'faq'
+      'nav-how':'sec-how-it-works','nav-features':'sec-features','nav-picks':'sec-picks',
+      'nav-tracker':'sec-tracker','nav-pricing':'sec-pricing','nav-faq':'sec-faq'
     };
     Object.keys(map).forEach(function(k){
       var b=pdoc.getElementById(k);
-      if(b){b.addEventListener('click',function(e){e.preventDefault();goToSec(map[k]);});}
+      if(b){b.addEventListener('click',function(e){
+        e.preventDefault();
+        var t=pdoc.getElementById(map[k]);
+        if(t) smoothTo(t);
+      });}
     });
+    // Sign Up Free → scroll to top & click Create tab
     var cta=pdoc.getElementById('nav-signup-cta');
     if(cta){cta.addEventListener('click',function(e){
       e.preventDefault();
@@ -3379,18 +3425,21 @@ def require_login() -> bool:
           tabs[i].click();tabs[i].scrollIntoView({behavior:'smooth',block:'center'});return;
         }
       }
-      pwin.scrollTo({top:0,behavior:'smooth'});
+      scrollTop();
     });}
+    // Brand → top
     var brand=pdoc.getElementById('nav-top-btn');
-    if(brand){brand.addEventListener('click',function(){pwin.scrollTo({top:0,behavior:'smooth'});});}
+    if(brand){brand.addEventListener('click',function(e){e.preventDefault();scrollTop();});}
+    // Back-to-top
     var btt=pdoc.getElementById('spp-btt');
-    if(btt){btt.addEventListener('click',function(){pwin.scrollTo({top:0,behavior:'smooth'});});}
-    var lastY=0,dock=pdoc.getElementById('spp-nav-dock');
+    if(btt){btt.addEventListener('click',function(e){e.preventDefault();scrollTop();});}
+    // Scroll-spy: active pill + hide dock + show/hide BTT
+    var lastY=0;
     var sIds=['how-it-works','features','picks','tracker','pricing','faq'];
     var pMap={'how-it-works':'nav-how','features':'nav-features','picks':'nav-picks',
               'tracker':'nav-tracker','pricing':'nav-pricing','faq':'nav-faq'};
     function onScroll(){
-      var sy=pwin.pageYOffset||pdoc.documentElement.scrollTop;
+      var sy=getScrollY();
       if(btt){if(sy>600){btt.classList.add('visible');}else{btt.classList.remove('visible');}}
       if(dock){
         if(sy>lastY&&sy>200){dock.classList.add('nav-hidden');}
@@ -3405,14 +3454,16 @@ def require_login() -> bool:
       if(aid&&pMap[aid]){var ap=pdoc.getElementById(pMap[aid]);if(ap){ap.classList.add('active');}}
       lastY=sy;
     }
-    pwin.addEventListener('scroll',onScroll,{passive:true});
+    var scrollTarget=sc||pwin;
+    scrollTarget.addEventListener('scroll',onScroll,{passive:true});
     onScroll();
-  },200);
+  }
+  init();
 })();
 </script>""")
 
     # ── Section anchor: How It Works ──
-    st.markdown('<div data-section-id="how-it-works" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)
+    st.markdown('<div id="sec-how-it-works" data-section-id="how-it-works" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)
 
     # ── Below-fold: How It Works + What's Inside + Product Preview ──
     st.markdown("""
@@ -3450,7 +3501,7 @@ def require_login() -> bool:
     <div class="ag-divider"></div>
 
     <!-- What's Inside: Feature Showcase -->
-    <div class="ag-inside" data-section-id="features">
+    <div class="ag-inside" id="sec-features" data-section-id="features">
       <div class="ag-section-head">
         <h3>What&rsquo;s Inside<br><span class="em">Smart Pick Pro</span></h3>
         <p>Everything you need to beat the books &mdash; in one platform</p>
@@ -3574,7 +3625,7 @@ def require_login() -> bool:
     st.html(_preview_html)
 
     # ── Section anchor: Free Picks ──
-    st.markdown('<div data-section-id="picks" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)
+    st.markdown('<div id="sec-picks" data-section-id="picks" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)
 
     # ── Below-fold: Winning Picks Carousel ───────────────────
     # Uses st.html() to bypass Streamlit's markdown parser which
@@ -3852,7 +3903,7 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
     """, unsafe_allow_html=True)
 
     # ── Section anchor: Bet Tracker ──
-    st.markdown('<div data-section-id="tracker" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)
+    st.markdown('<div id="sec-tracker" data-section-id="tracker" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)
 
     # ── Below-fold: Bet Tracker transparency ─────────────────
     # Uses st.html() to bypass Streamlit's markdown parser which
@@ -4441,7 +4492,7 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 """)
 
     # ── Section anchor: Pricing ──
-    st.markdown('<div data-section-id="pricing" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)
+    st.markdown('<div id="sec-pricing" data-section-id="pricing" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)
 
     # ── Below-fold: Pricing tiers, FAQ, CTA ──────────────────
     # Uses st.html() to bypass Streamlit's markdown parser which
@@ -5113,7 +5164,7 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 </div>""", unsafe_allow_html=True)
 
     # ── Section anchor: FAQ ──
-    st.markdown('<div data-section-id="faq" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)
+    st.markdown('<div id="sec-faq" data-section-id="faq" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)
 
     # ── Below-fold: Performance, FAQ, CTA, Footer ─────────────
     st.html("""<style>

@@ -121,6 +121,15 @@ if __name__ == "__main__":
     except Exception as exc:
         _logger.error("Failed to initialise auth DB table: %s", exc)
 
+    # Ensure PostgreSQL subscriptions table exists
+    try:
+        from utils.auth import _ensure_pg_subscriptions_table, _HAS_PG_SUB
+        if _HAS_PG_SUB:
+            _ensure_pg_subscriptions_table()
+            _logger.info("PostgreSQL subscriptions table ready.")
+    except Exception as exc:
+        _logger.error("Failed to initialise PG subscriptions table: %s", exc)
+
     _seed_user_from_env()
     _run_daily_update()
 

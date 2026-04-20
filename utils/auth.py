@@ -52,6 +52,49 @@ from tracking.database import (
     get_database_connection,
 )
 
+# ── PostgreSQL subscription support ──────────────────────────
+# When Railway PostgreSQL is connected, subscriptions are stored
+# there instead of (and in addition to) the SQLite database, so
+# they survive container restarts and volume-less deployments.
+_PG_SUB_URL = os.environ.get("DATABASE_URL", "").replace("postgres://", "postgresql://", 1)
+_HAS_PG_SUB = False
+if _PG_SUB_URL:
+    try:
+        import psycopg2 as _psycopg2          # type: ignore
+        import psycopg2.extras as _psycopg2x  # type: ignore
+        _HAS_PG_SUB = True
+    except ImportError:
+        pass
+
+_pg_sub_initialized = False
+
+def _ensure_pg_subscriptions_table() -> None:
+    """Create the subscriptions table in PostgreSQL if it doesn't exist."""
+    global _pg_sub_initialized
+    if _pg_sub_initialized or not _HAS_PG_SUB:
+        return
+    try:
+        conn = _psycopg2.connect(_PG_SUB_URL)
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS subscriptions (
+                    subscription_id TEXT PRIMARY KEY,
+                    customer_id TEXT NOT NULL,
+                    customer_email TEXT,
+                    status TEXT NOT NULL DEFAULT 'active',
+                    plan_name TEXT DEFAULT 'Premium',
+                    current_period_start TEXT,
+                    current_period_end TEXT,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                );
+            """)
+        conn.commit()
+        conn.close()
+        _pg_sub_initialized = True
+    except Exception as exc:
+        _logger.error("Failed to init PG subscriptions table: %s", exc)
+
 # ============================================================
 # SECTION: Session State Keys
 # ============================================================
@@ -90,12 +133,52 @@ def _save_subscription_to_db(sub_data: dict) -> bool:
     Returns:
         bool: True if saved successfully.
     """
-    initialize_database()
     subscription_id = sub_data.get("subscription_id", "")
     if not subscription_id:
         return False
 
+    params = (
+        subscription_id,
+        sub_data.get("customer_id", ""),
+        sub_data.get("customer_email", ""),
+        sub_data.get("status", "active"),
+        sub_data.get("plan_name", "Premium"),
+        sub_data.get("period_start", ""),
+        sub_data.get("period_end", ""),
+    )
+
+    # ── Write to PostgreSQL when available ────────────────────
+    if _HAS_PG_SUB:
+        try:
+            _ensure_pg_subscriptions_table()
+            conn = _psycopg2.connect(_PG_SUB_URL)
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO subscriptions
+                        (subscription_id, customer_id, customer_email,
+                         status, plan_name,
+                         current_period_start, current_period_end,
+                         updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+                    ON CONFLICT(subscription_id) DO UPDATE SET
+                        status               = EXCLUDED.status,
+                        customer_email       = EXCLUDED.customer_email,
+                        current_period_start = EXCLUDED.current_period_start,
+                        current_period_end   = EXCLUDED.current_period_end,
+                        updated_at           = NOW()
+                    """,
+                    params,
+                )
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as exc:
+            _logger.error("Failed to save subscription to PG: %s", exc)
+
+    # ── Fallback: SQLite ──────────────────────────────────────
     try:
+        initialize_database()
         with get_database_connection() as conn:
             conn.execute(
                 """
@@ -112,15 +195,7 @@ def _save_subscription_to_db(sub_data: dict) -> bool:
                     current_period_end   = excluded.current_period_end,
                     updated_at           = datetime('now')
                 """,
-                (
-                    subscription_id,
-                    sub_data.get("customer_id", ""),
-                    sub_data.get("customer_email", ""),
-                    sub_data.get("status", "active"),
-                    sub_data.get("plan_name", "Premium"),
-                    sub_data.get("period_start", ""),
-                    sub_data.get("period_end", ""),
-                ),
+                params,
             )
             conn.commit()
         return True
@@ -168,6 +243,34 @@ def _load_subscription_by_email_from_db(email: str) -> dict | None:
     """
     if not email:
         return None
+
+    # ── Check PostgreSQL first when available ─────────────────
+    if _HAS_PG_SUB:
+        try:
+            _ensure_pg_subscriptions_table()
+            conn = _psycopg2.connect(
+                _PG_SUB_URL,
+                cursor_factory=_psycopg2x.RealDictCursor,
+            )
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT * FROM subscriptions
+                    WHERE customer_email = %s
+                      AND status IN ('active', 'trialing')
+                    ORDER BY updated_at DESC
+                    LIMIT 1
+                    """,
+                    (email,),
+                )
+                row = cur.fetchone()
+            conn.close()
+            if row:
+                return dict(row)
+        except Exception as exc:
+            _logger.error("Failed to look up subscription by email in PG: %s", exc)
+
+    # ── Fallback: SQLite ──────────────────────────────────────
     try:
         initialize_database()
         with get_database_connection() as conn:

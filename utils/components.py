@@ -685,3 +685,242 @@ def inject_sidebar_nav_tooltips() -> None:
         '</script>'
     )
     st.markdown(_tooltip_script, unsafe_allow_html=True)
+
+
+# ── Notification Center ──────────────────────────────────────────
+
+_NOTIF_LEVEL_STYLES = {
+    "info": {"bg": "rgba(0,150,255,0.12)", "border": "#2196F3", "icon": "ℹ️"},
+    "success": {"bg": "rgba(0,213,89,0.12)", "border": "#00D559", "icon": "✅"},
+    "warning": {"bg": "rgba(255,193,7,0.12)", "border": "#FFC107", "icon": "⚠️"},
+    "error": {"bg": "rgba(255,68,68,0.12)", "border": "#FF4444", "icon": "🚨"},
+}
+
+
+def add_notification(title: str, message: str, level: str = "info") -> None:
+    """Add a notification to the in-session notification center.
+
+    Args:
+        title: Short headline (e.g. "Tilt Alert").
+        message: Full notification body.
+        level: One of "info", "success", "warning", "error".
+    """
+    import datetime as _dt_mod
+    notifs = st.session_state.setdefault("_spp_notifications", [])
+    notifs.insert(0, {
+        "title": title,
+        "message": message,
+        "level": level,
+        "ts": _dt_mod.datetime.now().strftime("%I:%M %p"),
+        "read": False,
+    })
+    # Keep the list bounded
+    if len(notifs) > 50:
+        st.session_state["_spp_notifications"] = notifs[:50]
+
+
+def render_notification_center() -> None:
+    """Render a notification inbox in the sidebar."""
+    notifs = st.session_state.get("_spp_notifications", [])
+    unread = sum(1 for n in notifs if not n.get("read"))
+    badge = f" ({unread})" if unread else ""
+
+    with st.sidebar:
+        with st.expander(f"🔔 Notifications{badge}", expanded=False):
+            if not notifs:
+                st.caption("No notifications yet.")
+                return
+
+            if unread and st.button("Mark all read", key="_notif_mark_read"):
+                for n in notifs:
+                    n["read"] = True
+                st.rerun()
+
+            if len(notifs) > 5 and st.button("Clear all", key="_notif_clear"):
+                st.session_state["_spp_notifications"] = []
+                st.rerun()
+
+            for idx, n in enumerate(notifs[:20]):
+                _s = _NOTIF_LEVEL_STYLES.get(n.get("level", "info"), _NOTIF_LEVEL_STYLES["info"])
+                _weight = "600" if not n.get("read") else "400"
+                _opacity = "1" if not n.get("read") else "0.65"
+                st.markdown(
+                    f'<div role="status" aria-label="Notification" style="padding:8px 10px;margin-bottom:6px;'
+                    f'background:{_s["bg"]};border-left:3px solid {_s["border"]};'
+                    f'border-radius:6px;opacity:{_opacity};">'
+                    f'<div style="font-size:0.78rem;font-weight:{_weight};color:#E0E6F0;">'
+                    f'{_s["icon"]} {n["title"]}'
+                    f'<span style="float:right;font-size:0.65rem;color:#6B7A9A;">{n.get("ts", "")}</span></div>'
+                    f'<div style="font-size:0.72rem;color:#A0AABE;margin-top:2px;">{n["message"]}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+                if not n.get("read"):
+                    n["read"] = True
+
+
+# ── Shareable Performance Report Card ────────────────────────────
+
+def generate_performance_report_html(stats: dict) -> str:
+    """Generate a self-contained HTML performance report card.
+
+    Args:
+        stats: Dict with keys: total, wins, losses, evens, pending,
+               win_rate, streak, best_platform, date_range.
+
+    Returns:
+        A standalone HTML string suitable for download.
+    """
+    import datetime as _dt_mod
+    _now = _dt_mod.datetime.now().strftime("%B %d, %Y %I:%M %p")
+    _total = stats.get("total", 0)
+    _wins = stats.get("wins", 0)
+    _losses = stats.get("losses", 0)
+    _wr = stats.get("win_rate", 0)
+    _streak = stats.get("streak", 0)
+    _streak_label = f"{_streak}W" if _streak > 0 else f"{abs(_streak)}L" if _streak < 0 else "—"
+    _best_plat = stats.get("best_platform", "—") or "—"
+    _scope = stats.get("date_range", "All Time")
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SmartBetPro Performance Report</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+background:#0E1117;color:#E0E6F0;display:flex;justify-content:center;padding:40px 16px}}
+.card{{background:linear-gradient(135deg,#161B22 0%,#1A1F2B 100%);
+border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:32px;
+max-width:480px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.4)}}
+.header{{text-align:center;margin-bottom:24px}}
+.header h1{{font-size:1.4rem;color:#00D559;margin-bottom:4px}}
+.header p{{font-size:0.78rem;color:#6B7A9A}}
+.grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}}
+.stat{{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+border-radius:10px;padding:14px;text-align:center}}
+.stat .val{{font-size:1.6rem;font-weight:700;color:#F9C62B}}
+.stat .lbl{{font-size:0.72rem;color:#6B7A9A;margin-top:4px;text-transform:uppercase}}
+.wr .val{{color:#00D559}}
+.footer{{text-align:center;font-size:0.68rem;color:#3A4460;margin-top:16px;
+border-top:1px solid rgba(255,255,255,0.06);padding-top:12px}}
+</style></head>
+<body><div class="card">
+<div class="header"><h1>🏀 SmartBetPro Report Card</h1>
+<p>{_scope} &middot; Generated {_now}</p></div>
+<div class="grid">
+<div class="stat wr"><div class="val">{_wr:.1f}%</div><div class="lbl">Win Rate</div></div>
+<div class="stat"><div class="val">{_total}</div><div class="lbl">Total Picks</div></div>
+<div class="stat"><div class="val">{_wins}</div><div class="lbl">Wins</div></div>
+<div class="stat"><div class="val">{_losses}</div><div class="lbl">Losses</div></div>
+<div class="stat"><div class="val">{_streak_label}</div><div class="lbl">Streak</div></div>
+<div class="stat"><div class="val" style="font-size:1rem;">{_best_plat}</div><div class="lbl">Best Platform</div></div>
+</div>
+<div class="footer">Powered by Smart Pick Pro &middot; smartbetpro.com</div>
+</div></body></html>"""
+
+
+# ── Mobile Responsive CSS ────────────────────────────────────────
+
+def inject_mobile_responsive_css() -> None:
+    """Inject additional mobile-responsive CSS for key pages."""
+    if st.session_state.get("_mobile_css_injected"):
+        return
+    st.session_state["_mobile_css_injected"] = True
+    st.markdown("""<style>
+/* ── SmartBetPro Mobile Responsive Overrides ─────────── */
+@media (max-width: 768px) {
+    /* Stack column layouts vertically */
+    [data-testid="stHorizontalBlock"] {
+        flex-wrap: wrap !important;
+    }
+    [data-testid="stHorizontalBlock"] > [data-testid="stVerticalBlockBorderWrapper"],
+    [data-testid="stHorizontalBlock"] > div {
+        min-width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+    /* Compact metrics */
+    [data-testid="stMetric"] {
+        padding: 8px 6px !important;
+    }
+    [data-testid="stMetricValue"] {
+        font-size: 1.2rem !important;
+    }
+    /* Readable tables */
+    [data-testid="stDataFrame"] {
+        font-size: 0.78rem !important;
+    }
+    /* Sidebar overlay */
+    [data-testid="stSidebar"] {
+        min-width: 260px !important;
+        max-width: 85vw !important;
+    }
+    /* Account management section */
+    .stTabs [data-baseweb="tab-panel"] {
+        padding: 8px 4px !important;
+    }
+    /* Form inputs full width */
+    .stTextInput, .stSelectbox, .stNumberInput {
+        width: 100% !important;
+    }
+    /* Bet cards */
+    [data-testid="stExpander"] {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+}
+@media (max-width: 480px) {
+    /* Smaller headings on phones */
+    h1 { font-size: 1.4rem !important; }
+    h2 { font-size: 1.15rem !important; }
+    h3 { font-size: 1rem !important; }
+    /* Tighter padding */
+    .block-container {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+    /* Download buttons full width */
+    .stDownloadButton > button {
+        width: 100% !important;
+    }
+}
+</style>""", unsafe_allow_html=True)
+
+
+# ── ARIA Accessibility Helpers ───────────────────────────────────
+
+def inject_aria_enhancements() -> None:
+    """Inject JavaScript that adds ARIA attributes to custom HTML blocks."""
+    if st.session_state.get("_aria_injected"):
+        return
+    st.session_state["_aria_injected"] = True
+    _aria_script = (
+        '<script>\n'
+        '(function(){\n'
+        '  if(window.__sppAria) return;\n'
+        '  window.__sppAria=true;\n'
+        '  function addAria(){\n'
+        '    document.querySelectorAll("[data-testid=\\"stMetric\\"]").forEach(function(el){\n'
+        '      if(!el.getAttribute("role")) el.setAttribute("role","status");\n'
+        '    });\n'
+        '    document.querySelectorAll("[data-testid=\\"stSidebar\\"] nav").forEach(function(el){\n'
+        '      if(!el.getAttribute("aria-label")) el.setAttribute("aria-label","Page navigation");\n'
+        '    });\n'
+        '    document.querySelectorAll("[data-testid=\\"stExpander\\"]").forEach(function(el){\n'
+        '      if(!el.getAttribute("role")) el.setAttribute("role","region");\n'
+        '    });\n'
+        '    document.querySelectorAll(".stTabs [role=\\"tablist\\"]").forEach(function(el){\n'
+        '      if(!el.getAttribute("aria-label")) el.setAttribute("aria-label","Page sections");\n'
+        '    });\n'
+        '    document.querySelectorAll("[data-testid=\\"stDataFrame\\"]").forEach(function(el){\n'
+        '      if(!el.getAttribute("role")) el.setAttribute("role","table");\n'
+        '      if(!el.getAttribute("aria-label")) el.setAttribute("aria-label","Data table");\n'
+        '    });\n'
+        '  }\n'
+        '  setTimeout(addAria,2000);\n'
+        '  var obs=new MutationObserver(function(){setTimeout(addAria,500);});\n'
+        '  obs.observe(document.body,{childList:true,subtree:true});\n'
+        '})();\n'
+        '</script>'
+    )
+    st.markdown(_aria_script, unsafe_allow_html=True)

@@ -129,6 +129,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
 
     # ── Notifications ─────────────────────────────────────────
     if total_h > 0:
+        from utils.components import add_notification as _add_notif
         _recent = sorted(resolved_health, key=lambda b: b.get("bet_date", ""), reverse=True)
         _consec_losses = 0
         for _rb in _recent:
@@ -141,6 +142,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
                 f"🧊 **Tilt Alert** — **{_consec_losses} consecutive losses**. "
                 "Consider reducing unit size."
             )
+            _add_notif("Tilt Alert", f"{_consec_losses} consecutive losses — consider reducing unit size.", "warning")
         _consec_wins = 0
         for _rb in _recent:
             if _rb.get("result") == "WIN":
@@ -149,11 +151,13 @@ def render(platform_selections, player_search, date_range, direction_filter):
                 break
         if _consec_wins >= 5:
             st.success(f"🔥 **Hot Streak Alert** — **{_consec_wins}-game win streak**!")
+            _add_notif("Hot Streak", f"{_consec_wins}-game win streak!", "success")
         _last_20 = _recent[:20]
         if len(_last_20) >= 20:
             _l20_wr = sum(1 for b in _last_20 if b.get("result") == "WIN") / 20 * 100
             if _l20_wr < 50:
                 st.error(f"📉 **Model Drift Warning** — Last 20 bets win rate: **{_l20_wr:.0f}%**.")
+                _add_notif("Model Drift", f"Last 20 bets win rate: {_l20_wr:.0f}%.", "error")
 
     if total_h > 0:
         st.divider()

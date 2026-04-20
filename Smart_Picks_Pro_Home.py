@@ -1248,12 +1248,15 @@ st.session_state.setdefault("joseph_last_commentary", "")
 st.session_state.setdefault("joseph_entry_just_built", False)
 
 # ── Global Settings Popover (accessible from sidebar) ─────────
-from utils.components import render_global_settings, inject_joseph_floating, render_joseph_hero_banner, inject_sidebar_nav_tooltips
+from utils.components import render_global_settings, inject_joseph_floating, render_joseph_hero_banner, inject_sidebar_nav_tooltips, render_notification_center, inject_mobile_responsive_css, inject_aria_enhancements
 with st.sidebar:
     render_global_settings()
 st.session_state["joseph_page_context"] = "page_home"
 inject_joseph_floating()
 inject_sidebar_nav_tooltips()
+render_notification_center()
+inject_mobile_responsive_css()
+inject_aria_enhancements()
 
 # ============================================================
 # END SECTION: Initialize App on Startup

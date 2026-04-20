@@ -77,6 +77,16 @@ from utils.premium_gate import premium_gate
 if not premium_gate("Bet Tracker"):
     st.stop()
 
+# ── UX Enhancements ──────────────────────────────────────────
+from utils.components import (
+    render_notification_center,
+    inject_mobile_responsive_css,
+    inject_aria_enhancements,
+)
+render_notification_center()
+inject_mobile_responsive_css()
+inject_aria_enhancements()
+
 # Ensure DB is initialised
 initialize_database()
 

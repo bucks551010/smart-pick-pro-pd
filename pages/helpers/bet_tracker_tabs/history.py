@@ -47,6 +47,27 @@ def render(platform_selections, player_search, date_range, direction_filter):
         _c[2].metric("Streak", _slabel)
         _c[3].metric("Best Day", _bs)
         _c[4].metric("Worst Day", _ws)
+
+        # ── Shareable Report Card ─────────────────────────────
+        from utils.components import generate_performance_report_html
+        _report_html = generate_performance_report_html({
+            "total": rolling_stats.get("total_bets", 0),
+            "wins": rolling_stats.get("wins", 0),
+            "losses": rolling_stats.get("losses", 0),
+            "evens": 0,
+            "pending": 0,
+            "win_rate": rolling_stats.get("win_rate", 0),
+            "streak": rolling_stats.get("streak", 0),
+            "best_platform": "",
+            "date_range": "Last 14 Days",
+        })
+        st.download_button(
+            "📊 Download Report Card",
+            data=_report_html,
+            file_name="smartbetpro_report_card.html",
+            mime="text/html",
+            key="download_report_card_history",
+        )
         st.divider()
 
     # Cumulative P&L curve

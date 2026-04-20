@@ -30,9 +30,11 @@ from styles.theme import get_global_css, get_premium_footer_html
 st.markdown(get_global_css(), unsafe_allow_html=True)
 
 # ── Joseph M. Smith Floating Widget ────────────────────────────
-from utils.components import inject_joseph_floating
+from utils.components import inject_joseph_floating, inject_mobile_responsive_css, inject_aria_enhancements
 st.session_state["joseph_page_context"] = "page_premium"
 inject_joseph_floating()
+inject_mobile_responsive_css()
+inject_aria_enhancements()
 
 # ─── Premium Page Mega CSS ────────────────────────────────────
 st.markdown("""
@@ -1098,7 +1100,7 @@ if sub_status["is_premium"]:
     # ── Action Buttons ────────────────────────────────────────
     customer_id = st.session_state.get("_sub_customer_id", "")
     if customer_id and is_stripe_configured():
-        col_portal, col_logout, _ = st.columns([1, 1, 2])
+        col_portal, col_cancel, col_logout, _ = st.columns([1, 1, 1, 1])
         with col_portal:
             if st.button("⚙️ Manage Subscription", use_container_width=True):
                 with st.spinner("Opening Stripe Customer Portal…"):
@@ -1113,10 +1115,40 @@ if sub_status["is_premium"]:
                         )
                     else:
                         st.error(f"Could not open portal: {portal['error']}")
+        with col_cancel:
+            if st.button("❌ Cancel Subscription", use_container_width=True, key="_cancel_sub_btn"):
+                st.session_state["_show_cancel_confirm"] = True
         with col_logout:
             if st.button("🚪 Sign Out", use_container_width=True):
                 logout_premium()
                 st.rerun()
+
+        # ── Cancel Confirmation Dialog ────────────────────────
+        if st.session_state.get("_show_cancel_confirm"):
+            st.warning(
+                "⚠️ **Are you sure you want to cancel?** "
+                "You'll keep access until the end of your current billing period."
+            )
+            _cc1, _cc2, _cc3 = st.columns([1, 1, 2])
+            with _cc1:
+                if st.button("✅ Yes, Cancel", type="primary", key="_confirm_cancel"):
+                    with st.spinner("Redirecting to cancellation portal…"):
+                        portal = create_customer_portal_session(customer_id)
+                        if portal["success"]:
+                            st.session_state.pop("_show_cancel_confirm", None)
+                            st.markdown(
+                                f'<meta http-equiv="refresh" content="0; url={portal["url"]}">',
+                                unsafe_allow_html=True,
+                            )
+                            st.info(
+                                f"Redirecting to Stripe… [Click here if not redirected]({portal['url']})"
+                            )
+                        else:
+                            st.error(f"Could not open portal: {portal['error']}")
+            with _cc2:
+                if st.button("🔙 Keep My Plan", key="_keep_plan"):
+                    st.session_state.pop("_show_cancel_confirm", None)
+                    st.rerun()
     elif is_stripe_configured():
         st.info(
             "To manage your subscription, visit "

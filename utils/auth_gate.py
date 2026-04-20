@@ -992,19 +992,24 @@ html, body, .stApp, .stApp * {
 }
 
 /* ── Scroll-triggered fade-up animations ─────────────────────── */
+@keyframes agRevealFallback {
+    to { opacity: 1; transform: translateY(0); }
+}
 .ag-reveal {
     opacity: 0;
     transform: translateY(32px);
     transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
                 transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    animation: agRevealFallback 0.6s 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 .ag-reveal.ag-visible {
     opacity: 1;
     transform: translateY(0);
+    animation: none;
 }
-.ag-reveal-delay-1 { transition-delay: 0.1s; }
-.ag-reveal-delay-2 { transition-delay: 0.2s; }
-.ag-reveal-delay-3 { transition-delay: 0.3s; }
+.ag-reveal-delay-1 { transition-delay: 0.1s; animation-delay: 1.3s; }
+.ag-reveal-delay-2 { transition-delay: 0.2s; animation-delay: 1.4s; }
+.ag-reveal-delay-3 { transition-delay: 0.3s; animation-delay: 1.5s; }
 
 /* ── Background ──────────────────────────────────────────────── */
 .ag-bg {
@@ -4173,12 +4178,23 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
       function initReveal(){
         var els=document.querySelectorAll('.ag-reveal');
         if(!els.length)return;
+        /* Use Streamlit scroll container as root so observer fires on scroll */
+        var root=document.querySelector('section.main')
+                ||document.querySelector('[data-testid="stMain"]')
+                ||null;
+        var opts={threshold:0.1,rootMargin:'0px 0px -20px 0px'};
+        if(root)opts.root=root;
         var obs=new IntersectionObserver(function(entries){
           entries.forEach(function(e){
             if(e.isIntersecting){e.target.classList.add('ag-visible');obs.unobserve(e.target);}
           });
-        },{threshold:0.15,rootMargin:'0px 0px -40px 0px'});
+        },opts);
         els.forEach(function(el){obs.observe(el);});
+        /* Re-observe any new ag-reveal elements added later by Streamlit */
+        var mo=new MutationObserver(function(){
+          document.querySelectorAll('.ag-reveal:not(.ag-visible)').forEach(function(el){obs.observe(el);});
+        });
+        mo.observe(document.body,{childList:true,subtree:true});
       }
       if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initReveal);
       else setTimeout(initReveal,150);

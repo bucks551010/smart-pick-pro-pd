@@ -123,11 +123,76 @@ if bg_resolve_results.get("done"):
 # Page Title & How-to
 # ============================================================
 
-st.title("📈 Bet Tracker & Model Health")
-st.markdown(
-    "Your unified hub for tracking model performance, logging bets, "
-    "auto-resolving results, and forecasting ROI."
-)
+import datetime as _dt_title
+_today_display = _dt_title.date.today().strftime("%A, %B %-d")
+st.markdown(f"""
+<style>
+.bt-hero {{
+    background: linear-gradient(135deg, rgba(12,16,26,0.98) 0%, rgba(18,24,38,0.98) 100%);
+    border: 1px solid rgba(0,213,89,0.32);
+    border-radius: 20px;
+    padding: 28px 36px 22px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(0,213,89,0.08), 0 20px 60px rgba(0,0,0,0.60), 0 0 60px rgba(0,213,89,0.06);
+}}
+.bt-hero::before {{
+    content: '';
+    position: absolute; top:0; left:0; right:0; height:3px;
+    background: linear-gradient(90deg, #00D559 0%, #2D9EFF 50%, #F9C62B 100%);
+}}
+.bt-hero-eyebrow {{
+    font-size: 0.72rem; font-weight: 800; color: #00D559;
+    text-transform: uppercase; letter-spacing: 0.18em;
+    font-family: 'Inter', sans-serif;
+    margin-bottom: 6px;
+    text-shadow: 0 0 14px rgba(0,213,89,0.50);
+}}
+.bt-hero-title {{
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 900; font-family: 'Inter', sans-serif;
+    color: #FFFFFF; letter-spacing: -0.03em; line-height: 1.1;
+    margin: 0 0 8px;
+}}
+.bt-hero-title .bt-accent {{
+    background: linear-gradient(90deg, #00D559, #2D9EFF);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}}
+.bt-hero-sub {{
+    font-size: 0.92rem; color: rgba(180,192,214,0.90);
+    font-family: 'Inter', sans-serif; line-height: 1.55;
+    max-width: 640px;
+}}
+.bt-hero-badges {{
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px;
+    align-items: center;
+}}
+.bt-badge {{
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 12px; border-radius: 100px;
+    font-size: 0.71rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    font-family: 'Inter', sans-serif;
+}}
+.bt-badge-green  {{ background:rgba(0,213,89,0.12);  color:#00D559; border:1px solid rgba(0,213,89,0.35);  box-shadow:0 0 10px rgba(0,213,89,0.12); }}
+.bt-badge-blue   {{ background:rgba(45,158,255,0.12); color:#2D9EFF; border:1px solid rgba(45,158,255,0.35); }}
+.bt-badge-gold   {{ background:rgba(249,198,43,0.12); color:#F9C62B; border:1px solid rgba(249,198,43,0.32); }}
+.bt-hero-date    {{ font-size:0.76rem; color:#6B7A9A; font-family:'JetBrains Mono',monospace; margin-left:auto; white-space:nowrap; }}
+</style>
+<div class="bt-hero">
+  <div class="bt-hero-eyebrow">Performance Dashboard</div>
+  <div class="bt-hero-title">We Don't Hide Results. <span class="bt-accent">We Track Every Pick.</span></div>
+  <div class="bt-hero-sub">Full transparency on every AI pick — win rates, tier calibration, ROI tracking, and auto-resolved results. This is what separates real tools from the Twittergurus.</div>
+  <div class="bt-hero-badges">
+    <span class="bt-badge bt-badge-green">🤖 AI Auto-Tracked</span>
+    <span class="bt-badge bt-badge-blue">📊 Multi-Platform</span>
+    <span class="bt-badge bt-badge-gold">⚡ Auto-Resolve</span>
+    <div class="bt-hero-date">📅 {_today_display}</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 with st.expander("📖 How to Use This Page", expanded=False):
     st.markdown("""

@@ -4182,33 +4182,41 @@ _BET_CARD_CSS = """
 <style>
 /* ─── Bet Card Base ───────────────────────────────────────── */
 .bet-card {
-    background: linear-gradient(135deg, #0D0F14 0%, #161B27 100%);
-    border: 1px solid rgba(0,213,89,0.18);
-    border-radius: 14px;
-    padding: 18px 22px;
-    margin-bottom: 14px;
-    box-shadow: 0 2px 18px rgba(0,0,0,0.45);
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    background: linear-gradient(160deg, #161B27 0%, #1A2030 100%);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.50);
+    transition: transform 0.20s ease, box-shadow 0.20s ease, border-color 0.20s ease;
     border-left: 4px solid rgba(0,213,89,0.35);
     position: relative;
     overflow: hidden;
 }
 .bet-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 28px rgba(0,213,89,0.10);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.60);
 }
-.bet-card-win  {
-    border-color: rgba(0,213,89,0.45);
+.bet-card-win {
+    border-color: rgba(0,213,89,0.40);
     border-left: 4px solid #00D559;
-    box-shadow: 0 0 20px rgba(0,213,89,0.14);
+    background: linear-gradient(160deg, #121C18 0%, #161F1C 100%);
+    box-shadow: 0 0 0 1px rgba(0,213,89,0.08), 0 4px 24px rgba(0,0,0,0.55), 0 0 30px rgba(0,213,89,0.08);
+}
+.bet-card-win:hover {
+    box-shadow: 0 0 0 1px rgba(0,213,89,0.18), 0 10px 40px rgba(0,213,89,0.18), 0 16px 50px rgba(0,0,0,0.60);
 }
 .bet-card-loss {
-    border-color: rgba(242,67,54,0.45);
+    border-color: rgba(242,67,54,0.40);
     border-left: 4px solid #F24336;
-    box-shadow: 0 0 20px rgba(242,67,54,0.14);
+    background: linear-gradient(160deg, #1C1212 0%, #201616 100%);
+    box-shadow: 0 0 0 1px rgba(242,67,54,0.08), 0 4px 24px rgba(0,0,0,0.55), 0 0 30px rgba(242,67,54,0.06);
+}
+.bet-card-loss:hover {
+    box-shadow: 0 0 0 1px rgba(242,67,54,0.18), 0 10px 40px rgba(242,67,54,0.15), 0 16px 50px rgba(0,0,0,0.60);
 }
 .bet-card-even {
-    border-color: rgba(160,170,190,0.35);
+    border-color: rgba(160,170,190,0.28);
     border-left: 4px solid #A0AABE;
 }
 .bet-card-pending {
@@ -4217,17 +4225,17 @@ _BET_CARD_CSS = """
     animation: betCardPulse 2.8s ease-in-out infinite;
 }
 @keyframes betCardPulse {
-    0%,100% { box-shadow: 0 0 6px rgba(249,198,43,0.08); }
-    50%      { box-shadow: 0 0 22px rgba(249,198,43,0.28); }
+    0%,100% { box-shadow: 0 4px 20px rgba(0,0,0,0.50); }
+    50%      { box-shadow: 0 4px 20px rgba(0,0,0,0.50), 0 0 28px rgba(249,198,43,0.22); }
 }
 
-/* ─── Result shimmer reveal animation ─────────────────────── */
+/* ─── Result shimmer reveal ───────────────────────────────── */
 .bet-card-win::after, .bet-card-loss::after {
     content: '';
     position: absolute;
     top: 0; left: -100%; width: 100%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
-    animation: cardRevealShimmer 1.2s ease-out forwards;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+    animation: cardRevealShimmer 1.4s ease-out forwards;
     pointer-events: none;
 }
 @keyframes cardRevealShimmer {
@@ -4235,53 +4243,66 @@ _BET_CARD_CSS = """
     100% { left: 100%; opacity: 0; }
 }
 
+/* ─── Top accent line ─────────────────────────────────────── */
+.bet-card::before {
+    content: '';
+    position: absolute; top:0; left:0; right:0; height:2px;
+    opacity: 0; transition: opacity 0.20s ease;
+}
+.bet-card:hover::before { opacity: 1; }
+.bet-card-win::before    { background: linear-gradient(90deg, #00D559, transparent); opacity: 0.7 !important; }
+.bet-card-loss::before   { background: linear-gradient(90deg, #F24336, transparent); opacity: 0.7 !important; }
+.bet-card-pending::before { background: linear-gradient(90deg, #F9C62B, transparent); opacity: 0.7 !important; }
+
 /* ─── Tier-specific card glows ────────────────────────────── */
-.bet-card-tier-platinum { box-shadow: 0 0 22px rgba(0,213,89,0.18), 0 2px 18px rgba(0,0,0,0.45); }
-.bet-card-tier-gold     { box-shadow: 0 0 22px rgba(255,170,0,0.18), 0 2px 18px rgba(0,0,0,0.45); }
-.bet-card-tier-silver   { box-shadow: 0 0 14px rgba(192,208,232,0.14), 0 2px 18px rgba(0,0,0,0.45); }
-.bet-card-tier-bronze   { box-shadow: 0 0 14px rgba(255,124,58,0.14), 0 2px 18px rgba(0,0,0,0.45); }
+.bet-card-tier-platinum { box-shadow: 0 0 24px rgba(0,213,89,0.16), 0 4px 20px rgba(0,0,0,0.50); }
+.bet-card-tier-gold     { box-shadow: 0 0 24px rgba(255,170,0,0.16), 0 4px 20px rgba(0,0,0,0.50); }
+.bet-card-tier-silver   { box-shadow: 0 0 16px rgba(192,208,232,0.12), 0 4px 20px rgba(0,0,0,0.50); }
+.bet-card-tier-bronze   { box-shadow: 0 0 16px rgba(255,124,58,0.12), 0 4px 20px rgba(0,0,0,0.50); }
 
 /* ─── Card Header ─────────────────────────────────────────── */
 .bet-card-player {
-    font-size: 1.1rem;
-    font-weight: 800;
+    font-size: 1.15rem;
+    font-weight: 900;
     font-family: 'Inter', sans-serif;
-    color: #EEF0F6;
-    letter-spacing: 0.01em;
+    color: #F0F4FF;
+    letter-spacing: -0.01em;
 }
 .bet-card-team {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: #6B7A9A;
     margin-left: 8px;
+    font-weight: 600;
 }
 .bet-card-divider {
     height: 1px;
-    background: rgba(0,213,89,0.10);
-    margin: 10px 0;
+    background: rgba(255,255,255,0.07);
+    margin: 12px 0;
 }
 
-/* ─── Player headshot thumbnail ───────────────────────────── */
+/* ─── Player headshot ─────────────────────────────────────── */
 .bet-card-headshot {
-    width: 40px; height: 40px;
+    width: 44px; height: 44px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid rgba(0,213,89,0.25);
+    border: 2px solid rgba(0,213,89,0.28);
     background: #0D0F14;
     flex-shrink: 0;
+    box-shadow: 0 0 12px rgba(0,213,89,0.16);
 }
 
 /* ─── Direction ───────────────────────────────────────────── */
 .direction-over {
     color: #00D559;
     font-weight: 900;
-    font-size: 1.0rem;
-    text-shadow: 0 0 8px rgba(0,213,89,0.4);
+    font-size: 1.05rem;
+    text-shadow: 0 0 10px rgba(0,213,89,0.50);
 }
 .direction-under {
     color: #F24336;
     font-weight: 900;
-    font-size: 1.0rem;
-    text-shadow: 0 0 8px rgba(242,67,54,0.4);
+    font-size: 1.05rem;
+    text-shadow: 0 0 10px rgba(242,67,54,0.50);
 }
 
 /* ─── Confidence Gauge (SVG arc) ──────────────────────────── */
@@ -4291,95 +4312,88 @@ _BET_CARD_CSS = """
     gap: 10px;
     margin: 8px 0 4px 0;
 }
-.confidence-gauge-label {
-    font-size: 0.75rem;
-    color: #6B7A9A;
-}
-.confidence-gauge-value {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #e8f0ff;
-}
+.confidence-gauge-label { font-size: 0.75rem; color: #6B7A9A; }
+.confidence-gauge-value { font-size: 0.85rem; font-weight: 700; color: #e8f0ff; }
 
-/* ─── Confidence Bar (fallback for non-gauge) ─────────────── */
+/* ─── Confidence Bar ──────────────────────────────────────── */
 .confidence-bar-wrap { margin: 10px 0 6px 0; }
 .confidence-bar-track {
     height: 8px;
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.07);
     border-radius: 4px;
     overflow: hidden;
 }
 .confidence-bar-fill {
     height: 100%;
     border-radius: 4px;
-    transition: width 0.4s ease;
+    transition: width 0.5s ease;
 }
 .confidence-bar-label {
     display: flex;
     justify-content: space-between;
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     color: #6B7A9A;
     margin-bottom: 3px;
 }
 
 /* ─── Platform Badges ─────────────────────────────────────── */
-.platform-badge-pp { background: #00c853; color: #fff; padding: 2px 9px; border-radius: 5px; font-size: 0.78rem; font-weight: 700; }
-.platform-badge-ud { background: #7c4dff; color: #fff; padding: 2px 9px; border-radius: 5px; font-size: 0.78rem; font-weight: 700; }
-.platform-badge-dk { background: #2196f3; color: #fff; padding: 2px 9px; border-radius: 5px; font-size: 0.78rem; font-weight: 700; }
+.platform-badge-fd { background: rgba(0,200,83,0.18);  color: #00c853; border:1px solid rgba(0,200,83,0.35);  padding: 3px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 800; }
+.platform-badge-pp { background: rgba(0,200,83,0.18);  color: #00c853; border:1px solid rgba(0,200,83,0.35);  padding: 3px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 800; }
+.platform-badge-ud { background: rgba(124,77,255,0.18); color: #9c71ff; border:1px solid rgba(124,77,255,0.35); padding: 3px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 800; }
+.platform-badge-dk { background: rgba(33,150,243,0.18); color: #64b5f6; border:1px solid rgba(33,150,243,0.35); padding: 3px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 800; }
+.platform-badge    { background: rgba(255,255,255,0.08); color: #a0aabe; border:1px solid rgba(255,255,255,0.14); padding: 3px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 700; }
 
-/* ─── Tier Badges (compact) ───────────────────────────────── */
-.tier-badge-platinum { color: #00D559; font-weight: 800; text-shadow: 0 0 6px rgba(0,213,89,0.5); }
-.tier-badge-gold     { color: #ffaa00; font-weight: 800; text-shadow: 0 0 6px rgba(255,170,0,0.5); }
+/* ─── Tier Badges ─────────────────────────────────────────── */
+.tier-badge-platinum { color: #00D559; font-weight: 900; text-shadow: 0 0 10px rgba(0,213,89,0.55); }
+.tier-badge-gold     { color: #ffaa00; font-weight: 900; text-shadow: 0 0 10px rgba(255,170,0,0.55); }
 .tier-badge-silver   { color: #c0d0e8; font-weight: 800; }
 .tier-badge-bronze   { color: #ff7c3a; font-weight: 800; }
 .tier-badge-avoid    { color: #ff4444; font-weight: 800; }
 
-/* ─── Result Badges — larger & more prominent ─────────────── */
-.result-win  {
+/* ─── Result Badges — big, clear, unmissable ──────────────── */
+.result-win {
     color: #fff;
-    background: linear-gradient(90deg, #00A844, #00D559);
+    background: linear-gradient(90deg, #00A844 0%, #00D559 100%);
     font-weight: 900;
-    font-size: 0.88rem;
-    padding: 3px 12px;
+    font-size: 0.90rem;
+    padding: 4px 14px;
     border-radius: 100px;
-    text-shadow: none;
-    box-shadow: 0 0 10px rgba(0,213,89,0.40);
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
+    box-shadow: 0 0 16px rgba(0,213,89,0.55), 0 2px 8px rgba(0,0,0,0.30);
 }
 .result-loss {
     color: #fff;
-    background: linear-gradient(90deg, #c62828, #F24336);
+    background: linear-gradient(90deg, #c62828 0%, #F24336 100%);
     font-weight: 900;
-    font-size: 0.88rem;
-    padding: 3px 12px;
+    font-size: 0.90rem;
+    padding: 4px 14px;
     border-radius: 100px;
-    text-shadow: none;
-    box-shadow: 0 0 10px rgba(242,67,54,0.40);
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
+    box-shadow: 0 0 16px rgba(242,67,54,0.50), 0 2px 8px rgba(0,0,0,0.30);
 }
 .result-even {
     color: #0D0F14;
     background: #A0AABE;
     font-weight: 800;
-    font-size: 0.88rem;
-    padding: 3px 12px;
+    font-size: 0.90rem;
+    padding: 4px 14px;
     border-radius: 100px;
 }
 .result-pending {
     color: #0D0F14;
-    background: linear-gradient(90deg, #D4A017, #F9C62B);
-    font-weight: 800;
-    font-size: 0.88rem;
-    padding: 3px 12px;
+    background: linear-gradient(90deg, #D4A017 0%, #F9C62B 100%);
+    font-weight: 900;
+    font-size: 0.90rem;
+    padding: 4px 14px;
     border-radius: 100px;
-    animation: resultPulse 1.8s ease-in-out infinite;
+    animation: resultPulse 2s ease-in-out infinite;
 }
 @keyframes resultPulse {
-    0%,100% { opacity: 1; box-shadow: 0 0 6px rgba(249,198,43,0.3); }
-    50%      { opacity: 0.80; box-shadow: 0 0 14px rgba(249,198,43,0.7); }
+    0%,100% { box-shadow: 0 0 8px rgba(249,198,43,0.40); }
+    50%      { box-shadow: 0 0 22px rgba(249,198,43,0.80); }
 }
 
-/* ─── Projected vs Actual Comparison ─────────────────────── */
+/* ─── Projected vs Actual ─────────────────────────────────── */
 .proj-vs-actual {
     display: flex;
     gap: 12px;
@@ -4387,11 +4401,11 @@ _BET_CARD_CSS = """
     margin-top: 6px;
     font-size: 0.82rem;
 }
-.proj-label { color: #6B7A9A; }
-.proj-value { color: #EEF0F6; font-weight: 700; }
-.actual-hit { color: #00D559; font-weight: 700; }
-.actual-miss { color: #F24336; font-weight: 700; }
-.actual-close { color: #F9C62B; font-weight: 700; }
+.proj-label  { color: #6B7A9A; }
+.proj-value  { color: #EEF0F6; font-weight: 700; }
+.actual-hit  { color: #00D559; font-weight: 800; text-shadow: 0 0 8px rgba(0,213,89,0.40); }
+.actual-miss { color: #F24336; font-weight: 800; text-shadow: 0 0 8px rgba(242,67,54,0.35); }
+.actual-close{ color: #F9C62B; font-weight: 800; }
 
 /* ─── Live Status ─────────────────────────────────────────── */
 .live-status-winning { color: #00D559; font-weight: 700; }
@@ -4403,44 +4417,53 @@ _BET_CARD_CSS = """
 /* ─── Summary Cards Row (Glassmorphism Dashboard) ─────────── */
 .summary-dashboard {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     flex-wrap: wrap;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 .summary-card {
-    background: linear-gradient(135deg,
-        rgba(13,15,20,0.90) 0%,
-        rgba(22,27,39,0.85) 100%);
-    border: 1px solid rgba(0,213,89,0.18);
-    border-radius: 12px;
-    padding: 16px;
+    background: linear-gradient(160deg,
+        rgba(18,24,38,0.98) 0%,
+        rgba(22,28,44,0.96) 100%);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
+    padding: 20px 18px 18px;
     text-align: center;
     flex: 1;
     min-width: 130px;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.45);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+.summary-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(0,213,89,0.12), 0 12px 40px rgba(0,0,0,0.50);
+    border-color: rgba(0,213,89,0.25);
 }
 .summary-card::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(0,213,89,0.4), transparent);
+    background: linear-gradient(90deg, transparent, rgba(0,213,89,0.35), transparent);
+    transition: opacity 0.22s ease;
 }
+.summary-card:hover::before { opacity: 1; background: linear-gradient(90deg, transparent, rgba(0,213,89,0.65), transparent); }
 .summary-card-value {
     font-size: 1.8rem;
     font-weight: 900;
     font-family: 'Bebas Neue', 'Inter', sans-serif;
     color: #00D559;
-    text-shadow: 0 0 12px rgba(0,213,89,0.35);
+    line-height: 1;
 }
 /* Animated count-up effect */
 @keyframes countUp {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 .summary-card-value {
-    animation: countUp 0.5s ease-out both;
+    animation: countUp 0.55s ease-out both;
 }
 .summary-card:nth-child(2) .summary-card-value { animation-delay: 0.08s; }
 .summary-card:nth-child(3) .summary-card-value { animation-delay: 0.16s; }
@@ -4448,27 +4471,28 @@ _BET_CARD_CSS = """
 .summary-card:nth-child(5) .summary-card-value { animation-delay: 0.32s; }
 .summary-card:nth-child(6) .summary-card-value { animation-delay: 0.40s; }
 .summary-card-label {
-    font-size: 0.75rem;
+    font-size: 0.70rem;
     color: #6B7A9A;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-top: 4px;
+    letter-spacing: 0.10em;
+    margin-top: 5px;
+    font-weight: 700;
 }
 
 /* Win rate card pulsing glow */
-.summary-card-wr-green { box-shadow: 0 0 18px rgba(0,213,89,0.18); border-color: rgba(0,213,89,0.28); }
-.summary-card-wr-green::before { background: linear-gradient(90deg, transparent, rgba(0,213,89,0.4), transparent); }
-.summary-card-wr-red   { box-shadow: 0 0 18px rgba(255,68,68,0.20); border-color: rgba(255,68,68,0.30); }
-.summary-card-wr-red::before   { background: linear-gradient(90deg, transparent, rgba(255,68,68,0.5), transparent); }
-.summary-card-wr-gold  { box-shadow: 0 0 18px rgba(255,204,0,0.20); border-color: rgba(255,204,0,0.30); }
-.summary-card-wr-gold::before  { background: linear-gradient(90deg, transparent, rgba(255,204,0,0.5), transparent); }
+.summary-card-wr-green { box-shadow: 0 0 24px rgba(0,213,89,0.20); border-color: rgba(0,213,89,0.30); }
+.summary-card-wr-green::before { background: linear-gradient(90deg, transparent, rgba(0,213,89,0.55), transparent) !important; opacity: 1 !important; }
+.summary-card-wr-red   { box-shadow: 0 0 24px rgba(255,68,68,0.22); border-color: rgba(255,68,68,0.32); }
+.summary-card-wr-red::before   { background: linear-gradient(90deg, transparent, rgba(255,68,68,0.55), transparent) !important; opacity: 1 !important; }
+.summary-card-wr-gold  { box-shadow: 0 0 24px rgba(255,204,0,0.22); border-color: rgba(255,204,0,0.32); }
+.summary-card-wr-gold::before  { background: linear-gradient(90deg, transparent, rgba(255,204,0,0.55), transparent) !important; opacity: 1 !important; }
 
 @keyframes wrPulse {
-    0%,100% { box-shadow: inherit; }
-    50%     { box-shadow: 0 0 28px rgba(0,213,89,0.30); }
+    0%,100% { opacity: 1; }
+    50%     { opacity: 0.75; }
 }
 .summary-card-wr-green, .summary-card-wr-red, .summary-card-wr-gold {
-    animation: wrPulse 3s ease-in-out infinite;
+    animation: wrPulse 3.5s ease-in-out infinite;
 }
 
 /* ─── Mini Sparkline ──────────────────────────────────────── */
@@ -4860,48 +4884,100 @@ def get_bet_card_html(bet, show_live_status=False):
 
 
 def get_summary_cards_html(total, wins, losses, evens, pending, win_rate, streak=0, best_platform="", total_label="Total Bets"):
-    """Render the glassmorphism summary metrics dashboard at the top of the Bet Tracker."""
+    """Render the premium summary metrics dashboard at the top of the Bet Tracker."""
     import html as _h
 
     streak_label = (
-        f"🔥 W{streak}" if streak > 0
-        else f"❄️ L{abs(streak)}" if streak < 0
+        f"🔥 {streak}W" if streak > 0
+        else f"❄️ {abs(streak)}L" if streak < 0
         else "—"
     )
-    streak_color = "#00D559" if streak > 0 else "#F24336" if streak < 0 else "#6B7A9A"
-    win_color = "#00D559" if win_rate >= 55 else "#F24336" if win_rate < 45 else "#F9C62B"
+    streak_color  = "#00D559" if streak > 0 else "#F24336" if streak < 0 else "#6B7A9A"
+    win_color     = "#00D559" if win_rate >= 55 else "#F24336" if win_rate < 45 else "#F9C62B"
+    win_glow      = ("rgba(0,213,89,0.35)" if win_rate >= 55
+                     else "rgba(242,67,54,0.35)" if win_rate < 45
+                     else "rgba(249,198,43,0.35)")
+    win_bar_color = win_color
 
-    # Win rate card glow class
-    wr_glow = (
+    wr_glow_class = (
         "summary-card-wr-green" if win_rate >= 55
         else "summary-card-wr-red" if win_rate < 45
         else "summary-card-wr-gold"
     )
 
-    def _card(value, label, color="#00D559", extra_class=""):
-        v = _h.escape(str(value))
-        l = _h.escape(str(label))
-        cls = f"summary-card {extra_class}" if extra_class else "summary-card"
-        return (
-            f'<div class="{cls}" style="flex:1;min-width:130px;">'
-            f'<div class="summary-card-value" style="color:{color};">{v}</div>'
-            f'<div class="summary-card-label">{l}</div>'
+    # Win rate card — large with mini progress bar
+    wr_bar_pct = min(max(win_rate, 0), 100)
+    wr_card = (
+        f'<div class="summary-card {wr_glow_class}" style="flex:2;min-width:180px;">'
+        f'<div style="display:flex;align-items:baseline;gap:6px;justify-content:center;">'
+        f'<div class="summary-card-value" style="color:{win_color};font-size:2.6rem;'
+        f'text-shadow:0 0 24px {win_glow};">{win_rate:.1f}%</div>'
+        f'</div>'
+        f'<div class="summary-card-label">Win Rate</div>'
+        f'<div style="margin-top:10px;height:5px;background:rgba(255,255,255,0.07);'
+        f'border-radius:3px;overflow:hidden;">'
+        f'<div style="width:{wr_bar_pct:.1f}%;height:100%;background:{win_bar_color};'
+        f'border-radius:3px;box-shadow:0 0 8px {win_glow};'
+        f'transition:width 0.6s ease;"></div></div>'
+        f'</div>'
+    )
+
+    # W/L split card
+    wl_card = (
+        f'<div class="summary-card" style="flex:1.5;min-width:150px;">'
+        f'<div style="display:flex;align-items:center;justify-content:center;gap:16px;">'
+        f'<div><div class="summary-card-value" style="color:#00D559;font-size:2rem;'
+        f'text-shadow:0 0 18px rgba(0,213,89,0.45);">{_h.escape(str(wins))}</div>'
+        f'<div class="summary-card-label">Wins</div></div>'
+        f'<div style="color:rgba(255,255,255,0.15);font-size:1.4rem;font-weight:300;">/</div>'
+        f'<div><div class="summary-card-value" style="color:#F24336;font-size:2rem;'
+        f'text-shadow:0 0 18px rgba(242,67,54,0.40);">{_h.escape(str(losses))}</div>'
+        f'<div class="summary-card-label">Losses</div></div>'
+        f'</div>'
+        f'</div>'
+    )
+
+    # Total card
+    total_card = (
+        f'<div class="summary-card" style="flex:1;min-width:120px;">'
+        f'<div class="summary-card-value" style="color:#FFFFFF;font-size:2.2rem;">'
+        f'{_h.escape(str(total))}</div>'
+        f'<div class="summary-card-label">{_h.escape(total_label)}</div>'
+        f'</div>'
+    )
+
+    # Streak card
+    streak_card = (
+        f'<div class="summary-card" style="flex:1;min-width:120px;">'
+        f'<div class="summary-card-value" style="color:{streak_color};font-size:1.8rem;'
+        f'text-shadow:0 0 16px {streak_color}55;">{_h.escape(streak_label)}</div>'
+        f'<div class="summary-card-label">Streak</div>'
+        f'</div>'
+    )
+
+    # Pending card
+    pend_color = "#F9C62B" if pending > 0 else "#6B7A9A"
+    pending_card = (
+        f'<div class="summary-card" style="flex:1;min-width:110px;">'
+        f'<div class="summary-card-value" style="color:{pend_color};font-size:2rem;">'
+        f'{_h.escape(str(pending))}</div>'
+        f'<div class="summary-card-label">Pending</div>'
+        f'</div>'
+    )
+
+    cards = wr_card + wl_card + total_card + streak_card + pending_card
+
+    if best_platform:
+        safe_plat = _h.escape(best_platform)
+        cards += (
+            f'<div class="summary-card" style="flex:1.2;min-width:130px;">'
+            f'<div class="summary-card-value" style="color:#7c4dff;font-size:1.0rem;'
+            f'font-family:Inter,sans-serif;line-height:1.3;">{safe_plat}</div>'
+            f'<div class="summary-card-label">Best Platform</div>'
             f'</div>'
         )
 
-    cards = (
-        _card(f"{win_rate:.1f}%", "Win Rate", win_color, wr_glow)
-        + _card(total, total_label)
-        + _card(f"✅{wins} ❌{losses}", "W / L")
-        + _card(streak_label, "Streak", streak_color)
-        + _card(pending, "Pending", "#F9C62B" if pending > 0 else "#6B7A9A")
-    )
-    if best_platform:
-        cards += _card(_h.escape(best_platform), "Best Platform", "#7c4dff")
-
-    return (
-        f'<div class="summary-dashboard">{cards}</div>'
-    )
+    return f'<div class="summary-dashboard">{cards}</div>'
 
 
 # ============================================================
@@ -4971,13 +5047,22 @@ def get_styled_stats_table_html(rows, columns, title=""):
             return "#e8f0ff"
 
     header_cells = "".join(
-        f'<th style="padding:8px 14px;text-align:left;color:#00D559;'
-        f'font-family:Inter,sans-serif;font-size:0.82rem;'
-        f'text-transform:uppercase;letter-spacing:0.5px;'
-        f'border-bottom:1px solid rgba(0,213,89,0.18);">'
+        f'<th style="padding:10px 16px;text-align:left;color:#8899BB;'
+        f'font-family:Inter,sans-serif;font-size:0.72rem;font-weight:800;'
+        f'text-transform:uppercase;letter-spacing:1px;'
+        f'background:rgba(0,0,0,0.30);'
+        f'border-bottom:1px solid rgba(255,255,255,0.08);">'
         f'{_h.escape(str(c))}</th>'
         for c in columns
     )
+
+    # Tier color map for badge styling
+    _TIER_COLORS = {
+        "platinum": ("#00D559", "rgba(0,213,89,0.12)"),
+        "gold":     ("#ffaa00", "rgba(255,170,0,0.12)"),
+        "silver":   ("#c0d0e8", "rgba(192,208,232,0.10)"),
+        "bronze":   ("#ff7c3a", "rgba(255,124,58,0.12)"),
+    }
 
     body_rows = []
     for i, row in enumerate(rows):
@@ -4988,11 +5073,18 @@ def get_styled_stats_table_html(rows, columns, title=""):
             display_val = str(raw_val)
             is_html = False
 
-            # Tier column — add emoji/icon prefix
+            # Tier column — styled pill badge
             if col.lower() == "tier":
                 icon = _TIER_EMOJI.get(display_val.lower(), "")
-                display_val, is_html = _apply_icon(icon, display_val)
-                cell_color = "#e8f0ff"
+                t_color, t_bg = _TIER_COLORS.get(display_val.lower(), ("#e8f0ff", "rgba(255,255,255,0.06)"))
+                display_val = (
+                    f'<span style="display:inline-flex;align-items:center;gap:4px;'
+                    f'padding:2px 10px;border-radius:100px;font-size:0.78rem;font-weight:800;'
+                    f'color:{t_color};background:{t_bg};border:1px solid {t_color}44;">'
+                    f'{_h.escape(icon + " " + display_val) if icon else _h.escape(display_val)}</span>'
+                )
+                is_html = True
+                cell_color = t_color
             # Bet Type column — add logo icon prefix
             elif col.lower() == "bet type":
                 icon = _BET_TYPE_ICON.get(_bet_type_lookup_key(display_val), "")
@@ -5000,37 +5092,56 @@ def get_styled_stats_table_html(rows, columns, title=""):
                 cell_color = "#e8f0ff"
             elif "win rate" in col.lower() or "win%" in col.lower():
                 cell_color = _win_rate_color(display_val)
+                # Add inline bar
+                try:
+                    pct = float(str(display_val).replace("%", "").strip())
+                    bar_color = _win_rate_color(display_val)
+                    bar_w = min(max(pct, 0), 100)
+                    display_val = (
+                        f'<div style="display:flex;align-items:center;gap:8px;min-width:100px;">'
+                        f'<span style="color:{bar_color};font-weight:800;min-width:44px;">{_h.escape(display_val)}</span>'
+                        f'<div style="flex:1;height:6px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;">'
+                        f'<div style="width:{bar_w:.1f}%;height:100%;background:{bar_color};'
+                        f'border-radius:3px;box-shadow:0 0 6px {bar_color}66;"></div>'
+                        f'</div></div>'
+                    )
+                    is_html = True
+                except (ValueError, TypeError):
+                    pass
             elif col.lower() in ("wins", "w"):
                 cell_color = "#00D559"
             elif col.lower() in ("losses", "l"):
                 cell_color = "#F24336"
             else:
-                cell_color = "rgba(255,255,255,0.85)"
+                cell_color = "rgba(255,255,255,0.88)"
 
             cell_content = display_val if is_html else _h.escape(display_val)
             cells.append(
-                f'<td style="padding:7px 14px;color:{cell_color};'
-                f'font-family:Montserrat,sans-serif;font-size:0.88rem;'
+                f'<td style="padding:10px 16px;color:{cell_color};'
+                f'font-family:Inter,sans-serif;font-size:0.86rem;'
                 f'border-bottom:1px solid rgba(255,255,255,0.05);">'
                 f'{cell_content}</td>'
             )
+        hover_bg = "rgba(0,213,89,0.04)" if i % 2 == 0 else "rgba(0,213,89,0.02)"
         body_rows.append(
-            f'<tr style="background:{row_bg};">{"".join(cells)}</tr>'
+            f'<tr style="background:{hover_bg};">{"".join(cells)}</tr>'
         )
 
     title_html = (
-        f'<div style="color:#00D559;font-family:Orbitron,sans-serif;'
-        f'font-size:0.95rem;font-weight:700;margin-bottom:8px;">'
+        f'<div style="color:#00D559;font-family:Inter,sans-serif;'
+        f'font-size:0.78rem;font-weight:800;text-transform:uppercase;'
+        f'letter-spacing:0.12em;margin-bottom:10px;'
+        f'text-shadow:0 0 12px rgba(0,213,89,0.40);">'
         f'{_h.escape(title)}</div>'
         if title else ""
     )
 
     return (
         f'{title_html}'
-        f'<div style="overflow-x:auto;border-radius:10px;'
-        f'border:1px solid rgba(0,213,89,0.12);'
-        f'background:linear-gradient(135deg,rgba(13,18,40,0.97),rgba(11,18,35,0.99));'
-        f'box-shadow:0 0 18px rgba(0,213,89,0.06);">'
+        f'<div style="overflow-x:auto;border-radius:14px;'
+        f'border:1px solid rgba(255,255,255,0.09);'
+        f'background:linear-gradient(160deg,rgba(18,24,38,0.98) 0%,rgba(10,13,20,0.99) 100%);'
+        f'box-shadow:0 8px 32px rgba(0,0,0,0.45),inset 0 1px 0 rgba(255,255,255,0.05);">'
         f'<table style="width:100%;border-collapse:collapse;">'
         f'<thead><tr>{header_cells}</tr></thead>'
         f'<tbody>{"".join(body_rows)}</tbody>'

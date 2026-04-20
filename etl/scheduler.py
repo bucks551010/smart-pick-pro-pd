@@ -16,13 +16,28 @@ the Streamlit app is running.
 * ``start()`` is safe to call multiple times; only one background thread
   is ever created per process.
 
+**QAM Auto-Analysis**
+
+* Once per day, after the nightly ETL refresh completes, the scheduler
+  automatically runs the full Quantum Analysis Matrix over today's live
+  props slate and writes the top picks to ``all_analysis_picks`` and
+  ``cache/latest_picks.json``.
+* Runs only during the analysis window (env ``QAM_ANALYSIS_HOUR_START``
+  to ``QAM_ANALYSIS_HOUR_END``, default 17–23 ET) so the cache always
+  has that day's picks by game time.
+* DraftKings props are excluded to preserve The Odds API budget.
+
 **Environment knobs** (all optional)
 
-``ETL_FAST_INTERVAL_MIN``  — minutes between refreshes during game window  (default 30)
-``ETL_SLOW_INTERVAL_MIN``  — minutes between refreshes outside game window (default 240)
-``ETL_GAME_WINDOW_START``  — ET hour when fast cadence begins               (default 18)
-``ETL_GAME_WINDOW_END``    — ET hour when fast cadence ends                 (default 2)
-``ETL_SCHEDULER_DISABLED`` — set to ``1`` to completely disable             (default off)
+``ETL_FAST_INTERVAL_MIN``    — minutes between refreshes during game window  (default 30)
+``ETL_SLOW_INTERVAL_MIN``    — minutes between refreshes outside game window (default 240)
+``ETL_GAME_WINDOW_START``    — ET hour when fast cadence begins               (default 18)
+``ETL_GAME_WINDOW_END``      — ET hour when fast cadence ends                 (default 2)
+``ETL_SCHEDULER_DISABLED``   — set to ``1`` to completely disable             (default off)
+``QAM_AUTO_ANALYSIS_DISABLED`` — set to ``1`` to skip auto QAM runs          (default off)
+``QAM_ANALYSIS_HOUR_START``  — ET hour to begin allowing QAM runs            (default 17)
+``QAM_ANALYSIS_HOUR_END``    — ET hour after which QAM runs are skipped      (default 23)
+``QAM_SIM_DEPTH``            — Monte Carlo simulation depth for auto runs     (default 1000)
 """
 
 from __future__ import annotations
@@ -46,6 +61,12 @@ _SLOW_INTERVAL = int(os.environ.get("ETL_SLOW_INTERVAL_MIN", "240")) * 60  # sec
 _GAME_WINDOW_START = int(os.environ.get("ETL_GAME_WINDOW_START", "18"))     # ET hour
 _GAME_WINDOW_END = int(os.environ.get("ETL_GAME_WINDOW_END", "2"))         # ET hour
 _DISABLED = os.environ.get("ETL_SCHEDULER_DISABLED", "").strip() in ("1", "true", "yes")
+
+# QAM auto-analysis config
+_QAM_DISABLED = os.environ.get("QAM_AUTO_ANALYSIS_DISABLED", "").strip() in ("1", "true", "yes")
+_QAM_HOUR_START = int(os.environ.get("QAM_ANALYSIS_HOUR_START", "17"))   # 5 PM ET
+_QAM_HOUR_END = int(os.environ.get("QAM_ANALYSIS_HOUR_END", "23"))       # 11 PM ET
+_QAM_SIM_DEPTH = int(os.environ.get("QAM_SIM_DEPTH", "1000"))
 
 # US-Eastern offset (ET).  During DST this is UTC-4; standard is UTC-5.
 # We approximate with UTC-5 (close enough for a 6 PM–2 AM window).
@@ -97,16 +118,121 @@ def _refresh_props() -> int:
         return 0
 
 
+def _run_auto_analysis(today_str: str) -> int:
+    """Run the full QAM analysis pipeline over today's live props slate.
+
+    Steps:
+      1. Load today's games schedule.
+      2. Load today's players on active rosters.
+      3. Fetch live props (PrizePicks + Underdog, no DK to preserve budget).
+      4. Load supporting data: injuries, defensive ratings, teams.
+      5. Call ``analyze_props_batch`` over the full props list.
+      6. Write results to ``all_analysis_picks`` via ``insert_analysis_picks``
+         (which also auto-updates ``cache/latest_picks.json``).
+
+    Returns:
+        Number of picks inserted, or 0 on failure / no props.
+    """
+    if _QAM_DISABLED:
+        _logger.info("[ETL Scheduler] QAM auto-analysis disabled via env var.")
+        return 0
+
+    et_hour = datetime.now(_ET).hour
+    if not (_QAM_HOUR_START <= et_hour < _QAM_HOUR_END):
+        _logger.debug(
+            "[ETL Scheduler] QAM auto-analysis skipped — ET hour %d outside window %d–%d.",
+            et_hour, _QAM_HOUR_START, _QAM_HOUR_END,
+        )
+        return 0
+
+    _logger.info("[ETL Scheduler] Starting QAM auto-analysis for %s …", today_str)
+    try:
+        # ── 1. Load game schedule ──
+        from data.nba_data_service import get_todays_games
+        todays_games = get_todays_games()
+        if not todays_games:
+            _logger.info("[ETL Scheduler] QAM auto-analysis: no games today, skipping.")
+            return 0
+
+        # ── 2. Load players on today's rosters ──
+        from data.nba_data_service import get_todays_players
+        from data.data_manager import load_players_data
+        players_data = load_players_data()
+        players_today = get_todays_players(todays_games)
+        # Merge today's active players into the full players list so the
+        # engine can find game-context even for players not in the CSV.
+        if players_today:
+            _existing_names = {p.get("player_name", "").lower() for p in players_data}
+            for p in players_today:
+                if p.get("player_name", "").lower() not in _existing_names:
+                    players_data.append(p)
+
+        # ── 3. Fetch live props ──
+        from data.platform_fetcher import fetch_all_platform_props
+        from data.data_manager import save_platform_props_to_csv
+        props = fetch_all_platform_props(
+            include_prizepicks=True,
+            include_underdog=True,
+            include_draftkings=False,  # preserve DK API budget
+        )
+        if not props:
+            _logger.info("[ETL Scheduler] QAM auto-analysis: no props fetched, skipping.")
+            return 0
+        save_platform_props_to_csv(props)  # keep CSV fresh too
+        _logger.info("[ETL Scheduler] QAM auto-analysis: %d props loaded.", len(props))
+
+        # ── 4. Load supporting data ──
+        from data.data_manager import (
+            load_defensive_ratings_data,
+            load_teams_data,
+            load_injury_status,
+        )
+        defensive_ratings_data = load_defensive_ratings_data()
+        teams_data = load_teams_data()
+        if not injury_map:
+            injury_map = load_injury_status()
+
+        # ── 5. Run analysis ──
+        from engine.analysis_orchestrator import analyze_props_batch
+        results = analyze_props_batch(
+            props,
+            players_data=players_data,
+            todays_games=todays_games,
+            injury_map=injury_map,
+            defensive_ratings_data=defensive_ratings_data,
+            teams_data=teams_data,
+            simulation_depth=_QAM_SIM_DEPTH,
+        )
+        if not results:
+            _logger.info("[ETL Scheduler] QAM auto-analysis: analysis returned no results.")
+            return 0
+
+        # ── 6. Persist picks ──
+        from tracking.database import insert_analysis_picks
+        inserted = insert_analysis_picks(results)
+        _logger.info(
+            "[ETL Scheduler] QAM auto-analysis complete — %d picks inserted for %s.",
+            inserted, today_str,
+        )
+        return inserted
+
+    except Exception:
+        _logger.exception("[ETL Scheduler] QAM auto-analysis failed (non-fatal)")
+        return 0
+
+
 def _loop() -> None:
-    """Infinite loop: sleep → refresh → repeat.  Runs on a daemon thread."""
+    """Infinite loop: sleep → ETL refresh → prop refresh → QAM analysis → repeat."""
     # Initial delay — let the app finish booting before the first refresh.
     time.sleep(60)
 
-    _last_prop_refresh = 0.0  # monotonic timestamp of last prop refresh
+    _last_prop_refresh = 0.0      # monotonic timestamp of last prop refresh
+    _last_analysis_date = ""      # ISO date of last successful QAM auto-analysis
 
     while True:
         game_window = _in_game_window()
         interval = _FAST_INTERVAL if game_window else _SLOW_INTERVAL
+        today_str = datetime.now(_ET).strftime("%Y-%m-%d")
 
         # ── ETL database refresh (game logs, standings, injuries) ──
         try:
@@ -136,6 +262,19 @@ def _loop() -> None:
                 count, elapsed, prop_interval // 60,
             )
 
+        # ── QAM auto-analysis (once per day during analysis window) ──
+        # Runs after props are fresh to analyze the live slate.
+        if _last_analysis_date != today_str:
+            t0 = time.monotonic()
+            inserted = _run_auto_analysis(today_str)
+            if inserted > 0:
+                # Mark done for today so we don't spam the API
+                _last_analysis_date = today_str
+                _logger.info(
+                    "[ETL Scheduler] QAM auto-analysis: %d picks persisted in %.1f s.",
+                    inserted, round(time.monotonic() - t0, 1),
+                )
+
         time.sleep(interval)
 
 
@@ -160,8 +299,10 @@ def start() -> bool:
     t.start()
     _logger.info(
         "[ETL Scheduler] started — fast=%d min (game window %d:00–%d:00 ET), "
-        "slow=%d min (outside window)",
+        "slow=%d min (outside window), QAM auto-analysis=%s (window %d:00–%d:00 ET, sim_depth=%d)",
         _FAST_INTERVAL // 60, _GAME_WINDOW_START, _GAME_WINDOW_END,
         _SLOW_INTERVAL // 60,
+        "disabled" if _QAM_DISABLED else "enabled",
+        _QAM_HOUR_START, _QAM_HOUR_END, _QAM_SIM_DEPTH,
     )
     return True

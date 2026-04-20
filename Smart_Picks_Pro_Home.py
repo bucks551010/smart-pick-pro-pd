@@ -458,6 +458,9 @@ st.markdown("""
 .pillar-subtitle{ font-size:0.81rem; color:rgba(107,122,154,0.95); font-style:italic; margin-top:-6px; line-height:1.4; }
 .pillar-body    { font-size:0.85rem; color:#B8C4D8; line-height:1.60; flex:1; }
 .pillar-footer  { font-size:0.76rem; color:#6B7A9A; margin-top:auto; padding-top:12px; border-top:1px solid rgba(255,255,255,0.07); font-style:italic; }
+.pillar-body ul { margin: 8px 0 4px 18px; padding: 0; }
+.pillar-body ul li { margin-bottom: 5px; color: #B8C4D8; }
+.pillar-body strong { color: #F0F4FF; }
 
 /* ── Proof Cards — big glowing numbers ───────────────────── */
 .proof-card {
@@ -562,14 +565,23 @@ st.markdown("""
 .hiw-stage-icon  { font-size:2rem; margin-bottom:10px; display:block; filter:drop-shadow(0 0 10px rgba(0,213,89,0.30)); }
 .hiw-stage-title { font-size:0.92rem; font-weight:800; color:#FFFFFF; margin-bottom:6px; }
 .hiw-stage-desc  { font-size:0.77rem; color:#A0AABE; line-height:1.55; }
-.hiw-connector   { display:flex; align-items:center; justify-content:center; color:#2D9EFF; font-size:1.5rem; opacity:0.45; height:100%; }
+.hiw-connector   { display:flex; align-items:center; justify-content:center; color:#2D9EFF; font-size:1.6rem; opacity:0.65; height:100%; min-height:80px; text-shadow:0 0 12px rgba(45,158,255,0.50); }
 
-/* ── Pipeline Steps ───────────────────────────────────────── */
+/* ── Pipeline Row + Steps ────────────────────────────────── */
+.pipeline-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+    margin: 14px 0;
+    flex-wrap: wrap;
+}
 .pipeline-step {
+    flex: 1;
+    min-width: 130px;
     background: linear-gradient(160deg, #161B27 0%, #1A2030 100%);
     border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 14px; padding: 20px 22px;
-    display: flex; gap: 16px; align-items: flex-start;
+    border-radius: 14px; padding: 16px 16px 16px 22px;
+    display: flex; flex-direction: column; gap: 6px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.40);
     transition: border-color 0.22s ease, transform 0.22s ease;
     position: relative; overflow: hidden;
@@ -578,11 +590,31 @@ st.markdown("""
     content: '';
     position: absolute; top:0; left:0; bottom:0; width:4px;
     background: linear-gradient(180deg, #00D559, #2D9EFF);
-    opacity: 0.80;
+    opacity: 0.55;
 }
-.pipeline-step:hover { border-color:rgba(0,213,89,0.38); transform:translateX(4px); }
-.pipeline-step-num   { font-family:'Bebas Neue','Inter',sans-serif; font-size:1.8rem; font-weight:900; color:#00D559; line-height:1; flex-shrink:0; width:34px; text-shadow:0 0 16px rgba(0,213,89,0.50); }
-.pipeline-step-title { font-size:0.95rem; font-weight:800; color:#FFFFFF; }
+.pipeline-step.done   { border-color: rgba(0,213,89,0.28); }
+.pipeline-step.done::before { opacity: 1; }
+.pipeline-step.pending { border-color: rgba(249,198,43,0.18); }
+.pipeline-step.pending::before { background: rgba(249,198,43,0.60); opacity: 0.45; }
+.pipeline-step:hover { border-color:rgba(0,213,89,0.40); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,213,89,0.10),0 12px 30px rgba(0,0,0,0.50); }
+.pipeline-connector {
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(107,122,154,0.60); font-size: 1.2rem;
+    flex-shrink: 0; width: 22px;
+    transition: color 0.22s ease;
+}
+.pipeline-connector::before { content: '→'; }
+.pipeline-connector.active { color: #00D559; text-shadow: 0 0 10px rgba(0,213,89,0.60); }
+.pipeline-step-num {
+    font-family:'Bebas Neue','Inter',sans-serif; font-size:1.5rem; font-weight:900;
+    color:#00D559; line-height:1; text-shadow:0 0 16px rgba(0,213,89,0.50);
+}
+.pipeline-step.pending .pipeline-step-num { color:#F9C62B; text-shadow:0 0 16px rgba(249,198,43,0.50); }
+.pipeline-step-label { font-size:0.88rem; font-weight:800; color:#FFFFFF; font-family:'Inter',sans-serif; }
+.pipeline-step-title { font-size:0.88rem; font-weight:800; color:#FFFFFF; } /* alias */
+.pipeline-step-status { font-size:0.76rem; color:#6B7A9A; }
+.pipeline-step-status.green { color:#00D559; font-weight:700; }
+.pipeline-step-status.amber { color:#F9C62B; font-weight:700; }
 .pipeline-step-body  { font-size:0.81rem; color:#A0AABE; margin-top:4px; line-height:1.55; }
 
 /* ── Connector animated line ──────────────────────────────── */
@@ -616,9 +648,9 @@ st.markdown("""
     transform: translateY(-6px);
     box-shadow: 0 10px 36px rgba(0,213,89,0.16), 0 16px 50px rgba(0,0,0,0.55);
 }
-.nav-card.cat-workflow:hover { border-color:rgba(0,213,89,0.50); }
-.nav-card.cat-analysis:hover { border-color:rgba(45,158,255,0.50); }
-.nav-card.cat-manage:hover   { border-color:rgba(249,198,43,0.45); }
+.nav-card.cat-workflow:hover { border-color:rgba(0,213,89,0.50);   box-shadow:0 10px 36px rgba(0,213,89,0.18),   0 16px 50px rgba(0,0,0,0.55); }
+.nav-card.cat-analysis:hover { border-color:rgba(45,158,255,0.50); box-shadow:0 10px 36px rgba(45,158,255,0.16), 0 16px 50px rgba(0,0,0,0.55); }
+.nav-card.cat-manage:hover   { border-color:rgba(249,198,43,0.45); box-shadow:0 10px 36px rgba(249,198,43,0.14), 0 16px 50px rgba(0,0,0,0.55); }
 .nav-card-icon  { font-size:2rem; margin-bottom:12px; display:block; filter:drop-shadow(0 0 10px rgba(0,213,89,0.35)); }
 .nav-card-title { font-size:0.98rem; font-weight:800; color:#FFFFFF; font-family:'Inter',sans-serif; }
 .nav-card-desc  { font-size:0.79rem; color:#6B7A9A; margin-top:6px; line-height:1.48; }
@@ -667,6 +699,21 @@ st.markdown("""
     flex-shrink: 0;
 }
 
+/* ── Sample Data Badge ────────────────────────────────────── */
+.sample-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(249,198,43,0.10); color: #F9C62B;
+    border: 1px solid rgba(249,198,43,0.35);
+    padding: 4px 12px; border-radius: 100px;
+    font-size: 0.79rem; font-weight: 700;
+}
+
+/* ── Matchup Meta (spread / o-u / time) ───────────────────── */
+.matchup-meta {
+    font-size: 0.72rem; color: #6B7A9A;
+    margin-top: 4px; line-height: 1.4;
+}
+
 /* ── Joseph Welcome Card ──────────────────────────────────── */
 .joseph-welcome-card {
     background: linear-gradient(135deg, #161B27 0%, #1C2232 100%);
@@ -701,12 +748,6 @@ st.markdown("""
 }
 
 /* ── Hero CTA Button ──────────────────────────────────────── */
-@keyframes lpCtaPulse {
-    0%,100%{ box-shadow:0 4px 24px rgba(0,213,89,0.45),0 0 50px rgba(0,213,89,0.12); }
-    50%    { box-shadow:0 6px 40px rgba(0,213,89,0.75),0 0 90px rgba(0,213,89,0.25),0 0 130px rgba(45,158,255,0.10); }
-}
-@keyframes lpCtaShine { 0%{ left:-100%; } 100%{ left:220%; } }
-
 .main .stButton > button[kind="primary"] {
     font-size: 1.12rem !important; padding: 20px 48px !important; min-height: 62px !important;
     background: linear-gradient(135deg, #00D559 0%, #00C04B 40%, #00E575 70%, #00B8FF 100%) !important;
@@ -1626,7 +1667,10 @@ st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 # SECTION 4: The Proof Points — Animated Metric Cards
 # ============================================================
 
-st.markdown('<div class="section-header lp-anim lp-anim-d3">Built Different. Proven By Design.</div>', unsafe_allow_html=True)
+st.markdown("""
+<div class="section-eyebrow lp-anim lp-anim-d1">By the Numbers</div>
+<div class="section-header-xl lp-anim lp-anim-d2">Built Different. <span class="xl-accent">Proven By Design.</span></div>
+""", unsafe_allow_html=True)
 
 _proof_cols = st.columns(5)
 
@@ -1656,11 +1700,15 @@ try:
     from utils.joseph_widget import joseph_get_track_record
     _track_record = joseph_get_track_record()
     if _track_record.get("total", 0) > 10:
-        st.metric(
-            "Tracked Win Rate",
-            f"{_track_record['win_rate']:.0f}%",
-            delta=f"{_track_record['total']} picks tracked",
-        )
+        _wr6 = _track_record["win_rate"]
+        _tot6 = _track_record["total"]
+        _color6 = "#00D559" if _wr6 >= 60 else "#F9C62B" if _wr6 >= 50 else "#F24336"
+        st.markdown(f"""
+        <div class="proof-card lp-anim lp-anim-d6">
+          <div class="proof-card-number" style="color:{_color6};">{_wr6:.0f}%</div>
+          <div class="proof-card-label">Tracked Win Rate ({_tot6} picks)</div>
+        </div>
+        """, unsafe_allow_html=True)
 except Exception:
     pass
 
@@ -1791,8 +1839,9 @@ st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 # ============================================================
 
 st.markdown("""
-<div class="section-header lp-anim lp-anim-d2">How It Works</div>
-<div class="section-subheader">From raw NBA data to ranked, explained picks — automated every night, no human bias involved.</div>
+<div class="section-eyebrow lp-anim lp-anim-d1">The Pipeline</div>
+<div class="section-header-xl lp-anim lp-anim-d2">From Raw Data to <span class="xl-accent">Ranked Picks</span></div>
+<div class="section-subheader-center lp-anim lp-anim-d3">From raw NBA data to ranked, explained picks — automated every night, no human bias involved.</div>
 """, unsafe_allow_html=True)
 
 _hiw_stages = [
@@ -1822,7 +1871,7 @@ for idx, (icon, title, desc) in enumerate(_hiw_stages):
         """, unsafe_allow_html=True)
     if idx < 4:
         with _hiw_cols[col_idx + 1]:
-            st.markdown('<div class="hiw-connector" style="height:100%;">&#8203;</div>', unsafe_allow_html=True)
+            st.markdown('<div class="hiw-connector">→</div>', unsafe_allow_html=True)
 
 with st.expander("📖 How to Use Smart Pick Pro — Getting Started in 60 Seconds", expanded=False):
     st.markdown("""
@@ -1847,8 +1896,9 @@ st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 # ============================================================
 
 st.markdown("""
-<div class="section-header lp-anim lp-anim-d2">🗺️ Your Unfair Advantage — 16 Pages of NBA Intelligence</div>
-<div class="section-subheader">Every tool you need to go from raw prop lines to confident, data-backed entries. No spreadsheets. No gut feels.</div>
+<div class="section-eyebrow lp-anim lp-anim-d1">Navigate the Platform</div>
+<div class="section-header-xl lp-anim lp-anim-d2">16 Pages of <span class="xl-accent">NBA Intelligence</span></div>
+<div class="section-subheader-center lp-anim lp-anim-d3">Every tool you need to go from raw prop lines to confident, data-backed entries. No spreadsheets. No gut feels.</div>
 """, unsafe_allow_html=True)
 
 # Row 1 — Tonight's Workflow
@@ -1929,8 +1979,8 @@ if todays_games:
 
     chips_html = ""
     for game in todays_games:
-        away = game.get("away_team", "")
-        home = game.get("home_team", "")
+        away = _html.escape(str(game.get("away_team", "")))
+        home = _html.escape(str(game.get("home_team", "")))
         aw = game.get("away_wins", 0)
         al = game.get("away_losses", 0)
         hw = game.get("home_wins", 0)
@@ -1939,9 +1989,9 @@ if todays_games:
         rec_h = f" ({hw}-{hl})" if hw or hl else ""
 
         # Enhanced metadata line — spread, total, game time
-        _spread = game.get("spread", "")
-        _total = game.get("total", "")
-        _game_time = game.get("game_time", "")
+        _spread = _html.escape(str(game.get("spread", "") or ""))
+        _total = _html.escape(str(game.get("total", "") or ""))
+        _game_time = _html.escape(str(game.get("game_time", "") or ""))
         _meta_parts = []
         if _spread:
             _meta_parts.append(f"Spread: {_spread}")

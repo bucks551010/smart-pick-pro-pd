@@ -109,6 +109,18 @@ def _run_daily_update():
 
 if __name__ == "__main__":
     _seed_volume()
+
+    # Ensure PostgreSQL users table exists (runs instantly if already created)
+    try:
+        from utils.auth_gate import _ensure_pg_users_table, _HAS_PSYCOPG2
+        if _HAS_PSYCOPG2:
+            _ensure_pg_users_table()
+            _logger.info("PostgreSQL users table ready.")
+        else:
+            _logger.info("Auth DB: SQLite mode (no DATABASE_URL).")
+    except Exception as exc:
+        _logger.error("Failed to initialise auth DB table: %s", exc)
+
     _seed_user_from_env()
     _run_daily_update()
 

@@ -1028,6 +1028,13 @@ def _set_logged_in(user: dict) -> None:
     st.session_state[_SS_USER_NAME]  = user.get("display_name", "")
     st.session_state[_SS_USER_ID]    = user.get("user_id", 0)
     st.session_state["_auth_is_admin"] = bool(user.get("is_admin", 0))
+    # Load subscription tier from the database into session state so
+    # get_user_tier() returns the correct tier immediately after login.
+    try:
+        from utils.auth import restore_subscription_by_email as _restore_sub
+        _restore_sub(user.get("email", ""))
+    except Exception:
+        pass
 
 
 def is_logged_in() -> bool:

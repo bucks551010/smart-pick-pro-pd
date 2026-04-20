@@ -206,7 +206,9 @@ def _save_subscription_to_db(sub_data: dict) -> bool:
 
 def _load_subscription_from_db(subscription_id: str) -> dict | None:
     """
-    Load a subscription record from the SQLite database.
+    Load a subscription record from the database.
+
+    Checks PostgreSQL first when available, falls back to SQLite.
 
     Args:
         subscription_id (str): Stripe Subscription ID.
@@ -216,6 +218,28 @@ def _load_subscription_from_db(subscription_id: str) -> dict | None:
     """
     if not subscription_id:
         return None
+
+    # ── Check PostgreSQL first when available ─────────────────
+    if _HAS_PG_SUB:
+        try:
+            _ensure_pg_subscriptions_table()
+            conn = _psycopg2.connect(
+                _PG_SUB_URL,
+                cursor_factory=_psycopg2x.RealDictCursor,
+            )
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT * FROM subscriptions WHERE subscription_id = %s",
+                    (subscription_id,),
+                )
+                row = cur.fetchone()
+            conn.close()
+            if row:
+                return dict(row)
+        except Exception as exc:
+            _logger.error("Failed to load subscription by ID from PG: %s", exc)
+
+    # ── Fallback: SQLite ──────────────────────────────────────
     try:
         initialize_database()
         with get_database_connection() as conn:

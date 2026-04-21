@@ -1125,30 +1125,8 @@ if _home_one_click:
     _hoc_status = st.empty()
 
     try:
-        # ── Phase 0: ETL Update for fresh local DB stats ──────────────
-        try:
-            from data.nba_data_service import refresh_from_etl as _hoc_refresh_etl
-            _hoc_etl_available = True
-        except ImportError:
-            _hoc_etl_available = False
-
-        if _hoc_etl_available:
-            _hoc_status.text("⏳ Phase 0/4 — Running Smart ETL Update for fresh stats…")
-            _hoc_bar.progress(2)
-            try:
-                import concurrent.futures as _cf_hoc
-                with _cf_hoc.ThreadPoolExecutor(max_workers=1) as _hoc_etl_pool:
-                    _hoc_etl_future = _hoc_etl_pool.submit(_hoc_refresh_etl)
-                    try:
-                        _hoc_etl_result = _hoc_etl_future.result(timeout=45)
-                    except _cf_hoc.TimeoutError:
-                        _logger.warning("Home ETL step timed out after 45s (non-fatal)")
-                        _hoc_etl_future.cancel()
-            except Exception:
-                pass
-
         # ── Phase 1: Auto-Load Tonight's Games ────────────────────────
-        _hoc_status.text("⏳ Phase 1/4 — Auto-loading tonight's games, rosters & stats…")
+        _hoc_status.text("⏳ Phase 1/3 — Auto-loading tonight's games, rosters & stats…")
         _hoc_bar.progress(5)
         from data.nba_data_service import (
             get_todays_games as _hoc_fg,
@@ -1169,7 +1147,7 @@ if _home_one_click:
             _hoc_games = st.session_state.get("todays_games", [])
 
         _hoc_bar.progress(25)
-        _hoc_status.text(f"⏳ Phase 1/4 — {len(_hoc_games)} game(s) loaded. Loading player data…")
+        _hoc_status.text(f"⏳ Phase 1/3 — {len(_hoc_games)} game(s) loaded. Loading player data…")
 
         _hoc_players_ok = _hoc_fp(_hoc_games) if _hoc_games else False
         _hoc_bar.progress(40)
@@ -1183,7 +1161,7 @@ if _home_one_click:
             pass
 
         # ── Phase 2: Load team stats & standings ─────────────────────
-        _hoc_status.text("⏳ Phase 2/4 — Loading team stats & standings…")
+        _hoc_status.text("⏳ Phase 2/3 — Loading team stats & standings…")
         _hoc_bar.progress(50)
 
         try:
@@ -1201,7 +1179,7 @@ if _home_one_click:
         _hoc_bar.progress(60)
 
         # ── Phase 3: Get Live Platform Props ────────────────────────
-        _hoc_status.text("⏳ Phase 3/4 — Retrieving live prop lines from all platforms…")
+        _hoc_status.text("⏳ Phase 3/3 — Retrieving live prop lines from all platforms…")
 
         try:
             from data.sportsbook_service import get_all_sportsbook_props as _hoc_fap

@@ -523,25 +523,6 @@ if auto_load_clicked:
         _joseph_games_loader = None
 
     try:
-        # ── ETL Step: Refresh local DB before loading games ──────────
-        if _ETL_AVAILABLE_LG:
-            status_text.text("⏳ Step 0/3 — Running Smart ETL Update for fresh stats…")
-            progress_bar.progress(2)
-            try:
-                import concurrent.futures as _cf
-                with _cf.ThreadPoolExecutor(max_workers=1) as _etl_pool:
-                    _etl_future = _etl_pool.submit(_lg_refresh_etl)
-                    try:
-                        _al_etl_result = _etl_future.result(timeout=45)
-                        _al_etl_ng = _al_etl_result.get("new_games", 0)
-                        _al_etl_nl = _al_etl_result.get("new_logs", 0)
-                        _logger.info("Auto-Load ETL step: %d new games, %d new logs", _al_etl_ng, _al_etl_nl)
-                    except _cf.TimeoutError:
-                        _logger.warning("Auto-Load ETL step timed out after 45s (non-fatal)")
-                        _etl_future.cancel()
-            except Exception as _al_etl_err:
-                _logger.warning("Auto-Load ETL step failed (non-fatal): %s", _al_etl_err)
-
         status_text.text("⏳ Step 1/3 — Loading tonight's games...")
         progress_bar.progress(5)
         games = get_todays_games()
@@ -1413,27 +1394,8 @@ if one_click_setup_clicked:
     _oc_status = st.empty()
 
     try:
-        # ── Phase 0: ETL Update for fresh local DB stats ──────────────
-        if _ETL_AVAILABLE_LG:
-            _oc_status.text("⏳ Phase 0/4 — Running Smart ETL Update for fresh stats…")
-            _oc_bar.progress(2)
-            try:
-                import concurrent.futures as _cf_oc
-                with _cf_oc.ThreadPoolExecutor(max_workers=1) as _oc_etl_pool:
-                    _oc_etl_future = _oc_etl_pool.submit(_lg_refresh_etl)
-                    try:
-                        _oc_etl_result = _oc_etl_future.result(timeout=45)
-                        _oc_etl_ng = _oc_etl_result.get("new_games", 0)
-                        _oc_etl_nl = _oc_etl_result.get("new_logs", 0)
-                        _logger.info("One-Click ETL step: %d new games, %d new logs", _oc_etl_ng, _oc_etl_nl)
-                    except _cf_oc.TimeoutError:
-                        _logger.warning("One-Click ETL step timed out after 45s (non-fatal)")
-                        _oc_etl_future.cancel()
-            except Exception as _oc_etl_err:
-                _logger.warning("One-Click ETL step failed (non-fatal): %s", _oc_etl_err)
-
         # ── Phase 1: Auto-Load Tonight's Games ────────────────────────
-        _oc_status.text("⏳ Phase 1/4 — Auto-loading tonight's games, rosters & stats…")
+        _oc_status.text("⏳ Phase 1/3 — Auto-loading tonight's games, rosters & stats…")
         _oc_bar.progress(5)
         from data.nba_data_service import (
             get_todays_games as _oc_get_games,
@@ -1455,7 +1417,7 @@ if one_click_setup_clicked:
             _oc_games = st.session_state.get("todays_games", [])
 
         _oc_bar.progress(25)
-        _oc_status.text(f"⏳ Phase 1/4 — {len(_oc_games)} game(s) loaded. Loading player data…")
+        _oc_status.text(f"⏳ Phase 1/3 — {len(_oc_games)} game(s) loaded. Loading player data…")
 
         _oc_players_ok = _oc_get_players(_oc_games) if _oc_games else False
         _oc_bar.progress(40)
@@ -1469,7 +1431,7 @@ if one_click_setup_clicked:
             pass
 
         # ── Phase 2: Load team stats & standings ─────────────────────
-        _oc_status.text("⏳ Phase 2/4 — Loading team stats & standings…")
+        _oc_status.text("⏳ Phase 2/3 — Loading team stats & standings…")
         _oc_bar.progress(50)
 
         try:
@@ -1487,7 +1449,7 @@ if one_click_setup_clicked:
         _oc_bar.progress(60)
 
         # ── Phase 3: Get Live Platform Props ────────────────────────
-        _oc_status.text("⏳ Phase 3/4 — Retrieving live prop lines from all platforms…")
+        _oc_status.text("⏳ Phase 3/3 — Retrieving live prop lines from all platforms…")
 
         try:
             from data.sportsbook_service import get_all_sportsbook_props as _oc_get_sportsbook_props

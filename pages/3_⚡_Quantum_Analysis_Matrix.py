@@ -835,7 +835,14 @@ if run_analysis:
         _joseph_loader = joseph_loading_placeholder("Running Quantum Matrix Analysis")
     except Exception:
         _joseph_loader = None
-    progress_bar         = st.progress(0, text="Starting analysis...")
+    progress_bar         = st.progress(0, text="")
+    _player_label        = st.empty()   # large player-name readout above the bar
+    _player_label.markdown(
+        '<p style="font-size:1.05rem;font-weight:600;color:#00D559;'
+        'margin:4px 0 2px;font-family:\'Inter\',sans-serif;">'
+        '&#9654; Starting analysis…</p>',
+        unsafe_allow_html=True,
+    )
 
     # ── Show Joseph's animated loading screen with NBA fun facts ──
     try:
@@ -1112,9 +1119,13 @@ if run_analysis:
 
         def _progress_cb(idx: int, total: int, name: str):
             if idx % _PROGRESS_UPDATE_INTERVAL == 0 or idx == total - 1:
-                progress_bar.progress(
-                    (idx + 1) / total,
-                    text=f"Analyzing {name}… ({idx + 1}/{total})",
+                progress_bar.progress((idx + 1) / total, text="")
+                _player_label.markdown(
+                    f'<p style="font-size:1.05rem;font-weight:600;color:#00D559;'
+                    f'margin:4px 0 2px;font-family:\'Inter\',sans-serif;">'
+                    f'&#9654; {name} <span style="color:#a0b4d0;'
+                    f'font-weight:400;font-size:0.88rem;">({idx + 1} / {total})</span></p>',
+                    unsafe_allow_html=True,
                 )
 
         analysis_results_list = _analyze_batch(
@@ -1208,6 +1219,7 @@ if run_analysis:
         except Exception as _persist_err:
             pass  # Non-fatal — session state still has results
         progress_bar.empty()
+        _player_label.empty()
         # Dismiss the Joseph loading screen
         if _joseph_loader is not None:
             try:
@@ -1254,6 +1266,10 @@ if run_analysis:
     finally:
         try:
             progress_bar.empty()
+        except Exception:
+            pass
+        try:
+            _player_label.empty()
         except Exception:
             pass
         if _joseph_loader is not None:

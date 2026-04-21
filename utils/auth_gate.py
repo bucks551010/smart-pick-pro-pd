@@ -4120,6 +4120,15 @@ def require_login() -> bool:
                 _qp.pop("_st", None)
         except Exception:
             pass
+        # ── JWT fetch interceptor ─────────────────────────────────────────────
+        # Inject once per tab (idempotent via window.parent._sppInterceptorInstalled).
+        # Gives all JS-initiated /api/* calls a short-lived Bearer token while
+        # the long-lived HttpOnly refresh cookie stays invisible to JS.
+        try:
+            from utils.state_sync import inject_fetch_interceptor as _inject_interceptor
+            _inject_interceptor()
+        except Exception:
+            pass
         return True
 
     # ── Cookie-based session restore (survives F5 / new tab) ─────────────────
@@ -4133,6 +4142,12 @@ def require_login() -> bool:
             try:
                 st.query_params.pop("auth", None)
                 st.query_params.pop("_st", None)
+            except Exception:
+                pass
+            # Inject JWT interceptor for this restored session.
+            try:
+                from utils.state_sync import inject_fetch_interceptor as _inject_interceptor
+                _inject_interceptor()
             except Exception:
                 pass
             return True
@@ -4151,6 +4166,12 @@ def require_login() -> bool:
                 try:
                     st.query_params.pop("_st", None)
                     st.query_params.pop("auth", None)
+                except Exception:
+                    pass
+                # Inject JWT interceptor for this restored session.
+                try:
+                    from utils.state_sync import inject_fetch_interceptor as _inject_interceptor
+                    _inject_interceptor()
                 except Exception:
                     pass
                 return True

@@ -75,5 +75,11 @@ if _FASTAPI_AVAILABLE:
     except Exception as exc:
         _logger.warning("session router failed to load: %s", exc)
 
+    try:
+        from api.routes.auth import router as auth_router
+        app.include_router(auth_router)
+    except Exception as exc:
+        _logger.warning("auth router failed to load: %s", exc)
+
 else:
     app = None

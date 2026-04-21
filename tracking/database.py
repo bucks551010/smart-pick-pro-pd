@@ -677,6 +677,14 @@ def initialize_database():
             except sqlite3.OperationalError:
                 pass  # Column already exists
 
+            # ── Subscription tier column on users table ──
+            try:
+                cursor.execute(
+                    "ALTER TABLE users ADD COLUMN plan_tier TEXT DEFAULT 'free'"
+                )
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+
             # ── Analytics events table ──
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS analytics_events (

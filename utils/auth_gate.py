@@ -71,7 +71,8 @@ CREATE TABLE IF NOT EXISTS users (
     reset_token_expires TIMESTAMPTZ,
     failed_login_count INTEGER DEFAULT 0,
     lockout_until TIMESTAMPTZ,
-    is_admin INTEGER DEFAULT 0
+    is_admin INTEGER DEFAULT 0,
+    plan_tier TEXT DEFAULT 'free'
 );
 """
 _pg_users_initialized = False
@@ -87,6 +88,11 @@ def _ensure_pg_users_table() -> None:
         try:
             with conn.cursor() as cur:
                 cur.execute(_PG_USERS_TABLE_SQL)
+                # Migration: add plan_tier column to existing tables
+                try:
+                    cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_tier TEXT DEFAULT 'free'")
+                except Exception:
+                    pass
             conn.commit()
             _pg_users_initialized = True
         finally:
@@ -933,7 +939,7 @@ def _authenticate_user(email: str, password: str) -> dict | None:
         try:
             with _AuthConn() as db:
                 user = db.fetchone(
-                    "SELECT user_id, email, password_hash, display_name, is_admin FROM users WHERE email = ?",
+                    "SELECT user_id, email, password_hash, display_name, is_admin, plan_tier FROM users WHERE email = ?",
                     (email.strip().lower(),),
                 )
                 if not user:
@@ -1170,16 +1176,40 @@ def _set_logged_in(user: dict, _write_storage: bool = True) -> None:
     st.session_state[_SS_USER_NAME]  = user.get("display_name", "")
     st.session_state[_SS_USER_ID]    = user.get("user_id", 0)
     st.session_state["_auth_is_admin"] = bool(user.get("is_admin", 0))
-    # Load subscription tier from the database into session state so
-    # get_user_tier() returns the correct tier immediately after login.
-    try:
-        from utils.auth import restore_subscription_by_email as _restore_sub
-        _restore_sub(user.get("email", ""))
-    except Exception:
-        pass
+
+    # ── Tier injection: prefer plan_tier column on the user row ──
+    # This is the fast, reliable path — no separate subscriptions
+    # table lookup needed.  Falls back to restore_subscription_by_email
+    # for Stripe-purchased accounts that pre-date this column.
+    plan_tier = (user.get("plan_tier") or "").strip()
+    if plan_tier and plan_tier != "free":
+        # Map DB tier key → plan_name that get_user_tier() understands
+        _TIER_KEY_TO_PLAN = {
+            "sharp_iq":      "Sharp IQ",
+            "smart_money":   "Smart Money",
+            "insider_circle": "Insider Circle",
+            "insider":       "Insider Circle",
+        }
+        plan_name = _TIER_KEY_TO_PLAN.get(plan_tier.lower(), plan_tier)
+        st.session_state["_sub_is_premium"]      = True
+        st.session_state["_sub_subscription_id"] = f"otp_{user.get('user_id', 0)}"
+        st.session_state["_sub_customer_id"]     = f"cus_{user.get('user_id', 0)}"
+        st.session_state["_sub_customer_email"]  = user.get("email", "")
+        st.session_state["_sub_plan_name"]       = plan_name
+        st.session_state["_sub_status"]          = "active"
+        st.session_state["_sub_period_end"]      = ""
+        import time as _time
+        st.session_state["_sub_verified_at"]     = _time.time()
+    else:
+        # Fallback: look up the subscriptions table (Stripe / otp_ rows)
+        try:
+            from utils.auth import restore_subscription_by_email as _restore_sub
+            _restore_sub(user.get("email", ""))
+        except Exception:
+            pass
+
     # Write a persistent session token to localStorage so the user stays
-    # logged in across F5 reloads.  Skip when restoring from an existing
-    # token (to avoid generating a new token on every page load).
+    # logged in across F5 reloads.
     if _write_storage:
         try:
             _tok = secrets.token_urlsafe(32)

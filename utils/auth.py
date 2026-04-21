@@ -651,10 +651,22 @@ TIER_QAM_LIMITS = {
 }
 
 # Platform AI Picks display limit per tier (QAM platform picks section).
+# Free = 0: entire section is blurred (teaser only).
+# Sharp IQ = 5: show 5 visible, blur the rest.
 TIER_PLATFORM_PICK_LIMITS = {
-    TIER_FREE:        2,
-    TIER_SHARP_IQ:    10,
+    TIER_FREE:        0,
+    TIER_SHARP_IQ:    5,
     TIER_SMART_MONEY: 9999,   # effectively unlimited
+    TIER_INSIDER:     9999,
+}
+
+# Quantum Edge Gap visible pick limit per tier.
+# Free = 0: entire section is blurred (teaser only).
+# Sharp IQ = 10: show 10 visible, blur the rest.
+TIER_QEG_LIMITS = {
+    TIER_FREE:        0,
+    TIER_SHARP_IQ:    10,
+    TIER_SMART_MONEY: 9999,
     TIER_INSIDER:     9999,
 }
 

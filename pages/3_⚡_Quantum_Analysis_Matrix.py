@@ -414,6 +414,7 @@ from utils.auth import (
     get_user_tier as _get_user_tier,
     TIER_QAM_LIMITS,
     TIER_PLATFORM_PICK_LIMITS,
+    TIER_QEG_LIMITS as _TIER_QEG_LIMITS,
     TIER_FREE,
     TIER_SHARP_IQ as _TIER_SHARP_IQ,
     get_tier_label as _get_tier_label,
@@ -423,7 +424,6 @@ try:
 except Exception:
     _PREM_PATH = "/15_%F0%9F%92%8E_Subscription_Level"
 _user_tier = _get_user_tier()
-_QAM_PROP_LIMIT = TIER_QAM_LIMITS.get(_user_tier, 10)
 _user_is_premium = _is_premium_user()
 if "selected_picks" not in st.session_state:
     st.session_state["selected_picks"] = []
@@ -1038,19 +1038,8 @@ if run_analysis:
             progress_bar.empty()
             st.stop()
 
-        # ── Tier-based prop cap ──────────────────────────────────────
-        if total_props_count > _QAM_PROP_LIMIT:
-            props_to_analyze = props_to_analyze[:_QAM_PROP_LIMIT]
-            _tier_label = _get_tier_label(_user_tier)
-            st.info(
-                f"ℹ️ Your plan ({_tier_label}) includes **{_QAM_PROP_LIMIT}** "
-                f"QAM props per session. Analyzing the top {_QAM_PROP_LIMIT} of "
-                f"{total_props_count} available props. "
-                f"[Upgrade]({_PREM_PATH}) for more."
-            )
-            total_props_count = len(props_to_analyze)
-
-        # ── Analysis proceeds with all available props (no cap) ────
+        # ── Analysis runs on ALL available props regardless of tier ────────
+        # Display caps are applied to the output list after analysis completes.
 
         # ── Change 7: Parallel data pre-fetching ────────────────────
         # Pre-fetch player bios in parallel so the main loop doesn't
@@ -1312,26 +1301,31 @@ if analysis_results:
         key=lambda r: (r.get("confidence_score", 0), abs(r.get("edge_percentage", 0))),
         reverse=True,
     )
-    _plat_display_limit = TIER_PLATFORM_PICK_LIMITS.get(_user_tier, 2)
-    if len(_plat_picks_list) > _plat_display_limit:
-        _plat_tier_label = _get_tier_label(_user_tier)
-        st.info(
-            f"ℹ️ Your plan ({_plat_tier_label}) shows **{_plat_display_limit} Platform AI Pick(s)**. "
-            f"Upgrade for more platform picks."
-        )
-        _plat_picks_list = _plat_picks_list[:_plat_display_limit]
+    _plat_visible_limit = TIER_PLATFORM_PICK_LIMITS.get(_user_tier, 0)
     if _plat_picks_list:
         from styles.theme import get_quantum_card_matrix_css as _get_qcm_css_plat
+        from utils.tier_gate import blur_section_html as _blur_plat
         st.markdown(_get_qcm_css_plat(), unsafe_allow_html=True)
-        _plat_html = _render_platform_picks_html(_plat_picks_list)
-        if _user_tier in (TIER_FREE, _TIER_SHARP_IQ):
-            from utils.tier_gate import blur_section_html as _blur_plat
+        if _user_tier == TIER_FREE:
+            # Free tier: blur entire section as teaser
             st.markdown(
-                _blur_plat(_plat_html, "💰 Smart Money"),
+                _blur_plat(_render_platform_picks_html(_plat_picks_list[:5]), "🔥 Sharp IQ"),
                 unsafe_allow_html=True,
             )
+        elif _plat_visible_limit < 9999:
+            # Sharp IQ: show first N visible, blur the rest
+            _plat_visible = _plat_picks_list[:_plat_visible_limit]
+            _plat_hidden  = _plat_picks_list[_plat_visible_limit:]
+            if _plat_visible:
+                st.markdown(_render_platform_picks_html(_plat_visible), unsafe_allow_html=True)
+            if _plat_hidden:
+                st.markdown(
+                    _blur_plat(_render_platform_picks_html(_plat_hidden), "💰 Smart Money"),
+                    unsafe_allow_html=True,
+                )
         else:
-            st.markdown(_plat_html, unsafe_allow_html=True)
+            # Smart Money+: show all
+            st.markdown(_render_platform_picks_html(_plat_picks_list), unsafe_allow_html=True)
         st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 
 # ════ JOSEPH M. SMITH LIVE BROADCAST DESK ════
@@ -1661,6 +1655,11 @@ def _render_results_fragment():
             _player_prop_counts[_pname] += 1
     displayed_results = _capped_results
 
+    # ── Tier-based display cap (analyze all; show N per tier) ────────────
+    _qam_display_limit = TIER_QAM_LIMITS.get(_user_tier, 12)
+    if _qam_display_limit < 9999 and len(displayed_results) > _qam_display_limit:
+        displayed_results = displayed_results[:_qam_display_limit]
+
     # ── Summary metrics ────────────────────────────────────────
     total_analyzed   = len(_frag_analysis_results)
     total_over_picks = sum(1 for r in displayed_results if r.get("direction") == "OVER")
@@ -1964,17 +1963,32 @@ def _render_results_fragment():
 
     if _edge_gap_picks:
         st.markdown(_get_qcm_css(), unsafe_allow_html=True)
-        _qeg_combined_html = (
-            _render_edge_gap_banner_html(_edge_gap_picks)
-            + _render_edge_gap_grouped_html(_edge_gap_picks)
-        )
+        from utils.tier_gate import blur_section_html as _blur_qeg
+        _qeg_visible_limit = _TIER_QEG_LIMITS.get(_user_tier, 0)
         if _user_tier == TIER_FREE:
-            from utils.tier_gate import blur_section_html as _blur_qeg
+            # Free tier: blur entire section as teaser
+            _qeg_teaser_html = (
+                _render_edge_gap_banner_html(_edge_gap_picks)
+                + _render_edge_gap_grouped_html(_edge_gap_picks)
+            )
             st.markdown(
-                _blur_qeg(_qeg_combined_html, "🔥 Sharp IQ"),
+                _blur_qeg(_qeg_teaser_html, "🔥 Sharp IQ"),
                 unsafe_allow_html=True,
             )
+        elif _qeg_visible_limit < 9999:
+            # Sharp IQ: show banner + first N picks; blur the rest
+            _qeg_visible = _edge_gap_picks[:_qeg_visible_limit]
+            _qeg_hidden  = _edge_gap_picks[_qeg_visible_limit:]
+            st.markdown(_render_edge_gap_banner_html(_edge_gap_picks), unsafe_allow_html=True)
+            if _qeg_visible:
+                st.markdown(_render_edge_gap_grouped_html(_qeg_visible), unsafe_allow_html=True)
+            if _qeg_hidden:
+                st.markdown(
+                    _blur_qeg(_render_edge_gap_grouped_html(_qeg_hidden), "💰 Smart Money"),
+                    unsafe_allow_html=True,
+                )
         else:
+            # Smart Money+: show all
             st.markdown(_render_edge_gap_banner_html(_edge_gap_picks), unsafe_allow_html=True)
             st.markdown(_render_edge_gap_grouped_html(_edge_gap_picks), unsafe_allow_html=True)
         st.divider()

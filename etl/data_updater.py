@@ -24,7 +24,7 @@ from datetime import date, datetime, timedelta
 from typing import Optional
 
 import pandas as pd
-from nba_api.stats.endpoints import LeagueGameLog, ScoreboardV3
+from nba_api.stats.endpoints import LeagueGameLog
 
 from . import initial_pull
 from . import setup_db
@@ -43,6 +43,12 @@ SEASON = "2025-26"
 
 # NBA API date format for the date_from_nullable / date_to_nullable params.
 _NBA_DATE_FMT = "%m/%d/%Y"
+
+# ── Season-dashboard refresh throttle ────────────────────────────────────────
+# _refresh_season_dashboards() calls 11+ nba_api endpoints (clutch, hustle,
+# bio, standings …).  Running it every scheduler cycle blocks the loop for
+# up to an hour on Railway.  Throttle to once per calendar day.
+_last_dashboard_refresh_date: str = ""  # ISO date string, e.g. '2026-04-21'
 
 
 # ---------------------------------------------------------------------------
@@ -254,11 +260,13 @@ def _upsert_team_game_stats(
 
 
 def sync_todays_games(conn: sqlite3.Connection) -> int:
-    """Fetch today's scheduled games via ``ScoreboardV3`` and insert them.
+    """Fetch today's scheduled games via the ESPN public API and insert them.
+
+    Uses the ESPN scoreboard endpoint (no API key, no rate limits) instead
+    of ScoreboardV3 which can hang indefinitely on Railway's blocked IPs.
 
     Only games whose ``game_id`` is not already in the ``Games`` table are
-    inserted.  This ensures that ``GET /api/games/today`` can be answered
-    entirely from the database without a live API fallback.
+    inserted so the function is safe to call repeatedly.
 
     Args:
         conn: Open SQLite connection (caller is responsible for committing).
@@ -266,87 +274,55 @@ def sync_todays_games(conn: sqlite3.Connection) -> int:
     Returns:
         Number of new game rows inserted into the ``Games`` table.
     """
-    # Use Eastern Time — NBA API uses ET dates for scheduling.
+    try:
+        from data.live_data_fetcher import fetch_todays_games as _fetch_espn
+    except ImportError:
+        logger.warning("sync_todays_games: live_data_fetcher not available — skipping")
+        return 0
+
+    try:
+        games_today = _fetch_espn()
+    except Exception as exc:
+        logger.warning("sync_todays_games: ESPN fetch failed — %s", exc)
+        return 0
+
+    if not games_today:
+        logger.info("sync_todays_games: ESPN returned no games today.")
+        return 0
+
     try:
         from zoneinfo import ZoneInfo as _ZI
-        from datetime import datetime as _dt
-        today_str = _dt.now(_ZI("America/New_York")).date().isoformat()
+        today_str = datetime.now(_ZI("America/New_York")).date().isoformat()
     except Exception:
         today_str = date.today().isoformat()
-    logger.info("Syncing today's schedule (%s) via ScoreboardV3 …", today_str)
-
-    try:
-        def _fetch_scoreboard():
-            sb = ScoreboardV3(
-                game_date=today_str,
-                timeout=initial_pull._SEASON_DASHBOARD_TIMEOUT,
-            )
-            return sb.game_header.get_data_frame(), sb.line_score.get_data_frame()
-
-        initial_pull._rate_limited_sleep()
-        game_header, line_score = initial_pull._call_with_retries(
-            _fetch_scoreboard,
-            description=f"ScoreboardV3({today_str})",
-        )
-    except Exception:  # Broad: _call_with_retries re-raises whatever the NBA API raises.
-        logger.exception(
-            "Failed to fetch ScoreboardV3 for %s after %d attempts.",
-            today_str, initial_pull._MAX_RETRIES,
-        )
-        return 0
-
-    if game_header.empty:
-        logger.info("ScoreboardV3 returned no games for %s.", today_str)
-        return 0
-
-    # V3 uses camelCase columns: gameId, teamId, teamTricode, gameCode, etc.
-    # Pre-convert gameId column to string once to avoid repeated conversions.
-    line_score_game_ids = line_score["gameId"].astype(str)
 
     inserted = 0
     cursor = conn.cursor()
-    for _, game_row in game_header.iterrows():
-        game_id = str(game_row.get("gameId", ""))
+    for game in games_today:
+        # ESPN games use string IDs like '401767542'; normalise to string
+        game_id = str(game.get("game_id", "") or game.get("id", ""))
         if not game_id:
             continue
 
-        # Skip if already stored.
         existing = cursor.execute(
             "SELECT 1 FROM Games WHERE game_id = ?", (game_id,)
         ).fetchone()
         if existing:
             continue
 
-        # V3 GameHeader does not contain team IDs directly; derive from
-        # LineScore where each game has two rows (away first, home second).
-        teams = line_score[line_score_game_ids == game_id]
-        home_team_id = None
-        away_team_id = None
-        home_tri = ""
-        away_tri = ""
-        if len(teams) >= 2:
-            away_row = teams.iloc[0]
-            home_row = teams.iloc[1]
-            home_team_id = int(home_row.get("teamId")) if home_row.get("teamId") is not None else None
-            away_team_id = int(away_row.get("teamId")) if away_row.get("teamId") is not None else None
-            home_tri = str(home_row.get("teamTricode", ""))
-            away_tri = str(away_row.get("teamTricode", ""))
-
-        if home_tri and away_tri:
-            matchup = f"{home_tri} vs. {away_tri}"
-        else:
-            matchup = game_row.get("gameCode", "TBD")
+        home_tri = str(game.get("home_team", "") or game.get("home_abbrev", ""))
+        away_tri = str(game.get("away_team", "") or game.get("away_abbrev", ""))
+        matchup = f"{home_tri} vs. {away_tri}" if home_tri and away_tri else game.get("matchup", "TBD")
 
         cursor.execute(
             "INSERT INTO Games (game_id, game_date, season, home_team_id, "
             "away_team_id, home_abbrev, away_abbrev, matchup) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (game_id, today_str, SEASON, home_team_id, away_team_id,
-             home_tri, away_tri, matchup),
+            (game_id, today_str, SEASON, None, None, home_tri, away_tri, matchup),
         )
         inserted += 1
 
-    logger.info("Today's schedule: inserted %d new games for %s.", inserted, today_str)
+    logger.info("sync_todays_games: inserted %d new games for %s (ESPN).", inserted, today_str)
     return inserted
 
 
@@ -375,6 +351,35 @@ def _refresh_season_dashboards(
     initial_pull.populate_league_leaders(conn, season)
     initial_pull.populate_standings(conn, season)
     logger.info("Season-level dashboard tables refreshed.")
+
+
+def _maybe_refresh_dashboards(conn: sqlite3.Connection, season: str) -> None:
+    """Call ``_refresh_season_dashboards`` at most once per calendar day.
+
+    Season-level dashboards (clutch, hustle, bio, standings …) change slowly.
+    Calling all 11 nba_api endpoints on every scheduler cycle blocks the loop
+    for up to an hour on Railway.  This wrapper checks the module-level
+    ``_last_dashboard_refresh_date`` and skips the refresh if it has already
+    run today.
+    """
+    global _last_dashboard_refresh_date
+    try:
+        from zoneinfo import ZoneInfo as _ZI
+        today_str = datetime.now(_ZI("America/New_York")).date().isoformat()
+    except Exception:
+        today_str = date.today().isoformat()
+
+    if _last_dashboard_refresh_date == today_str:
+        logger.debug(
+            "_maybe_refresh_dashboards: already refreshed today (%s) — skipping.", today_str
+        )
+        return
+
+    logger.info(
+        "_maybe_refresh_dashboards: running season dashboard refresh for %s …", today_str
+    )
+    _refresh_season_dashboards(conn, season)
+    _last_dashboard_refresh_date = today_str
 
 
 def _get_completed_game_ids_in_range(
@@ -462,8 +467,8 @@ def run_update(db_path: str = DB_PATH) -> int:
             # Still sync today's schedule so the games/today endpoint works.
             sync_todays_games(conn)
             conn.commit()
-            # Refresh season dashboards even when no new games (standings etc change).
-            _refresh_season_dashboards(conn, SEASON)
+            # Refresh season dashboards at most once per calendar day.
+            _maybe_refresh_dashboards(conn, SEASON)
             conn.commit()
             try:
                 injury_count = sync_rotowire_injuries(db_path)
@@ -492,7 +497,7 @@ def run_update(db_path: str = DB_PATH) -> int:
             # Still sync today's schedule so the games/today endpoint works.
             sync_todays_games(conn)
             conn.commit()
-            _refresh_season_dashboards(conn, SEASON)
+            _maybe_refresh_dashboards(conn, SEASON)
             conn.commit()
             try:
                 injury_count = sync_rotowire_injuries(db_path)
@@ -533,8 +538,8 @@ def run_update(db_path: str = DB_PATH) -> int:
 
         conn.commit()
 
-        # --- Refresh season-level dashboards ---
-        _refresh_season_dashboards(conn, SEASON)
+        # --- Refresh season-level dashboards (throttled: once per day) ---
+        _maybe_refresh_dashboards(conn, SEASON)
         conn.commit()
 
         # --- Fetch advanced box scores for new games ---

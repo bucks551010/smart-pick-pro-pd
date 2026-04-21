@@ -46,6 +46,7 @@ import logging
 import os
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as _FutTimeout
 from datetime import datetime, timezone, timedelta
 
 try:
@@ -97,6 +98,7 @@ def _in_game_window() -> bool:
 
 _PROP_FAST_INTERVAL = int(os.environ.get("PROP_FAST_INTERVAL_MIN", "15")) * 60   # seconds
 _PROP_SLOW_INTERVAL = int(os.environ.get("PROP_SLOW_INTERVAL_MIN", "60")) * 60  # seconds
+_ETL_RUN_TIMEOUT = int(os.environ.get("ETL_RUN_TIMEOUT_SEC", "300"))  # wall-clock limit for run_update
 
 
 def _refresh_props() -> int:
@@ -242,10 +244,22 @@ def _loop() -> None:
         today_str = datetime.now(_ET).strftime("%Y-%m-%d")
 
         # ── ETL database refresh (game logs, standings, injuries) ──
+        # Wrapped in a thread executor so a hung nba_api call cannot block
+        # the loop forever and prevent props / QAM from running.
         try:
             from etl.data_updater import run_update
             t0 = time.monotonic()
-            new_rows = run_update()
+            with ThreadPoolExecutor(max_workers=1, thread_name_prefix="etl-run") as _pool:
+                _fut = _pool.submit(run_update)
+                try:
+                    new_rows = _fut.result(timeout=_ETL_RUN_TIMEOUT)
+                except _FutTimeout:
+                    new_rows = 0
+                    _logger.warning(
+                        "[ETL Scheduler] run_update() exceeded %ds wall-clock timeout "
+                        "— props + QAM will still run this cycle.",
+                        _ETL_RUN_TIMEOUT,
+                    )
             elapsed = round(time.monotonic() - t0, 1)
             _logger.info(
                 "[ETL Scheduler] refresh done — %d new rows in %.1f s "

@@ -173,6 +173,9 @@ def _rate_limited_sleep() -> None:
         _last_call_time = time.monotonic()
 
 
+_CALL_WALL_TIMEOUT = 90  # seconds: hard wall-clock timeout per API call attempt
+
+
 def _call_with_retries(
     api_callable: Callable[[], Any],
     description: str = "API call",
@@ -180,25 +183,25 @@ def _call_with_retries(
 ) -> Any:
     """Call *api_callable* up to *max_retries* times with exponential backoff.
 
+    Each attempt is run in a ``ThreadPoolExecutor`` so that a hard wall-clock
+    timeout (``_CALL_WALL_TIMEOUT``) is enforced even when the underlying
+    ``requests`` socket timeout fails to fire (e.g. DNS hang, silent IP block).
+
     If all attempts fail, the last exception is re-raised so the caller can
     decide whether to abort or skip (``continue``).
-
-    Args:
-        api_callable: Zero-argument callable that makes the NBA API request.
-        description: Human-readable label used in log messages.
-        max_retries: Maximum number of attempts (default 3).
-
-    Returns:
-        Whatever *api_callable* returns on success.
-
-    Raises:
-        Exception: The last exception raised by *api_callable* after all
-            retries are exhausted.
     """
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError as _FutTimeout
     last_exc: Exception | None = None
     for attempt in range(1, max_retries + 1):
         try:
-            return api_callable()
+            with ThreadPoolExecutor(max_workers=1) as _pool:
+                _fut = _pool.submit(api_callable)
+                try:
+                    return _fut.result(timeout=_CALL_WALL_TIMEOUT)
+                except _FutTimeout:
+                    raise TimeoutError(
+                        f"{description} exceeded {_CALL_WALL_TIMEOUT}s wall-clock timeout"
+                    )
         except Exception as exc:
             last_exc = exc
             if attempt < max_retries:

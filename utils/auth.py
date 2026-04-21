@@ -644,8 +644,8 @@ _PRICE_ENV_TO_TIER.pop("", None)
 
 # QAM prop limits per tier.
 TIER_QAM_LIMITS = {
-    TIER_FREE:        5,
-    TIER_SHARP_IQ:    25,
+    TIER_FREE:        12,
+    TIER_SHARP_IQ:    35,
     TIER_SMART_MONEY: 9999,   # effectively unlimited
     TIER_INSIDER:     9999,
 }

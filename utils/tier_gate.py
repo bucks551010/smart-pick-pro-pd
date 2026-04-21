@@ -120,7 +120,45 @@ def require_tier(page_key: str | None = None) -> bool:
     return False
 
 
-# ── Inline CSS for the blur gate ──────────────────────────────
+def blur_section_html(inner_html: str, required_tier_label: str) -> str:
+    """Wrap HTML in a blurred teaser with upgrade CTA overlay.
+
+    Use this for sections that should be *visible but unreadable* to
+    lower-tier users — the classic "teaser blur" UX pattern.
+
+    Args:
+        inner_html: The rendered HTML that should appear blurred.
+        required_tier_label: Human-readable name of the minimum tier
+                             that unlocks this section (e.g. "Sharp IQ").
+
+    Returns:
+        HTML string with blur wrapper + upgrade overlay.
+    """
+    upgrade_path = _PREMIUM_PAGE_PATH
+    return (
+        '<div style="position:relative;overflow:hidden;border-radius:12px;margin-bottom:8px;">'
+        f'<div style="filter:blur(7px);pointer-events:none;user-select:none;opacity:0.75;">'
+        f"{inner_html}"
+        "</div>"
+        '<div style="position:absolute;inset:0;display:flex;align-items:center;'
+        'justify-content:center;background:rgba(10,13,20,0.55);z-index:10;">'
+        '<div style="text-align:center;background:rgba(19,25,32,0.96);'
+        'border:1px solid rgba(0,212,255,0.18);border-radius:16px;'
+        'padding:28px 36px;box-shadow:0 16px 60px rgba(0,0,0,0.55);max-width:380px;">'
+        '<div style="font-size:2.2rem;margin-bottom:10px;">🔒</div>'
+        f'<p style="color:#00d4ff;font-size:1.1rem;font-weight:800;margin:0 0 6px;">'
+        f"{required_tier_label} Feature</p>"
+        '<p style="color:#a0b4d0;font-size:0.88rem;margin:0 0 18px;line-height:1.5;">'
+        "Upgrade your plan to unlock this section.</p>"
+        f'<a href="{upgrade_path}" style="display:inline-block;background:linear-gradient(135deg,#F9C62B,#FF8C00);'
+        'color:#0a0e14;font-weight:800;font-size:0.95rem;padding:11px 28px;'
+        'border-radius:10px;text-decoration:none;letter-spacing:-0.01em;">'
+        "⚡ Upgrade Now</a>"
+        "</div></div></div>"
+    )
+
+
+# ── Inline CSS for the blur gate ──────────────────────────────────────
 _BLUR_CSS = """
 <style>
 /* Blur everything rendered AFTER this overlay */

@@ -415,6 +415,7 @@ from utils.auth import (
     TIER_QAM_LIMITS,
     TIER_PLATFORM_PICK_LIMITS,
     TIER_FREE,
+    TIER_SHARP_IQ as _TIER_SHARP_IQ,
     get_tier_label as _get_tier_label,
 )
 try:
@@ -1322,10 +1323,15 @@ if analysis_results:
     if _plat_picks_list:
         from styles.theme import get_quantum_card_matrix_css as _get_qcm_css_plat
         st.markdown(_get_qcm_css_plat(), unsafe_allow_html=True)
-        st.markdown(
-            _render_platform_picks_html(_plat_picks_list),
-            unsafe_allow_html=True,
-        )
+        _plat_html = _render_platform_picks_html(_plat_picks_list)
+        if _user_tier in (TIER_FREE, _TIER_SHARP_IQ):
+            from utils.tier_gate import blur_section_html as _blur_plat
+            st.markdown(
+                _blur_plat(_plat_html, "💰 Smart Money"),
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(_plat_html, unsafe_allow_html=True)
         st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 
 # ════ JOSEPH M. SMITH LIVE BROADCAST DESK ════
@@ -1958,14 +1964,19 @@ def _render_results_fragment():
 
     if _edge_gap_picks:
         st.markdown(_get_qcm_css(), unsafe_allow_html=True)
-        st.markdown(
-            _render_edge_gap_banner_html(_edge_gap_picks),
-            unsafe_allow_html=True,
+        _qeg_combined_html = (
+            _render_edge_gap_banner_html(_edge_gap_picks)
+            + _render_edge_gap_grouped_html(_edge_gap_picks)
         )
-        st.markdown(
-            _render_edge_gap_grouped_html(_edge_gap_picks),
-            unsafe_allow_html=True,
-        )
+        if _user_tier == TIER_FREE:
+            from utils.tier_gate import blur_section_html as _blur_qeg
+            st.markdown(
+                _blur_qeg(_qeg_combined_html, "🔥 Sharp IQ"),
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(_render_edge_gap_banner_html(_edge_gap_picks), unsafe_allow_html=True)
+            st.markdown(_render_edge_gap_grouped_html(_edge_gap_picks), unsafe_allow_html=True)
         st.divider()
 
     # ── 🏆 Best Single Bets — mark inline (no separate duplicate cards) ─
@@ -2248,3 +2259,4 @@ _render_results_fragment()
 # ============================================================
 # END SECTION: Display Analysis Results
 # ============================================================
+

@@ -180,13 +180,14 @@ _SS_USER_EMAIL    = "_auth_user_email"     # str
 _SS_USER_NAME     = "_auth_user_name"      # str
 _SS_USER_ID       = "_auth_user_id"        # int
 
-# ── Persistent login session (cookie + DB) ───────────────────
-# When a user logs in we store a signed token in the browser
-# cookie AND in the login_sessions table.  On every page load
-# require_login() reads the cookie and looks up the token so
-# the user stays logged in across F5 reloads and page navigation.
+# ── Persistent login session (localStorage + DB) ─────────────
+# When a user logs in we store a signed token in the browser's
+# localStorage AND in the login_sessions table.  On every page
+# load require_login() reads the token (via a hidden JS snippet)
+# and looks it up in the DB so the user stays logged in across
+# F5 reloads and page navigation.  No third-party package needed.
 
-_COOKIE_NAME       = "spp_session"
+_LS_KEY            = "spp_tok"
 _SESSION_TTL_DAYS  = 30
 _sessions_table_ok = False
 
@@ -199,13 +200,13 @@ def _ensure_sessions_table() -> None:
         with _AuthConn() as db:
             db.execute("""
                 CREATE TABLE IF NOT EXISTS login_sessions (
-                    token       TEXT PRIMARY KEY,
-                    user_id     INTEGER NOT NULL,
-                    email       TEXT NOT NULL,
+                    token        TEXT PRIMARY KEY,
+                    user_id      INTEGER NOT NULL,
+                    email        TEXT NOT NULL,
                     display_name TEXT,
-                    is_admin    INTEGER DEFAULT 0,
-                    expires_at  TEXT NOT NULL,
-                    created_at  TEXT DEFAULT (datetime('now'))
+                    is_admin     INTEGER DEFAULT 0,
+                    expires_at   TEXT NOT NULL,
+                    created_at   TEXT DEFAULT (datetime('now'))
                 )
             """)
         _sessions_table_ok = True
@@ -256,13 +257,70 @@ def _delete_session_token(token: str) -> None:
         _logger.error("Failed to delete session token: %s", _exc)
 
 
-def _get_cookie_ctrl():
-    """Return a CookieController instance, or None if the package is absent."""
-    try:
-        from streamlit_cookies_controller import CookieController  # type: ignore
-        return CookieController()
-    except Exception:
-        return None
+def _render_session_bridge() -> str | None:
+    """Render a hidden JS component that reads/writes localStorage.
+
+    Returns the stored token string on the SECOND Streamlit run
+    (after the component posts back its value via query_params).
+    Returns None if no token is stored or on the first run.
+
+    We piggyback on st.query_params: the JS sets ?_st=<token>
+    so Python can read it.  A one-time param is used so it
+    doesn't accumulate on subsequent navigations.
+    """
+    import streamlit.components.v1 as _components
+    # Read back whatever the JS posted last run
+    tok = st.query_params.get("_st", "")
+    if tok == "__clear__":
+        tok = ""
+    # Render the JS bridge (hidden, zero-height)
+    _components.html(f"""
+<script>
+(function() {{
+  var key = "{_LS_KEY}";
+  var stored = localStorage.getItem(key) || "";
+  // Only update query param if it differs from what's already there
+  var url = new URL(window.parent.location.href);
+  if (stored && url.searchParams.get("_st") !== stored) {{
+    url.searchParams.set("_st", stored);
+    window.parent.history.replaceState(null, "", url.toString());
+    window.parent.location.reload();
+  }}
+}})();
+</script>
+""", height=0)
+    return tok or None
+
+
+def _write_session_to_storage(token: str) -> None:
+    """Write the session token into the browser's localStorage."""
+    import streamlit.components.v1 as _components
+    _components.html(f"""
+<script>
+(function() {{
+  localStorage.setItem("{_LS_KEY}", "{token}");
+  var url = new URL(window.parent.location.href);
+  url.searchParams.set("_st", "{token}");
+  window.parent.history.replaceState(null, "", url.toString());
+}})();
+</script>
+""", height=0)
+
+
+def _clear_session_from_storage() -> None:
+    """Remove the session token from the browser's localStorage."""
+    import streamlit.components.v1 as _components
+    _components.html(f"""
+<script>
+(function() {{
+  localStorage.removeItem("{_LS_KEY}");
+  var url = new URL(window.parent.location.href);
+  url.searchParams.delete("_st");
+  window.parent.history.replaceState(null, "", url.toString());
+}})();
+</script>
+""", height=0)
+
 
 # ── Password hashing helpers ──────────────────────────────────
 
@@ -1106,7 +1164,7 @@ def _valid_password(pw: str) -> str | None:
 
 # ── Session helpers ───────────────────────────────────────────
 
-def _set_logged_in(user: dict, _write_cookie: bool = True) -> None:
+def _set_logged_in(user: dict, _write_storage: bool = True) -> None:
     st.session_state[_SS_LOGGED_IN]  = True
     st.session_state[_SS_USER_EMAIL] = user.get("email", "")
     st.session_state[_SS_USER_NAME]  = user.get("display_name", "")
@@ -1119,15 +1177,16 @@ def _set_logged_in(user: dict, _write_cookie: bool = True) -> None:
         _restore_sub(user.get("email", ""))
     except Exception:
         pass
-    # Write a persistent session cookie so the user stays logged in
-    # across F5 reloads.  Skip when restoring from an existing cookie
-    # (to avoid generating a new token on every page load).
-    if _write_cookie:
-        _tok = secrets.token_urlsafe(32)
-        _save_login_session(_tok, user)
-        _ctrl = _get_cookie_ctrl()
-        if _ctrl is not None:
-            _ctrl.set(_COOKIE_NAME, _tok, max_age=_SESSION_TTL_DAYS * 86400)
+    # Write a persistent session token to localStorage so the user stays
+    # logged in across F5 reloads.  Skip when restoring from an existing
+    # token (to avoid generating a new token on every page load).
+    if _write_storage:
+        try:
+            _tok = secrets.token_urlsafe(32)
+            _save_login_session(_tok, user)
+            _write_session_to_storage(_tok)
+        except Exception:
+            pass
 
 
 def is_logged_in() -> bool:
@@ -1142,14 +1201,12 @@ def get_logged_in_email() -> str:
 
 def logout_user() -> None:
     """Clear the login session."""
-    # Delete the persistent cookie and its DB record.
+    # Delete the DB token record and clear localStorage.
     try:
-        _ctrl = _get_cookie_ctrl()
-        if _ctrl is not None:
-            _tok = _ctrl.get(_COOKIE_NAME)
-            if _tok:
-                _delete_session_token(_tok)
-            _ctrl.remove(_COOKIE_NAME)
+        _tok = st.query_params.get("_st", "")
+        if _tok:
+            _delete_session_token(_tok)
+        _clear_session_from_storage()
     except Exception:
         pass
     for key in (_SS_LOGGED_IN, _SS_USER_EMAIL, _SS_USER_NAME, _SS_USER_ID, "_auth_is_admin"):
@@ -3855,22 +3912,20 @@ def require_login() -> bool:
     if is_logged_in():
         return True
 
-    # ── Try restoring from persistent session cookie ───────────────────────
-    # CookieController renders a hidden component; on the very first call it
-    # returns None and triggers a single rerun to load the cookie value.
-    # After that it returns the stored token immediately.
+    # ── Try restoring from persistent localStorage token ─────────────────
+    # On page load the JS bridge (rendered below) sets ?_st=<token> in the
+    # URL and triggers a reload.  We read it here from query_params.
     try:
-        _ctrl = _get_cookie_ctrl()
-        if _ctrl is not None:
-            _tok = _ctrl.get(_COOKIE_NAME)
-            if _tok:
-                _user = _load_session_by_token(_tok)
-                if _user:
-                    _set_logged_in(_user, _write_cookie=False)
-                    return True
-                else:
-                    # Token expired or not found — clear the stale cookie.
-                    _ctrl.remove(_COOKIE_NAME)
+        _tok = st.query_params.get("_st", "")
+        if _tok:
+            _user = _load_session_by_token(_tok)
+            if _user:
+                _set_logged_in(_user, _write_storage=False)
+                return True
+            else:
+                # Token expired or not found — clear stale storage.
+                _clear_session_from_storage()
+                st.query_params.pop("_st", None)
     except Exception:
         pass
 

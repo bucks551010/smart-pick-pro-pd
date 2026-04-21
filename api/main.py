@@ -81,5 +81,11 @@ if _FASTAPI_AVAILABLE:
     except Exception as exc:
         _logger.warning("auth router failed to load: %s", exc)
 
+    try:
+        from api.routes.notifications import router as notifications_router
+        app.include_router(notifications_router)
+    except Exception as exc:
+        _logger.warning("notifications router failed to load: %s", exc)
+
 else:
     app = None

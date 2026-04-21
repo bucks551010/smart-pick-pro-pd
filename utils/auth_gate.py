@@ -1161,6 +1161,12 @@ def _generate_reset_token(email: str) -> str | None:
                 "UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE email = ?",
                 (token_hash, expires, email_lower),
             )
+            # Email the code to the user -- never display it in the UI
+            try:
+                from utils.notifications import send_reset_code_email as _send_code
+                _send_code(email_lower, code)
+            except Exception:
+                pass
             return code
     except Exception as exc:
         _logger.error("Failed to generate reset token: %s", exc)
@@ -3587,6 +3593,11 @@ def _render_signup_form() -> None:
                             track_signup(_saved_email)
                         except Exception:
                             pass
+                        try:
+                            from utils.notifications import trigger_welcome_flow
+                            trigger_welcome_flow(_saved_email, _saved_name)
+                        except Exception:
+                            pass
                         for k in (_SU_STAGE, _SU_EMAIL, _SU_NAME):
                             st.session_state.pop(k, None)
                         st.success("Account created! Welcome to Smart Pick Pro.")
@@ -3646,15 +3657,16 @@ def _render_login_form() -> None:
             if not rst_email or not _valid_email(rst_email):
                 st.error("Enter a valid email address.")
             else:
-                code = _generate_reset_token(rst_email)
-                if code:
-                    st.session_state["_pw_reset_stage"] = "code"
-                    st.session_state["_pw_reset_email"] = rst_email.strip().lower()
-                    st.session_state["_pw_reset_code"] = code
-                    st.rerun()
-                else:
-                    st.warning("If this email is registered, a reset code has been generated. Check below.")
-                    st.session_state["_pw_reset_stage"] = "idle"
+                _code = _generate_reset_token(rst_email)
+                # SECURITY: always show the same message regardless of whether the
+                # email exists -- prevents account enumeration attacks.
+                st.success("\U0001F4E7 If this email is registered, a reset code has been sent to your inbox.")
+                # Always advance to code-entry; invalid/missing codes simply fail verification.
+                st.session_state["_pw_reset_stage"] = "code"
+                st.session_state["_pw_reset_email"] = rst_email.strip().lower()
+                # Never store the raw code in session state -- it arrives via email only.
+                st.session_state.pop("_pw_reset_code", None)
+                st.rerun()
         if st.button("Cancel", key="_btn_rst_cancel1"):
             st.session_state["_pw_reset_stage"] = "idle"
             st.rerun()
@@ -3662,8 +3674,7 @@ def _render_login_form() -> None:
     elif _reset_state == "code":
         _rst_em = st.session_state.get("_pw_reset_email", "")
         _rst_code = st.session_state.get("_pw_reset_code", "")
-        st.success(f"\U0001F4AC Your reset code: **{_rst_code}**")
-        st.caption(f"Code sent for `{_rst_em}` — expires in 15 minutes")
+        st.info(f"\U0001F4E7 A reset code has been sent to **{_rst_em}** — check your inbox. Expires in 15 minutes.")
         with st.form("reset_code_form", clear_on_submit=False):
             entered_code = st.text_input("Enter 6-digit code", placeholder="123456", key="_rst_code_input")
             rst_verify = st.form_submit_button("\u2705 Verify Code", use_container_width=True)
@@ -3887,6 +3898,11 @@ def _render_signup_form() -> None:
                             track_signup(_saved_email)
                         except Exception:
                             pass
+                        try:
+                            from utils.notifications import trigger_welcome_flow
+                            trigger_welcome_flow(_saved_email, _saved_name)
+                        except Exception:
+                            pass
                         for k in (_SU_STAGE, _SU_EMAIL, _SU_NAME):
                             st.session_state.pop(k, None)
                         st.success("Account created! Welcome to Smart Pick Pro.")
@@ -3946,15 +3962,16 @@ def _render_login_form() -> None:
             if not rst_email or not _valid_email(rst_email):
                 st.error("Enter a valid email address.")
             else:
-                code = _generate_reset_token(rst_email)
-                if code:
-                    st.session_state["_pw_reset_stage"] = "code"
-                    st.session_state["_pw_reset_email"] = rst_email.strip().lower()
-                    st.session_state["_pw_reset_code"] = code
-                    st.rerun()
-                else:
-                    st.warning("If this email is registered, a reset code has been generated. Check below.")
-                    st.session_state["_pw_reset_stage"] = "idle"
+                _code = _generate_reset_token(rst_email)
+                # SECURITY: always show the same message regardless of whether the
+                # email exists -- prevents account enumeration attacks.
+                st.success("\U0001F4E7 If this email is registered, a reset code has been sent to your inbox.")
+                # Always advance to code-entry; invalid/missing codes simply fail verification.
+                st.session_state["_pw_reset_stage"] = "code"
+                st.session_state["_pw_reset_email"] = rst_email.strip().lower()
+                # Never store the raw code in session state -- it arrives via email only.
+                st.session_state.pop("_pw_reset_code", None)
+                st.rerun()
         if st.button("Cancel", key="_btn_rst_cancel1"):
             st.session_state["_pw_reset_stage"] = "idle"
             st.rerun()
@@ -3962,8 +3979,7 @@ def _render_login_form() -> None:
     elif _reset_state == "code":
         _rst_em = st.session_state.get("_pw_reset_email", "")
         _rst_code = st.session_state.get("_pw_reset_code", "")
-        st.success(f"\U0001F4AC Your reset code: **{_rst_code}**")
-        st.caption(f"Code sent for `{_rst_em}` — expires in 15 minutes")
+        st.info(f"\U0001F4E7 A reset code has been sent to **{_rst_em}** — check your inbox. Expires in 15 minutes.")
         with st.form("reset_code_form", clear_on_submit=False):
             entered_code = st.text_input("Enter 6-digit code", placeholder="123456", key="_rst_code_input")
             rst_verify = st.form_submit_button("\u2705 Verify Code", use_container_width=True)
@@ -4098,6 +4114,141 @@ def _render_auth_portal(mode: str, logo_b64: str) -> None:
 
 # ── Main gate function ────────────────────────────────────────
 
+def _render_email_verification_result(raw_token: str) -> None:
+    """Render the result of an email-verification link click (?auth=verify&token=...)."""
+    st.markdown(
+        "<div style='display:flex;flex-direction:column;align-items:center;"
+        "justify-content:center;min-height:55vh;padding:2rem;'>",
+        unsafe_allow_html=True,
+    )
+    if not raw_token:
+        st.error("\u26A0\uFE0F Invalid verification link \u2014 the token is missing.")
+        if st.button("\u21A9 Back to Login", key="_verify_no_tok"):
+            try:
+                st.query_params.clear()
+                st.query_params["auth"] = "login"
+            except Exception:
+                pass
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+        return
+
+    try:
+        from utils.notifications import verify_email_token as _vt
+        _ok = _vt(raw_token)
+    except Exception:
+        _ok = False
+
+    if _ok:
+        st.success("\u2705 Email verified! Your account is fully activated.")
+        st.balloons()
+        # Fire the welcome-confirmed email (non-blocking, best-effort)
+        try:
+            _ve = st.session_state.get("_auth_user_email", "")
+            _vn = st.session_state.get("_auth_user_name", "")
+            if _ve:
+                from utils.email_utils import send_welcome_confirmed_email
+                send_welcome_confirmed_email(_ve, _vn)
+        except Exception:
+            pass
+        if st.button("\U0001F513 Log In Now", key="_verify_login", type="primary"):
+            try:
+                st.query_params.clear()
+                st.query_params["auth"] = "login"
+            except Exception:
+                pass
+            st.rerun()
+    else:
+        st.error("\u274C This verification link is invalid or has expired.")
+        st.caption(
+            "Links expire after 24 hours. Log in and resend the verification "
+            "email from your account settings."
+        )
+        if st.button("\u21A9 Back to Login", key="_verify_back"):
+            try:
+                st.query_params.clear()
+                st.query_params["auth"] = "login"
+            except Exception:
+                pass
+            st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+def _render_token_reset_form(raw_token: str) -> None:
+    """Render the password-reset form for email-link resets (?auth=reset&token=...)."""
+    if not raw_token:
+        st.error("\u26A0\uFE0F Invalid reset link \u2014 the token is missing.")
+        if st.button("\u21A9 Back to Login", key="_tr_no_tok"):
+            try:
+                st.query_params.clear()
+                st.query_params["auth"] = "login"
+            except Exception:
+                pass
+            st.rerun()
+        return
+
+    try:
+        from utils.notifications import verify_reset_token_valid, consume_reset_token
+        _user_info = verify_reset_token_valid(raw_token)
+    except Exception:
+        _user_info = None
+
+    if not _user_info:
+        st.error(
+            "\u274C This password reset link is invalid or has expired "
+            "(links expire after 30 minutes)."
+        )
+        if st.button("\u21A9 Back to Login", key="_tr_invalid"):
+            try:
+                st.query_params.clear()
+                st.query_params["auth"] = "login"
+            except Exception:
+                pass
+            st.rerun()
+        return
+
+    st.info(f"\U0001F512 Set a new password for `{_user_info['email']}`")
+
+    with st.form("token_reset_form", clear_on_submit=False):
+        _tr_pw  = st.text_input(
+            "New Password", type="password",
+            placeholder="Min 8 chars, 1 letter, 1 number", key="_tr_pw",
+        )
+        _tr_pw2 = st.text_input(
+            "Confirm Password", type="password",
+            placeholder="Re-enter new password", key="_tr_pw2",
+        )
+        _tr_btn = st.form_submit_button(
+            "\U0001F4BE Save New Password", use_container_width=True, type="primary",
+        )
+
+    if _tr_btn:
+        if pw_err := _valid_password(_tr_pw):
+            st.error(pw_err)
+        elif _tr_pw != _tr_pw2:
+            st.error("Passwords don't match.")
+        else:
+            try:
+                _tok_ok = consume_reset_token(raw_token, _tr_pw)
+            except Exception:
+                _tok_ok = False
+            if _tok_ok:
+                st.success("\u2705 Password updated! You can now log in.")
+                if st.button("\U0001F513 Log In", key="_tr_success_login", type="primary"):
+                    try:
+                        st.query_params.clear()
+                        st.query_params["auth"] = "login"
+                    except Exception:
+                        pass
+                    st.rerun()
+            else:
+                st.error(
+                    "Failed to reset password \u2014 "
+                    "this link may have already been used."
+                )
+
+
 def require_login() -> bool:
     """Render the Smart Pick Pro auth gate.
 
@@ -4127,6 +4278,18 @@ def require_login() -> bool:
         try:
             from utils.state_sync import inject_fetch_interceptor as _inject_interceptor
             _inject_interceptor()
+        except Exception:
+            pass
+        # ── Email verification reminder (once per session, non-blocking) ─────
+        try:
+            from utils.notifications import show_verification_banner
+            show_verification_banner(st.session_state.get("_auth_user_email", ""))
+        except Exception:
+            pass
+        # ── Email verification reminder (once per session, non-blocking) ─────
+        try:
+            from utils.notifications import show_verification_banner
+            show_verification_banner(st.session_state.get("_auth_user_email", ""))
         except Exception:
             pass
         return True
@@ -4185,6 +4348,29 @@ def require_login() -> bool:
     # instead of the full marketing landing page.  This is the "Sign Up" /
     # "Log In" destination linked from the nav bar buttons.
     _auth_mode = st.query_params.get("auth", "")
+
+    # ?????? Email verification link handler (?auth=verify&token=...) ???????????????????????????????????????
+    if _auth_mode == "verify":
+        _vtok = st.query_params.get("token", "")
+        st.markdown(_GATE_CSS, unsafe_allow_html=True)
+        _render_email_verification_result(_vtok)
+        return False
+
+    # ?????? Email-link password reset handler (?auth=reset&token=...) ????????????????????????????????????
+    if _auth_mode == "reset":
+        _rtok = st.query_params.get("token", "")
+        st.markdown(_GATE_CSS, unsafe_allow_html=True)
+        _render_token_reset_form(_rtok)
+        return False
+
+    # ?????? ?auth=verified: redirect from /api/auth/verify-email GET ???????????????????????????????????????
+    if _auth_mode == "verified":
+        try:
+            st.query_params.pop("auth", None)
+        except Exception:
+            pass
+        st.toast("✅ Email verified! Your account is fully activated.", icon="🎉")
+
     if _auth_mode in ("signup", "login"):
         st.markdown(_GATE_CSS, unsafe_allow_html=True)
         _render_auth_portal(_auth_mode, _get_logo_b64())

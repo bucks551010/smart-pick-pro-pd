@@ -2696,9 +2696,18 @@ def load_latest_analysis_session():
         with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
             conn.execute("PRAGMA journal_mode=WAL")
             conn.row_factory = sqlite3.Row
+            # Only load sessions saved today (Eastern Time) so yesterday's
+            # game slate never bleeds into today's picks display.
+            try:
+                import zoneinfo as _zi
+                _today_et = datetime.datetime.now(_zi.ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+            except Exception:
+                _today_et = datetime.date.today().isoformat()
             cursor = conn.execute(
                 """SELECT * FROM analysis_sessions
-                   ORDER BY session_id DESC LIMIT 1"""
+                   WHERE substr(analysis_timestamp, 1, 10) = ?
+                   ORDER BY session_id DESC LIMIT 1""",
+                (_today_et,),
             )
             row = cursor.fetchone()
             if not row:

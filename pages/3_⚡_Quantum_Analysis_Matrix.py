@@ -441,10 +441,24 @@ if not st.session_state.get("analysis_results"):
         from tracking.database import load_latest_analysis_session as _load_session
         _saved_session = _load_session()
         if _saved_session and _saved_session.get("analysis_results"):
+            # Only restore todays_games / selected_picks if the session was
+            # saved TODAY (Eastern Time).  Stale sessions from a previous
+            # day must not populate todays_games or the picks page shows
+            # yesterday's slate.
+            import datetime as _dt_check
+            try:
+                from zoneinfo import ZoneInfo as _ZI
+                _today_et = _dt_check.datetime.now(_ZI("America/New_York")).date().isoformat()
+            except Exception:
+                _today_et = _dt_check.date.today().isoformat()
+            _saved_ts = _saved_session.get("analysis_timestamp", "") or ""
+            _session_date = _saved_ts[:10] if _saved_ts else ""
+            _session_is_today = (_session_date == _today_et)
+
             st.session_state["analysis_results"] = _saved_session["analysis_results"]
-            if _saved_session.get("todays_games") and not st.session_state.get("todays_games"):
+            if _session_is_today and _saved_session.get("todays_games") and not st.session_state.get("todays_games"):
                 st.session_state["todays_games"] = _saved_session["todays_games"]
-            if _saved_session.get("selected_picks") and not st.session_state.get("selected_picks"):
+            if _session_is_today and _saved_session.get("selected_picks") and not st.session_state.get("selected_picks"):
                 st.session_state["selected_picks"] = _saved_session["selected_picks"]
             # Record the timestamp so the UI can show when the session was saved
             st.session_state["_analysis_session_reloaded_at"] = _saved_session.get("analysis_timestamp", "")
@@ -690,9 +704,20 @@ if current_props:
     _status_parts.append(f"📋 **{len(current_props)} props** loaded")
 else:
     st.warning(
-        "⚠️ No props loaded. Go to **🔬 Prop Scanner** → "
-        "**🤖 Auto-Generate Props for Tonight's Games** or import props manually."
+        "⚠️ No props loaded. Fetch live props below or go to **🔬 Prop Scanner**."
     )
+    if st.button("🔄 Fetch Live Props", key="qam_auto_fetch_empty", type="primary"):
+        with st.spinner("Fetching live props from all platforms…"):
+            try:
+                from data.platform_fetcher import fetch_all_platform_props as _fap
+                _fresh = _fap()
+                if _fresh:
+                    st.session_state["platform_props"] = _fresh
+                    st.rerun()
+                else:
+                    st.error("No props returned — APIs may be unavailable. Try again.")
+            except Exception as _fe:
+                st.error(f"Fetch failed: {_fe}")
 if todays_games:
     _status_parts.append(f"🏟️ **{len(todays_games)} game{'s' if len(todays_games) != 1 else ''}** tonight")
 else:
@@ -701,7 +726,22 @@ else:
         "on the Live Games page first."
     )
 if _status_parts:
-    st.markdown(" · ".join(_status_parts), unsafe_allow_html=True)
+    _scol1, _scol2 = st.columns([3, 1])
+    with _scol1:
+        st.markdown(" · ".join(_status_parts), unsafe_allow_html=True)
+    with _scol2:
+        if st.button("🔄 Refresh Props", key="qam_refresh_props", help="Fetch fresh live props from all platforms"):
+            with st.spinner("Fetching live props…"):
+                try:
+                    from data.platform_fetcher import fetch_all_platform_props as _fap
+                    _fresh = _fap()
+                    if _fresh:
+                        st.session_state["platform_props"] = _fresh
+                        st.rerun()
+                    else:
+                        st.error("No props returned.")
+                except Exception as _fe:
+                    st.error(f"Fetch failed: {_fe}")
 
 # ============================================================
 # SECTION: Prop Pool (all available props passed to engine)

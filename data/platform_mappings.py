@@ -23,8 +23,12 @@ PRIZEPICKS_STAT_MAP = {
     "3-Point Made": "threes",
     "3-Pointers Made": "threes",
     "Three Pointers Made": "threes",
+    "3-PT Made": "threes",        # current PrizePicks API name (2025+)
+    "3-Pt Made": "threes",
+    "3PM": "threes",
     "Steals": "steals",
     "Blocks": "blocks",
+    "Blocked Shots": "blocks",    # current PrizePicks API name (2025+)
     "Turnovers": "turnovers",
     "Pts+Rebs": "points_rebounds",
     "Pts+Asts": "points_assists",

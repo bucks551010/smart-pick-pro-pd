@@ -644,8 +644,16 @@ _PRICE_ENV_TO_TIER.pop("", None)
 
 # QAM prop limits per tier.
 TIER_QAM_LIMITS = {
-    TIER_FREE:        10,
+    TIER_FREE:        5,
     TIER_SHARP_IQ:    25,
+    TIER_SMART_MONEY: 9999,   # effectively unlimited
+    TIER_INSIDER:     9999,
+}
+
+# Platform AI Picks display limit per tier (QAM platform picks section).
+TIER_PLATFORM_PICK_LIMITS = {
+    TIER_FREE:        2,
+    TIER_SHARP_IQ:    10,
     TIER_SMART_MONEY: 9999,   # effectively unlimited
     TIER_INSIDER:     9999,
 }

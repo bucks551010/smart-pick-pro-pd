@@ -413,6 +413,7 @@ from utils.auth import (
     is_premium_user as _is_premium_user,
     get_user_tier as _get_user_tier,
     TIER_QAM_LIMITS,
+    TIER_PLATFORM_PICK_LIMITS,
     TIER_FREE,
     get_tier_label as _get_tier_label,
 )
@@ -1293,6 +1294,14 @@ if analysis_results:
         key=lambda r: (r.get("confidence_score", 0), abs(r.get("edge_percentage", 0))),
         reverse=True,
     )
+    _plat_display_limit = TIER_PLATFORM_PICK_LIMITS.get(_user_tier, 2)
+    if len(_plat_picks_list) > _plat_display_limit:
+        _plat_tier_label = _get_tier_label(_user_tier)
+        st.info(
+            f"ℹ️ Your plan ({_plat_tier_label}) shows **{_plat_display_limit} Platform AI Pick(s)**. "
+            f"Upgrade for more platform picks."
+        )
+        _plat_picks_list = _plat_picks_list[:_plat_display_limit]
     if _plat_picks_list:
         from styles.theme import get_quantum_card_matrix_css as _get_qcm_css_plat
         st.markdown(_get_qcm_css_plat(), unsafe_allow_html=True)

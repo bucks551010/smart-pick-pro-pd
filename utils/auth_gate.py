@@ -305,9 +305,9 @@ def _write_session_to_storage(token: str) -> None:
 <script>
 (function() {{
   localStorage.setItem("{_LS_KEY}", "{token}");
-  var url = new URL(window.parent.location.href);
-  url.searchParams.set("_st", "{token}");
-  window.parent.history.replaceState(null, "", url.toString());
+  // Navigate to a clean home URL with just the session token,
+  // removing ?auth=login and any other stale params from the address bar.
+  window.parent.location.href = "/?_st={token}";
 }})();
 </script>
 """, height=0)
@@ -3940,17 +3940,36 @@ def require_login() -> bool:
         return True
 
     if is_logged_in():
+        # Clean up any stale auth/token params left in the URL after login.
+        try:
+            _qp = st.query_params
+            if _qp.get("auth") or _qp.get("_st"):
+                _qp.pop("auth", None)
+                _qp.pop("_st", None)
+        except Exception:
+            pass
         return True
 
-    # ── Try restoring from persistent localStorage token ─────────────────
-    # On page load the JS bridge (rendered below) sets ?_st=<token> in the
-    # URL and triggers a reload.  We read it here from query_params.
+    # ── Render JS bridge to restore session from localStorage on fresh page loads ──
+    # Reads the token from localStorage and sets ?_st=<token> in the URL, then
+    # reloads once so Python can read it in the block below. No-op when empty.
+    _render_session_bridge()
+
+    # ── Try restoring from persistent localStorage token ─────────────────────
+    # After _write_session_to_storage navigates to /?_st=<token>, or after
+    # the bridge restores it, we validate and log in here.
     try:
         _tok = st.query_params.get("_st", "")
         if _tok:
             _user = _load_session_by_token(_tok)
             if _user:
                 _set_logged_in(_user, _write_storage=False)
+                # Clean token and auth params so the final URL is plain /
+                try:
+                    st.query_params.pop("_st", None)
+                    st.query_params.pop("auth", None)
+                except Exception:
+                    pass
                 return True
             else:
                 # Token expired or not found — clear stale storage.
@@ -3958,7 +3977,6 @@ def require_login() -> bool:
                 st.query_params.pop("_st", None)
     except Exception:
         pass
-
     # ── Portal routing: dedicated sign-in / sign-up view ──────────────────
     # If ?auth=signup or ?auth=login is in the URL, show the focused portal
     # instead of the full marketing landing page.  This is the "Sign Up" /

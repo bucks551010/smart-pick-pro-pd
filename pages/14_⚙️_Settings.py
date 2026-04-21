@@ -39,9 +39,11 @@ from styles.theme import get_global_css, get_education_box_html
 st.markdown(get_global_css(), unsafe_allow_html=True)
 
 # ── Joseph M. Smith Floating Widget ────────────────────────────
-from utils.components import inject_joseph_floating
+from utils.components import inject_joseph_floating, render_sidebar_auth
 st.session_state["joseph_page_context"] = "page_settings"
 inject_joseph_floating()
+with st.sidebar:
+    render_sidebar_auth()
 
 st.title("⚙️ Settings")
 st.markdown("Configure the SmartBetPro NBA prediction engine.")

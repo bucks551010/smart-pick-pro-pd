@@ -76,9 +76,11 @@ st.markdown(get_global_css(), unsafe_allow_html=True)
 st.markdown(get_prop_scanner_css(), unsafe_allow_html=True)
 
 # ── Joseph M. Smith Hero Banner & Floating Widget ─────────────
-from utils.components import render_joseph_hero_banner, inject_joseph_floating
+from utils.components import render_joseph_hero_banner, inject_joseph_floating, render_sidebar_auth
 st.session_state["joseph_page_context"] = "page_prop_scanner"
 inject_joseph_floating()
+with st.sidebar:
+    render_sidebar_auth()
 
 # ── Premium Status (partial gate — some features restricted) ──
 from utils.auth import is_premium_user as _is_premium_user

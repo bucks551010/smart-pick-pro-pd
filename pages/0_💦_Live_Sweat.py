@@ -62,6 +62,9 @@ try:
     render_joseph_hero_banner()
     st.session_state["joseph_page_context"] = "page_live_sweat"
     inject_joseph_floating()
+    from utils.components import render_sidebar_auth
+    with st.sidebar:
+        render_sidebar_auth()
 except ImportError:
     pass
 

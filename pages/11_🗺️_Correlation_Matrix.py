@@ -43,9 +43,11 @@ if not require_tier():
 st.markdown(get_global_css(), unsafe_allow_html=True)
 
 # ── Joseph M. Smith Hero Banner & Floating Widget ─────────────
-from utils.components import render_joseph_hero_banner, inject_joseph_floating
+from utils.components import render_joseph_hero_banner, inject_joseph_floating, render_sidebar_auth
 st.session_state["joseph_page_context"] = "page_correlation"
 inject_joseph_floating()
+with st.sidebar:
+    render_sidebar_auth()
 
 # ── Premium gate (graceful if module unavailable) ─────────────
 try:

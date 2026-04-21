@@ -59,10 +59,12 @@ from styles.theme import get_global_css, get_education_box_html, get_logo_img_ta
 st.markdown(get_global_css(), unsafe_allow_html=True)
 
 # ── Joseph M. Smith Floating Widget ───────────────────────────
-from utils.components import render_joseph_hero_banner, inject_joseph_floating
+from utils.components import render_joseph_hero_banner, inject_joseph_floating, render_sidebar_auth
 render_joseph_hero_banner()
 st.session_state["joseph_page_context"] = "page_live_games"
 inject_joseph_floating()
+with st.sidebar:
+    render_sidebar_auth()
 
 # ─── Custom CSS ────────────────────────────────────────────
 # Import ESPN ticker CSS from live_theme.py so we can reuse it

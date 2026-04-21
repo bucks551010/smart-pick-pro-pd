@@ -90,6 +90,60 @@ def render_joseph_hero_banner() -> None:
     )
 
 
+def render_sidebar_auth() -> None:
+    """Render logout button + tier/upgrade widget in the sidebar.
+
+    Call this inside a ``with st.sidebar:`` block on every page so that
+    the user can always see who they are logged in as and log out from
+    any page without going back to the home screen.
+    """
+    import html as _html
+    try:
+        from utils.auth_gate import get_logged_in_email, logout_user, is_logged_in
+        from utils.auth import get_user_tier, get_tier_label
+    except Exception:
+        return
+
+    try:
+        _PREM_PATH = "/15_%F0%9F%92%8E_Subscription_Level"
+
+        if is_logged_in():
+            _email = _html.escape(get_logged_in_email() or "")
+            st.markdown(
+                f'<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);'
+                f'border-radius:10px;padding:8px 14px;text-align:center;margin-bottom:6px;">'
+                f'<span style="color:#a0b4d0;font-size:0.78rem;">👤 {_email}</span>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            _tier = get_user_tier()
+            _tier_label = get_tier_label(_tier)
+            if _tier and _tier != "free":
+                st.markdown(
+                    f'<div style="background:rgba(0,213,89,0.08);border:1px solid rgba(0,213,89,0.28);'
+                    f'border-radius:10px;padding:8px 14px;text-align:center;margin-bottom:6px;">'
+                    f'<span style="color:#00D559;font-weight:700;font-size:0.85rem;">{_tier_label}</span>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    f'<div style="background:rgba(255,94,0,0.08);border:1px solid rgba(255,94,0,0.25);'
+                    f'border-radius:10px;padding:8px 14px;text-align:center;margin-bottom:6px;">'
+                    f'<span style="color:#a0b4d0;font-size:0.82rem;">⭐ Smart Rookie — Free</span><br>'
+                    f'<a href="{_PREM_PATH}" target="_self" style="color:#ff5e00;font-size:0.78rem;'
+                    f'font-weight:700;text-decoration:none;">🚀 Upgrade Now →</a>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+            if st.button("🚪 Log Out", key="_global_sidebar_logout", use_container_width=True):
+                logout_user()
+                st.rerun()
+            st.divider()
+    except Exception:
+        pass
+
+
 def render_global_settings():
     """Render an inline settings popover for edge threshold and simulation depth.
 
@@ -99,6 +153,7 @@ def render_global_settings():
     (``minimum_edge_threshold``, ``simulation_depth``), so changes
     propagate instantly on the next rerun.
     """
+    render_sidebar_auth()
     with st.popover("⚙️ Settings"):
         st.markdown(
             "**Quantum Matrix Engine 5.6 — Quick Settings**"

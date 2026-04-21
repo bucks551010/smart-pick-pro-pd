@@ -109,9 +109,11 @@ from styles.theme import get_global_css, get_education_box_html
 st.markdown(get_global_css(), unsafe_allow_html=True)
 
 # ── Joseph M. Smith Hero Banner & Floating Widget ─────────────
-from utils.components import render_joseph_hero_banner, inject_joseph_floating
+from utils.components import render_joseph_hero_banner, inject_joseph_floating, render_sidebar_auth
 st.session_state["joseph_page_context"] = "page_risk_shield"
 inject_joseph_floating()
+with st.sidebar:
+    render_sidebar_auth()
 
 # ── Premium Gate ───────────────────────────────────────────────
 from utils.premium_gate import premium_gate

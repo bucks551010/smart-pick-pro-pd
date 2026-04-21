@@ -251,7 +251,7 @@ def get_global_css():
     Returns:
         str: Full <style>...</style> block ready for st.markdown()
     """
-    return """
+    _base = """
 <style>
 /* ===========================================================
    SMART PICK PRO â€” AI Theme  (Phase 1: Core Foundation)
@@ -1401,6 +1401,232 @@ div[role="progressbar"] > div::after,
 }
 </style>
 """
+    return _base + _AI_CARD_THEME_CSS
+
+# ── AI Neural Theme — Player Cards (QEG, Top 3, QAM) ──────────────────────
+_AI_CARD_THEME_CSS = """
+<style>
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  AI NEURAL PLAYER CARD THEME — QEG · TOP 3 · QAM           ║
+   ║  Electric cyan/purple neural aesthetic across all cards     ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+
+@keyframes ai-card-scan {
+    0%   { transform: translateY(-100%); opacity: 0.6; }
+    70%  { opacity: 0.25; }
+    100% { transform: translateY(400%); opacity: 0; }
+}
+@keyframes ai-border-flow {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+@keyframes ai-pulse-cyan {
+    0%, 100% { box-shadow: 0 0 10px rgba(0,240,255,0.10), 0 4px 20px rgba(0,0,0,0.5); }
+    50%       { box-shadow: 0 0 22px rgba(0,240,255,0.22), 0 4px 28px rgba(0,0,0,0.55); }
+}
+@keyframes ai-pulse-purple {
+    0%, 100% { box-shadow: 0 0 10px rgba(200,0,255,0.12), 0 4px 20px rgba(0,0,0,0.5); }
+    50%       { box-shadow: 0 0 22px rgba(200,0,255,0.25), 0 4px 28px rgba(0,0,0,0.55); }
+}
+@keyframes ai-glow-headshot {
+    0%, 100% { box-shadow: 0 0 8px rgba(0,240,255,0.25); }
+    50%       { box-shadow: 0 0 18px rgba(0,240,255,0.45); }
+}
+@keyframes ai-rank-flicker {
+    0%, 90%, 100% { opacity: 1; }
+    92%            { opacity: 0.6; }
+    94%            { opacity: 1; }
+    96%            { opacity: 0.7; }
+}
+@keyframes ai-top-bar {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
+/* ══ QEG CARDS ══════════════════════════════════════════════════ */
+.qeg-card {
+    background: linear-gradient(160deg, rgba(4,8,18,0.97) 0%, rgba(7,12,26,0.95) 50%, rgba(5,10,22,0.97) 100%) !important;
+    border: 1px solid rgba(0,240,255,0.13) !important;
+    border-left: 4px solid #00c8ff !important;
+    box-shadow: 0 2px 18px rgba(0,0,0,0.5), 0 0 1px rgba(0,240,255,0.10) !important;
+    animation: qeg-card-slide-in 0.45s ease both, ai-pulse-cyan 5s ease-in-out 0.5s infinite !important;
+}
+.qeg-card::before {
+    background: linear-gradient(rgba(0,240,255,0.022) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,240,255,0.022) 1px, transparent 1px) !important;
+    background-size: 28px 28px !important;
+    animation: qeg-grid-scroll 25s linear infinite !important;
+    mask-image: radial-gradient(ellipse at 0% 50%, black 0%, transparent 55%) !important;
+    -webkit-mask-image: radial-gradient(ellipse at 0% 50%, black 0%, transparent 55%) !important;
+}
+.qeg-card::after {
+    content: '' !important;
+    position: absolute !important; top: 0; left: 4px; right: 0; height: 30px !important;
+    background: linear-gradient(180deg, transparent 0%, rgba(0,240,255,0.025) 45%, rgba(0,240,255,0.05) 50%, rgba(0,240,255,0.025) 55%, transparent 100%) !important;
+    animation: ai-card-scan 8s linear 2s infinite !important;
+    pointer-events: none !important;
+}
+.qeg-card:hover {
+    border-color: rgba(0,240,255,0.28) !important;
+    box-shadow: 0 6px 32px rgba(0,0,0,0.6), 0 0 28px rgba(0,240,255,0.12) !important;
+    transform: translateY(-2px) !important;
+}
+.qeg-card-over { border-left-color: #00c8ff !important; }
+.qeg-card-under {
+    border-left-color: #ff5e00 !important;
+    background: linear-gradient(160deg, rgba(18,6,2,0.97) 0%, rgba(24,8,4,0.95) 50%, rgba(18,6,2,0.97) 100%) !important;
+    animation: qeg-card-slide-in 0.45s ease both !important;
+}
+.qeg-card-under::before {
+    background: linear-gradient(rgba(255,94,0,0.022) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,94,0,0.022) 1px, transparent 1px) !important;
+    background-size: 28px 28px !important;
+}
+.qeg-card-under::after {
+    background: linear-gradient(180deg, transparent 0%, rgba(255,94,0,0.025) 45%, rgba(255,94,0,0.05) 50%, rgba(255,94,0,0.025) 55%, transparent 100%) !important;
+}
+.qeg-card-under:hover {
+    border-color: rgba(255,94,0,0.30) !important;
+    box-shadow: 0 6px 32px rgba(0,0,0,0.6), 0 0 28px rgba(255,94,0,0.12) !important;
+}
+.qeg-headshot {
+    border: 2px solid rgba(0,240,255,0.25) !important;
+    box-shadow: 0 0 10px rgba(0,240,255,0.20) !important;
+    animation: ai-glow-headshot 4s ease-in-out infinite !important;
+    background: linear-gradient(145deg, #060c1a, #040810) !important;
+}
+.qeg-card-under .qeg-headshot { border-color: rgba(255,94,0,0.25) !important; box-shadow: 0 0 10px rgba(255,94,0,0.18) !important; animation: none !important; }
+.qeg-rank {
+    background: linear-gradient(145deg, rgba(0,240,255,0.15), rgba(0,200,255,0.06)) !important;
+    border: 1px solid rgba(0,240,255,0.30) !important;
+    color: #00e8ff !important;
+    font-family: 'Orbitron', sans-serif !important;
+    animation: ai-rank-flicker 6s ease-in-out infinite !important;
+    box-shadow: 0 0 10px rgba(0,240,255,0.15) !important;
+}
+.qeg-card-under .qeg-rank { background: linear-gradient(145deg, rgba(255,94,0,0.15), rgba(255,94,0,0.06)) !important; border-color: rgba(255,94,0,0.30) !important; color: #ff8040 !important; box-shadow: 0 0 10px rgba(255,94,0,0.15) !important; }
+.qeg-player-name { color: #c8e8ff !important; }
+.qeg-player-prop { color: #00e0ff !important; }
+.qeg-card-under .qeg-player-prop { color: #ff7040 !important; }
+.qeg-player-meta { color: #4a6880 !important; }
+.qeg-metric { background: rgba(0,240,255,0.04) !important; border: 1px solid rgba(0,240,255,0.09) !important; }
+.qeg-metric:hover { background: rgba(0,240,255,0.08) !important; border-color: rgba(0,240,255,0.20) !important; }
+.qeg-metric-val { color: #00d8ff !important; }
+.qeg-metric-lbl { color: #3a6070 !important; }
+.qeg-card-under .qeg-metric { background: rgba(255,94,0,0.04) !important; border-color: rgba(255,94,0,0.09) !important; }
+.qeg-card-under .qeg-metric-val { color: #ff7040 !important; }
+.qeg-dir-over { background: rgba(0,240,255,0.12) !important; color: #00e0ff !important; border: 1px solid rgba(0,240,255,0.28) !important; box-shadow: 0 0 8px rgba(0,240,255,0.12) !important; }
+.qeg-dir-under { background: rgba(255,94,0,0.12) !important; color: #ff7040 !important; border: 1px solid rgba(255,94,0,0.28) !important; }
+.qeg-conf-val { color: #00d8ff !important; }
+.qeg-conf-bar-fill { background: linear-gradient(90deg, #0060a0, #00c8ff) !important; box-shadow: 0 0 6px rgba(0,200,255,0.30) !important; }
+.qeg-card-under .qeg-conf-val { color: #ff7040 !important; }
+.qeg-card-under .qeg-conf-bar-fill { background: linear-gradient(90deg, #803010, #ff5e00) !important; box-shadow: none !important; }
+.qeg-edge-highlight { background: linear-gradient(145deg, rgba(0,240,255,0.05), rgba(0,200,255,0.10)) !important; border: 1px solid rgba(0,240,255,0.20) !important; animation: ai-pulse-cyan 5s ease-in-out infinite !important; }
+.qeg-gauge-ring { stroke: #00c8ff !important; filter: drop-shadow(0 0 5px rgba(0,200,255,0.35)) !important; }
+.qeg-gauge-text { fill: #00d8ff !important; }
+.qeg-card-under .qeg-edge-highlight { background: linear-gradient(145deg, rgba(255,94,0,0.05), rgba(255,94,0,0.10)) !important; border-color: rgba(255,94,0,0.20) !important; animation: none !important; }
+.qeg-card-under .qeg-gauge-ring { stroke: #ff5e00 !important; filter: none !important; }
+.qeg-card-under .qeg-gauge-text { fill: #ff7040 !important; }
+.qeg-group { border-color: rgba(0,240,255,0.10) !important; background: rgba(4,8,18,0.60) !important; }
+.qeg-group[open] { border-color: rgba(0,240,255,0.20) !important; box-shadow: 0 2px 20px rgba(0,240,255,0.06) !important; }
+.qeg-group-name { color: #b0d8f0 !important; }
+.qeg-group-summary .qeg-headshot { border-color: rgba(0,240,255,0.18) !important; }
+
+/* ══ TOP 3 HERO CARDS ═══════════════════════════════════════════ */
+.qam-hero-card {
+    background: linear-gradient(145deg, rgba(6,10,22,0.96) 0%, rgba(10,16,30,0.97) 50%, rgba(7,12,24,0.96) 100%) !important;
+    border: 1.5px solid rgba(0,240,255,0.20) !important;
+    box-shadow: 0 0 28px rgba(0,240,255,0.09), 0 6px 36px rgba(0,0,0,0.55), inset 0 1px 0 rgba(0,240,255,0.06) !important;
+    animation: heroFadeIn 0.5s ease-out both, ai-pulse-cyan 6s ease-in-out 0.8s infinite !important;
+    overflow: hidden !important;
+}
+.qam-hero-card::before {
+    background: linear-gradient(90deg, #c800ff 0%, #00f0ff 25%, #FFD700 50%, #00ff9d 75%, #c800ff 100%) !important;
+    background-size: 300% 100% !important;
+    animation: ai-top-bar 4s linear infinite !important;
+    height: 3px !important;
+    border-radius: 16px 16px 0 0 !important;
+}
+.qam-hero-card::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 0; left: 0; right: 0; bottom: 0 !important;
+    background-image: linear-gradient(rgba(0,240,255,0.018) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0,240,255,0.018) 1px, transparent 1px) !important;
+    background-size: 30px 30px !important;
+    pointer-events: none !important;
+    mask-image: radial-gradient(ellipse at 50% 100%, black 0%, transparent 55%) !important;
+    -webkit-mask-image: radial-gradient(ellipse at 50% 100%, black 0%, transparent 55%) !important;
+    z-index: 0 !important;
+}
+.qam-hero-card:hover { transform: translateY(-5px) !important; box-shadow: 0 0 40px rgba(0,240,255,0.18), 0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(0,240,255,0.10) !important; border-color: rgba(0,240,255,0.35) !important; }
+.qam-hero-card[data-tier="Platinum"] { border-color: rgba(200,0,255,0.35) !important; animation: heroFadeIn 0.5s ease-out both, ai-pulse-purple 6s ease-in-out 0.8s infinite !important; box-shadow: 0 0 30px rgba(200,0,255,0.14), 0 6px 36px rgba(0,0,0,0.55), inset 0 1px 0 rgba(200,0,255,0.08) !important; }
+.qam-hero-card[data-tier="Gold"] { border-color: rgba(255,215,0,0.28) !important; }
+.qam-hero-name { font-family: 'Orbitron', sans-serif !important; color: #d0ecff !important; text-shadow: 0 0 14px rgba(0,240,255,0.20) !important; position: relative !important; z-index: 1 !important; }
+.qam-hero-rank { color: rgba(0,240,255,0.12) !important; font-family: 'Orbitron', sans-serif !important; }
+.qam-hero-team { color: #3a6880 !important; position: relative !important; z-index: 1 !important; }
+.qam-hero-tier[data-tier="Platinum"] { background: rgba(200,0,255,0.18) !important; color: #e060ff !important; border: 1px solid rgba(200,0,255,0.40) !important; box-shadow: 0 0 10px rgba(200,0,255,0.20) !important; }
+.qam-hero-tier[data-tier="Gold"] { background: rgba(255,215,0,0.14) !important; color: #ffd700 !important; border: 1px solid rgba(255,215,0,0.35) !important; box-shadow: 0 0 8px rgba(255,215,0,0.15) !important; }
+.qam-hero-tier[data-tier="Silver"] { background: rgba(0,240,255,0.12) !important; color: #00e8ff !important; border: 1px solid rgba(0,240,255,0.30) !important; }
+.qam-hero-headshot { border: 3px solid rgba(0,240,255,0.30) !important; box-shadow: 0 0 18px rgba(0,240,255,0.25), 0 4px 12px rgba(0,0,0,0.4) !important; animation: ai-glow-headshot 4s ease-in-out infinite !important; border-radius: 50% !important; position: relative !important; z-index: 1 !important; }
+.qam-hero-metric-val { font-family: 'Orbitron', sans-serif !important; text-shadow: 0 0 8px rgba(0,240,255,0.15) !important; position: relative !important; z-index: 1 !important; }
+.qam-hero-metric-label { color: #3a5870 !important; position: relative !important; z-index: 1 !important; }
+.qam-hero-line { font-family: 'Orbitron', sans-serif !important; color: #00e0ff !important; text-shadow: 0 0 12px rgba(0,240,255,0.25) !important; position: relative !important; z-index: 1 !important; }
+.qam-hero-dir[data-dir="OVER"] { color: #00ff9d !important; text-shadow: 0 0 10px rgba(0,255,157,0.25) !important; position: relative !important; z-index: 1 !important; }
+.qam-hero-dir[data-dir="UNDER"] { color: #ff5e00 !important; text-shadow: 0 0 10px rgba(255,94,0,0.20) !important; position: relative !important; z-index: 1 !important; }
+.qam-hero-stat { color: #5a90b8 !important; position: relative !important; z-index: 1 !important; }
+.qam-hero-body, .qam-hero-metrics, .qam-hero-top, .qam-hero-proj-bar,
+.qam-hero-range, .qam-hero-joseph, .qam-hero-badges { position: relative !important; z-index: 1 !important; }
+
+/* ══ QAM PROP CARDS ═════════════════════════════════════════════ */
+.qds-prop-card {
+    background: linear-gradient(145deg, rgba(5,9,20,0.97) 0%, rgba(8,13,28,0.96) 60%, rgba(6,10,22,0.97) 100%) !important;
+    border: 1px solid rgba(0,240,255,0.15) !important;
+    border-top: 3px solid transparent !important;
+    border-image: linear-gradient(90deg, #00f0ff, #c800ff, #FFD700) 1 !important;
+    border-image-slice: 1 !important;
+    box-shadow: 0 0 20px rgba(0,240,255,0.07), 0 4px 24px rgba(0,0,0,0.55), inset 0 1px 0 rgba(0,240,255,0.05) !important;
+    position: relative !important; overflow: hidden !important;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1) !important;
+}
+.qds-prop-card::after {
+    content: '' !important; position: absolute !important;
+    top: 0; left: 0; right: 0; bottom: 0 !important;
+    background-image: linear-gradient(rgba(0,240,255,0.015) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0,240,255,0.015) 1px, transparent 1px) !important;
+    background-size: 30px 30px !important; pointer-events: none !important;
+    mask-image: radial-gradient(ellipse at 100% 0%, black 0%, transparent 50%) !important;
+    -webkit-mask-image: radial-gradient(ellipse at 100% 0%, black 0%, transparent 50%) !important;
+    z-index: 0 !important;
+}
+.qds-prop-card:hover { border-color: rgba(0,240,255,0.28) !important; box-shadow: 0 0 30px rgba(0,240,255,0.13), 0 6px 30px rgba(0,0,0,0.60) !important; transform: translateY(-2px) !important; }
+.qds-prop-badge { background: linear-gradient(135deg, #0040a0, #0080c0) !important; color: #00e8ff !important; border: 1px solid rgba(0,240,255,0.35) !important; box-shadow: 0 0 8px rgba(0,200,255,0.20) !important; font-family: 'Orbitron', sans-serif !important; position: relative !important; z-index: 2 !important; }
+.qds-player-name { color: #c8e4ff !important; position: relative !important; z-index: 1 !important; }
+.qds-player-prop { position: relative !important; z-index: 1 !important; }
+.qds-score-value { background: rgba(0,240,255,0.10) !important; color: #00d8ff !important; border: 1px solid rgba(0,240,255,0.25) !important; box-shadow: 0 0 8px rgba(0,200,255,0.15) !important; position: relative !important; z-index: 1 !important; }
+.qds-tier-diamond { background: rgba(200,0,255,0.14) !important; color: #d060ff !important; border: 1px solid rgba(200,0,255,0.38) !important; box-shadow: 0 0 10px rgba(200,0,255,0.18) !important; }
+.qds-tier-lock { background: rgba(255,215,0,0.12) !important; color: #ffd700 !important; border: 1px solid rgba(255,215,0,0.32) !important; box-shadow: 0 0 8px rgba(255,215,0,0.14) !important; }
+.qds-tier-check { background: rgba(0,240,255,0.10) !important; color: #00d8ff !important; border: 1px solid rgba(0,240,255,0.28) !important; box-shadow: 0 0 6px rgba(0,200,255,0.12) !important; }
+.qds-metric-item { background: rgba(0,240,255,0.03) !important; border: 1px solid rgba(0,240,255,0.09) !important; border-left: 3px solid rgba(0,240,255,0.25) !important; position: relative !important; z-index: 1 !important; transition: all 0.2s ease !important; }
+.qds-metric-item:hover { background: rgba(0,240,255,0.06) !important; border-color: rgba(0,240,255,0.20) !important; }
+.qds-metric-name { color: #00c8e8 !important; }
+.qds-metric-score { background: rgba(0,240,255,0.10) !important; color: #00d8ff !important; border: 1px solid rgba(0,240,255,0.20) !important; }
+.qds-conf-fill-high { background: linear-gradient(90deg, #0060a0, #00c8ff) !important; box-shadow: 0 0 6px rgba(0,200,255,0.30) !important; }
+.qds-conf-fill-mid  { background: linear-gradient(90deg, #806000, #ffd700) !important; }
+.qds-conf-fill-low  { background: linear-gradient(90deg, #003880, #0080d0) !important; }
+.qds-prop-verdict { background: rgba(0,240,255,0.04) !important; border-left: 3px solid rgba(0,240,255,0.30) !important; color: #8ab8cc !important; position: relative !important; z-index: 1 !important; }
+.qds-player-img { border: 3px solid rgba(0,240,255,0.28) !important; box-shadow: 0 0 14px rgba(0,200,255,0.22) !important; background: linear-gradient(145deg, #060c1a, #040810) !important; position: relative !important; z-index: 1 !important; }
+.qds-prop-header, .qds-safe-score, .qds-metrics-grid, .qds-bonus-factors,
+.qds-strategy-table, .qds-confidence-bars, .qds-player-info { position: relative !important; z-index: 1 !important; }
+.qds-stat-badge { background: rgba(0,240,255,0.08) !important; color: #00c8e8 !important; border: 1px solid rgba(0,240,255,0.20) !important; }
+</style>
+"""
+
+
+def _get_ai_card_theme_css() -> str:
+    """Return the AI neural theme CSS for QEG, Top 3, and QAM player cards."""
+    return _AI_CARD_THEME_CSS
 
 
 # ============================================================

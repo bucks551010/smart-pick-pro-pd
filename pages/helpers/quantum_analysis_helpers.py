@@ -1529,7 +1529,7 @@ def render_hero_section_html(top_picks: list) -> str:
 
     return (
         f'<div class="qam-hero-section">'
-        f'<div class="qam-hero-label">\U0001f3c6 Top {len(cards)} Tonight</div>'
+        f'<div class="qam-hero-label">\U0001f9e0 Neural Top Signals \u2014 Tonight</div>'
         f'<div class="qam-hero-grid">{"".join(cards)}</div>'
         f'</div>'
     )

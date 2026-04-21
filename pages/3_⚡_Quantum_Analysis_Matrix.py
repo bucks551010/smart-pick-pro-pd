@@ -2099,10 +2099,14 @@ def _render_results_fragment():
             # Inject QCM CSS for matchup card styling
             st.markdown(_get_qcm_css(), unsafe_allow_html=True)
             st.markdown(
-                '<h3 style="font-family:\'Inter\',sans-serif;color:#00C6FF;'
-                'margin-bottom:8px;">🃏 Quantum Analysis Matrix</h3>'
-                '<p style="color:#94A3B8;font-size:0.82rem;margin-bottom:12px;">'
-                'Click any player to expand and view their full prop analysis.</p>',
+                '<h3 style="font-family:\'Orbitron\',sans-serif;'
+                'background:linear-gradient(90deg,#818cf8,#06b6d4);'
+                '-webkit-background-clip:text;-webkit-text-fill-color:transparent;'
+                'background-clip:text;letter-spacing:0.08em;margin-bottom:6px;">'
+                '🧠 Quantum Analysis Matrix</h3>'
+                '<p style="color:rgba(99,102,241,0.55);font-size:0.78rem;'
+                'font-family:\'JetBrains Mono\',monospace;margin-bottom:12px;letter-spacing:0.03em;">'
+                'Select a player to expand neural prop analysis.</p>',
                 unsafe_allow_html=True,
             )
 

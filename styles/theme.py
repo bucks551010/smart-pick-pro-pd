@@ -6801,8 +6801,8 @@ QUANTUM_CARD_MATRIX_CSS = """
 
 /* ── Animations ──────────────────────────────────────────────── */
 @keyframes qeg-border-glow {
-    0%, 100% { box-shadow: 0 0 16px rgba(0, 180, 100, 0.08), inset 0 0 24px rgba(0, 180, 100, 0.02); }
-    50%      { box-shadow: 0 0 28px rgba(0, 180, 100, 0.14), inset 0 0 36px rgba(0, 180, 100, 0.04); }
+    0%, 100% { box-shadow: 0 0 16px rgba(99, 102, 241, 0.08), inset 0 0 24px rgba(99, 102, 241, 0.02); }
+    50%      { box-shadow: 0 0 28px rgba(99, 102, 241, 0.16), inset 0 0 36px rgba(99, 102, 241, 0.05); }
 }
 @keyframes qeg-scanline {
     0%   { transform: translateY(-100%); }
@@ -6821,8 +6821,8 @@ QUANTUM_CARD_MATRIX_CSS = """
     to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes qeg-edge-pulse {
-    0%, 100% { box-shadow: 0 0 10px rgba(0, 180, 100, 0.10); }
-    50%      { box-shadow: 0 0 22px rgba(0, 180, 100, 0.18); }
+    0%, 100% { box-shadow: 0 0 10px rgba(99, 102, 241, 0.12); }
+    50%      { box-shadow: 0 0 22px rgba(6, 182, 212, 0.22); }
 }
 @keyframes qeg-edge-pulse-red {
     0%, 100% { box-shadow: 0 0 10px rgba(200, 60, 60, 0.10); }
@@ -6873,7 +6873,7 @@ QUANTUM_CARD_MATRIX_CSS = """
 /* Scanline sweep */
 .qeg-scanline-overlay {
     position: absolute; top: 0; left: 0; right: 0; height: 200%;
-    background: linear-gradient(180deg, transparent 0%, rgba(0, 220, 120, 0.015) 48%, rgba(0, 220, 120, 0.04) 50%, rgba(0, 220, 120, 0.015) 52%, transparent 100%);
+    background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.012) 48%, rgba(6, 182, 212, 0.028) 50%, rgba(99, 102, 241, 0.012) 52%, transparent 100%);
     animation: qeg-scanline 8s linear infinite;
     pointer-events: none; z-index: 0;
 }
@@ -6888,11 +6888,11 @@ QUANTUM_CARD_MATRIX_CSS = """
 .qeg-v2-icon-ring {
     width: 46px; height: 46px;
     border-radius: 50%;
-    border: 2px solid rgba(0, 220, 120, 0.35);
+    border: 2px solid rgba(99, 102, 241, 0.40);
     display: flex; align-items: center; justify-content: center;
     font-size: 1.2rem;
-    background: radial-gradient(circle, rgba(0, 220, 120, 0.10) 0%, transparent 70%);
-    box-shadow: 0 0 18px rgba(0, 220, 120, 0.12), inset 0 0 8px rgba(0, 220, 120, 0.06);
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
+    box-shadow: 0 0 18px rgba(99, 102, 241, 0.18), inset 0 0 8px rgba(6, 182, 212, 0.06);
     flex-shrink: 0;
     animation: qeg-edge-pulse 4s ease-in-out infinite;
 }
@@ -6900,15 +6900,17 @@ QUANTUM_CARD_MATRIX_CSS = """
     font-family: 'Orbitron', sans-serif;
     font-size: 1.05rem;
     font-weight: 700;
-    color: #88e8b0;
+    background: linear-gradient(90deg, #818cf8, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     letter-spacing: 0.14em;
     margin: 0;
-    text-shadow: 0 0 20px rgba(0, 220, 120, 0.30), 0 1px 2px rgba(0, 0, 0, 0.6);
     line-height: 1.2;
 }
 .qeg-v2-subtitle {
     font-size: 0.68rem;
-    color: rgba(136, 200, 168, 0.55);
+    color: rgba(129, 140, 248, 0.50);
     margin: 3px 0 0;
     letter-spacing: 0.03em;
     font-family: 'JetBrains Mono', 'Consolas', monospace;
@@ -6930,30 +6932,30 @@ QUANTUM_CARD_MATRIX_CSS = """
     justify-content: center;
     min-width: 80px;
     padding: 12px 16px;
-    background: linear-gradient(160deg, rgba(0, 220, 120, 0.04), rgba(0, 220, 120, 0.10));
-    border: 1px solid rgba(0, 220, 120, 0.16);
+    background: linear-gradient(160deg, rgba(99, 102, 241, 0.06), rgba(6, 182, 212, 0.08));
+    border: 1px solid rgba(99, 102, 241, 0.16);
     border-radius: 12px;
     position: relative;
 }
 .qeg-v2-count-block::after {
     content: '';
     position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(0, 220, 120, 0.20), transparent);
+    background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.25), transparent);
 }
 .qeg-v2-count-num {
     font-family: 'Orbitron', sans-serif;
     font-size: 1.8rem;
     font-weight: 800;
-    color: #78f0b0;
+    color: #06b6d4;
     line-height: 1;
-    text-shadow: 0 0 16px rgba(0, 220, 120, 0.35);
+    text-shadow: 0 0 16px rgba(6, 182, 212, 0.40);
     font-variant-numeric: tabular-nums;
 }
 .qeg-v2-count-label {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.50rem;
     font-weight: 700;
-    color: rgba(120, 240, 176, 0.50);
+    color: rgba(99, 102, 241, 0.50);
     letter-spacing: 0.18em;
     margin-top: 4px;
 }
@@ -6966,8 +6968,8 @@ QUANTUM_CARD_MATRIX_CSS = """
     justify-content: center;
     gap: 6px;
     padding: 12px 16px;
-    background: rgba(0, 220, 120, 0.02);
-    border: 1px solid rgba(0, 220, 120, 0.08);
+    background: rgba(99, 102, 241, 0.03);
+    border: 1px solid rgba(99, 102, 241, 0.10);
     border-radius: 12px;
 }
 .qeg-v2-split-labels {
@@ -7012,15 +7014,15 @@ QUANTUM_CARD_MATRIX_CSS = """
     align-items: center;
     gap: 14px;
     padding: 12px 20px;
-    background: linear-gradient(160deg, rgba(0, 220, 120, 0.03), rgba(0, 220, 120, 0.08));
-    border: 1px solid rgba(0, 220, 120, 0.14);
+    background: linear-gradient(160deg, rgba(99, 102, 241, 0.05), rgba(6, 182, 212, 0.06));
+    border: 1px solid rgba(99, 102, 241, 0.14);
     border-radius: 12px;
     position: relative;
 }
 .qeg-v2-edge-block::after {
     content: '';
     position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(0, 220, 120, 0.18), transparent);
+    background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.22), transparent);
 }
 .qeg-v2-edge-stat {
     display: flex;
@@ -7032,27 +7034,27 @@ QUANTUM_CARD_MATRIX_CSS = """
     font-family: 'JetBrains Mono', monospace;
     font-size: 1.15rem;
     font-weight: 700;
-    color: #a0e8c0;
+    color: #a5b4fc;
     font-variant-numeric: tabular-nums;
-    text-shadow: 0 0 10px rgba(0, 220, 120, 0.20);
+    text-shadow: 0 0 10px rgba(99, 102, 241, 0.25);
     line-height: 1;
 }
 .qeg-v2-peak {
-    color: #78f0b0;
-    text-shadow: 0 0 14px rgba(0, 240, 140, 0.30);
+    color: #06b6d4;
+    text-shadow: 0 0 14px rgba(6, 182, 212, 0.35);
 }
 .qeg-v2-edge-lbl {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.46rem;
     font-weight: 700;
-    color: rgba(160, 200, 180, 0.50);
+    color: rgba(99, 102, 241, 0.45);
     letter-spacing: 0.14em;
     text-transform: uppercase;
 }
 .qeg-v2-edge-divider {
     width: 1px;
     height: 28px;
-    background: linear-gradient(180deg, transparent, rgba(0, 220, 120, 0.18), transparent);
+    background: linear-gradient(180deg, transparent, rgba(99, 102, 241, 0.22), transparent);
 }
 
 /* ── Sub-stats row ───────────────────────────────────────────── */
@@ -7105,8 +7107,8 @@ QUANTUM_CARD_MATRIX_CSS = """
 }
 .qeg-props-scroll::-webkit-scrollbar { height: 4px; }
 .qeg-props-scroll::-webkit-scrollbar-track { background: transparent; }
-.qeg-props-scroll::-webkit-scrollbar-thumb { background: rgba(0,180,100,0.12); border-radius: 2px; }
-.qeg-props-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,180,100,0.22); }
+.qeg-props-scroll::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.14); border-radius: 2px; }
+.qeg-props-scroll::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.26); }
 
 /* Singles row — horizontal scroll strip */
 .qeg-singles-row {
@@ -7120,18 +7122,18 @@ QUANTUM_CARD_MATRIX_CSS = """
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x proximity;
     scrollbar-width: thin;
-    scrollbar-color: rgba(0,180,100,0.12) transparent;
+    scrollbar-color: rgba(99,102,241,0.14) transparent;
 }
 .qeg-singles-row::-webkit-scrollbar { height: 4px; }
 .qeg-singles-row::-webkit-scrollbar-track { background: transparent; }
-.qeg-singles-row::-webkit-scrollbar-thumb { background: rgba(0,180,100,0.12); border-radius: 2px; }
-.qeg-singles-row::-webkit-scrollbar-thumb:hover { background: rgba(0,180,100,0.22); }
+.qeg-singles-row::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.14); border-radius: 2px; }
+.qeg-singles-row::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.26); }
 
 .qeg-prop {
     flex-shrink: 0;
     width: 280px;
-    background: linear-gradient(168deg, rgba(8,16,12,0.97) 0%, rgba(4,8,6,0.96) 35%, rgba(6,12,9,0.94) 100%);
-    border: 1px solid rgba(0,180,100,0.10);
+    background: linear-gradient(168deg, rgba(3,4,16,0.98) 0%, rgba(6,8,28,0.96) 40%, rgba(3,4,16,0.97) 100%);
+    border: 1px solid rgba(99,102,241,0.14);
     border-radius: 22px;
     font-family: 'Inter', sans-serif;
     color: #c8d8e0;
@@ -7140,23 +7142,23 @@ QUANTUM_CARD_MATRIX_CSS = """
     scroll-snap-align: start;
     animation: qeg-card-slide-in 0.45s ease both;
     position: relative;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.02);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.45), 0 0 18px rgba(99,102,241,0.04), inset 0 1px 0 rgba(99,102,241,0.03);
 }
 .qeg-prop[open] {
     width: 420px;
-    border-color: rgba(0,180,100,0.22);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(0,180,100,0.06), inset 0 1px 0 rgba(255,255,255,0.03);
+    border-color: rgba(99,102,241,0.28);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 24px rgba(99,102,241,0.10), inset 0 1px 0 rgba(99,102,241,0.04);
 }
 .qeg-prop:hover {
-    border-color: rgba(0,180,100,0.22);
-    box-shadow: 0 16px 40px rgba(0,0,0,0.55), 0 0 20px rgba(0,180,100,0.06), inset 0 1px 0 rgba(255,255,255,0.04);
+    border-color: rgba(99,102,241,0.30);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.60), 0 0 24px rgba(99,102,241,0.10), inset 0 1px 0 rgba(99,102,241,0.05);
     transform: translateY(-4px) scale(1.01);
 }
 /* OVER/UNDER glow */
-.qeg-prop-over  { border-left: 3px solid #50a874; }
+.qeg-prop-over  { border-left: 3px solid rgba(6,182,212,0.55); }
 .qeg-prop-under { border-left: 3px solid #c85555; }
 .qeg-prop-under {
-    background: linear-gradient(160deg, rgba(8,4,4,0.96), rgba(16,8,10,0.94));
+    background: linear-gradient(160deg, rgba(8,4,4,0.97), rgba(16,8,10,0.95));
 }
 /* Platinum / Gold glow */
 .qeg-prop-platinum { box-shadow: 0 0 22px rgba(200,0,255,0.16), 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(200,0,255,0.04); border-color: rgba(200,0,255,0.26); }
@@ -7192,9 +7194,9 @@ QUANTUM_CARD_MATRIX_CSS = """
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.72rem;
     font-weight: 800;
-    color: #8ec8a0;
-    background: rgba(0,180,100,0.10);
-    border: 1px solid rgba(0,180,100,0.22);
+    color: #818cf8;
+    background: rgba(99,102,241,0.10);
+    border: 1px solid rgba(99,102,241,0.22);
     padding: 2px 8px;
     border-radius: 6px;
 }
@@ -7226,15 +7228,15 @@ QUANTUM_CARD_MATRIX_CSS = """
     height: 100px;
     border-radius: 50%;
     overflow: hidden;
-    border: 2.5px solid rgba(0,180,100,0.18);
-    background: linear-gradient(145deg, #080c0a, #050805);
+    border: 2.5px solid rgba(99,102,241,0.22);
+    background: linear-gradient(145deg, rgba(3,4,16,0.98), rgba(6,8,28,0.96));
     margin: 6px 0;
     flex-shrink: 0;
     box-shadow: 0 4px 16px rgba(0,0,0,0.5);
     transition: box-shadow 0.25s, border-color 0.25s;
 }
-.qeg-prop:hover .qeg-prop-hs-wrap { box-shadow: 0 4px 20px rgba(0,180,100,0.12), 0 4px 16px rgba(0,0,0,0.45); border-color: rgba(0,180,100,0.30); }
-.qeg-prop[open] .qeg-prop-hs-wrap { box-shadow: 0 4px 20px rgba(0,180,100,0.15); border-color: rgba(0,180,100,0.35); }
+.qeg-prop:hover .qeg-prop-hs-wrap { box-shadow: 0 4px 20px rgba(99,102,241,0.14), 0 4px 16px rgba(0,0,0,0.45); border-color: rgba(99,102,241,0.36); }
+.qeg-prop[open] .qeg-prop-hs-wrap { box-shadow: 0 4px 20px rgba(99,102,241,0.18); border-color: rgba(99,102,241,0.40); }
 .qeg-prop-under .qeg-prop-hs-wrap { border-color: rgba(200,60,60,0.18); }
 .qeg-prop-under:hover .qeg-prop-hs-wrap { box-shadow: 0 4px 20px rgba(200,60,60,0.12), 0 4px 16px rgba(0,0,0,0.45); border-color: rgba(200,60,60,0.30); }
 .qeg-prop-hs {
@@ -7293,7 +7295,7 @@ QUANTUM_CARD_MATRIX_CSS = """
     color: #FFFFFF;
     line-height: 1;
     letter-spacing: 0.01em;
-    text-shadow: 0 2px 12px rgba(0,0,0,0.4), 0 0 20px rgba(0,180,100,0.06);
+    text-shadow: 0 2px 12px rgba(0,0,0,0.4), 0 0 20px rgba(99,102,241,0.08);
 }
 .qeg-prop-stat-name {
     font-size: 0.85rem;
@@ -8675,9 +8677,14 @@ QUANTUM_CARD_MATRIX_CSS = """
     font-family: 'Orbitron', sans-serif;
     font-size: 1.15rem;
     font-weight: 800;
-    color: #FFFFFF;
-    letter-spacing: 0.03em;
+    background: linear-gradient(90deg, #818cf8 0%, #06b6d4 55%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 0.04em;
     margin-bottom: 16px;
+    text-shadow: none;
+    display: inline-block;
 }
 .qam-hero-grid {
     display: flex;
@@ -8687,14 +8694,14 @@ QUANTUM_CARD_MATRIX_CSS = """
 }
 /* (Hero grid responsive rules consolidated into comprehensive block below) */
 
-/* ── Card shell — mirrors .pc-prop ─────────────────────── */
+/* ── Card shell — AI neural theme ─────────────────────── */
 .qam-hero-card {
     position: relative;
     flex: 1 1 280px;
     min-width: 280px;
     max-width: 420px;
-    background: linear-gradient(168deg, #1E2336 0%, #1A1F2E 35%, #161B27 100%);
-    border: 1.5px solid rgba(255,255,255,0.08);
+    background: linear-gradient(168deg, rgba(3,4,16,0.97) 0%, rgba(6,8,28,0.96) 40%, rgba(3,4,16,0.97) 100%);
+    border: 1.5px solid rgba(99,102,241,0.20);
     border-radius: 22px;
     overflow: hidden;
     animation: heroFadeIn 0.5s ease-out both;
@@ -8702,52 +8709,75 @@ QUANTUM_CARD_MATRIX_CSS = """
     display: flex;
     flex-direction: column;
     align-items: center;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 30px rgba(99,102,241,0.06), inset 0 1px 0 rgba(99,102,241,0.04);
 }
-/* top gradient bar — tier-aware like .pc-prop::before */
+/* Neural grid bg */
+.qam-hero-card::after {
+    content: '';
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 0;
+    background-image:
+        linear-gradient(rgba(99,102,241,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.025) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+}
+/* top gradient bar — tier-aware */
 .qam-hero-card::before {
     content: '';
     display: block;
     height: 3px;
     width: 100%;
-    opacity: 0.75;
-    background: linear-gradient(90deg, #00D559, #2D9EFF);
+    opacity: 0.85;
+    background: linear-gradient(90deg, #6366f1, #06b6d4, #a855f7);
+    background-size: 200% 100%;
+    animation: heroShimmer 4s linear infinite;
+    position: relative; z-index: 2;
+}
+@keyframes heroShimmer {
+    0%   { background-position: -100% 0; }
+    100% { background-position:  100% 0; }
 }
 .qam-hero-card[data-tier="Platinum"]::before {
-    background: linear-gradient(90deg, #00D559, #2D9EFF, #00D559);
+    background: linear-gradient(90deg, #a855f7, #06b6d4, #6366f1, #06b6d4);
     opacity: 1;
 }
 .qam-hero-card[data-tier="Gold"]::before {
     background: linear-gradient(90deg, #F9C62B, #F24336);
+    opacity: 0.90;
 }
 .qam-hero-card:hover {
-    border-color: rgba(255,255,255,0.20);
+    border-color: rgba(99,102,241,0.40);
     transform: translateY(-4px) scale(1.015);
-    box-shadow: 0 16px 40px rgba(0,0,0,0.6), 0 0 24px rgba(45,158,255,0.06), inset 0 1px 0 rgba(255,255,255,0.06);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.65), 0 0 32px rgba(99,102,241,0.14), inset 0 1px 0 rgba(99,102,241,0.08);
 }
 .qam-hero-card[data-tier="Platinum"] {
-    border-color: rgba(0,213,89,0.35);
-    box-shadow: 0 0 24px rgba(0,213,89,0.14), 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,213,89,0.06);
+    border-color: rgba(168,85,247,0.32);
+    box-shadow: 0 0 28px rgba(168,85,247,0.14), 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(168,85,247,0.06);
 }
 .qam-hero-card[data-tier="Gold"] {
-    border-color: rgba(249,198,43,0.30);
-    box-shadow: 0 0 22px rgba(249,198,43,0.12), 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(249,198,43,0.05);
+    border-color: rgba(249,198,43,0.28);
+    box-shadow: 0 0 22px rgba(249,198,43,0.10), 0 4px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(249,198,43,0.04);
 }
 @keyframes heroFadeIn {
     from { opacity: 0; transform: translateY(16px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Rank badge (top-right) ────────────────────────────── */
+/* ── Rank badge (top-right) — AI styled ───────────────── */
 .qam-hero-rank {
     position: absolute;
     top: 14px; right: 16px;
     font-family: 'Orbitron', sans-serif;
-    font-size: 1.6rem;
+    font-size: 1.1rem;
     font-weight: 900;
-    color: rgba(255,255,255,0.08);
+    background: linear-gradient(135deg, #6366f1, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     line-height: 1;
-    z-index: 1;
+    z-index: 3;
+    opacity: 0.70;
 }
 
 /* ── Status bar (tier + team) — mirrors .pc-prop-status ── */
@@ -8925,7 +8955,7 @@ QUANTUM_CARD_MATRIX_CSS = """
     transition: width 0.8s ease;
 }
 
-/* ── Bottom metrics — mirrors .pc-metrics grid ────────── */
+/* ── Bottom metrics — AI neural cells ─────────────────── */
 .qam-hero-metrics {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -8933,16 +8963,17 @@ QUANTUM_CARD_MATRIX_CSS = """
     padding: 10px 10px 14px;
     width: 100%;
     box-sizing: border-box;
+    position: relative; z-index: 2;
 }
 .qam-hero-metric {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02));
+    background: linear-gradient(180deg, rgba(99,102,241,0.08), rgba(99,102,241,0.03));
     border-radius: 8px;
     padding: 6px 4px;
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 1px 3px rgba(0,0,0,0.12);
+    border: 1px solid rgba(99,102,241,0.12);
+    box-shadow: inset 0 1px 0 rgba(99,102,241,0.06), 0 1px 3px rgba(0,0,0,0.2);
     overflow: hidden;
     min-width: 0;
 }
@@ -8950,14 +8981,14 @@ QUANTUM_CARD_MATRIX_CSS = """
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.88rem;
     font-weight: 700;
-    color: #FFFFFF;
+    color: #a5b4fc;
     white-space: nowrap;
 }
 .qam-hero-metric-label {
     font-size: 0.50rem;
-    color: #6B7A9A;
+    color: #475569;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     margin-top: 1px;
 }
 

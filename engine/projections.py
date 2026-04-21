@@ -43,11 +43,11 @@ LEAGUE_AVERAGE_PACE = 98.5
 # ≥ RECENCY_FALLBACK_THRESHOLD games → plain recent avg (60%) + season avg (40%)
 # < RECENCY_FALLBACK_THRESHOLD games → season average only (Bayesian shrinkage still applies)
 RECENCY_FULL_THRESHOLD   = 10   # games needed for full decay-weighted model
-RECENCY_FALLBACK_THRESHOLD = 5  # games needed for simple recent-form blend
+RECENCY_FALLBACK_THRESHOLD = 10  # match full threshold — no partial 5-game mode
 RECENCY_WEIGHT   = 0.75   # weight of decay-weighted recent avg when ≥10 games
 SEASON_WEIGHT_HI = 0.25   # weight of season avg when ≥10 games
-SEASON_AVG_WEIGHT = 0.60  # weight of season avg when 5–9 games (legacy fallback)
-RECENT_FORM_WEIGHT = 0.40 # weight of simple recent avg when 5–9 games
+SEASON_AVG_WEIGHT = 0.60  # weight of season avg when <10 games (legacy fallback)
+RECENT_FORM_WEIGHT = 0.40 # weight of simple recent avg when <10 games
 
 # Exponential decay factor for recency weighting.
 # Decay of 0.85 means each additional game back is weighted 15% less than the game
@@ -57,7 +57,7 @@ RECENCY_DECAY = 0.80
 # Streak detection constants.
 # If the last STREAK_WINDOW games are all above/below the weighted recent average
 # by more than STREAK_THRESHOLD, apply a small multiplier to the projection.
-STREAK_WINDOW    = 3     # consecutive games to confirm a streak
+STREAK_WINDOW    = 5     # consecutive games to confirm a streak (raised from 3)
 STREAK_THRESHOLD = 0.12  # 12% above/below triggers streak detection
 STREAK_MULTIPLIER_HOT  = 1.05  # +5% for a confirmed hot streak
 STREAK_MULTIPLIER_COLD = 0.95  # −5% for a confirmed cold streak

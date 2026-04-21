@@ -1262,7 +1262,7 @@ input:focus, textarea:focus, select:focus,
 
 /* â”€â”€ Mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 768px) {
-  html, body, [class*="css"] { font-size:14px !important; }
+  html, body, [class*="css"] { font-size:16px !important; }
   .neural-header-title { font-size:1.4rem !important; }
   .smartai-card, .premium-metric-card { padding:14px 16px !important; }
   .nba-stat-number { font-size:1.7rem !important; }
@@ -1329,7 +1329,7 @@ input:focus, textarea:focus, select:focus,
   [data-testid="stSidebar"] { width:260px !important; max-width:50vw !important; }
   [data-testid="stHorizontalBlock"] { flex-direction:row !important; flex-wrap:wrap !important; }
   [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] { min-width:calc(33% - 8px) !important; flex:1 1 auto !important; }
-  html, body, [class*="css"] { font-size:13px !important; }
+  html, body, [class*="css"] { font-size:15px !important; }
 }
 
 /* ── Liquid Progress Bars ──────────────────────────────────────── */
@@ -6725,10 +6725,10 @@ QUANTUM_CARD_MATRIX_CSS = """
         padding: 5px 3px;
     }
     .qcm-metric-val {
-        font-size: 0.80rem;
+        font-size: 0.88rem;
     }
     .qcm-metric-lbl {
-        font-size: 0.56rem;
+        font-size: 0.68rem;
     }
     .qcm-dist-row {
         gap: 3px;
@@ -6737,10 +6737,10 @@ QUANTUM_CARD_MATRIX_CSS = """
         padding: 4px 1px;
     }
     .qcm-dist-val {
-        font-size: 0.70rem;
+        font-size: 0.78rem;
     }
     .qcm-dist-lbl {
-        font-size: 0.50rem;
+        font-size: 0.65rem;
     }
     .qcm-forces {
         flex-direction: column;
@@ -6770,7 +6770,7 @@ QUANTUM_CARD_MATRIX_CSS = """
         font-size: 0.80rem;
     }
     .qcm-badge {
-        font-size: 0.56rem;
+        font-size: 0.65rem;
         padding: 1px 5px;
     }
     .qcm-compact-left {
@@ -6784,7 +6784,7 @@ QUANTUM_CARD_MATRIX_CSS = """
         font-size: 0.74rem;
     }
     .qam-top-pill {
-        font-size: 0.60rem;
+        font-size: 0.70rem;
         padding: 3px 8px;
     }
     .qam-uncertain-banner {
@@ -6814,23 +6814,23 @@ QUANTUM_CARD_MATRIX_CSS = """
         min-width: 44px;
     }
     .qcm-metric-val {
-        font-size: 0.74rem;
+        font-size: 0.80rem;
     }
     .qcm-card-compact {
         padding: 8px 10px;
     }
     .qcm-compact-prop {
-        font-size: 0.74rem;
+        font-size: 0.80rem;
     }
     .qcm-card-compact .qcm-safe-score-value {
         font-size: 0.95rem;
     }
     .qcm-badge {
-        font-size: 0.52rem;
+        font-size: 0.62rem;
         padding: 1px 4px;
     }
     .qam-top-pill {
-        font-size: 0.56rem;
+        font-size: 0.66rem;
         padding: 2px 6px;
     }
 }
@@ -8491,7 +8491,7 @@ QUANTUM_CARD_MATRIX_CSS = """
 .nah-dist-val-p90  { color: #c0d0e8; }
 .nah-dist-val-std  { color: #ffffff; }
 .nah-dist-val-proj { color: #ff5e00; }
-.nah-dist-label    { font-size: 0.58rem; color: #64748b;
+.nah-dist-label    { font-size: 0.68rem; color: #64748b;
                      text-transform: uppercase; letter-spacing: 0.06em; margin-top: 1px; }
 
 /* Force columns */
@@ -8500,7 +8500,7 @@ QUANTUM_CARD_MATRIX_CSS = """
                      font-family: 'JetBrains Mono', monospace; min-height: 36px; }
 .nah-force-col-over  { background: rgba(0, 240, 255, 0.04); border: 1px solid rgba(0, 240, 255, 0.12); }
 .nah-force-col-under { background: rgba(255, 94, 0, 0.04); border: 1px solid rgba(255, 94, 0, 0.12); }
-.nah-force-heading { font-weight: 700; font-size: 0.65rem; text-transform: uppercase;
+.nah-force-heading { font-weight: 700; font-size: 0.72rem; text-transform: uppercase;
                      letter-spacing: 0.06em; margin-bottom: 3px; }
 .nah-force-heading-over  { color: #00D559; }
 .nah-force-heading-under { color: #ff5e00; }
@@ -8826,11 +8826,11 @@ QUANTUM_CARD_MATRIX_CSS = """
 @media (max-width: 600px) {
     .qam-mu-side { padding: 10px 12px; gap: 8px; }
     .qam-mu-logo { width: 32px; height: 32px; }
-    .qam-mu-abbrev { font-size: 0.88rem; }
-    .qam-mu-record { font-size: 0.64rem; }
+    .qam-mu-abbrev { font-size: 0.92rem; }
+    .qam-mu-record { font-size: 0.70rem; }
     .qam-mu-centre { padding: 8px 8px; }
-    .qam-mu-at { width: 24px; height: 24px; font-size: 0.68rem; }
-    .qam-mu-count { font-size: 0.60rem; }
+    .qam-mu-at { width: 24px; height: 24px; font-size: 0.72rem; }
+    .qam-mu-count { font-size: 0.68rem; }
 }
 
 /* ── Top Picks Summary Bar ─────────────────────────────────── */

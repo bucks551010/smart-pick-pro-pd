@@ -326,16 +326,28 @@ def _render_session_bridge() -> str | None:
     tok = st.query_params.get("_st", "")
     if tok == "__clear__":
         tok = ""
+
+    # Guard: if we already tried the localStorage bridge this session and it
+    # didn't authenticate (token was invalid / expired), don't reload again —
+    # that causes an infinite reload loop for users with a stale localStorage
+    # entry and no valid cookie.
+    _bridge_fired = st.session_state.get("_spp_bridge_fired", False)
+
     # Render the JS bridge (hidden, zero-height)
     _components.html(f"""
 <script>
 (function() {{
   var key    = "{_LS_KEY}";
   var stored = localStorage.getItem(key) || "";
+  var bridgeFired = {"true" if _bridge_fired else "false"};
 
   // ── localStorage → query-param bridge (for initial session restore) ──
+  // Only fire if:
+  //   1. There's a token in localStorage
+  //   2. It's not already in the URL (we haven't tried it yet)
+  //   3. The Python side hasn't already tried and rejected this token
   var url = new URL(window.parent.location.href);
-  if (stored && url.searchParams.get("_st") !== stored) {{
+  if (stored && !bridgeFired && url.searchParams.get("_st") !== stored) {{
     url.searchParams.set("_st", stored);
     window.parent.history.replaceState(null, "", url.toString());
     window.parent.location.reload();
@@ -1452,15 +1464,21 @@ def get_logged_in_email() -> str:
 
 def logout_user() -> None:
     """Clear the login session."""
-    # Delete the DB token record and clear localStorage.
+    # Use the token stored at session-restore time (reliable), falling back
+    # to the cookie value (also reliable).  st.query_params["_st"] is only
+    # present for <1 Streamlit run and will be empty at logout time.
     try:
-        _tok = st.query_params.get("_st", "")
+        _tok = (
+            st.session_state.get("_auth_session_token", "")
+            or _get_session_cookie()
+        )
         if _tok:
             _delete_session_token(_tok)
         _clear_session_from_storage()
     except Exception:
         pass
-    for key in (_SS_LOGGED_IN, _SS_USER_EMAIL, _SS_USER_NAME, _SS_USER_ID, "_auth_is_admin"):
+    for key in (_SS_LOGGED_IN, _SS_USER_EMAIL, _SS_USER_NAME, _SS_USER_ID,
+                "_auth_is_admin", "_auth_session_token", "_spp_bridge_fired"):
         st.session_state.pop(key, None)
 
 
@@ -4907,12 +4925,6 @@ def require_login() -> bool:
             show_verification_banner(st.session_state.get("_auth_user_email", ""))
         except Exception:
             pass
-        # ── Email verification reminder (once per session, non-blocking) ─────
-        try:
-            from utils.notifications import show_verification_banner
-            show_verification_banner(st.session_state.get("_auth_user_email", ""))
-        except Exception:
-            pass
         return True
 
     # ── Cookie-based session restore (survives F5 / new tab) ─────────────────
@@ -4923,6 +4935,9 @@ def require_login() -> bool:
         _cookie_user = _load_session_by_token(_cookie_tok)
         if _cookie_user:
             _set_logged_in(_cookie_user, _write_storage=False)
+            # Store the active token in session_state so logout_user()
+            # can delete it from the DB and expire the cookie properly.
+            st.session_state["_auth_session_token"] = _cookie_tok
             try:
                 st.query_params.pop("auth", None)
                 st.query_params.pop("_st", None)
@@ -4940,13 +4955,35 @@ def require_login() -> bool:
             _clear_session_from_storage()
 
     # ── Fallback: localStorage bridge for environments that block cookies ─────
+    # Show a minimal "restoring session" spinner on the FIRST run where we
+    # have no cookie but may have a localStorage token.  This prevents the
+    # full landing page from flashing before the bridge reload brings the
+    # user back to their destination page.
+    _has_ls_candidate = not st.session_state.get("_spp_bridge_fired", False)
+    if _has_ls_candidate:
+        st.html("""
+<div style="position:fixed;inset:0;background:#04070f;z-index:9999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+  <div style="width:48px;height:48px;border:3px solid #1a2540;
+    border-top-color:#00D559;border-radius:50%;
+    animation:spp-spin 0.8s linear infinite"></div>
+  <p style="color:#94a3b8;font-family:system-ui,sans-serif;font-size:14px;margin:0">
+    Restoring your session…</p>
+</div>
+<style>@keyframes spp-spin{to{transform:rotate(360deg)}}</style>
+""")
     _render_session_bridge()
     try:
         _tok = st.query_params.get("_st", "")
         if _tok:
+            # Mark that we've attempted the localStorage bridge this session
+            # so the JS doesn't reload again if this token is rejected.
+            st.session_state["_spp_bridge_fired"] = True
             _user = _load_session_by_token(_tok)
             if _user:
                 _set_logged_in(_user, _write_storage=False)
+                # Store the active token so logout_user() can delete it from DB.
+                st.session_state["_auth_session_token"] = _tok
                 try:
                     st.query_params.pop("_st", None)
                     st.query_params.pop("auth", None)

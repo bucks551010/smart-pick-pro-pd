@@ -68,6 +68,12 @@ _QAM_HOUR_START = int(os.environ.get("QAM_ANALYSIS_HOUR_START", "17"))   # 5 PM 
 _QAM_HOUR_END = int(os.environ.get("QAM_ANALYSIS_HOUR_END", "23"))       # 11 PM ET
 _QAM_SIM_DEPTH = int(os.environ.get("QAM_SIM_DEPTH", "1000"))
 
+# QAM auto-analysis config
+_QAM_DISABLED = os.environ.get("QAM_AUTO_ANALYSIS_DISABLED", "").strip() in ("1", "true", "yes")
+_QAM_HOUR_START = int(os.environ.get("QAM_ANALYSIS_HOUR_START", "17"))   # 5 PM ET
+_QAM_HOUR_END = int(os.environ.get("QAM_ANALYSIS_HOUR_END", "23"))       # 11 PM ET
+_QAM_SIM_DEPTH = int(os.environ.get("QAM_SIM_DEPTH", "1000"))
+
 # US-Eastern offset (ET).  During DST this is UTC-4; standard is UTC-5.
 # We approximate with UTC-5 (close enough for a 6 PM–2 AM window).
 _ET = timezone(timedelta(hours=-5))

@@ -485,6 +485,13 @@ h1, h2, h3, h4, h5, h6 {
   overflow: visible !important;
   text-overflow: unset !important;
 }
+
+/* Hide the /home marketing page from the sidebar nav */
+[data-testid="stSidebarNavItems"] a[href="/home"],
+[data-testid="stSidebarNavLink"][href="/home"],
+[data-testid="stSidebarNavItems"] li:has(a[href="/home"]) {
+  display: none !important;
+}
 /* Active nav link â€” PP green left bar */
 [data-testid="stSidebar"] [data-testid="stSidebarNavLink"][aria-current="page"],
 [data-testid="stSidebar"] [data-testid="stSidebarNavItems"] a[aria-current="page"] {

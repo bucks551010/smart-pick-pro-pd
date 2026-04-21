@@ -18,16 +18,24 @@ Variable legend (Liquid / Handlebars equivalents):
 from __future__ import annotations
 
 # ── Shared design tokens ───────────────────────────────────────────────────────
-_BG          = "#0a0d14"
-_CARD_BG     = "#131920"
-_BORDER      = "#1e2940"
+_BG          = "#050810"
+_CARD_BG     = "#0d1220"
+_BORDER      = "#1a2540"
 _ACCENT_1    = "#00d4ff"
 _ACCENT_2    = "#7b2ff7"
+_GREEN       = "#00D559"
 _TEXT        = "#e0e6f0"
 _MUTED       = "#8b9ab0"
 _BTN_START   = "#00c3f0"
 _BTN_END     = "#6a1fe0"
 _SUCCESS     = "#00d48a"
+
+# Logo served from GitHub raw content (public repo).
+# Update _LOGO_URL if hosted elsewhere (CDN, Railway static mount, etc.).
+_LOGO_URL = (
+    "https://raw.githubusercontent.com/bucks551010/smart-pick-pro-pd"
+    "/master/Smart_Pick_Pro_Logo.png"
+)
 
 _BASE_HTML = """\
 <!DOCTYPE html>
@@ -43,61 +51,72 @@ _BASE_HTML = """\
   <!--[if mso]><table width="600" align="center" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
   <table width="100%" cellpadding="0" cellspacing="0" border="0"
          style="max-width:600px;margin:0 auto;">
-    <!-- Header -->
+
+    <!-- ── Logo header ─────────────────────────────────────────── -->
     <tr>
-      <td style="padding:32px 24px 0;text-align:center;">
-        <div style="display:inline-block;background:linear-gradient(135deg,{a1},{a2});\
-padding:2px;border-radius:14px;">
-          <div style="background:{card};border-radius:12px;padding:12px 24px;">
-            <span style="font-size:22px;font-weight:800;letter-spacing:-0.5px;
-                         background:linear-gradient(135deg,{a1},{a2});
-                         -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-                         color:{a1};">
-              ⚡ Smart Pick Pro
-            </span>
-          </div>
+      <td style="padding:36px 24px 0;text-align:center;">
+        <!--[if !mso]><!-->
+        <img src="{logo_url}"
+             alt="Smart Pick Pro — AI-Powered Sports Intelligence"
+             width="140" height="auto"
+             style="display:inline-block;max-width:140px;height:auto;
+                    border:0;outline:0;text-decoration:none;" />
+        <!--<![endif]-->
+        <!--[if mso]>
+        <div style="font-size:22px;font-weight:800;color:#00d4ff;
+                    font-family:Arial,sans-serif;letter-spacing:-0.5px;">
+          &#9889; SmartPickPro
         </div>
+        <![endif]-->
       </td>
     </tr>
-    <!-- Body card -->
+
+    <!-- ── Body card ───────────────────────────────────────────── -->
     <tr>
-      <td style="padding:24px;">
+      <td style="padding:20px 24px 0;">
         <table width="100%" cellpadding="0" cellspacing="0" border="0"
                style="background:{card};border:1px solid {border};\
-border-radius:16px;overflow:hidden;">
-          <!-- Gradient top bar -->
+border-radius:18px;overflow:hidden;">
+          <!-- Animated-style gradient top bar (static gradient for email) -->
           <tr>
-            <td style="height:4px;background:linear-gradient(90deg,{a1},{a2});"></td>
+            <td style="height:4px;background:linear-gradient(90deg,{a1} 0%,{a2} 50%,{green} 100%);
+                       padding:0;font-size:0;line-height:0;"></td>
           </tr>
           <tr>
-            <td style="padding:32px 32px 0;">
+            <td style="padding:36px 36px 0;">
               {body}
             </td>
           </tr>
           <!-- Footer inside card -->
           <tr>
-            <td style="padding:24px 32px;border-top:1px solid {border};margin-top:24px;">
-              <p style="margin:0;font-size:12px;color:{muted};line-height:1.6;">
-                This email was sent by Smart Pick Pro.<br>
-                If you didn't request this, you can safely ignore it.<br>
-                <a href="https://smartpickpro.ai" style="color:{a1};text-decoration:none;">
-                  smartpickpro.ai
-                </a>
-              </p>
+            <td style="padding:24px 36px 28px;border-top:1px solid {border};margin-top:24px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="font-size:12px;color:{muted};line-height:1.7;">
+                    You're receiving this because you subscribed to Smart Pick Pro.<br>
+                    <a href="{app_url}" style="color:{a1};text-decoration:none;font-weight:600;">
+                      smartpickpro.ai</a>
+                    &nbsp;&middot;&nbsp;
+                    <a href="mailto:support@smartpickpro.ai"
+                       style="color:{muted};text-decoration:none;">support@smartpickpro.ai</a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
         </table>
       </td>
     </tr>
+
     <!-- Bottom padding -->
-    <tr><td style="height:32px;"></td></tr>
+    <tr><td style="height:36px;"></td></tr>
   </table>
   <!--[if mso]></td></tr></table><![endif]-->
 </body>
 </html>"""
 
 
-def _wrap(subject: str, body: str) -> str:
+def _wrap(subject: str, body: str, app_url: str = "https://smartpickpro.ai") -> str:
     return _BASE_HTML.format(
         subject=subject,
         bg=_BG,
@@ -105,8 +124,11 @@ def _wrap(subject: str, body: str) -> str:
         border=_BORDER,
         a1=_ACCENT_1,
         a2=_ACCENT_2,
+        green=_GREEN,
         text=_TEXT,
         muted=_MUTED,
+        logo_url=_LOGO_URL,
+        app_url=app_url,
         body=body,
     )
 
@@ -153,6 +175,17 @@ def _badge(text: str) -> str:
         f'font-size:11px;font-weight:700;letter-spacing:1px;color:{_ACCENT_1};'
         f'background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.25);">'
         f'{text}</span>'
+    )
+
+
+def _stat_box(value: str, label: str, color: str = _ACCENT_1) -> str:
+    return (
+        f'<td style="text-align:center;padding:18px 12px;">'
+        f'<div style="font-size:28px;font-weight:900;color:{color};'
+        f'letter-spacing:-1px;line-height:1;">{value}</div>'
+        f'<div style="font-size:11px;font-weight:700;color:{_MUTED};'
+        f'text-transform:uppercase;letter-spacing:1.2px;margin-top:6px;">{label}</div>'
+        f'</td>'
     )
 
 
@@ -393,83 +426,129 @@ def render_paid_welcome_email(
     plan_name: str = "Smart Pick Pro",
     app_url: str = "https://smartpickpro.ai",
 ) -> tuple[str, str]:
-    """Email 1 (immediate) — 'Welcome to the Inner Circle'.
-
-    Sent the moment Stripe confirms the subscription.
-    Contains: tier confirmation, 3-step quickstart, Getting Started guide link,
-    and support contact.
+    """Email 1 (immediate) - Welcome to the Inner Circle.
 
     Returns (html, plain_text).
     """
     name = display_name or "there"
     plan = plan_name or "Smart Pick Pro"
-    guide_url = f"{app_url}/?guide=start"
 
-    onboarding_rows = "".join(
+    steps = [
+        ("01", "#00D559", "Open the Quantum Analysis Matrix",
+         "Sidebar ? QAM ? Analyze. The AI scans 300+ props and ranks every edge in seconds."),
+        ("02", "#00d4ff", "Check Platform AI Picks",
+         "Your personalized PrizePicks &amp; Underdog slate is updated every game night."),
+        ("03", "#c084fc", "Read SAFE Scores &amp; Edge %",
+         "SAFE 85+ means Tier-1 edge. Edge % is your sizing guide. Use both together."),
+    ]
+    step_rows = "".join(
         f"""<tr>
-          <td style="padding:10px 0;vertical-align:top;width:32px;font-size:18px;">{ico}</td>
-          <td style="padding:10px 0;vertical-align:top;">
-            <strong style="color:{_TEXT};font-size:14px;">{title}</strong><br>
-            <span style="color:{_MUTED};font-size:13px;">{desc}</span>
+          <td style="padding:0 0 16px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="background:rgba(255,255,255,0.03);border:1px solid {_BORDER};
+                          border-radius:12px;overflow:hidden;">
+              <tr>
+                <td style="width:5px;background:{color};padding:0;font-size:0;line-height:0;"></td>
+                <td style="padding:15px 18px;">
+                  <div style="font-size:10px;font-weight:800;color:{color};
+                       text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;">
+                    Step {num}</div>
+                  <div style="font-size:15px;font-weight:700;color:{_TEXT};
+                       margin-bottom:4px;">{title}</div>
+                  <div style="font-size:13px;color:{_MUTED};line-height:1.6;">{desc}</div>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>"""
-        for ico, title, desc in [
-            ("⚡", "Run the Quantum Analysis Matrix",
-             "Navigate to QAM in the sidebar → hit Analyze. The AI scans 300+ props in seconds."),
-            ("🎯", "Check Platform AI Picks",
-             "Your personalized PrizePicks & Underdog recommendations are updated each game night."),
-            ("📈", "Read the SAFE Score",
-             "Every pick shows a SAFE Score (0-100). Anything above 75 is a high-confidence edge."),
-        ]
+        for num, color, title, desc in steps
     )
 
     body = f"""
-{_badge(plan.upper())}
-<br><br>
-{_h1(f"Welcome to the inner circle, {name}! \U0001f389")}
-{_p("Your subscription is confirmed and active. The AI is already processing tonight's "
-    "slate \u2014 here's how to get your first winning edge in under 3 minutes.")}
-{_cta_button("\U0001f680 Launch Your Dashboard", app_url)}
-{_divider()}
-<p style="margin:0 0 12px;font-size:13px;font-weight:700;color:{_MUTED};
-   text-transform:uppercase;letter-spacing:1px;">Your 3-Step Quickstart</p>
-<table cellpadding="0" cellspacing="0" border="0" width="100%">
-  {onboarding_rows}
+<table width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="background:linear-gradient(135deg,rgba(0,212,255,0.07),rgba(123,47,247,0.07));
+              border:1px solid rgba(0,212,255,0.15);border-radius:14px;margin-bottom:28px;">
+  <tr>
+    <td style="padding:28px 28px 22px;text-align:center;">
+      <div style="display:inline-block;padding:5px 16px;border-radius:100px;
+                  background:rgba(0,213,89,0.1);border:1px solid rgba(0,213,89,0.3);
+                  font-size:11px;font-weight:800;color:#00D559;
+                  text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;">
+        &#10003; {plan} Active
+      </div>
+      <h1 style="margin:0 0 10px;font-size:26px;font-weight:900;color:{_TEXT};
+                 letter-spacing:-0.5px;line-height:1.2;">
+        Welcome to the inner circle,&nbsp;{name}
+      </h1>
+      <p style="margin:0;font-size:14px;color:{_MUTED};line-height:1.7;">
+        Your subscription is confirmed. The AI is scanning tonight's slate right now&nbsp;&mdash;<br>
+        here's how to get your first edge in under&nbsp;3 minutes.
+      </p>
+    </td>
+  </tr>
 </table>
-{_divider()}
-<p style="margin:0 0 8px;font-size:13px;font-weight:700;color:{_MUTED};
-   text-transform:uppercase;letter-spacing:1px;">Getting Started Guide &amp; Support</p>
-{_p(f'<a href="{guide_url}" style="color:{_ACCENT_1};text-decoration:none;">'
-    f'\U0001f4d6 Getting Started Guide</a> \u2014 step-by-step walkthrough of every feature.')}
-{_p(f'Questions? Reply to this email or reach us at '
-    f'<a href="mailto:support@smartpickpro.ai" style="color:{_ACCENT_1};'
-    f'text-decoration:none;">support@smartpickpro.ai</a> \u2014 we typically respond within 2 hours.')}
-<br>
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="border:1px solid {_BORDER};border-radius:12px;
+              background:rgba(255,255,255,0.02);margin-bottom:28px;">
+  <tr>
+    <td style="text-align:center;padding:18px 12px;">
+      <div style="font-size:28px;font-weight:900;color:{_ACCENT_1};letter-spacing:-1px;line-height:1;">300+</div>
+      <div style="font-size:11px;font-weight:700;color:{_MUTED};text-transform:uppercase;letter-spacing:1.2px;margin-top:6px;">Props Nightly</div>
+    </td>
+    <td style="width:1px;background:{_BORDER};padding:0;"></td>
+    <td style="text-align:center;padding:18px 12px;">
+      <div style="font-size:28px;font-weight:900;color:#00D559;letter-spacing:-1px;line-height:1;">71.4%</div>
+      <div style="font-size:11px;font-weight:700;color:{_MUTED};text-transform:uppercase;letter-spacing:1.2px;margin-top:6px;">Tier-1 Hit Rate</div>
+    </td>
+    <td style="width:1px;background:{_BORDER};padding:0;"></td>
+    <td style="text-align:center;padding:18px 12px;">
+      <div style="font-size:28px;font-weight:900;color:#c084fc;letter-spacing:-1px;line-height:1;">8,400+</div>
+      <div style="font-size:11px;font-weight:700;color:{_MUTED};text-transform:uppercase;letter-spacing:1.2px;margin-top:6px;">Picks Graded</div>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0 0 14px;font-size:12px;font-weight:700;color:{_MUTED};
+   text-transform:uppercase;letter-spacing:1.5px;">Your 3-Step Quickstart</p>
+<table cellpadding="0" cellspacing="0" border="0" width="100%">
+  {step_rows}
+</table>
+
+{_cta_button("&#128640; Launch Your Dashboard", app_url)}
+
+<p style="margin:12px 0 28px;font-size:12px;color:{_MUTED};text-align:center;line-height:1.7;">
+  Questions? Reply to this email or write to
+  <a href="mailto:support@smartpickpro.ai"
+     style="color:{_ACCENT_1};text-decoration:none;">support@smartpickpro.ai</a>
+  &nbsp;&mdash;&nbsp;we typically respond within 2&nbsp;hours.
+</p>
 """
     plain = f"""Welcome to the inner circle, {name}!
 
 Your {plan} subscription is confirmed and active.
 
+Stats: 300+ props analyzed nightly � 71.4% Tier-1 hit rate � 8,400+ picks graded
+
 Launch your dashboard: {app_url}
 
-Your 3-Step Quickstart:
-1. Run the Quantum Analysis Matrix
-   Go to QAM in the sidebar, hit Analyze. The AI scans 300+ props in seconds.
+YOUR 3-STEP QUICKSTART
+----------------------
+01. Open the Quantum Analysis Matrix
+    Sidebar ? QAM ? Analyze. The AI scans 300+ props in seconds.
 
-2. Check Platform AI Picks
-   Your personalized PrizePicks & Underdog recommendations update each game night.
+02. Check Platform AI Picks
+    Your PrizePicks & Underdog slate updates every game night.
 
-3. Read the SAFE Score
-   Every pick shows a SAFE Score (0-100). Anything above 75 is a high-confidence edge.
+03. Read SAFE Scores & Edge %
+    SAFE 85+ = Tier-1 edge. Edge % is your sizing guide.
 
-Getting Started Guide: {guide_url}
 Support: support@smartpickpro.ai (typically respond within 2 hours)
 
--- Smart Pick Pro
-https://smartpickpro.ai
+-- Smart Pick Pro � https://smartpickpro.ai
 """
     subject = f"Welcome to the inner circle \u2014 your {plan} is live \u26a1"
-    return _wrap(subject, body), plain
+    return _wrap(subject, body, app_url), plain
 
 
 def render_day2_protip_email(
@@ -477,63 +556,117 @@ def render_day2_protip_email(
     plan_name: str = "Smart Pick Pro",
     app_url: str = "https://smartpickpro.ai",
 ) -> tuple[str, str]:
-    """Email 2 (Day +2) — 'The Pro-Tip'.
-
-    Highlights the SAFE Score tier filter \u2014 the advanced feature most users
-    discover late. Includes backtested hit-rate stats and exact usage strategy.
+    """Email 2 (Day +2) � The Pro-Tip: Filter by Tier.
 
     Returns (html, plain_text).
     """
     name = display_name or "there"
     qam_url = f"{app_url}/?page=qam"
 
-    tip_rows = "".join(
+    tiers = [
+        ("#ff4757", "Tier 1 \u2014 Spec", "SAFE 85+",
+         "Maximum edge. 2\u20133 picks per night. Build your highest-confidence entry here.",
+         "71.4% hit rate"),
+        ("#fbbf24", "Tier 2 \u2014 Value", "SAFE 70\u201384",
+         "Strong value, broader coverage. Ideal for 3-pick and 5-pick flex slates.",
+         "64.8% hit rate"),
+        ("#00D559", "Tier 3 \u2014 Scout", "SAFE 55\u201369",
+         "Supporting picks in larger entries only. Never build a slate from these alone.",
+         "58.2% hit rate"),
+    ]
+    tier_rows = "".join(
         f"""<tr>
-          <td style="padding:8px 0;vertical-align:top;width:28px;font-size:16px;">{ico}</td>
-          <td style="padding:8px 0;vertical-align:top;">
-            <strong style="color:{_TEXT};font-size:14px;">{title}</strong><br>
-            <span style="color:{_MUTED};font-size:13px;">{desc}</span>
+          <td style="padding:0 0 12px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="border:1px solid rgba(255,255,255,0.06);border-radius:12px;
+                          background:rgba(255,255,255,0.02);overflow:hidden;">
+              <tr>
+                <td style="width:4px;background:{color};padding:0;font-size:0;line-height:0;"></td>
+                <td style="padding:14px 16px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td>
+                        <div style="font-size:14px;font-weight:800;color:{_TEXT};
+                             margin-bottom:3px;">{tier_name}</div>
+                        <div style="font-size:11px;font-weight:700;color:{color};
+                             text-transform:uppercase;letter-spacing:1px;">{safe_label}</div>
+                        <div style="font-size:12px;color:{_MUTED};line-height:1.6;
+                             margin-top:6px;">{desc}</div>
+                      </td>
+                      <td style="text-align:right;white-space:nowrap;padding-left:12px;
+                                 vertical-align:top;">
+                        <div style="display:inline-block;padding:4px 10px;border-radius:100px;
+                                    background:rgba(255,255,255,0.05);
+                                    font-size:11px;font-weight:700;color:{color};">
+                          {stat}
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>"""
-        for ico, title, desc in [
-            ("\U0001f534", "Tier 1 \u2014 Spec (SAFE 85+)",
-             "Highest edge. Typically 2\u20133 picks per night. Best for max-confidence entries."),
-            ("\U0001f7e1", "Tier 2 \u2014 Value (SAFE 70\u201384)",
-             "Strong value with broader coverage. Ideal for 3-pick and 5-pick slates."),
-            ("\U0001f7e2", "Tier 3 \u2014 Scout (SAFE 55\u201369)",
-             "Use as supporting picks in larger entries. Never build a slate from these alone."),
-        ]
+        for color, tier_name, safe_label, desc, stat in tiers
     )
 
     body = f"""
-{_badge("PRO TIP")}
-<br><br>
-{_h1(f"The feature most users miss, {name}")}
-{_p("Most subscribers see the picks. "
-    f"<strong style='color:{_TEXT}'>Power users filter by tier.</strong> "
-    "Here's the strategy that separates recreational bettors from edge players.")}
-{_divider()}
-<p style="margin:0 0 8px;font-size:13px;font-weight:700;color:{_MUTED};
-   text-transform:uppercase;letter-spacing:1px;">The SAFE Score Tier System</p>
-{_p(f"The <strong style='color:{_TEXT}'>SAFE Score</strong> (Statistical Analysis Framework "
-    "Estimator) is a composite signal built from 6 neural models. Use the tier filter in "
-    "the QAM sidebar to surface only the picks that match your risk profile:")}
-<table cellpadding="0" cellspacing="0" border="0" width="100%"
-       style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.12);
-              border-radius:10px;padding:8px 16px;">
-  {tip_rows}
+<h1 style="margin:0 0 8px;font-size:24px;font-weight:900;color:{_TEXT};
+           letter-spacing:-0.5px;line-height:1.25;">
+  The feature most users miss,&nbsp;{name}
+</h1>
+<p style="margin:0 0 24px;font-size:14px;color:{_MUTED};line-height:1.7;">
+  Most subscribers see the picks.
+  <strong style="color:{_TEXT};">Power users filter by tier.</strong>
+  Here's the strategy that separates recreational bettors from edge players.
+</p>
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="background:rgba(0,213,89,0.06);border:1px solid rgba(0,213,89,0.2);
+              border-radius:12px;margin-bottom:28px;">
+  <tr>
+    <td style="padding:18px 20px;">
+      <div style="font-size:11px;font-weight:800;color:#00D559;text-transform:uppercase;
+                  letter-spacing:1.5px;margin-bottom:8px;">&#127919; The Key Insight</div>
+      <p style="margin:0;font-size:14px;color:{_TEXT};line-height:1.7;">
+        The <strong>SAFE Score</strong> (Statistical Analysis Framework Estimator) is a
+        composite signal built from&nbsp;6&nbsp;neural models.
+        Use the tier filter in QAM to surface only the picks that match your risk profile.
+      </p>
+    </td>
+  </tr>
 </table>
-<br>
-{_p(f"<strong style='color:{_TEXT}'>Pro move:</strong> On game nights, open QAM, set the "
-    "filter to Tier 1 only, and build your highest-edge slate from those 2\u20133 picks. "
-    "Our backtested Tier 1 hit rate is "
-    f"<strong style='color:{_SUCCESS}'>71.4%</strong> "
-    "across the last 1,200 graded picks.")}
-{_cta_button("\U0001f3af Open QAM & Filter by Tier", qam_url)}
-{_divider()}
-{_p("Tomorrow we'll show you the advanced ROI calculation strategy. Stay tuned.",
-    muted=True, small=True)}
-<br>
+
+<p style="margin:0 0 14px;font-size:12px;font-weight:700;color:{_MUTED};
+   text-transform:uppercase;letter-spacing:1.5px;">The SAFE Score Tier System</p>
+<table cellpadding="0" cellspacing="0" border="0" width="100%">
+  {tier_rows}
+</table>
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.15);
+              border-radius:12px;margin:20px 0 28px;">
+  <tr>
+    <td style="padding:18px 20px;">
+      <div style="font-size:11px;font-weight:800;color:{_ACCENT_1};text-transform:uppercase;
+                  letter-spacing:1.5px;margin-bottom:8px;">&#128161; Pro Move</div>
+      <p style="margin:0;font-size:14px;color:{_TEXT};line-height:1.7;">
+        On game nights, open QAM, set the filter to <strong>Tier&nbsp;1 only</strong>, and build
+        your highest-edge slate from those 2\u20133 picks.
+        Our backtested Tier&nbsp;1 hit rate is
+        <strong style="color:{_SUCCESS};">71.4%</strong>
+        across the last&nbsp;1,200 graded picks.
+      </p>
+    </td>
+  </tr>
+</table>
+
+{_cta_button("&#127919; Open QAM &amp; Filter by Tier", qam_url)}
+
+<p style="margin:12px 0 28px;font-size:12px;color:{_MUTED};text-align:center;">
+  Tomorrow we'll show you the advanced ROI calculation strategy.
+</p>
 """
     plain = f"""Hey {name}, here's the pro tip most users discover too late.
 
@@ -541,30 +674,25 @@ Most subscribers see the picks. Power users filter by tier.
 
 THE SAFE SCORE TIER SYSTEM
 --------------------------
-The SAFE Score is a composite signal from 6 neural models.
-Filter by tier in the QAM sidebar to match your risk profile:
-
-  Tier 1 - Spec (SAFE 85+)
+  Tier 1 - Spec (SAFE 85+)      71.4% hit rate
   Highest edge. 2-3 picks per night. Best for max-confidence entries.
 
-  Tier 2 - Value (SAFE 70-84)
-  Strong value with broader coverage. Ideal for 3-pick and 5-pick slates.
+  Tier 2 - Value (SAFE 70-84)   64.8% hit rate
+  Strong value, broader coverage. Good for 3-pick and 5-pick slates.
 
-  Tier 3 - Scout (SAFE 55-69)
-  Use as supporting picks in larger entries only.
+  Tier 3 - Scout (SAFE 55-69)   58.2% hit rate
+  Supporting picks in larger entries only.
 
-Pro move: Set the QAM filter to Tier 1 only.
-Backtested Tier 1 hit rate: 71.4% across 1,200 graded picks.
+PRO MOVE: Set QAM filter to Tier 1 only on game nights.
+Backtested Tier-1 hit rate: 71.4% across 1,200 graded picks.
 
 Open QAM: {qam_url}
-
 Tomorrow: the advanced ROI calculation strategy.
 
--- Smart Pick Pro
-https://smartpickpro.ai
+-- Smart Pick Pro � https://smartpickpro.ai
 """
     subject = f"The pro tip your edge depends on, {name} \U0001f3af"
-    return _wrap(subject, body), plain
+    return _wrap(subject, body, app_url), plain
 
 
 def render_day5_roi_email(
@@ -572,86 +700,131 @@ def render_day5_roi_email(
     plan_name: str = "Smart Pick Pro",
     app_url: str = "https://smartpickpro.ai",
 ) -> tuple[str, str]:
-    """Email 3 (Day +5) — 'Maximizing Your ROI'.
-
-    Long-term ROI strategy: bankroll sizing, SAFE tier stacking, and how to
-    use Edge % for entry sizing decisions.
+    """Email 3 (Day +5) � Maximizing Your ROI.
 
     Returns (html, plain_text).
     """
     name = display_name or "there"
     qam_url = f"{app_url}/?page=qam"
 
+    rows = [
+        ("Entry size rule",
+         "Never risk more than 2\u20133% of bankroll on a single entry", False),
+        ("SAFE 85+ (Tier 1)",
+         "Maximum units \u2014 full entry at normal size", True),
+        ("SAFE 70\u201384 (Tier 2)",
+         "Standard units \u2014 normal sized entry", False),
+        ("SAFE 55\u201369 (Tier 3)",
+         "Half units \u2014 use only in larger flex entries", True),
+        ("Edge % above 8%",
+         "Strong edge \u2014 consider 1.5\u00d7 your standard entry size", False),
+        ("Correlation filter",
+         "Avoid stacking 3+ picks from the same game (correlated variance)", True),
+    ]
     roi_rows = "".join(
-        f"""<tr>
-          <td style="padding:10px 16px;border-bottom:1px solid {_BORDER};
-              vertical-align:top;width:40%;">
-            <strong style="color:{_TEXT};font-size:13px;">{label}</strong>
-          </td>
-          <td style="padding:10px 16px;border-bottom:1px solid {_BORDER};
-              vertical-align:top;">
-            <span style="color:{_MUTED};font-size:13px;">{val}</span>
-          </td>
+        f"""<tr style="background:{'rgba(255,255,255,0.025)' if alt else 'transparent'};">
+          <td style="padding:12px 16px;font-size:13px;font-weight:700;color:{_TEXT};
+               border-bottom:1px solid {_BORDER};width:40%;">{label}</td>
+          <td style="padding:12px 16px;font-size:13px;color:{_MUTED};
+               border-bottom:1px solid {_BORDER};">{val}</td>
         </tr>"""
-        for label, val in [
-            ("Entry size rule",
-             "Never risk more than 2\u20133% of bankroll on a single entry"),
-            ("SAFE 85+ (Tier 1)",
-             "Maximum units \u2014 full entry at normal size"),
-            ("SAFE 70\u201384 (Tier 2)",
-             "Standard units \u2014 normal sized entry"),
-            ("SAFE 55\u201369 (Tier 3)",
-             "Half units \u2014 use only in larger flex entries"),
-            ("Edge % above 8%",
-             "Strong edge \u2014 consider 1.5\u00d7 your standard entry size"),
-            ("Correlation filter",
-             "Avoid stacking 3+ picks from the same game (correlated variance)"),
-        ]
+        for label, val, alt in rows
     )
 
     body = f"""
-{_badge("ROI STRATEGY")}
-<br><br>
-{_h1(f"How to maximize your long-term ROI, {name}")}
-{_p("After 5 days with Smart Pick Pro, you've seen the picks. Now let's talk about "
-    f"<strong style='color:{_TEXT}'>how professionals use them</strong> to build "
-    "consistent, compounding returns \u2014 not just one-off wins.")}
-{_divider()}
-<p style="margin:0 0 12px;font-size:13px;font-weight:700;color:{_MUTED};
-   text-transform:uppercase;letter-spacing:1px;">The Smart Pick Pro ROI Framework</p>
+<h1 style="margin:0 0 8px;font-size:24px;font-weight:900;color:{_TEXT};
+           letter-spacing:-0.5px;line-height:1.25;">
+  How to maximize your long-term ROI,&nbsp;{name}
+</h1>
+<p style="margin:0 0 24px;font-size:14px;color:{_MUTED};line-height:1.7;">
+  After 5 days with Smart Pick Pro, you've seen the picks. Now let's talk about
+  <strong style="color:{_TEXT};">how professionals use them</strong> to build
+  consistent, compounding returns \u2014 not just one-off wins.
+</p>
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="background:linear-gradient(135deg,rgba(0,212,255,0.06),rgba(123,47,247,0.06));
+              border:1px solid rgba(0,212,255,0.15);border-radius:12px;margin-bottom:28px;">
+  <tr>
+    <td style="padding:20px 22px;">
+      <div style="font-size:11px;font-weight:800;color:{_ACCENT_1};text-transform:uppercase;
+                  letter-spacing:1.5px;margin-bottom:8px;">&#128161; Core Principle</div>
+      <p style="margin:0;font-size:14px;color:{_TEXT};line-height:1.75;">
+        The AI gives you edge on every pick. Your job is to
+        <strong style="color:{_ACCENT_1};">size entries according to that edge</strong>,
+        not just pick winners.<br><br>
+        A 65% hit rate with poor sizing still loses money.
+        A 58% hit rate with disciplined sizing compounds consistently.
+      </p>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0 0 14px;font-size:12px;font-weight:700;color:{_MUTED};
+   text-transform:uppercase;letter-spacing:1.5px;">The Smart Pick Pro ROI Framework</p>
 <table cellpadding="0" cellspacing="0" border="0" width="100%"
-       style="border:1px solid {_BORDER};border-radius:10px;overflow:hidden;">
+       style="border:1px solid {_BORDER};border-radius:12px;overflow:hidden;
+              margin-bottom:28px;">
   <tr style="background:rgba(0,212,255,0.06);">
-    <td style="padding:8px 16px;font-size:12px;font-weight:700;color:{_MUTED};
-        text-transform:uppercase;letter-spacing:1px;width:40%;">Signal</td>
-    <td style="padding:8px 16px;font-size:12px;font-weight:700;color:{_MUTED};
-        text-transform:uppercase;letter-spacing:1px;">Action</td>
+    <td style="padding:10px 16px;font-size:11px;font-weight:700;color:{_MUTED};
+        text-transform:uppercase;letter-spacing:1.2px;width:40%;">Signal</td>
+    <td style="padding:10px 16px;font-size:11px;font-weight:700;color:{_MUTED};
+        text-transform:uppercase;letter-spacing:1.2px;">Action</td>
   </tr>
   {roi_rows}
 </table>
-<br>
-{_p(f"<strong style='color:{_TEXT}'>The core principle:</strong> The AI gives you edge on "
-    "every pick. Your job is to "
-    f"<strong style='color:{_ACCENT_1}'>size entries according to that edge</strong>, "
-    "not just pick winners. A 65% hit rate with poor sizing still loses money. "
-    "A 58% hit rate with disciplined sizing compounds consistently.")}
-{_p("The Edge % shown on each pick in QAM is your sizing guide. Treat it as a multiplier: "
-    "Edge 12% = 1.5\u00d7 standard entry. Edge 6% = 0.5\u00d7 standard entry.")}
-{_cta_button("\U0001f4c8 Review Tonight's Edge Picks", qam_url)}
-{_divider()}
-{_p(f'Questions or want a strategy consult? Reply to this email or write to '
-    f'<a href="mailto:support@smartpickpro.ai" style="color:{_ACCENT_1};text-decoration:none;">'
-    f'support@smartpickpro.ai</a> \u2014 we read every reply.',
-    muted=True, small=True)}
-<br>
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="background:rgba(0,213,89,0.06);border:1px solid rgba(0,213,89,0.2);
+              border-radius:12px;margin-bottom:28px;">
+  <tr>
+    <td style="padding:18px 20px;">
+      <div style="font-size:11px;font-weight:800;color:#00D559;text-transform:uppercase;
+                  letter-spacing:1.5px;margin-bottom:10px;">&#128200; Edge % as a Multiplier</div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding:0 16px 0 0;font-size:13px;color:{_TEXT};width:50%;">
+            <strong>Edge 12%</strong>
+            <span style="color:{_MUTED};font-size:12px;display:block;margin-top:3px;">
+              \u2192 1.5\u00d7 your standard entry
+            </span>
+          </td>
+          <td style="font-size:13px;color:{_TEXT};">
+            <strong>Edge 6%</strong>
+            <span style="color:{_MUTED};font-size:12px;display:block;margin-top:3px;">
+              \u2192 0.5\u00d7 your standard entry
+            </span>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+{_cta_button("&#128200; Review Tonight's Edge Picks", qam_url)}
+
+<p style="margin:12px 0 28px;font-size:12px;color:{_MUTED};text-align:center;line-height:1.7;">
+  Questions or want a strategy consult? Reply to this email or write to
+  <a href="mailto:support@smartpickpro.ai"
+     style="color:{_ACCENT_1};text-decoration:none;">support@smartpickpro.ai</a>.
+  We read every reply.
+</p>
 """
-    plain = f"""Hey {name}, let's talk about long-term ROI strategy.
+    plain = f"""Hey {name}, let's talk long-term ROI strategy.
 
-After 5 days with Smart Pick Pro, you've seen the picks.
-Here's how professionals use them to build consistent, compounding returns.
+After 5 days with Smart Pick Pro, here's how professionals use picks
+to build consistent, compounding returns.
 
-THE SMART PICK PRO ROI FRAMEWORK
-----------------------------------
+CORE PRINCIPLE
+--------------
+The AI gives you edge on every pick.
+Your job is to SIZE entries according to that edge, not just pick winners.
+
+A 65% hit rate with poor sizing still loses money.
+A 58% hit rate with disciplined sizing compounds consistently.
+
+THE ROI FRAMEWORK
+-----------------
 Entry size rule:       Never risk more than 2-3% of bankroll per entry
 SAFE 85+ (Tier 1):     Maximum units - full entry at normal size
 SAFE 70-84 (Tier 2):   Standard units - normal sized entry
@@ -659,23 +832,15 @@ SAFE 55-69 (Tier 3):   Half units - use only in larger flex entries
 Edge % above 8%:       Consider 1.5x your standard entry size
 Correlation filter:    Avoid 3+ picks from the same game
 
-THE CORE PRINCIPLE
-------------------
-The AI gives you edge on every pick. Your job is to SIZE entries
-according to that edge, not just pick winners.
-
-Edge % as a multiplier:
+EDGE % AS A MULTIPLIER
+----------------------
   Edge 12% -> 1.5x standard entry
   Edge 6%  -> 0.5x standard entry
-
-A 65% hit rate with poor sizing still loses money.
-A 58% hit rate with disciplined sizing compounds consistently.
 
 Review tonight's picks: {qam_url}
 Support: support@smartpickpro.ai
 
--- Smart Pick Pro
-https://smartpickpro.ai
+-- Smart Pick Pro � https://smartpickpro.ai
 """
     subject = "How to maximize your ROI with Smart Pick Pro \U0001f4c8"
-    return _wrap(subject, body), plain
+    return _wrap(subject, body, app_url), plain

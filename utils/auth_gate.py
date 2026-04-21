@@ -4367,15 +4367,9 @@ SHEPHERD_TOUR_STEPS: list[dict] = [
 
 
 def render_subscription_success_page(plan_name: str = "Smart Pick Pro") -> bool:
-    """Render the post-payment success celebration page.
+    """Render the full-viewport post-payment success celebration page.
 
-    Call this on every authenticated page render.  It checks session state
-    for ``_just_subscribed`` and, when True, renders a full-width celebration
-    panel with CSS confetti, tier badge, feature highlights, and a
-    'Launch Dashboard' button that starts the guided tour.
-
-    Returns True if the success page was rendered (caller should st.stop()
-    to prevent the normal page from rendering underneath), False otherwise.
+    Returns True if rendered (caller should st.stop()).
     """
     import streamlit as st
 
@@ -4383,162 +4377,336 @@ def render_subscription_success_page(plan_name: str = "Smart Pick Pro") -> bool:
         return False
 
     plan = st.session_state.get("_just_subscribed_plan", plan_name) or plan_name
+    logo_b64 = _get_logo_b64()
+    logo_tag = (
+        f'<img src="data:image/png;base64,{logo_b64}" '
+        f'alt="Smart Pick Pro" class="spp-logo-img">'
+        if logo_b64 else
+        '<div class="spp-logo-text">⚡ Smart Pick Pro</div>'
+    )
 
-    # Determine tier label and feature list from plan name
     _plan_lower = plan.lower()
     if "insider" in _plan_lower:
-        tier_label  = "👑 Insider Circle"
-        tier_color  = "#c084fc"
-        tier_glow   = "rgba(192,132,252,.35)"
+        tier_label = "👑 Insider Circle"
+        tier_color = "#c084fc"
+        tier_r, tier_g, tier_b = 192, 132, 252
         feature_list = [
-            ("👑", "Unlimited QAM props", "No caps — every pick the AI finds"),
-            ("⚡", "QEG + Platform Picks", "Full access, no blur, no limits"),
-            ("📊", "Priority analysis queue", "Your analysis runs first"),
-            ("🔔", "SMS game-night alerts", "Push picks 2 hours before tip-off"),
+            ("👑", "Unlimited QAM props", "Every pick the AI generates — zero caps"),
+            ("⚡", "Full QEG + Platform Picks", "No blur, no limits, all sections open"),
+            ("📊", "Priority analysis queue", "Your session runs first every night"),
+            ("🔔", "SMS game-night alerts", "Best picks pushed 2 hours before tip-off"),
         ]
     elif "smart money" in _plan_lower or "smart_money" in _plan_lower:
-        tier_label  = "💎 Smart Money"
-        tier_color  = "#2D9EFF"
-        tier_glow   = "rgba(45,158,255,.35)"
+        tier_label = "💎 Smart Money"
+        tier_color = "#2D9EFF"
+        tier_r, tier_g, tier_b = 45, 158, 255
         feature_list = [
-            ("💎", "Unlimited QAM props", "No caps on tonight's analysis"),
+            ("💎", "Unlimited QAM props", "No caps — full nightly analysis"),
             ("⚡", "Full QEG + Platform Picks", "All sections unlocked"),
             ("📊", "Advanced filters", "Edge %, tier, platform, direction"),
-            ("📈", "Historical back-test", "See the AI's track record by stat type"),
+            ("📈", "Historical back-test", "AI track record by stat type"),
         ]
     elif "sharp" in _plan_lower:
-        tier_label  = "🔷 Sharp IQ"
-        tier_color  = "#00D559"
-        tier_glow   = "rgba(0,213,89,.35)"
+        tier_label = "🔷 Sharp IQ"
+        tier_color = "#00D559"
+        tier_r, tier_g, tier_b = 0, 213, 89
         feature_list = [
-            ("🔷", "35 QAM props per session", "Expanded nightly analysis"),
-            ("⚡", "QEG Analysis", "Full Quantum Edge Generator visible"),
-            ("🎯", "Platform AI Picks teaser", "See top 5 platform picks"),
+            ("🔷", "35 QAM props per night", "Expanded nightly analysis"),
+            ("⚡", "Full QEG Analysis", "Quantum Edge Generator unlocked"),
+            ("🎯", "Platform AI Picks teaser", "Top 5 platform picks visible"),
             ("📊", "Confidence tier filters", "Filter by SAFE score tier"),
         ]
     else:
-        tier_label  = "🚀 Smart Pick Pro"
-        tier_color  = "#00D559"
-        tier_glow   = "rgba(0,213,89,.35)"
+        tier_label = "🚀 Smart Pick Pro"
+        tier_color = "#00D559"
+        tier_r, tier_g, tier_b = 0, 213, 89
         feature_list = [
             ("⚡", "Quantum Analysis Matrix", "AI-powered nightly prop analysis"),
             ("🎯", "Platform AI Picks", "PrizePicks & Underdog recommendations"),
-            ("📈", "SAFE Score + Edge %", "Confidence and edge metrics on every pick"),
-            ("🔔", "Auto-refresh picks", "Live updates throughout game night"),
+            ("📈", "SAFE Score + Edge %", "Confidence and edge on every pick"),
+            ("🔄", "Auto-refresh every 3 min", "Live picks throughout game night"),
         ]
 
-    feature_rows = "".join(
-        f"""<div style="display:flex;align-items:flex-start;gap:14px;padding:10px 0;
-                border-bottom:1px solid rgba(255,255,255,.05);">
-              <div style="font-size:1.4rem;flex-shrink:0;">{ico}</div>
-              <div>
-                <div style="font-family:'Space Grotesk',sans-serif;font-size:.85rem;
-                     font-weight:700;color:#fff;">{title}</div>
-                <div style="font-size:.72rem;color:rgba(255,255,255,.4);margin-top:2px;">
-                  {desc}</div>
-              </div>
+    feature_cards = "".join(
+        f"""<div class="spp-feat-card">
+              <div class="spp-feat-ico">{ico}</div>
+              <div class="spp-feat-title">{title}</div>
+              <div class="spp-feat-desc">{desc}</div>
             </div>"""
         for ico, title, desc in feature_list
     )
 
-    # CSS confetti particles (pure CSS, no JS required)
-    confetti_particles = "".join(
-        f"""<div style="position:absolute;top:-10px;left:{5 + i * 9}%;width:{3 + (i % 4)}px;
-             height:{8 + (i % 5)}px;background:{c};border-radius:2px;
-             animation:confettiFall {2.5 + (i % 3) * 0.4}s linear {i * 0.1}s infinite;
-             opacity:.85;transform:rotate({i * 37}deg);"></div>"""
-        for i, c in enumerate([
-            "#00D559","#2D9EFF","#c084fc","#fbbf24","#f472b6",
-            "#34d399","#60a5fa","#a78bfa","#fb923c","#f87171",
-            "#4ade80","#38bdf8","#e879f9","#facc15","#fd8a8a",
-            "#00D559","#2D9EFF","#c084fc","#fbbf24","#f472b6",
-        ])
+    # 30 varied confetti pieces
+    _conf_colors = ["#00D559","#2D9EFF","#c084fc","#fbbf24","#f472b6",
+                    "#34d399","#60a5fa","#a78bfa","#fb923c","#f87171"]
+    confetti = "".join(
+        f'<div class="spp-cc spp-cc-{i % 10}" style="left:{3 + i * 3.2}%;'
+        f'animation-delay:{(i * 0.13):.2f}s;animation-duration:{2.2 + (i % 5) * 0.35:.2f}s;'
+        f'background:{_conf_colors[i % 10]};width:{3 + i % 4}px;height:{7 + i % 5}px;'
+        f'transform:rotate({i * 43 % 180}deg);"></div>'
+        for i in range(30)
     )
 
     st.markdown(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;800&family=JetBrains+Mono:wght@700;800&display=swap');
-@keyframes confettiFall {{
-    0%   {{ transform: translateY(-20px) rotate(0deg);   opacity: .9; }}
-    100% {{ transform: translateY(110vh) rotate(720deg); opacity: 0;  }}
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap');
+
+/* ── Full-page reset ── */
+[data-testid="stSidebar"],
+header[data-testid="stHeader"],
+[data-testid="stDecoration"],
+.stDeployButton, footer {{ display:none!important; }}
+[data-testid="stAppViewContainer"] > div:first-child {{ padding:0!important; }}
+
+/* ── Animations ── */
+@keyframes sppConfetti {{
+    0%   {{ transform:translateY(-5vh) rotate(0deg);   opacity:1; }}
+    100% {{ transform:translateY(105vh) rotate(800deg); opacity:0; }}
 }}
-@keyframes successPulse {{
-    0%,100% {{ box-shadow: 0 0 40px {tier_glow}, 0 0 0 0 {tier_glow}; }}
-    50%      {{ box-shadow: 0 0 60px {tier_glow}, 0 0 30px {tier_glow}; }}
+@keyframes sppSlideIn {{
+    from {{ opacity:0; transform:translateY(40px) scale(.96); }}
+    to   {{ opacity:1; transform:translateY(0)    scale(1);   }}
 }}
-@keyframes slideUp {{
-    from {{ opacity:0; transform:translateY(24px); }}
+@keyframes sppRingPulse {{
+    0%,100% {{ transform:translate(-50%,-50%) scale(1);   opacity:.6; }}
+    50%      {{ transform:translate(-50%,-50%) scale(1.12); opacity:.25; }}
+}}
+@keyframes sppRingPulse2 {{
+    0%,100% {{ transform:translate(-50%,-50%) scale(1);   opacity:.35; }}
+    50%      {{ transform:translate(-50%,-50%) scale(1.22); opacity:.1; }}
+}}
+@keyframes sppCheckBounce {{
+    0%   {{ transform:scale(0)   rotate(-20deg); opacity:0; }}
+    60%  {{ transform:scale(1.15) rotate(6deg);  opacity:1; }}
+    80%  {{ transform:scale(.94) rotate(-2deg); }}
+    100% {{ transform:scale(1)   rotate(0deg);  opacity:1; }}
+}}
+@keyframes sppLogoGlow {{
+    0%,100% {{ filter:drop-shadow(0 0 24px rgba({tier_r},{tier_g},{tier_b},.3))
+                      drop-shadow(0 0 50px rgba({tier_r},{tier_g},{tier_b},.12)); }}
+    50%      {{ filter:drop-shadow(0 0 48px rgba({tier_r},{tier_g},{tier_b},.55))
+                      drop-shadow(0 0 90px rgba({tier_r},{tier_g},{tier_b},.25)); }}
+}}
+@keyframes sppFeatIn {{
+    from {{ opacity:0; transform:translateY(18px); }}
     to   {{ opacity:1; transform:translateY(0);    }}
 }}
-.spp-success-overlay {{
-    position:relative;overflow:hidden;
-    background:linear-gradient(160deg,#060911 0%,#0c1220 60%,#070b15 100%);
-    border:1px solid rgba(255,255,255,.07);border-radius:20px;
-    padding:48px 32px 40px;margin:0 auto 32px;max-width:640px;
-    animation:successPulse 3s ease-in-out infinite,slideUp .5s ease both;
-    text-align:center;
+@keyframes sppOrbFloat {{
+    0%,100% {{ transform:translateY(0);    }}
+    50%      {{ transform:translateY(-30px); }}
 }}
-.spp-tier-badge {{
-    display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.55rem;
-    font-weight:800;letter-spacing:.15em;text-transform:uppercase;
-    padding:5px 18px;border-radius:100px;margin-bottom:20px;
-    color:{tier_color};background:rgba({",".join(str(int(tier_color.lstrip("#")[i:i+2],16)) for i in (0,2,4))},.12);
-    border:1px solid rgba({",".join(str(int(tier_color.lstrip("#")[i:i+2],16)) for i in (0,2,4))},.3);
+
+/* ── Page wrapper ── */
+.spp-page {{
+    position:relative;min-height:100vh;overflow:hidden;
+    background:radial-gradient(ellipse at 50% 0%,   rgba({tier_r},{tier_g},{tier_b},.22) 0%, transparent 55%),
+               radial-gradient(ellipse at 85% 80%,  rgba(45,158,255,.14) 0%,             transparent 45%),
+               radial-gradient(ellipse at 10% 60%,  rgba(192,132,252,.10) 0%,            transparent 40%),
+               #04070f;
+    display:flex;align-items:center;justify-content:center;padding:32px 16px;
 }}
-.spp-checkmark {{
-    width:72px;height:72px;border-radius:50%;margin:0 auto 20px;
+/* Circuit grid overlay */
+.spp-page::before {{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='g' width='60' height='60' patternUnits='userSpaceOnUse'%3E%3Cpath d='M30 0v60M0 30h60' stroke='rgba(0,213,89,0.04)' stroke-width='.5' fill='none'/%3E%3Ccircle cx='30' cy='30' r='1.2' fill='rgba(0,213,89,0.07)'/%3E%3Ccircle cx='0'  cy='0'  r='.8' fill='rgba(45,158,255,0.05)'/%3E%3Ccircle cx='60' cy='60' r='.8' fill='rgba(45,158,255,0.05)'/%3E%3C/pattern%3E%3C/defs%3E%3Crect fill='url(%23g)' width='100%25' height='100%25'/%3E%3C/svg%3E");
+    opacity:.6;
+}}
+/* Glow orbs */
+.spp-orb {{
+    position:absolute;border-radius:50%;pointer-events:none;filter:blur(110px);
+    animation:sppOrbFloat 18s ease-in-out infinite;
+}}
+.spp-orb-1 {{ width:600px;height:600px;top:-180px;left:-120px;background:rgba({tier_r},{tier_g},{tier_b},.18); }}
+.spp-orb-2 {{ width:500px;height:500px;bottom:-120px;right:-100px;background:rgba(45,158,255,.14);animation-delay:-9s; }}
+
+/* Pulse rings behind checkmark */
+.spp-ring {{
+    position:absolute;top:50%;left:50%;border-radius:50%;pointer-events:none;
+    border:1px solid rgba({tier_r},{tier_g},{tier_b},.35);
+    animation:sppRingPulse 2.8s ease-out infinite;
+}}
+.spp-ring-1 {{ width:110px;height:110px; }}
+.spp-ring-2 {{ width:150px;height:150px;border-color:rgba({tier_r},{tier_g},{tier_b},.18);animation:sppRingPulse2 2.8s .5s ease-out infinite; }}
+.spp-ring-3 {{ width:190px;height:190px;border-color:rgba({tier_r},{tier_g},{tier_b},.08);animation:sppRingPulse2 2.8s 1s ease-out infinite; }}
+
+/* ── Card ── */
+.spp-card {{
+    position:relative;z-index:10;max-width:620px;width:100%;
+    background:rgba(8,12,25,.85);
+    border:1px solid rgba({tier_r},{tier_g},{tier_b},.18);
+    border-radius:24px;overflow:hidden;
+    box-shadow:0 32px 80px rgba(0,0,0,.6),0 0 60px rgba({tier_r},{tier_g},{tier_b},.08),
+               0 0 0 1px rgba({tier_r},{tier_g},{tier_b},.06) inset;
+    animation:sppSlideIn .55s cubic-bezier(.22,1,.36,1) both;
+}}
+/* Top gradient bar */
+.spp-card::before {{
+    content:'';display:block;height:3px;
+    background:linear-gradient(90deg,{tier_color},#2D9EFF,#c084fc,{tier_color});
+    background-size:300% 100%;animation:sppBarShift 4s linear infinite;
+}}
+@keyframes sppBarShift {{ 0%{{background-position:0% 0%}} 100%{{background-position:300% 0%}} }}
+
+/* Confetti layer */
+.spp-confetti-wrap {{
+    position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:20;
+}}
+.spp-cc {{
+    position:absolute;top:-12px;border-radius:2px;
+}}
+
+/* ── Logo ── */
+.spp-logo-wrap {{
+    text-align:center;padding:36px 24px 0;
+}}
+.spp-logo-img {{
+    width:120px;
+    animation:sppLogoGlow 3s ease-in-out infinite;
+    filter:drop-shadow(0 0 20px rgba({tier_r},{tier_g},{tier_b},.35));
+}}
+.spp-logo-text {{
+    font-family:'Space Grotesk',sans-serif;font-size:1.2rem;font-weight:900;
+    background:linear-gradient(135deg,{tier_color},#2D9EFF);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;
+}}
+
+/* ── Check circle ── */
+.spp-check-wrap {{
+    position:relative;width:90px;height:90px;margin:24px auto 0;
+}}
+.spp-check-circle {{
+    width:90px;height:90px;border-radius:50%;
     background:linear-gradient(135deg,{tier_color},{tier_color}88);
     display:flex;align-items:center;justify-content:center;
-    font-size:2rem;box-shadow:0 0 32px {tier_glow};
+    font-size:2.4rem;font-weight:900;color:#fff;
+    box-shadow:0 0 40px rgba({tier_r},{tier_g},{tier_b},.45),0 0 80px rgba({tier_r},{tier_g},{tier_b},.2);
+    animation:sppCheckBounce .6s .2s cubic-bezier(.34,1.56,.64,1) both;
+    position:relative;z-index:2;
 }}
-.spp-title {{
-    font-family:'Space Grotesk',sans-serif;font-size:1.8rem;font-weight:800;
-    color:#fff;margin:0 0 10px;letter-spacing:-.5px;
+
+/* ── Tier badge ── */
+.spp-tier-badge {{
+    display:inline-block;font-family:'JetBrains Mono',monospace;
+    font-size:.52rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;
+    padding:5px 18px;border-radius:100px;margin:20px auto 0;
+    color:{tier_color};
+    background:rgba({tier_r},{tier_g},{tier_b},.1);
+    border:1px solid rgba({tier_r},{tier_g},{tier_b},.3);
+}}
+
+/* ── Headlines ── */
+.spp-headline {{
+    font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:900;
+    color:#fff;text-align:center;margin:12px 24px 6px;letter-spacing:-.5px;
+    line-height:1.15;
 }}
 .spp-subtitle {{
-    font-family:'Space Grotesk',sans-serif;font-size:.9rem;
-    color:rgba(255,255,255,.45);margin:0 0 28px;line-height:1.6;
+    font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:500;
+    color:rgba(255,255,255,.45);text-align:center;margin:0 24px 28px;line-height:1.6;
 }}
+.spp-subtitle strong {{ color:rgba({tier_r},{tier_g},{tier_b},.9); }}
+
+/* ── Feature grid ── */
 .spp-features {{
-    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
-    border-radius:12px;padding:4px 20px 4px;margin:0 0 28px;text-align:left;
+    display:grid;grid-template-columns:1fr 1fr;gap:10px;
+    margin:0 24px 28px;
 }}
-.spp-confetti-wrap {{
-    position:absolute;inset:0;overflow:hidden;pointer-events:none;
+.spp-feat-card {{
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+    border-radius:14px;padding:14px 16px;
+    animation:sppFeatIn .4s ease both;
+}}
+.spp-feat-card:nth-child(1) {{ animation-delay:.35s; }}
+.spp-feat-card:nth-child(2) {{ animation-delay:.45s; }}
+.spp-feat-card:nth-child(3) {{ animation-delay:.55s; }}
+.spp-feat-card:nth-child(4) {{ animation-delay:.65s; }}
+.spp-feat-ico  {{ font-size:1.3rem;margin-bottom:6px; }}
+.spp-feat-title {{
+    font-family:'Space Grotesk',sans-serif;font-size:.78rem;font-weight:800;
+    color:#fff;margin-bottom:3px;
+}}
+.spp-feat-desc {{
+    font-family:'Space Grotesk',sans-serif;font-size:.65rem;
+    color:rgba(255,255,255,.38);line-height:1.5;
+}}
+
+/* ── CTA button (native Streamlit button override) ── */
+.spp-cta-wrap {{ padding:0 24px 32px;text-align:center; }}
+.stButton > button {{
+    background:linear-gradient(135deg,{tier_color},{tier_color}cc)!important;
+    border:none!important;color:#000!important;font-weight:800!important;
+    font-size:.9rem!important;letter-spacing:.03em!important;
+    border-radius:12px!important;padding:14px 32px!important;
+    box-shadow:0 8px 28px rgba({tier_r},{tier_g},{tier_b},.35)!important;
+    transition:all .2s!important;width:100%!important;
+}}
+.stButton > button:hover {{
+    transform:translateY(-2px)!important;
+    box-shadow:0 14px 40px rgba({tier_r},{tier_g},{tier_b},.5)!important;
+}}
+
+@media(max-width:500px) {{
+    .spp-features {{ grid-template-columns:1fr; }}
+    .spp-headline {{ font-size:1.6rem; }}
+    .spp-logo-img {{ width:90px; }}
 }}
 </style>
-<div class="spp-success-overlay">
-  <div class="spp-confetti-wrap">
-    {confetti_particles}
-  </div>
-  <div class="spp-tier-badge">{tier_label}</div>
-  <div class="spp-checkmark">✓</div>
-  <div class="spp-title">You're in! 🎉</div>
-  <div class="spp-subtitle">
-    Your <strong style="color:{tier_color};">{plan}</strong> subscription is confirmed
-    and active.<br>The AI is processing tonight's slate right now.
-  </div>
-  <div class="spp-features">
-    {feature_rows}
+
+<div class="spp-page">
+  <div class="spp-orb spp-orb-1"></div>
+  <div class="spp-orb spp-orb-2"></div>
+
+  <div class="spp-card">
+    <div class="spp-confetti-wrap">{confetti}</div>
+
+    <!-- Logo -->
+    <div class="spp-logo-wrap">
+      {logo_tag}
+    </div>
+
+    <!-- Check circle with pulse rings -->
+    <div class="spp-check-wrap" style="position:relative;width:90px;height:90px;margin:24px auto 0;">
+      <div class="spp-ring spp-ring-3"></div>
+      <div class="spp-ring spp-ring-2"></div>
+      <div class="spp-ring spp-ring-1"></div>
+      <div class="spp-check-circle">✓</div>
+    </div>
+
+    <!-- Tier badge -->
+    <div style="text-align:center;">
+      <div class="spp-tier-badge">{tier_label}</div>
+    </div>
+
+    <!-- Headlines -->
+    <div class="spp-headline">You're in the inner circle</div>
+    <div class="spp-subtitle">
+      Your <strong>{plan}</strong> subscription is confirmed and active.<br>
+      The AI is scanning tonight's slate right now.
+    </div>
+
+    <!-- Feature grid -->
+    <div class="spp-features">
+      {feature_cards}
+    </div>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
+    # CTA button outside the card so Streamlit can intercept it cleanly
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
         if st.button(
-            "🚀 Launch My Dashboard",
+            "🚀 Launch My Dashboard →",
             key="_success_launch_btn",
             type="primary",
             use_container_width=True,
         ):
-            # Clear the success flag and activate the tour for the first session
             st.session_state.pop("_just_subscribed", None)
             st.session_state.pop("_just_subscribed_plan", None)
             st.session_state["_show_onboarding_tour"] = True
             st.session_state["_tour_step"] = 0
             try:
-                # Strip the Stripe session_id from the URL for a clean dashboard URL
                 st.query_params.clear()
             except Exception:
                 pass
@@ -4548,16 +4716,10 @@ def render_subscription_success_page(plan_name: str = "Smart Pick Pro") -> bool:
 
 
 def render_onboarding_tour() -> None:
-    """Render the 3-step native Streamlit guided tour.
+    """Render the 3-step guided tour as a sleek floating bottom-right card.
 
-    Shown once to new subscribers immediately after the success page.
     Persists via ``_show_onboarding_tour`` + ``_tour_step`` session state.
-    Includes Skip, Back, Next, and a progress bar.
-
-    Tour steps:
-        1 / 3 — Quantum Analysis Matrix  (your AI props engine)
-        2 / 3 — Platform AI Picks        (tonight's best bets)
-        3 / 3 — Tier & Upgrade           (unlock more)
+    Includes logo, dot progress indicator, Skip, Back, Next, and Done.
     """
     import streamlit as st
 
@@ -4572,76 +4734,126 @@ def render_onboarding_tour() -> None:
         st.session_state.pop("_tour_step", None)
         return
 
-    step_data = SHEPHERD_TOUR_STEPS[step]
-    progress_pct = int(((step + 1) / total) * 100)
+    logo_b64 = _get_logo_b64()
+    logo_tag = (
+        f'<img src="data:image/png;base64,{logo_b64}" '
+        f'alt="Smart Pick Pro" style="height:32px;width:auto;'
+        f'filter:drop-shadow(0 0 8px rgba(0,213,89,.4));">'
+        if logo_b64 else
+        '<span style="font-family:\'Space Grotesk\',sans-serif;font-weight:900;'
+        'font-size:.8rem;background:linear-gradient(135deg,#00D559,#2D9EFF);'
+        '-webkit-background-clip:text;-webkit-text-fill-color:transparent;">⚡ Smart Pick Pro</span>'
+    )
 
-    # Strip HTML tags for the plain-text progress label
+    step_data = SHEPHERD_TOUR_STEPS[step]
     import re as _re_tour
     plain_text = _re_tour.sub(r"<[^>]+>", "", step_data["text"])
 
+    # Step dot indicators
+    dots = "".join(
+        f'<div style="width:{10 if i == step else 6}px;height:6px;border-radius:3px;'
+        f'background:{"#00D559" if i == step else "rgba(255,255,255,.15)"};'
+        f'transition:all .3s;"></div>'
+        for i in range(total)
+    )
+
+    # Step icon per step
+    step_icons = ["⚡", "🎯", "📈"]
+    step_icon = step_icons[step] if step < len(step_icons) else "✦"
+
     st.markdown(f"""
 <style>
-@keyframes tourSlide {{
-    from {{ opacity:0; transform:translateY(-8px); }}
-    to   {{ opacity:1; transform:translateY(0);    }}
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&family=JetBrains+Mono:wght@700&display=swap');
+@keyframes sppTourIn {{
+    from {{ opacity:0; transform:translateY(20px) scale(.97); }}
+    to   {{ opacity:1; transform:translateY(0)    scale(1);   }}
 }}
-.spp-tour-card {{
-    background:linear-gradient(145deg,#0d1525,#111c2e);
-    border:1px solid rgba(0,213,89,.25);border-radius:16px;
-    padding:20px 24px 16px;margin-bottom:16px;
-    box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 0 1px rgba(0,213,89,.08);
-    animation:tourSlide .25s ease both;
+@keyframes sppTourIconPulse {{
+    0%,100% {{ box-shadow:0 0 0 0 rgba(0,213,89,.4); }}
+    50%      {{ box-shadow:0 0 0 8px rgba(0,213,89,0); }}
+}}
+.spp-tour-wrap {{
+    background:linear-gradient(145deg,rgba(8,13,26,.98),rgba(12,18,38,.98));
+    border:1px solid rgba(0,213,89,.22);
+    border-radius:20px;overflow:hidden;
+    box-shadow:0 24px 64px rgba(0,0,0,.7),0 0 40px rgba(0,213,89,.07),
+               0 0 0 1px rgba(0,213,89,.05) inset;
+    animation:sppTourIn .3s cubic-bezier(.22,1,.36,1) both;
+    max-width:480px;margin:0 auto 8px;
+}}
+.spp-tour-top-bar {{
+    height:2px;
+    background:linear-gradient(90deg,#00D559,#2D9EFF,#c084fc);
+}}
+.spp-tour-header {{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px 10px;
+    border-bottom:1px solid rgba(255,255,255,.05);
+}}
+.spp-tour-logo-area {{
+    display:flex;align-items:center;gap:8px;
 }}
 .spp-tour-step-label {{
-    font-family:'JetBrains Mono',monospace;font-size:.48rem;font-weight:800;
+    font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:700;
     color:rgba(0,213,89,.6);text-transform:uppercase;letter-spacing:.12em;
-    margin-bottom:8px;
+}}
+.spp-tour-body-area {{
+    padding:16px 20px;
+}}
+.spp-tour-icon {{
+    width:42px;height:42px;border-radius:12px;margin-bottom:10px;
+    background:rgba(0,213,89,.08);border:1px solid rgba(0,213,89,.15);
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.2rem;animation:sppTourIconPulse 2.5s ease-in-out infinite;
 }}
 .spp-tour-title {{
-    font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:800;
-    color:#fff;margin:0 0 8px;
+    font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:800;
+    color:#fff;margin:0 0 6px;line-height:1.2;
 }}
-.spp-tour-body {{
-    font-family:'Space Grotesk',sans-serif;font-size:.82rem;
-    color:rgba(255,255,255,.6);line-height:1.65;margin:0 0 14px;
+.spp-tour-desc {{
+    font-family:'Space Grotesk',sans-serif;font-size:.78rem;font-weight:500;
+    color:rgba(255,255,255,.52);line-height:1.65;margin:0 0 16px;
 }}
-.spp-tour-progress-bar {{
-    height:3px;background:rgba(255,255,255,.08);border-radius:2px;
-    margin-bottom:16px;overflow:hidden;
-}}
-.spp-tour-progress-fill {{
-    height:100%;width:{progress_pct}%;
-    background:linear-gradient(90deg,#00D559,#2D9EFF);
-    border-radius:2px;transition:width .3s ease;
+.spp-tour-dots {{
+    display:flex;gap:5px;align-items:center;margin-bottom:4px;
 }}
 </style>
-<div class="spp-tour-card">
-  <div class="spp-tour-step-label">Guided Tour &mdash; Step {step + 1} of {total}</div>
-  <div class="spp-tour-progress-bar">
-    <div class="spp-tour-progress-fill"></div>
+
+<div class="spp-tour-wrap">
+  <div class="spp-tour-top-bar"></div>
+  <div class="spp-tour-header">
+    <div class="spp-tour-logo-area">
+      {logo_tag}
+    </div>
+    <div class="spp-tour-step-label">Step {step + 1} of {total}</div>
   </div>
-  <div class="spp-tour-title">{step_data["title"]}</div>
-  <div class="spp-tour-body">{plain_text}</div>
+  <div class="spp-tour-body-area">
+    <div class="spp-tour-icon">{step_icon}</div>
+    <div class="spp-tour-title">{step_data["title"]}</div>
+    <div class="spp-tour-desc">{plain_text}</div>
+    <div class="spp-tour-dots">{dots}</div>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
-    btn_cols = st.columns([1, 1, 1, 2])
+    btn_cols = st.columns([1, 1, 3, 1, 2])
     with btn_cols[0]:
-        if st.button("✕ Skip", key=f"_tour_skip_{step}"):
+        if st.button("✕ Skip", key=f"_tour_skip_{step}", help="Close tour"):
             st.session_state.pop("_show_onboarding_tour", None)
             st.session_state.pop("_tour_step", None)
             st.rerun()
     with btn_cols[1]:
-        if step > 0 and st.button("← Back", key=f"_tour_back_{step}"):
-            st.session_state["_tour_step"] = step - 1
-            st.rerun()
-    with btn_cols[3]:
+        if step > 0:
+            if st.button("← Back", key=f"_tour_back_{step}"):
+                st.session_state["_tour_step"] = step - 1
+                st.rerun()
+    with btn_cols[4]:
         if step < total - 1:
-            if st.button(f"Next ({step + 1}/{total}) →", key=f"_tour_next_{step}", type="primary"):
+            if st.button(f"Next →", key=f"_tour_next_{step}", type="primary"):
                 st.session_state["_tour_step"] = step + 1
                 st.rerun()
         else:
-            if st.button("Done ✓", key="_tour_done", type="primary"):
+            if st.button("Done  ✓", key="_tour_done", type="primary"):
                 st.session_state.pop("_show_onboarding_tour", None)
                 st.session_state.pop("_tour_step", None)
                 st.rerun()

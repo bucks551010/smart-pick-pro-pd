@@ -851,6 +851,38 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
         # ── Y-Z ──
         "trae young": "1629027",
         "ivica zubac": "1627826",
+        # ── Additional veterans commonly found in props ──
+        "tyrese haliburton": "1630169", "ben simmons": "1627732",
+        "nicolas claxton": "1629651", "nic claxton": "1629651",
+        "immanuel quickley": "1630193", "iq": "1630193",
+        "rj barrett": "1629628", "r.j. barrett": "1629628",
+        "naz reid": "1629675", "isaiah hartenstein": "1629631",
+        "gary trent jr.": "1629018", "gary trent jr": "1629018",
+        "donte divincenzo": "1629056", "donte di vincenzo": "1629056",
+        "michael porter jr.": "1629008", "michael porter jr": "1629008",
+        "peyton watson": "1631122", "christian braun": "1631102",
+        "jaime jaquez jr.": "1641714", "jaime jaquez jr": "1641714",
+        "scoot henderson": "1641711", "ausar thompson": "1641712",
+        "amen thompson": "1641713", "bilal coulibaly": "1641715",
+        "gradey dick": "1641716", "dereck lively ii": "1641717",
+        "dereck lively": "1641717", "brandon miller": "1641718",
+        "anthony black": "1641719", "jordan hawkins": "1641737",
+        "keyonte george": "1641738", "g.g. jackson": "1641739",
+        "gg jackson": "1641739", "cody williams": "1641740",
+        "noah clowney": "1641742", "jarace walker": "1641743",
+        "clint capela": "203991", "reggie jackson": "202704",
+        "de'anthony melton": "1629001", "deanthony melton": "1629001",
+        "precious achiuwa": "1630173", "matisse thybulle": "1629680",
+        "shake milton": "1629003", "malaki branham": "1631120",
+        "julian champagnie": "1631115", "jalen pickett": "1641744",
+        "markquis nowell": "1641745", "svi mykhailiuk": "1629057",
+        "pat connaughton": "1626192", "kyle lowry": "200768",
+        "bogdan bogdanovic": "203992", "bojan bogdanovic": "202711",
+        "reggie bullock": "1626161", "monte morris": "1628409",
+        "quentin grimes": "1630534", "cam thomas": "1631111",
+        "nick smith jr.": "1641746", "nick smith jr": "1641746",
+        "toumani camara": "1641747", "maxwell lewis": "1641748",
+        "leonard miller": "1641749", "ryan rollins": "1631125",
         # ── Rookies / recent call-ups 2025-26 ──
         "daniss jenkins": "1642250", "zach edey": "1641724",
         "reed sheppard": "1641722", "dalton knecht": "1641723",
@@ -909,6 +941,20 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
         else:
             conf_color = "#60a5fa"
 
+        # Always pre-compute initials — used as fallback when CDN image is
+        # missing or fails to load (404 for newer/traded players).
+        _parts = name_raw.split()
+        _initials = (
+            (_parts[0][0] + _parts[-1][0]).upper() if len(_parts) >= 2
+            else name_raw[0].upper()
+        )
+        _initials_style = (
+            "display:none;align-items:center;justify-content:center;"
+            "background:linear-gradient(135deg,rgba(0,213,89,.12),rgba(45,158,255,.08));"
+            "font-family:'Space Grotesk',sans-serif;font-size:1.2rem;"
+            "font-weight:800;color:rgba(255,255,255,.35);letter-spacing:.03em;"
+        )
+
         # Headshot URL (NBA CDN) — try dict, then overrides JSON
         pid = _PLAYER_IDS.get(name_raw.lower(), "")
         if not pid:
@@ -924,25 +970,24 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
                             break
             except Exception:
                 pass
-        hs_html = ""
         if pid:
-            hs_url = f"https://cdn.nba.com/headshots/nba/latest/1040x760/{pid}.png"
+            # 260x190 is lighter than 1040x760 and loads faster; still sharp enough at 76px.
+            # Include initials div as hidden sibling — onerror activates it if CDN fails.
+            hs_url = f"https://cdn.nba.com/headshots/nba/latest/260x190/{pid}.png"
             hs_html = (
                 f'<div class="pv-hs-wrap">'
                 f'<img class="pv-headshot" src="{hs_url}" alt="{name}" '
-                f'onerror="this.style.display=\'none\'">'
+                f'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline-flex\'">'
+                f'<div class="pv-headshot" style="{_initials_style}">{_initials}</div>'
                 f'</div>'
             )
         else:
-            # Initials fallback — looks cleaner than a silhouette
-            _parts = name_raw.split()
-            _initials = (_parts[0][0] + _parts[-1][0]).upper() if len(_parts) >= 2 else name_raw[0].upper()
+            # No player ID — show initials immediately (visible from the start)
             hs_html = (
-                '<div class="pv-hs-wrap">'
-                '<div class="pv-headshot" style="display:inline-flex;align-items:center;justify-content:center;'
-                'background:linear-gradient(135deg,rgba(0,213,89,.12),rgba(45,158,255,.08));'
-                f'font-family:Space Grotesk,sans-serif;font-size:1.2rem;font-weight:800;color:rgba(255,255,255,.35);letter-spacing:.03em">{_initials}</div>'
-                '</div>'
+                f'<div class="pv-hs-wrap">'
+                f'<div class="pv-headshot" style="{_initials_style.replace("display:none", "display:inline-flex")}">'
+                f'{_initials}</div>'
+                f'</div>'
             )
 
         # Platform display name

@@ -182,6 +182,11 @@ def create_checkout_session(customer_email: str = "", price_lookup: str = "") ->
                 {
                     "price": price_id,
                     "quantity": 1,
+                    **(
+                        {"tax_rates": [os.environ["STRIPE_TAX_RATE_ID"]]}
+                        if os.environ.get("STRIPE_TAX_RATE_ID")
+                        else {}
+                    ),
                 }
             ],
             "success_url": success_url,

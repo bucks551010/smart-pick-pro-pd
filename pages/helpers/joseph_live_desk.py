@@ -167,16 +167,16 @@ def get_smart_pick_pro_logo_b64() -> str:
 def render_live_desk_css() -> str:
     """Return complete CSS string for Joseph's Live Broadcast Desk."""
     return """<style>
-/* ── Joseph Live Desk — PP/DK Green Theme ───────────────────── */
+/* ── Joseph Live Desk — AI Neural Theme ──────────────────────── */
 .joseph-live-desk{
-    background:linear-gradient(160deg,rgba(4,8,6,0.97) 0%,rgba(8,16,12,0.95) 40%,rgba(4,8,6,0.97) 100%);
-    border:1.5px solid rgba(0,180,100,0.18);
+    background:linear-gradient(160deg,rgba(3,4,16,0.98) 0%,rgba(6,8,28,0.96) 40%,rgba(3,4,16,0.98) 100%);
+    border:1.5px solid rgba(99,102,241,0.22);
     border-radius:20px;
     padding:0;
     margin:24px 0;
     position:relative;
     overflow:hidden;
-    box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 30px rgba(0,180,100,0.04);
+    box-shadow:0 8px 40px rgba(0,0,0,0.6),0 0 60px rgba(99,102,241,0.06);
     width:100%;
     max-width:100%;
     box-sizing:border-box;
@@ -187,10 +187,19 @@ def render_live_desk_css() -> str:
 .joseph-live-desk *::after{
     box-sizing:border-box;
 }
-/* Top accent bar — green shimmer */
+/* Neural grid background texture */
+.joseph-live-desk .joseph-neural-bg{
+    position:absolute;inset:0;pointer-events:none;z-index:0;
+    background-image:
+        linear-gradient(rgba(99,102,241,0.04) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(99,102,241,0.04) 1px,transparent 1px);
+    background-size:32px 32px;
+    mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 40%,transparent 100%);
+}
+/* Top accent bar — AI gradient shimmer */
 .joseph-live-desk::before{
     content:'';position:absolute;top:0;left:0;right:0;height:3px;
-    background:linear-gradient(90deg,transparent,#00D959,#50a874,#00D959,transparent);
+    background:linear-gradient(90deg,transparent,#6366f1,#06b6d4,#a855f7,#6366f1,transparent);
     background-size:300% 100%;
     animation:josephShimmer 4s linear infinite;
     z-index:2;
@@ -198,7 +207,7 @@ def render_live_desk_css() -> str:
 /* Bottom accent bar */
 .joseph-live-desk::after{
     content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
-    background:linear-gradient(90deg,transparent,rgba(0,217,89,0.25),rgba(80,168,116,0.15),transparent);
+    background:linear-gradient(90deg,transparent,rgba(99,102,241,0.3),rgba(6,182,212,0.2),transparent);
     background-size:300% 100%;
     animation:josephShimmer 4s linear infinite reverse;
 }
@@ -211,40 +220,78 @@ def render_live_desk_css() -> str:
 .joseph-hero{
     display:flex;align-items:center;gap:20px;
     padding:28px 32px 22px;
-    background:linear-gradient(135deg,rgba(4,8,6,0.95) 0%,rgba(10,20,14,0.5) 60%,rgba(4,8,6,0.95) 100%);
-    border-bottom:1px solid rgba(0,180,100,0.12);
+    background:linear-gradient(135deg,rgba(6,8,28,0.97) 0%,rgba(16,18,48,0.6) 50%,rgba(6,8,28,0.97) 100%);
+    border-bottom:1px solid rgba(99,102,241,0.14);
     position:relative;
+}
+/* Radial glow behind avatar */
+.joseph-hero::before{
+    content:'';position:absolute;left:24px;top:50%;
+    transform:translateY(-50%);
+    width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle,rgba(99,102,241,0.18) 0%,transparent 70%);
+    pointer-events:none;z-index:0;
 }
 
 /* ── LIVE Pulsing Dot ─────────────────────────────────────── */
 .joseph-live-dot{
-    display:inline-block;width:10px;height:10px;
-    background:#00D959;border-radius:50%;
+    display:inline-block;width:8px;height:8px;
+    background:#06b6d4;border-radius:50%;
     margin-right:6px;vertical-align:middle;
     animation:josephLivePulse 1.4s ease-in-out infinite;
-    box-shadow:0 0 12px rgba(0,217,89,0.7);
+    box-shadow:0 0 10px rgba(6,182,212,0.8);
 }
 @keyframes josephLivePulse{
-    0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 12px rgba(0,217,89,0.7)}
-    50%{opacity:0.4;transform:scale(0.85);box-shadow:0 0 4px rgba(0,217,89,0.3)}
+    0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 10px rgba(6,182,212,0.8)}
+    50%{opacity:0.35;transform:scale(0.8);box-shadow:0 0 4px rgba(6,182,212,0.3)}
 }
 
 /* ── LIVE Badge Pill ──────────────────────────────────────── */
 .joseph-live-badge{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:4px 14px 4px 10px;border-radius:20px;
-    background:rgba(0,217,89,0.10);border:1px solid rgba(0,217,89,0.35);
-    font-family:'Inter',sans-serif;font-size:0.72rem;
-    font-weight:700;color:#00D959;letter-spacing:1px;
+    display:inline-flex;align-items:center;gap:5px;
+    padding:3px 12px 3px 9px;border-radius:20px;
+    background:rgba(6,182,212,0.10);border:1px solid rgba(6,182,212,0.35);
+    font-family:'Inter',sans-serif;font-size:0.70rem;
+    font-weight:700;color:#06b6d4;letter-spacing:1.2px;
     text-transform:uppercase;
+}
+
+/* ── AI model badge ───────────────────────────────────────── */
+.joseph-ai-badge{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:3px 10px;border-radius:6px;
+    background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.30);
+    font-family:'JetBrains Mono',monospace;font-size:0.66rem;
+    font-weight:700;color:#818cf8;letter-spacing:0.5px;
+}
+.joseph-ai-badge::before{
+    content:'⬡';font-size:0.7rem;color:#6366f1;
+}
+
+/* ── Neural scan line (sweeping animation across avatar) ─── */
+@keyframes josephScanLine{
+    0%{top:0%;opacity:0.9}
+    100%{top:100%;opacity:0}
+}
+.joseph-avatar-wrap{
+    position:relative;flex-shrink:0;z-index:1;
+}
+.joseph-avatar-wrap::after{
+    content:'';
+    position:absolute;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(6,182,212,0.8),transparent);
+    animation:josephScanLine 2.5s linear infinite;
+    border-radius:50%;
+    pointer-events:none;
 }
 
 /* ── Typing Indicator — 3 bouncing dots ───────────────────── */
 .joseph-typing{display:inline-flex;gap:4px;align-items:center;padding:4px 0}
 .joseph-typing span{
     display:inline-block;width:6px;height:6px;
-    background:#00D959;border-radius:50%;
+    background:#6366f1;border-radius:50%;
     animation:josephBounce 1.2s ease-in-out infinite;
+    box-shadow:0 0 6px rgba(99,102,241,0.6);
 }
 .joseph-typing span:nth-child(2){animation-delay:0.15s}
 .joseph-typing span:nth-child(3){animation-delay:0.3s}
@@ -256,38 +303,40 @@ def render_live_desk_css() -> str:
 /* ── Joseph Avatar Circle ─────────────────────────────────── */
 .joseph-avatar{
     width:88px;height:88px;border-radius:50%;
-    border:3px solid #00D959;object-fit:cover;
-    box-shadow:0 0 20px rgba(0,217,89,0.35),0 0 40px rgba(0,217,89,0.12);
+    border:3px solid #6366f1;object-fit:cover;
+    box-shadow:0 0 0 6px rgba(99,102,241,0.10),0 0 30px rgba(99,102,241,0.40),0 0 60px rgba(6,182,212,0.12);
     flex-shrink:0;
     animation:josephAvatarGlow 3s ease-in-out infinite;
     position:relative;z-index:1;
 }
 @keyframes josephAvatarGlow{
-    0%,100%{box-shadow:0 0 20px rgba(0,217,89,0.35),0 0 40px rgba(0,217,89,0.12)}
-    50%{box-shadow:0 0 28px rgba(0,217,89,0.5),0 0 56px rgba(0,217,89,0.18)}
+    0%,100%{box-shadow:0 0 0 6px rgba(99,102,241,0.10),0 0 30px rgba(99,102,241,0.40),0 0 60px rgba(6,182,212,0.12)}
+    50%{box-shadow:0 0 0 8px rgba(99,102,241,0.15),0 0 40px rgba(99,102,241,0.55),0 0 80px rgba(6,182,212,0.18)}
 }
 .joseph-avatar-sm{width:48px;height:48px;border-radius:50%;
-    border:2px solid #00D959;object-fit:cover;
-    box-shadow:0 0 10px rgba(0,217,89,0.25);flex-shrink:0}
+    border:2px solid #6366f1;object-fit:cover;
+    box-shadow:0 0 12px rgba(99,102,241,0.35);flex-shrink:0}
 
 /* ── Broadcast Header Text ────────────────────────────────── */
 .joseph-header{
-    display:flex;flex-direction:column;gap:6px;
+    display:flex;flex-direction:column;gap:7px;
     position:relative;z-index:1;
     min-width:0;flex:1 1 0;
 }
 .joseph-header-text{
     font-family:'Inter',sans-serif;font-size:1.35rem;
-    color:#ffffff;font-weight:700;letter-spacing:0.5px;
+    color:#f1f5f9;font-weight:800;letter-spacing:0.3px;
     display:flex;align-items:center;gap:10px;
     flex-wrap:wrap;line-height:1.3;
     min-width:0;overflow-wrap:anywhere;
 }
 .joseph-header-text .joseph-name-accent{
-    color:#00D959;
+    background:linear-gradient(135deg,#818cf8 0%,#06b6d4 100%);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;
 }
 .joseph-subtitle{
-    color:#7a9888;font-size:0.82rem;margin-top:2px;
+    color:#64748b;font-size:0.82rem;margin-top:2px;
     font-family:'Inter',sans-serif;letter-spacing:0.3px;
     display:flex;align-items:center;gap:8px;
     flex-wrap:wrap;min-width:0;overflow-wrap:anywhere;
@@ -296,12 +345,13 @@ def render_live_desk_css() -> str:
 /* ── Desk Content Body ────────────────────────────────────── */
 .joseph-desk-body{
     padding:20px 28px 24px;
+    position:relative;z-index:1;
 }
 
 /* ── Section Divider ──────────────────────────────────────── */
 .joseph-divider{
     height:1px;margin:20px 0;
-    background:linear-gradient(90deg,transparent,rgba(0,180,100,0.20),transparent);
+    background:linear-gradient(90deg,transparent,rgba(99,102,241,0.22),rgba(6,182,212,0.15),transparent);
 }
 
 /* ── Stat Summary KPI Bar ─────────────────────────────────── */
@@ -312,85 +362,100 @@ def render_live_desk_css() -> str:
 .joseph-kpi{
     display:flex;align-items:center;gap:6px;
     padding:6px 14px;border-radius:10px;
-    background:rgba(4,8,6,0.7);
-    border:1px solid rgba(0,180,100,0.10);
+    background:rgba(6,8,28,0.80);
+    border:1px solid rgba(99,102,241,0.14);
     font-family:'Inter',sans-serif;font-size:0.82rem;
-    color:#b0c8b8;
+    color:#94a3b8;
 }
 .joseph-kpi-value{
     font-family:'JetBrains Mono',monospace;font-weight:700;
     font-size:0.9rem;font-variant-numeric:tabular-nums;
+    color:#818cf8;
 }
 
 /* ── Opening Monologue ────────────────────────────────────── */
 .joseph-monologue{
-    background:linear-gradient(135deg,rgba(6,12,8,0.85) 0%,rgba(4,8,6,0.7) 100%);
-    border:1px solid rgba(0,180,100,0.10);
-    border-left:3px solid rgba(0,217,89,0.40);
+    background:linear-gradient(135deg,rgba(6,8,28,0.90) 0%,rgba(16,18,48,0.60) 100%);
+    border:1px solid rgba(99,102,241,0.12);
+    border-left:3px solid rgba(99,102,241,0.50);
     border-radius:16px;padding:20px 24px;
     margin-bottom:8px;
     position:relative;
 }
+/* Corner accent circuit dot */
+.joseph-monologue::after{
+    content:'';position:absolute;top:16px;right:16px;
+    width:6px;height:6px;border-radius:50%;
+    background:#6366f1;opacity:0.5;
+    box-shadow:0 0 8px rgba(99,102,241,0.8);
+}
 .joseph-monologue-label{
     display:inline-flex;align-items:center;gap:6px;
     font-family:'Inter',sans-serif;font-size:0.78rem;
-    font-weight:700;color:#00D959;letter-spacing:0.6px;
+    font-weight:700;color:#818cf8;letter-spacing:0.6px;
     margin-bottom:12px;text-transform:uppercase;
 }
 .joseph-monologue-text{
-    color:#d0dcd6;font-size:0.92rem;
+    color:#cbd5e1;font-size:0.92rem;
     line-height:1.75;font-family:'Inter',sans-serif;
 }
-.joseph-monologue-text strong{color:#90d0a8}
+.joseph-monologue-text strong{color:#a5b4fc}
 
 /* ── Broadcast Segment Cards ──────────────────────────────── */
 .joseph-segment{
-    background:linear-gradient(160deg,rgba(4,8,6,0.90) 0%,rgba(8,16,12,0.80) 100%);
-    border:1px solid rgba(0,180,100,0.10);
-    border-left:3px solid rgba(0,217,89,0.40);
+    background:linear-gradient(160deg,rgba(6,8,28,0.92) 0%,rgba(16,18,48,0.75) 100%);
+    border:1px solid rgba(99,102,241,0.12);
+    border-left:3px solid rgba(99,102,241,0.45);
     border-radius:14px;padding:16px 20px;
     margin-bottom:12px;
     transition:all 0.25s ease;
     position:relative;overflow:hidden;
 }
 .joseph-segment:hover{
-    border-color:rgba(0,180,100,0.25);
-    box-shadow:0 4px 20px rgba(0,0,0,0.3);
+    border-color:rgba(99,102,241,0.28);
+    box-shadow:0 4px 24px rgba(99,102,241,0.10);
 }
+/* Subtle circuit line along bottom on hover */
+.joseph-segment::after{
+    content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(6,182,212,0.20),transparent);
+    opacity:0;transition:opacity 0.25s ease;
+}
+.joseph-segment:hover::after{opacity:1}
 .joseph-segment-title{
     font-family:'Inter',sans-serif;
-    color:#00D959;font-size:0.92rem;font-weight:700;
+    color:#818cf8;font-size:0.92rem;font-weight:700;
     margin-bottom:8px;letter-spacing:0.4px;
     display:flex;align-items:center;gap:8px;
     flex-wrap:wrap;
 }
 .joseph-segment-body{
-    color:#d0dcd6;font-size:0.9rem;
+    color:#cbd5e1;font-size:0.9rem;
     line-height:1.7;font-family:'Inter',sans-serif;
     overflow-wrap:anywhere;
 }
-.joseph-segment-body strong{color:#90d0a8}
+.joseph-segment-body strong{color:#a5b4fc}
 
 /* ── Pick Card ────────────────────────────────────────────── */
 .joseph-pick-card{
     display:flex;gap:0;align-items:stretch;
-    background:linear-gradient(160deg,rgba(4,8,6,0.92) 0%,rgba(8,16,12,0.85) 100%);
-    border:1px solid rgba(0,180,100,0.10);
+    background:linear-gradient(160deg,rgba(6,8,28,0.93) 0%,rgba(16,18,48,0.82) 100%);
+    border:1px solid rgba(99,102,241,0.12);
     border-radius:16px;padding:0;
     margin-bottom:12px;overflow:hidden;
     transition:all 0.25s ease;
 }
 .joseph-pick-card:hover{
-    border-color:rgba(0,180,100,0.25);
-    box-shadow:0 4px 24px rgba(0,0,0,0.35);
+    border-color:rgba(99,102,241,0.28);
+    box-shadow:0 4px 28px rgba(99,102,241,0.12);
 }
 .joseph-pick-rank{
     display:flex;align-items:center;justify-content:center;
     min-width:52px;
-    font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:800;
-    color:rgba(255,255,255,0.9);
-    background:linear-gradient(180deg,rgba(0,217,89,0.15) 0%,rgba(0,217,89,0.04) 100%);
-    border-right:1px solid rgba(0,180,100,0.12);
+    font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:800;
+    color:#818cf8;
+    background:linear-gradient(180deg,rgba(99,102,241,0.14) 0%,rgba(99,102,241,0.04) 100%);
+    border-right:1px solid rgba(99,102,241,0.12);
     flex-shrink:0;
 }
 .joseph-pick-content{
@@ -400,24 +465,24 @@ def render_live_desk_css() -> str:
 }
 .joseph-pick-player{
     font-family:'Inter',sans-serif;font-size:1.05rem;
-    font-weight:700;color:#ffffff;
+    font-weight:700;color:#f1f5f9;
     overflow-wrap:anywhere;
 }
 .joseph-pick-prop{
     font-family:'Inter',sans-serif;font-size:0.88rem;
-    color:#7a9888;display:flex;align-items:center;gap:8px;
+    color:#64748b;display:flex;align-items:center;gap:8px;
     flex-wrap:wrap;
 }
 .joseph-pick-edge{
     display:inline-flex;align-items:center;gap:4px;
     padding:3px 10px;border-radius:6px;
-    background:rgba(0,217,89,0.10);border:1px solid rgba(0,217,89,0.25);
+    background:rgba(6,182,212,0.10);border:1px solid rgba(6,182,212,0.28);
     font-family:'JetBrains Mono',monospace;font-size:0.82rem;
-    font-weight:700;color:#00D959;
+    font-weight:700;color:#06b6d4;
     font-variant-numeric:tabular-nums;
 }
 .joseph-pick-rant{
-    color:#b0c8b8;font-size:0.88rem;line-height:1.6;
+    color:#94a3b8;font-size:0.88rem;line-height:1.6;
     font-family:'Inter',sans-serif;margin-top:4px;
     overflow-wrap:anywhere;
 }
@@ -426,12 +491,13 @@ def render_live_desk_css() -> str:
 .joseph-section-header{
     display:flex;align-items:center;gap:10px;
     font-family:'Inter',sans-serif;font-size:0.95rem;
-    font-weight:700;color:#00D959;letter-spacing:0.4px;
+    font-weight:700;color:#818cf8;letter-spacing:0.4px;
     margin-bottom:14px;
+    text-transform:uppercase;font-size:0.78rem;letter-spacing:1px;
 }
 .joseph-section-header::after{
     content:'';flex:1;height:1px;
-    background:linear-gradient(90deg,rgba(0,180,100,0.25),transparent);
+    background:linear-gradient(90deg,rgba(99,102,241,0.30),rgba(6,182,212,0.15),transparent);
 }
 
 /* ── Verdict Badges ───────────────────────────────────────── */
@@ -445,40 +511,40 @@ def render_live_desk_css() -> str:
 .joseph-verdict:hover{transform:scale(1.06)}
 .joseph-verdict-lock{background:rgba(168,85,247,0.15);color:#a855f7;border:1px solid rgba(168,85,247,0.35)}
 .joseph-verdict-smash{background:rgba(239,68,68,0.12);color:#F24336;border:1px solid rgba(239,68,68,0.30)}
-.joseph-verdict-lean{background:rgba(0,217,89,0.10);color:#00D959;border:1px solid rgba(0,217,89,0.25)}
+.joseph-verdict-lean{background:rgba(6,182,212,0.10);color:#06b6d4;border:1px solid rgba(6,182,212,0.28)}
 .joseph-verdict-fade{background:rgba(234,179,8,0.10);color:#eab308;border:1px solid rgba(234,179,8,0.25)}
 .joseph-verdict-stay_away{background:rgba(107,114,128,0.12);color:#9ca3af;border:1px solid rgba(107,114,128,0.22)}
 
 /* ── Ticket Card ──────────────────────────────────────────── */
 .joseph-ticket{
     display:flex;align-items:stretch;
-    background:rgba(4,8,6,0.7);
-    border:1px solid rgba(0,180,100,0.10);border-radius:14px;
+    background:rgba(6,8,28,0.75);
+    border:1px solid rgba(99,102,241,0.12);border-radius:14px;
     margin-bottom:10px;overflow:hidden;
     transition:border-color 0.2s ease;
 }
-.joseph-ticket:hover{border-color:rgba(0,180,100,0.22)}
+.joseph-ticket:hover{border-color:rgba(99,102,241,0.25);box-shadow:0 2px 16px rgba(99,102,241,0.08)}
 .joseph-ticket-icon{
     display:flex;align-items:center;justify-content:center;
     min-width:44px;font-size:1.2rem;
-    background:rgba(0,217,89,0.06);
-    border-right:1px solid rgba(0,180,100,0.10);
+    background:rgba(99,102,241,0.08);
+    border-right:1px solid rgba(99,102,241,0.10);
 }
 .joseph-ticket-body{
     flex:1;padding:12px 16px;
 }
 .joseph-ticket-name{
-    font-family:'Inter',sans-serif;font-size:0.82rem;
-    font-weight:700;color:#00D959;letter-spacing:0.5px;
-    margin-bottom:4px;
+    font-family:'JetBrains Mono',monospace;font-size:0.78rem;
+    font-weight:700;color:#818cf8;letter-spacing:0.8px;
+    margin-bottom:4px;text-transform:uppercase;
 }
 .joseph-ticket-legs{
     font-family:'Inter',sans-serif;font-size:0.85rem;
-    color:#d0dcd6;line-height:1.5;
+    color:#cbd5e1;line-height:1.5;
 }
 .joseph-ticket-pitch{
     font-family:'Inter',sans-serif;font-size:0.82rem;
-    color:#7a9888;margin-top:6px;font-style:italic;
+    color:#475569;margin-top:6px;font-style:italic;
 }
 
 /* ── Dawg Board Table ─────────────────────────────────────── */
@@ -495,18 +561,18 @@ def render_live_desk_css() -> str:
     min-width:640px;
 }
 .joseph-dawg-table th{
-    background:rgba(0,217,89,0.08);color:#00D959;
+    background:rgba(99,102,241,0.10);color:#818cf8;
     padding:10px 14px;text-align:left;
-    font-family:'Inter',sans-serif;font-size:0.72rem;
-    font-weight:700;letter-spacing:0.5px;
-    border-bottom:1px solid rgba(0,180,100,0.15);
+    font-family:'JetBrains Mono',monospace;font-size:0.68rem;
+    font-weight:700;letter-spacing:0.8px;text-transform:uppercase;
+    border-bottom:1px solid rgba(99,102,241,0.14);
 }
 .joseph-dawg-table td{
-    padding:8px 14px;color:#d0dcd6;
-    border-bottom:1px solid rgba(0,180,100,0.06);
+    padding:8px 14px;color:#cbd5e1;
+    border-bottom:1px solid rgba(99,102,241,0.06);
     transition:background 0.15s ease;
 }
-.joseph-dawg-table tr:hover td{background:rgba(0,180,100,0.04)}
+.joseph-dawg-table tr:hover td{background:rgba(99,102,241,0.05)}
 
 /* ── Override Report Table ────────────────────────────────── */
 .joseph-override-table{
@@ -516,47 +582,47 @@ def render_live_desk_css() -> str:
     min-width:680px;
 }
 .joseph-override-table th{
-    background:rgba(0,217,89,0.08);color:#00D959;
+    background:rgba(99,102,241,0.10);color:#818cf8;
     padding:10px 14px;text-align:left;
-    font-family:'Inter',sans-serif;font-size:0.72rem;
-    font-weight:700;letter-spacing:0.5px;
-    border-bottom:1px solid rgba(0,180,100,0.15);
+    font-family:'JetBrains Mono',monospace;font-size:0.68rem;
+    font-weight:700;letter-spacing:0.8px;text-transform:uppercase;
+    border-bottom:1px solid rgba(99,102,241,0.14);
 }
 .joseph-override-table td{
-    padding:8px 14px;color:#d0dcd6;
-    border-bottom:1px solid rgba(0,180,100,0.06);
+    padding:8px 14px;color:#cbd5e1;
+    border-bottom:1px solid rgba(99,102,241,0.06);
     transition:background 0.15s ease;
 }
-.joseph-override-table tr:hover td{background:rgba(0,180,100,0.04)}
+.joseph-override-table tr:hover td{background:rgba(99,102,241,0.05)}
 
 /* ── Nerd Stats Toggle ────────────────────────────────────── */
 .joseph-nerd-stats{
-    background:rgba(4,8,6,0.7);border:1px solid rgba(0,180,100,0.10);
+    background:rgba(6,8,28,0.80);border:1px solid rgba(99,102,241,0.12);
     border-radius:10px;padding:14px 18px;margin-top:10px;
     font-family:'JetBrains Mono',monospace;font-size:0.78rem;
-    color:#7a9888;line-height:1.6;
+    color:#64748b;line-height:1.6;
     font-variant-numeric:tabular-nums;
 }
-.joseph-nerd-stats strong{color:#90d0a8}
+.joseph-nerd-stats strong{color:#a5b4fc}
 
 /* ── Edge Scoreboard Numbers ──────────────────────────────── */
 .joseph-edge-value{
     font-family:'JetBrains Mono',monospace;
     font-variant-numeric:tabular-nums;
-    font-weight:700;color:#00D959;
+    font-weight:700;color:#06b6d4;
 }
 
 /* ── Sign-off Footer ──────────────────────────────────────── */
 .joseph-signoff{
     text-align:center;padding:20px 28px;
-    border-top:1px solid rgba(0,180,100,0.10);
-    background:linear-gradient(180deg,transparent,rgba(0,180,100,0.02));
+    border-top:1px solid rgba(99,102,241,0.10);
+    background:linear-gradient(180deg,transparent,rgba(99,102,241,0.03));
 }
 .joseph-signoff-text{
-    color:#b0c8b8;font-size:0.92rem;line-height:1.6;
+    color:#94a3b8;font-size:0.92rem;line-height:1.6;
     font-family:'Inter',sans-serif;
 }
-.joseph-signoff-text em{color:#90d0a8}
+.joseph-signoff-text em{color:#a5b4fc}
 .joseph-signoff-icon{font-size:1.3rem;margin-bottom:6px}
 
 /* ── Responsive ───────────────────────────────────────────── */
@@ -605,7 +671,7 @@ def render_live_desk_css() -> str:
     .joseph-kpi{padding:4px 8px;font-size:0.72rem}
     .joseph-segment{padding:10px 12px}
     .joseph-pick-card{flex-direction:column}
-    .joseph-pick-rank{min-width:100%;min-height:34px;border-right:none;border-bottom:1px solid rgba(0,180,100,0.10)}
+    .joseph-pick-rank{min-width:100%;min-height:34px;border-right:none;border-bottom:1px solid rgba(99,102,241,0.10)}
     .joseph-pick-content{padding:10px 10px 8px 10px}
     .joseph-pick-player{font-size:0.85rem}
     .joseph-pick-prop{font-size:0.76rem;flex-direction:column;align-items:flex-start}
@@ -716,20 +782,20 @@ def _build_dawg_board_html(joseph_results: list) -> str:
         if df_val >= 5:
             df_color = "#F24336"
         elif df_val >= 3:
-            df_color = "#00D959"
+            df_color = "#a855f7"
         elif df_val >= 1:
             df_color = "#eab308"
         else:
-            df_color = "#7a9888"
+            df_color = "#64748b"
 
         rows_html += (
             f'<tr>'
-            f'<td style="color:#00D959;font-weight:700">#{idx}</td>'
+            f'<td style="color:#818cf8;font-weight:700">#{idx}</td>'
             f'<td><strong>{name}</strong></td>'
-            f'<td style="color:#90d0a8;font-size:0.85rem">{bet_escaped}{verdict_badge}</td>'
+            f'<td style="color:#94a3b8;font-size:0.85rem">{bet_escaped}{verdict_badge}</td>'
             f'<td style="color:{df_color};font-weight:700">{df_val:+.1f}</td>'
             f'<td style="font-size:0.8rem">{tags}</td>'
-            f'<td style="color:#90d0a8">{archetype}</td>'
+            f'<td style="color:#94a3b8">{archetype}</td>'
             f'</tr>'
         )
 
@@ -790,8 +856,8 @@ def render_override_report(joseph_results: list) -> None:
             f'<tr>'
             f'<td><strong>{name}</strong></td>'
             f'<td>{prop}</td>'
-            f'<td style="color:#00D559">{qme_edge:+.1f}%</td>'
-            f'<td style="color:#00D959;font-weight:700">{j_edge:+.1f}%</td>'
+            f'<td style="color:#06b6d4">{qme_edge:+.1f}%</td>'
+            f'<td style="color:#818cf8;font-weight:700">{j_edge:+.1f}%</td>'
             f'<td>{direction}</td>'
             f'<td style="font-size:0.8rem;max-width:300px">{reasoning}</td>'
             f'</tr>'
@@ -1078,12 +1144,12 @@ def render_empty_state(
             f'<a href="{esc_href}" style="display:inline-block;margin-top:12px;'
             f'padding:8px 20px;border-radius:8px;font-size:0.85rem;'
             f'font-weight:700;font-family:\'Inter\',sans-serif;'
-            f'background:linear-gradient(135deg,#00D959,#50a874);color:#0a0f1c;'
+            f'background:linear-gradient(135deg,#6366f1,#06b6d4);color:#f1f5f9;'
             f'text-decoration:none;letter-spacing:0.5px">{esc_label}</a>'
         )
     return (
         f'<div style="text-align:center;padding:32px 24px;'
-        f'background:rgba(4,8,6,0.7);border:1px dashed rgba(0,180,100,0.25);'
+        f'background:rgba(6,8,28,0.80);border:1px dashed rgba(99,102,241,0.22);'
         f'border-radius:12px;margin:16px 0">'
         f'<div style="font-size:2rem;margin-bottom:8px">📭</div>'
         f'<div style="color:#94a3b8;font-size:0.95rem;'
@@ -1143,10 +1209,10 @@ def render_verdict_heatmap_html(joseph_results: list) -> str:
         )
     return (
         f'<div style="padding:8px 12px;background:rgba(7,10,19,0.6);'
-        f'border-radius:8px;border:1px solid rgba(0,180,100,0.12)">'
-        f'<div style="font-size:0.8rem;font-weight:700;color:#00D959;'
+        f'border-radius:8px;border:1px solid rgba(99,102,241,0.14)">'
+        f'<div style="font-size:0.8rem;font-weight:700;color:#818cf8;'
         f'font-family:\'Inter\',sans-serif;margin-bottom:6px">'
-        f'VERDICT DISTRIBUTION</div>'
+        f'PATTERN BREAKDOWN</div>'
         + "".join(bars)
         + '</div>'
     )
@@ -1189,19 +1255,23 @@ def render_joseph_live_desk(
         st.markdown('<div class="joseph-live-desk">', unsafe_allow_html=True)
 
         # ─────────────────────────────────────────────────────
-        # HERO HEADER — ESPN broadcast banner
+        # HERO HEADER — AI Neural broadcast banner
         # ─────────────────────────────────────────────────────
         st.markdown(
+            f'<div class="joseph-neural-bg"></div>'
             f'<div class="joseph-hero">'
-            f'{logo_img}'
+            f'<div class="joseph-avatar-wrap">{logo_img}</div>'
             f'<div class="joseph-header">'
             f'<div class="joseph-header-text">'
-            f'<span class="joseph-name-accent">Joseph M. Smith\'s</span> Broadcast Desk'
+            f'<span class="joseph-name-accent">Joseph M. Smith</span>'
+            f'<span style="color:#475569;font-weight:400;font-size:1rem">&nbsp;&mdash; AI Analyst</span>'
             f'</div>'
             f'<div class="joseph-subtitle">'
             f'<span class="joseph-live-badge">'
-            f'<span class="joseph-live-dot"></span>LIVE</span>'
-            f'God-Mode Analyst &bull; Live Commentary'
+            f'<span class="joseph-live-dot"></span>PROCESSING</span>'
+            f'<span class="joseph-ai-badge">SmartPickPro Neural v2</span>'
+            f'<span style="color:#334155">&bull;</span>'
+            f'<span style="color:#475569">Quantum Edge Engine &bull; Deep Pattern Recognition</span>'
             f'</div>'
             f'</div></div>',
             unsafe_allow_html=True,
@@ -1237,7 +1307,7 @@ def render_joseph_live_desk(
                 '<div class="joseph-typing">'
                 '<span></span><span></span><span></span>'
                 '</div> <span style="color:#94a3b8;font-size:0.85rem">'
-                'Joseph is studying the tape...</span>',
+                'Neural engine processing quantum edge data...</span>',
                 unsafe_allow_html=True,
             )
 
@@ -1284,7 +1354,7 @@ def render_joseph_live_desk(
 
         st.markdown(
             f'<div class="joseph-monologue">'
-            f'<div class="joseph-monologue-label">📢 OPENING MONOLOGUE</div>'
+            f'<div class="joseph-monologue-label">⚡ NEURAL BROADCAST</div>'
             f'<div class="joseph-monologue-text">{_html.escape(opening_text)}</div>'
             f'</div>',
             unsafe_allow_html=True,
@@ -1351,7 +1421,7 @@ def render_joseph_live_desk(
             mismatch = pick.get("mismatch")
             if isinstance(mismatch, dict) and mismatch.get("alert"):
                 mismatch_html = (
-                    f'<div style="color:#90d0a8;font-size:0.85rem;margin-top:6px">'
+                    f'<div style="color:#a5b4fc;font-size:0.85rem;margin-top:6px">'
                     f'⚡ <strong>MISMATCH:</strong> {_html.escape(str(mismatch.get("alert", "")))}'
                     f'</div>'
                 )
@@ -1361,7 +1431,7 @@ def render_joseph_live_desk(
             comp = pick.get("comp")
             if isinstance(comp, dict) and comp.get("name"):
                 comp_html = (
-                    f'<div style="color:#00D559;font-size:0.85rem;margin-top:6px">'
+                    f'<div style="color:#06b6d4;font-size:0.85rem;margin-top:6px">'
                     f'📜 <strong>Comp:</strong> {_html.escape(str(comp["name"]))}'
                     f'</div>'
                 )
@@ -1474,8 +1544,8 @@ def render_joseph_live_desk(
                     f'<tr>'
                     f'<td><strong>{name}</strong></td>'
                     f'<td>{prop}</td>'
-                    f'<td style="color:#00D559">{qme_edge:+.1f}%</td>'
-                    f'<td style="color:#00D959;font-weight:700">{j_edge:+.1f}%</td>'
+                    f'<td style="color:#06b6d4">{qme_edge:+.1f}%</td>'
+                    f'<td style="color:#818cf8;font-weight:700">{j_edge:+.1f}%</td>'
                     f'<td>{direction}</td>'
                     f'<td style="font-size:0.8rem;max-width:300px">{reasoning}</td>'
                     f'</tr>'

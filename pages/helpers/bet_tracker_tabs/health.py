@@ -42,7 +42,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
     ), unsafe_allow_html=True)
 
     _col1, _col2 = st.columns([2, 5])
-    st.session_state.setdefault("health_scope_filter", "All Time")
+    st.session_state.setdefault("health_scope_filter", "Today")
     with _col1:
         _health_scope = st.selectbox(
             "Health Scope",

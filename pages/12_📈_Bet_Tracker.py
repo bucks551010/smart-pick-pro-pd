@@ -25,6 +25,7 @@ from pages.helpers.bet_tracker_data import (
     bg_resolve_results,
     background_auto_resolve,
     tracker_today_iso,
+    tracker_today_date,
     reload_bets,
 )
 
@@ -126,7 +127,7 @@ if bg_resolve_results.get("done"):
 # ============================================================
 
 import datetime as _dt_title
-_today_display = _dt_title.date.today().strftime("%A, %B %-d")
+_today_display = tracker_today_date().strftime("%A, %B %-d")
 st.markdown(f"""
 <style>
 .bt-hero {{

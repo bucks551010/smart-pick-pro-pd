@@ -725,13 +725,31 @@ def _fetch_games_layer1_scoreboard_v2(team_records):
         list of dict: Formatted game records, or empty list on failure.
     """
     try:
+        import concurrent.futures
         from nba_api.stats.endpoints import scoreboardv3
 
         today_str = _nba_today_et().strftime("%Y-%m-%d")  # V3 uses YYYY-MM-DD
-        sb = scoreboardv3.ScoreboardV3(
-            game_date=today_str,
-            timeout=NBA_API_SCOREBOARD_TIMEOUT,
-        )
+
+        # Wrap in a thread so the OS-level TCP timeout is enforced.
+        # nba_api's own `timeout` param only sets the requests session
+        # read-timeout but can still block on DNS / connect indefinitely.
+        def _call_scoreboard():
+            return scoreboardv3.ScoreboardV3(
+                game_date=today_str,
+                timeout=NBA_API_SCOREBOARD_TIMEOUT,
+            )
+
+        try:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as _ex:
+                _fut = _ex.submit(_call_scoreboard)
+                sb = _fut.result(timeout=NBA_API_SCOREBOARD_TIMEOUT)
+        except concurrent.futures.TimeoutError:
+            _logger.warning(
+                "Layer 1 (ScoreboardV3) timed out after %ds — skipping to Layer 2",
+                NBA_API_SCOREBOARD_TIMEOUT,
+            )
+            return []
+
         time.sleep(API_DELAY_SECONDS)
 
         # ── Game headers (gameId, gameStatusText, …) ────────
@@ -824,6 +842,31 @@ def _fetch_games_layer2_espn(team_records):
 
         events = data.get("events", [])
         if not events:
+            return []
+
+        # ESPN returns multi-day slates and uses UTC dates.
+        # West-Coast games (e.g. 10 PM ET = 02:00 UTC next day) would be
+        # tagged as "tomorrow" in UTC. Convert each event's UTC timestamp
+        # to ET before comparing against today's ET date.
+        import time as _time_mod
+        _dst_active = bool(_time_mod.localtime().tm_isdst)
+        _et_offset = datetime.timedelta(hours=-4 if _dst_active else -5)
+        _today_et = _nba_today_et()
+
+        def _event_et_date(ev):
+            raw = (ev.get("date", "") or "")
+            try:
+                utc_dt = datetime.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+                return (utc_dt + _et_offset).date()
+            except Exception:
+                return None
+
+        events = [ev for ev in events if _event_et_date(ev) == _today_et]
+        if not events:
+            _logger.warning(
+                "Layer 2 (ESPN): no events matched today (%s) after ET date filter",
+                _today_et,
+            )
             return []
 
         formatted_games = []

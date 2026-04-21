@@ -194,7 +194,13 @@ _SS_USER_ID       = "_auth_user_id"        # int
 # F5 reloads and page navigation.  No third-party package needed.
 
 _LS_KEY            = "spp_tok"
+# Long-lived access window: how long a freshly-issued token lives.
 _SESSION_TTL_DAYS  = 30
+# Sliding window: bump expires_at on every load if last_seen is older
+# than this threshold.  Keeps active users perpetually logged in.
+_SLIDING_RENEWAL_HOURS = 12
+# Cookie max-age must match DB TTL (in seconds).
+_COOKIE_MAX_AGE    = _SESSION_TTL_DAYS * 86400  # 2 592 000 s
 _sessions_table_ok = False
 
 
@@ -212,9 +218,15 @@ def _ensure_sessions_table() -> None:
                     display_name TEXT,
                     is_admin     INTEGER DEFAULT 0,
                     expires_at   TEXT NOT NULL,
+                    last_seen    TEXT DEFAULT (datetime('now')),
                     created_at   TEXT DEFAULT (datetime('now'))
                 )
             """)
+            # Add last_seen column to existing tables that pre-date this change.
+            try:
+                db.execute("ALTER TABLE login_sessions ADD COLUMN last_seen TEXT DEFAULT (datetime('now'))")
+            except Exception:
+                pass  # Column already exists — safe to ignore.
         _sessions_table_ok = True
     except Exception as _exc:
         _logger.error("Failed to create login_sessions table: %s", _exc)
@@ -222,32 +234,63 @@ def _ensure_sessions_table() -> None:
 
 def _save_login_session(token: str, user: dict) -> None:
     import datetime as _dt
-    expires = (_dt.datetime.utcnow() + _dt.timedelta(days=_SESSION_TTL_DAYS)).isoformat()
+    now     = _dt.datetime.utcnow()
+    expires = (now + _dt.timedelta(days=_SESSION_TTL_DAYS)).isoformat()
     _ensure_sessions_table()
     try:
         with _AuthConn() as db:
             db.execute(
                 """INSERT INTO login_sessions
-                       (token, user_id, email, display_name, is_admin, expires_at)
-                   VALUES (?, ?, ?, ?, ?, ?)
+                       (token, user_id, email, display_name, is_admin,
+                        expires_at, last_seen)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)
                    ON CONFLICT(token) DO NOTHING""",
                 (token, user.get("user_id", 0), user.get("email", ""),
-                 user.get("display_name", ""), int(bool(user.get("is_admin", 0))), expires),
+                 user.get("display_name", ""), int(bool(user.get("is_admin", 0))),
+                 expires, now.isoformat()),
             )
     except Exception as _exc:
         _logger.error("Failed to save login session: %s", _exc)
 
 
 def _load_session_by_token(token: str) -> dict | None:
+    """Load a valid session and apply sliding-window renewal.
+
+    If ``last_seen`` is older than ``_SLIDING_RENEWAL_HOURS``, the
+    ``expires_at`` timestamp is pushed forward by ``_SESSION_TTL_DAYS``
+    and ``last_seen`` is updated.  This keeps active users perpetually
+    logged in without ever hitting a hard expiry.
+    """
     if not token:
         return None
     _ensure_sessions_table()
     try:
+        import datetime as _dt
         with _AuthConn() as db:
-            return db.fetchone(
+            row = db.fetchone(
                 "SELECT * FROM login_sessions WHERE token = ? AND expires_at > datetime('now')",
                 (token,),
             )
+        if not row:
+            return None
+        # Sliding window: extend expiry if the user has been active
+        # within the renewal window.
+        try:
+            last_seen_raw = row.get("last_seen") or row.get("created_at") or ""
+            if last_seen_raw:
+                last_seen = _dt.datetime.fromisoformat(last_seen_raw)
+                hours_since = (_dt.datetime.utcnow() - last_seen).total_seconds() / 3600
+                if hours_since >= _SLIDING_RENEWAL_HOURS:
+                    new_expires = (_dt.datetime.utcnow() + _dt.timedelta(days=_SESSION_TTL_DAYS)).isoformat()
+                    now_iso     = _dt.datetime.utcnow().isoformat()
+                    with _AuthConn() as db:
+                        db.execute(
+                            "UPDATE login_sessions SET expires_at = ?, last_seen = ? WHERE token = ?",
+                            (new_expires, now_iso, token),
+                        )
+        except Exception:
+            pass  # Non-critical — session is still valid even if renewal fails.
+        return row
     except Exception as _exc:
         _logger.error("Failed to load session by token: %s", _exc)
     return None
@@ -273,6 +316,10 @@ def _render_session_bridge() -> str | None:
     We piggyback on st.query_params: the JS sets ?_st=<token>
     so Python can read it.  A one-time param is used so it
     doesn't accumulate on subsequent navigations.
+
+    Also starts the silent-renewal heartbeat (fires every ~23 h)
+    so returning users are seamlessly re-validated in the background
+    without a redirect to the login screen.
     """
     import streamlit.components.v1 as _components
     # Read back whatever the JS posted last run
@@ -283,14 +330,46 @@ def _render_session_bridge() -> str | None:
     _components.html(f"""
 <script>
 (function() {{
-  var key = "{_LS_KEY}";
+  var key    = "{_LS_KEY}";
   var stored = localStorage.getItem(key) || "";
-  // Only update query param if it differs from what's already there
+
+  // ── localStorage → query-param bridge (for initial session restore) ──
   var url = new URL(window.parent.location.href);
   if (stored && url.searchParams.get("_st") !== stored) {{
     url.searchParams.set("_st", stored);
     window.parent.history.replaceState(null, "", url.toString());
     window.parent.location.reload();
+  }}
+
+  // ── Silent renewal heartbeat ─────────────────────────────────────────
+  // Ping /api/session/refresh every 23 hours while any tab is open.
+  // This keeps the HttpOnly shadow cookie and the DB record alive as
+  // long as the user has an active browser, implementing the sliding-
+  // window 30-day session.  On a return visit after 12+ hours the
+  // background refresh fires on the first page load; no redirect needed.
+  if (!window.parent._sppHeartbeatStarted) {{
+    window.parent._sppHeartbeatStarted = true;
+    var _doRefresh = function() {{
+      try {{
+        fetch("/api/session/refresh", {{
+          method: "POST",
+          credentials: "include"
+        }}).then(function(r) {{
+          return r.json();
+        }}).then(function(data) {{
+          if (data && data.ok === false && data.reason === "expired") {{
+            // Server confirmed the session is truly expired.
+            // Clear localStorage so the user is prompted to log in
+            // on next navigation rather than silently failing.
+            try {{ localStorage.removeItem(key); }} catch(e) {{}}
+          }}
+        }}).catch(function() {{}});
+      }} catch(e) {{}}
+    }};
+    // Fire once immediately on page load (handles the "12-hour return" case),
+    // then repeat every 23 hours.
+    _doRefresh();
+    setInterval(_doRefresh, 23 * 60 * 60 * 1000);
   }}
 }})();
 </script>
@@ -299,19 +378,65 @@ def _render_session_bridge() -> str | None:
 
 
 def _write_session_to_storage(token: str) -> None:
-    """Write the session token as an HTTP cookie on the PARENT page."""
+    """Write the session token as a persistent cookie and to localStorage.
+
+    Cookie flags used:
+    - ``max-age=2592000``  — 30-day persistent cookie (survives browser restart)
+    - ``SameSite=Strict``  — prevents CSRF via cross-site navigation
+    - ``Secure``           — only sent over HTTPS (Caddy terminates TLS)
+
+    Note: ``HttpOnly`` cannot be set from JavaScript; the FastAPI
+    ``/api/session/issue`` endpoint sets an HttpOnly shadow cookie for
+    environments that support server-side cookie issuance.
+    """
     import streamlit.components.v1 as _components
     _components.html(f"""
 <script>
 (function() {{
-  // Set on the parent page (not the sandboxed iframe) so the browser
-  // sends it with every request including F5 / new tab.
+  var token  = "{token}";
+  var maxAge = {_COOKIE_MAX_AGE};   // 30 days
+  var cookieStr = "spp_session=" + token
+    + "; path=/"
+    + "; max-age=" + maxAge
+    + "; SameSite=Strict"
+    + "; Secure";
+  // Set on the parent page so the browser sends it with every request,
+  // including F5 reloads and new tabs.
   try {{
-    window.parent.document.cookie = "spp_session={token}; path=/; max-age=604800; SameSite=Lax";
+    window.parent.document.cookie = cookieStr;
   }} catch(e) {{
-    document.cookie = "spp_session={token}; path=/; max-age=604800; SameSite=Lax";
+    document.cookie = cookieStr;
   }}
-  try {{ window.parent.localStorage.setItem("{_LS_KEY}", "{token}"); }} catch(e) {{}}
+  // localStorage fallback for cookie-blocked environments (e.g. Safari ITP).
+  try {{ window.parent.localStorage.setItem("{_LS_KEY}", token); }} catch(e) {{}}
+
+  // ── Notify FastAPI to issue an HttpOnly shadow cookie ──────
+  // Fire-and-forget: failure doesn't block the user.
+  try {{
+    fetch("/api/session/issue", {{
+      method: "POST",
+      headers: {{ "Content-Type": "application/json" }},
+      credentials: "include",
+      body: JSON.stringify({{ token: token }})
+    }}).catch(function() {{}});
+  }} catch(e) {{}}
+
+  // ── Silent renewal heartbeat ────────────────────────────────
+  // Ping /api/session/refresh every 23 hours while the tab is open.
+  // This keeps both the JS cookie and the DB record from expiring
+  // as long as the user has an active browser session.
+  if (!window._sppHeartbeatStarted) {{
+    window._sppHeartbeatStarted = true;
+    setInterval(function() {{
+      try {{
+        fetch("/api/session/refresh", {{
+          method: "POST",
+          credentials: "include"
+        }}).catch(function() {{}});
+      }} catch(e) {{}}
+    }}, 23 * 60 * 60 * 1000);  // every 23 hours
+  }}
+
   // Strip ?auth= and ?_st= from the address bar.
   try {{
     var cleanUrl = window.parent.location.origin + window.parent.location.pathname;
@@ -328,12 +453,18 @@ def _clear_session_from_storage() -> None:
     _components.html(f"""
 <script>
 (function() {{
+  var expiredCookie = "spp_session=; path=/; max-age=0; SameSite=Strict; Secure";
   try {{
-    window.parent.document.cookie = "spp_session=; path=/; max-age=0; SameSite=Lax";
+    window.parent.document.cookie = expiredCookie;
   }} catch(e) {{
-    document.cookie = "spp_session=; path=/; max-age=0; SameSite=Lax";
+    document.cookie = expiredCookie;
   }}
   try {{ window.parent.localStorage.removeItem("{_LS_KEY}"); }} catch(e) {{}}
+  // Also ask FastAPI to clear the HttpOnly shadow cookie.
+  try {{
+    fetch("/api/session/clear", {{ method: "POST", credentials: "include" }})
+      .catch(function() {{}});
+  }} catch(e) {{}}
   try {{
     var cleanUrl = window.parent.location.origin + window.parent.location.pathname;
     window.parent.history.replaceState(null, "", cleanUrl);

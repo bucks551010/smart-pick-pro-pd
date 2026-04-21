@@ -69,5 +69,11 @@ if _FASTAPI_AVAILABLE:
     except Exception as exc:
         _logger.warning("players router failed to load: %s", exc)
 
+    try:
+        from api.routes.session import router as session_router
+        app.include_router(session_router)
+    except Exception as exc:
+        _logger.warning("session router failed to load: %s", exc)
+
 else:
     app = None

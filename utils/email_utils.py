@@ -236,3 +236,23 @@ def send_welcome_confirmed_email(
         f"Welcome to Smart Pick Pro, {display_name}!",
         html, text,
     )
+
+
+def send_admin_new_user_alert(user_email: str, display_name: str) -> bool:
+    """Notify the site owner whenever a new user signs up."""
+    import os
+    from datetime import datetime, timezone
+    admin_email = os.environ.get("ADMIN_NOTIFY_EMAIL", "")
+    if not admin_email:
+        return False
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    subject = f"New Sign-Up: {display_name} ({user_email})"
+    html = f"""<html><body style="font-family:sans-serif;background:#0a0d14;color:#e0e6f0;padding:32px;">
+<div style="max-width:480px;margin:0 auto;background:#131920;border-radius:12px;padding:28px;">
+<h2 style="color:#00d4ff;margin-top:0;">New User Sign-Up</h2>
+<p><strong>Name:</strong> {display_name}</p>
+<p><strong>Email:</strong> {user_email}</p>
+<p><strong>Time:</strong> {now}</p>
+</div></body></html>"""
+    text = f"New Sign-Up\nName: {display_name}\nEmail: {user_email}\nTime: {now}"
+    return send_transactional_email(admin_email, "Admin", subject, html, text)

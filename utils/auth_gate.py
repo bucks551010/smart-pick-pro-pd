@@ -3598,6 +3598,11 @@ def _render_signup_form() -> None:
                             trigger_welcome_flow(_saved_email, _saved_name)
                         except Exception:
                             pass
+                        try:
+                            from utils.email_utils import send_admin_new_user_alert
+                            send_admin_new_user_alert(_saved_email, _saved_name)
+                        except Exception:
+                            pass
                         for k in (_SU_STAGE, _SU_EMAIL, _SU_NAME):
                             st.session_state.pop(k, None)
                         st.success("Account created! Welcome to Smart Pick Pro.")
@@ -3901,6 +3906,11 @@ def _render_signup_form() -> None:
                         try:
                             from utils.notifications import trigger_welcome_flow
                             trigger_welcome_flow(_saved_email, _saved_name)
+                        except Exception:
+                            pass
+                        try:
+                            from utils.email_utils import send_admin_new_user_alert
+                            send_admin_new_user_alert(_saved_email, _saved_name)
                         except Exception:
                             pass
                         for k in (_SU_STAGE, _SU_EMAIL, _SU_NAME):

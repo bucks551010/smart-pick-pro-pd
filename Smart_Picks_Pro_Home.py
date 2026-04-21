@@ -128,6 +128,33 @@ try:
 except Exception:
     pass  # non-critical — staleness guard above is the safety net
 
+# ─── Data-version check: clear stale session cache when scheduler writes fresh data ───
+# The background scheduler calls _bump_data_version() every time it writes new
+# picks or props to disk.  We read cache/data_version.json on every Streamlit
+# render cycle (it's a tiny file).  When the version has advanced beyond what
+# this session last saw, we reset _picks_seeded so the block below re-reads
+# the DB — giving users live data without a manual page reload.
+try:
+    import json as _jv
+    from pathlib import Path as _Pv
+    _version_path = _Pv(__file__).resolve().parent / "cache" / "data_version.json"
+    if _version_path.exists():
+        _ver_data = _jv.loads(_version_path.read_text(encoding="utf-8"))
+        _new_ver = _ver_data.get("version", 0)
+        _seen_ver = st.session_state.get("_data_version_seen", 0)
+        if _new_ver > _seen_ver:
+            # New data written by scheduler — clear stale session state so
+            # the seed block below picks up fresh picks and props from DB.
+            st.session_state["_data_version_seen"] = _new_ver
+            st.session_state.pop("_picks_seeded", None)
+            st.session_state.pop("analysis_results", None)
+            st.session_state.pop("current_props", None)
+            st.session_state.pop("platform_props", None)
+            st.session_state.pop("todays_games", None)
+            st.session_state.pop("_auto_init_date", None)
+except Exception:
+    pass
+
 # ─── Auto-seed picks & props into session on first load ───────
 if not st.session_state.get("_picks_seeded"):
     st.session_state["_picks_seeded"] = True

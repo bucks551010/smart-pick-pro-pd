@@ -282,6 +282,15 @@ def _loop() -> None:
                 "(next prop refresh in %d min)",
                 count, elapsed, prop_interval // 60,
             )
+            # Bump the shared data-version stamp so running Streamlit sessions
+            # detect the fresh props and re-seed their session state from disk.
+            if count > 0:
+                try:
+                    from tracking.database import _bump_data_version as _bv
+                    import datetime as _dt_bv
+                    _bv(_dt_bv.date.today().isoformat())
+                except Exception:
+                    pass
 
         # ── QAM auto-analysis (once per day during analysis window) ──
         # Runs after props are fresh to analyze the live slate.

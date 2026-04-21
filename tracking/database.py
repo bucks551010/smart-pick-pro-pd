@@ -2464,10 +2464,34 @@ def _write_latest_picks_cache(date_str: str, limit: int = 5) -> None:
             cache_path.parent.mkdir(parents=True, exist_ok=True)
             cache_path.write_text(_json.dumps(cache_data, indent=2), encoding="utf-8")
             _logger.debug("Wrote %d picks to %s", len(rows), cache_path)
+            # Bump the shared data-version stamp so running Streamlit sessions
+            # detect the new picks and re-seed session state from the DB.
+            _bump_data_version(date_str)
             # Auto-commit the cache file to git so Railway deploys carry today's picks.
             _git_commit_cache(cache_path, date_str)
     except Exception as exc:
         _logger.debug("_write_latest_picks_cache: %s", exc)
+
+
+def _bump_data_version(date_str: str) -> None:
+    """Write ``cache/data_version.json`` with a monotonically increasing timestamp.
+
+    Running Streamlit sessions read this file on every render cycle and compare
+    the ``version`` field against ``st.session_state["_data_version_seen"]``.
+    When the version has advanced (i.e. the scheduler wrote fresh picks or props)
+    the session clears its stale cached data keys and re-reads from the DB,
+    so users see the updated picks without having to manually reload the page.
+    """
+    import json as _json, time as _time
+    try:
+        version_path = Path(__file__).parent.parent / "cache" / "data_version.json"
+        version_path.parent.mkdir(parents=True, exist_ok=True)
+        version_path.write_text(
+            _json.dumps({"version": _time.time(), "date": date_str}),
+            encoding="utf-8",
+        )
+    except Exception as exc:
+        _logger.debug("_bump_data_version: %s", exc)
 
 
 def _git_commit_cache(cache_path: Path, date_str: str) -> None:

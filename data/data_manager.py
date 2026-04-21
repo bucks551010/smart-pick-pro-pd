@@ -1535,6 +1535,14 @@ def save_platform_props_to_csv(props_list, file_path=None):
             )
             writer.writeheader()
             writer.writerows(props_list)
+        # Bump the shared data-version stamp so running Streamlit sessions
+        # detect fresh props and clear their stale session-state cache.
+        try:
+            from tracking.database import _bump_data_version as _bv
+            import datetime as _dt_bv
+            _bv(_dt_bv.date.today().isoformat())
+        except Exception:
+            pass
         return True
     except Exception as error:
         _logger.warning("Could not save platform props to CSV: %s", error)

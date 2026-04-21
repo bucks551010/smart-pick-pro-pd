@@ -1242,13 +1242,15 @@ def _set_logged_in(user: dict, _write_storage: bool = True) -> None:
         except Exception:
             pass
 
-    # Write a persistent session token to localStorage so the user stays
-    # logged in across F5 reloads.
+    # Save a session token to session_state so require_login can write the
+    # cookie on the NEXT Streamlit run (after st.rerun()).  Rendering the JS
+    # component here then calling st.rerun() causes a race — the JS never
+    # executes before the rerun discards the render.
     if _write_storage:
         try:
             _tok = secrets.token_urlsafe(32)
             _save_login_session(_tok, user)
-            _write_session_to_storage(_tok)
+            st.session_state["_pending_cookie_token"] = _tok
         except Exception:
             pass
 
@@ -3974,7 +3976,12 @@ def require_login() -> bool:
         return True
 
     if is_logged_in():
-        # Clean any stale auth/token params from the URL after login.
+        # Flush any pending cookie token.  This runs on the run AFTER login
+        # (post-st.rerun()), so no st.rerun() follows — the JS executes cleanly.
+        _pending = st.session_state.pop("_pending_cookie_token", None)
+        if _pending:
+            _write_session_to_storage(_pending)
+        # Clean any stale auth/token params from the URL.
         try:
             _qp = st.query_params
             if _qp.get("auth") or _qp.get("_st"):

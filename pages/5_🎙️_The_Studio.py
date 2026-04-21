@@ -1595,7 +1595,7 @@ if not joseph_results and _BRAIN_AVAILABLE:
                         _gen_source,
                         key=lambda r: abs(_extract_edge(r)),
                         reverse=True,
-                    )[:20]
+                    )[:100]
                     joseph_results = []
                     for _ar in _sorted_ar:
                         _pn = _ar.get(
@@ -2012,7 +2012,7 @@ if _BETS_AVAILABLE:
         joseph_bets = []
 
 if _bets_loaded and joseph_bets:
-    for bet in joseph_bets[:20]:
+    for bet in joseph_bets[:100]:
         card_html = get_bet_card_html(bet)
         if card_html:
             # Enhancement 7: Append outcome badge to card

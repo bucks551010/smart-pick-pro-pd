@@ -1653,10 +1653,10 @@ def _render_results_fragment():
         displayed_results = [r for r in displayed_results if r.get("tier") in _na_tier_names]
 
     # ── Quality floor: hide Bronze / Avoid by default & low-confidence picks ──
-    # Unless user explicitly selected Bronze in the tier filter, strip them out.
-    # QAM is for the best top picks — Bronze/Avoid should not appear by default.
+    # Only applies when NOT in "All picks" mode and user hasn't explicitly
+    # selected Bronze in the tier filter.
     _user_wants_bronze = "Bronze 🥉" in (_na_tier_filter or [])
-    if not _user_wants_bronze:
+    if not _user_wants_bronze and _show_mode != "All picks":
         displayed_results = [
             r for r in displayed_results
             if r.get("tier") not in ("Bronze", "Avoid", None)

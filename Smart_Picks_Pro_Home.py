@@ -1136,7 +1136,14 @@ if _home_one_click:
             _hoc_status.text("⏳ Phase 0/4 — Running Smart ETL Update for fresh stats…")
             _hoc_bar.progress(2)
             try:
-                _hoc_etl_result = _hoc_refresh_etl()
+                import concurrent.futures as _cf_hoc
+                with _cf_hoc.ThreadPoolExecutor(max_workers=1) as _hoc_etl_pool:
+                    _hoc_etl_future = _hoc_etl_pool.submit(_hoc_refresh_etl)
+                    try:
+                        _hoc_etl_result = _hoc_etl_future.result(timeout=45)
+                    except _cf_hoc.TimeoutError:
+                        _logger.warning("Home ETL step timed out after 45s (non-fatal)")
+                        _hoc_etl_future.cancel()
             except Exception:
                 pass
 

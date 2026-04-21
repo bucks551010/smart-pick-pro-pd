@@ -181,6 +181,109 @@ if not st.session_state.get("_picks_seeded"):
     except Exception:
         pass
 
+# ─── Auto-init: silently load slate + run analysis on login ────────────────
+# Fires exactly once per NBA day (Eastern Time) when no analysis exists in
+# session state after the DB restore above.  Covers the "user just signed in
+# on a fresh day" case so they immediately see picks without pressing anything.
+if not st.session_state.get("analysis_results"):
+    try:
+        from zoneinfo import ZoneInfo as _ZI_ai
+        import datetime as _dt_ai
+        _ai_today = _dt_ai.datetime.now(_ZI_ai("America/New_York")).date().isoformat()
+    except Exception:
+        import datetime as _dt_ai
+        _ai_today = _dt_ai.date.today().isoformat()
+
+    if st.session_state.get("_auto_init_date") != _ai_today:
+        st.session_state["_auto_init_date"] = _ai_today  # mark attempted immediately
+
+        _ai_placeholder = st.empty()
+        _ai_placeholder.info("⚡ Loading tonight's slate and running analysis — hold tight…")
+
+        try:
+            # ── Phase 1: Games & rosters ──────────────────────────────────
+            from data.nba_data_service import (
+                get_todays_games as _ai_fg,
+                get_todays_players as _ai_fp,
+            )
+            _ai_games = st.session_state.get("todays_games") or _ai_fg()
+            if _ai_games:
+                st.session_state["todays_games"] = _ai_games
+                _ai_fp(_ai_games)
+                try:
+                    from data.data_manager import load_injury_status as _ai_li, clear_all_caches as _ai_cc
+                    _ai_cc()
+                    st.session_state["injury_status_map"] = _ai_li()
+                except Exception:
+                    pass
+
+            # ── Phase 2: Live props (only if empty) ───────────────────────
+            if not st.session_state.get("current_props"):
+                from data.sportsbook_service import get_all_sportsbook_props as _ai_fap
+                from data.data_manager import (
+                    save_props_to_session as _ai_sps,
+                    save_platform_props_to_session as _ai_spps,
+                    save_platform_props_to_csv as _ai_csv,
+                )
+                _ai_live = _ai_fap(
+                    odds_api_key=st.session_state.get("odds_api_key") or None
+                )
+                if _ai_live:
+                    _ai_sps(_ai_live, st.session_state)
+                    _ai_spps(_ai_live, st.session_state)
+                    try:
+                        _ai_csv(_ai_live)
+                    except Exception:
+                        pass
+
+            # ── Phase 3: Run Neural Analysis ─────────────────────────────
+            from data.data_manager import (
+                load_props_from_session as _ai_lps,
+                load_players_data as _ai_lpd,
+                load_teams_data as _ai_ltd,
+                load_defensive_ratings_data as _ai_ldr,
+            )
+            from engine.analysis_orchestrator import analyze_props_batch as _ai_analyze
+
+            _ai_props      = _ai_lps(st.session_state)
+            _ai_players    = _ai_lpd()
+            _ai_teams      = _ai_ltd()
+            _ai_def_rtgs   = _ai_ldr()
+            _ai_games_sess = st.session_state.get("todays_games", [])
+
+            if _ai_props and _ai_players:
+                # Cap at 300 props for the silent auto-init to keep it fast
+                _ai_results = _ai_analyze(
+                    _ai_props[:300],
+                    players_data=_ai_players,
+                    todays_games=_ai_games_sess,
+                    injury_map=st.session_state.get("injury_status_map", {}),
+                    defensive_ratings_data=_ai_def_rtgs,
+                    teams_data=_ai_teams,
+                    simulation_depth=1000,
+                )
+                if _ai_results:
+                    st.session_state["analysis_results"] = _ai_results
+                    import datetime as _dt_ai2
+                    st.session_state["analysis_timestamp"] = _dt_ai2.datetime.now()
+                    try:
+                        from tracking.database import (
+                            save_analysis_session as _ai_sas,
+                            insert_analysis_picks as _ai_iap,
+                        )
+                        _ai_sas(
+                            analysis_results=_ai_results,
+                            todays_games=_ai_games_sess,
+                            selected_picks=st.session_state.get("selected_picks", []),
+                        )
+                        _ai_iap(_ai_results)
+                    except Exception:
+                        pass
+        except Exception:
+            pass  # non-fatal — user can still trigger manually
+
+        _ai_placeholder.empty()
+
 # ─── Inject Global CSS Theme ──────────────────────────────────
 st.markdown(get_global_css(), unsafe_allow_html=True)
 

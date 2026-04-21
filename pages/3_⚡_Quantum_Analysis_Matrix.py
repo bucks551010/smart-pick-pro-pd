@@ -782,12 +782,29 @@ if _dedup_removed > 0:
 # SECTION: Analysis Runner
 # ============================================================
 
+# ── Auto-analysis: fire immediately if props exist but no results today ──────
+# Allows users who came from the home page auto-init (or navigated directly
+# to QAM) to see analysis start without pressing the button.
+_qam_auto_triggered = False
+if final_props and not st.session_state.get("analysis_results") and not st.session_state.get("_qam_analysis_requested"):
+    try:
+        from zoneinfo import ZoneInfo as _ZI_qam
+        import datetime as _dt_qam
+        _qam_today = _dt_qam.datetime.now(_ZI_qam("America/New_York")).date().isoformat()
+    except Exception:
+        import datetime as _dt_qam
+        _qam_today = _dt_qam.date.today().isoformat()
+    if st.session_state.get("_qam_auto_run_date") != _qam_today:
+        st.session_state["_qam_auto_run_date"] = _qam_today
+        st.session_state["_qam_analysis_requested"] = True
+        _qam_auto_triggered = True
+
 run_analysis = st.button(
     "🚀 Run Analysis",
     type="primary",
     disabled=(len(final_props) == 0),
     help=f"Analyze {len(final_props)} props with Quantum Matrix Engine 5.6",
-)
+) or _qam_auto_triggered
 
 # ── Feature 14: Quick Filter Chips ──────────────────────────────
 # Initialise session-state keys for filter chips (persist across reruns).

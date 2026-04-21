@@ -2476,6 +2476,59 @@ def load_game_logs_from_cache(player_name, **kwargs):
     return []
 
 
+def get_defensive_ratings_from_db(season: str | None = None) -> list[dict]:
+    """
+    Return per-position defensive multipliers from Defense_Vs_Position table
+    in the wide format expected by engine/projections.py.
+
+    Returns a list of dicts with keys:
+        abbreviation, vs_PG_pts, vs_PG_reb, vs_PG_ast, vs_PG_stl, vs_PG_blk, vs_PG_3pm,
+        vs_SG_pts, ..., vs_C_pts, ...
+
+    Falls back to an empty list when the table has no data.
+    """
+    conn = _get_conn()
+    if conn is None:
+        return []
+    try:
+        if season is None:
+            season = _current_season()
+        rows = conn.execute(
+            """
+            SELECT team_abbreviation, pos,
+                   vs_pts_mult, vs_reb_mult, vs_ast_mult,
+                   vs_stl_mult, vs_blk_mult, vs_3pm_mult
+            FROM Defense_Vs_Position
+            WHERE season = ?
+            """,
+            (season,),
+        ).fetchall()
+        if not rows:
+            return []
+
+        # Pivot long → wide: one dict per team with all position columns
+        from collections import defaultdict
+        team_data: dict[str, dict] = defaultdict(lambda: {"abbreviation": ""})
+        for row in rows:
+            d = dict(row)
+            abbrev = d["team_abbreviation"]
+            pos = d["pos"].upper()  # PG, SG, SF, PF, C
+            team_data[abbrev]["abbreviation"] = abbrev
+            team_data[abbrev][f"vs_{pos}_pts"] = float(d.get("vs_pts_mult") or 1.0)
+            team_data[abbrev][f"vs_{pos}_reb"] = float(d.get("vs_reb_mult") or 1.0)
+            team_data[abbrev][f"vs_{pos}_ast"] = float(d.get("vs_ast_mult") or 1.0)
+            team_data[abbrev][f"vs_{pos}_stl"] = float(d.get("vs_stl_mult") or 1.0)
+            team_data[abbrev][f"vs_{pos}_blk"] = float(d.get("vs_blk_mult") or 1.0)
+            team_data[abbrev][f"vs_{pos}_3pm"] = float(d.get("vs_3pm_mult") or 1.0)
+
+        return list(team_data.values())
+    except Exception as exc:
+        _logger.warning("get_defensive_ratings_from_db failed: %s", exc)
+        return []
+    finally:
+        conn.close()
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SECTION: PlayerIDCache stub (replaces data/player_id_cache.py)
 # ═══════════════════════════════════════════════════════════════════════════════

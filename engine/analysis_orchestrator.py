@@ -653,6 +653,19 @@ def analyze_single_prop(
     except Exception:
         pass
 
+    # Fall back to real usg_pct from Player_Bio (always available from DB)
+    if _advanced_context is None:
+        _db_usg = player_data.get("usg_pct") or player_data.get("usage_rate")
+        if _db_usg:
+            try:
+                _db_usg_f = float(_db_usg)
+                if _db_usg_f > 0:
+                    _advanced_context = {
+                        "usage_pct": _db_usg_f / 100.0 if _db_usg_f > 1.0 else _db_usg_f
+                    }
+            except (TypeError, ValueError):
+                pass
+
     # ── Projection ───────────────────────────────────────────────
     projection_result = build_player_projection(
         player_data=player_data,
@@ -740,6 +753,23 @@ def analyze_single_prop(
         precise_minutes=_precise_minutes,
         recent_game_log_values=recent_game_log_values,
     )
+
+    # ── DD/TD Rate Blend: use actual historical rate from League_Dash ────────
+    # For double_double / triple_double, blend 55% simulation (captures tonight's
+    # opponent/pace/rest) with 45% historical season rate (player's actual DD/TD
+    # frequency this year). This is significantly more accurate than pure simulation
+    # because DDs depend heavily on the player's typical role and usage.
+    if stat_type in ("double_double", "triple_double"):
+        _rate_key = "double_double_rate" if stat_type == "double_double" else "triple_double_rate"
+        _hist_rate = _safe_float(player_data.get(_rate_key, -1.0), -1.0)
+        if _hist_rate >= 0:
+            _sim_prob = _safe_float(simulation_output.get("probability_over", 0.5))
+            _blended_prob = 0.55 * _sim_prob + 0.45 * _hist_rate
+            _blended_prob = max(0.01, min(0.99, _blended_prob))
+            simulation_output = dict(simulation_output)
+            simulation_output["probability_over"] = _blended_prob
+            simulation_output["simulated_mean"] = _blended_prob
+            simulation_output["adjusted_projection"] = _blended_prob
 
     # ── Directional Forces ───────────────────────────────────────
     forces_result = analyze_directional_forces(

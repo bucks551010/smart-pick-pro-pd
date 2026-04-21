@@ -160,8 +160,16 @@ def _convert_etl_players_to_app_format(etl_players: list) -> list:
             "threes_avg":              round(fg3_avg, 1),
             "ft_pct":                  round(ft_pct_avg, 3),
             # usage_rate is not available from LeagueGameLog — requires advanced stats endpoint
-            "usage_rate":              0.0,
-            # Standard deviations: real DB-computed values when available, estimates otherwise
+            "usage_rate":              float(p.get("usg_pct", 0) or 0),
+            # Real usage and efficiency from Player_Bio (NBA-tracked)
+            "usg_pct":                 float(p.get("usg_pct", 0) or 0),
+            "ts_pct":                  float(p.get("ts_pct", 0) or 0),
+            "oreb_pct":                float(p.get("oreb_pct", 0) or 0),
+            "dreb_pct":                float(p.get("dreb_pct", 0) or 0),
+            "net_rating":              float(p.get("net_rating", 0) or 0),
+            # Actual DD/TD rates from League_Dash_Player_Stats (dd2/td3 ÷ gp)
+            "double_double_rate":      float(p.get("double_double_rate", 0) or 0),
+            "triple_double_rate":      float(p.get("triple_double_rate", 0) or 0),
             "points_std":              round(points_std, 1),
             "rebounds_std":            round(rebounds_std, 1),
             "assists_std":             round(assists_std, 1),

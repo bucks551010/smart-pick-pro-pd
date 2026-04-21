@@ -307,6 +307,24 @@ def get_all_players() -> list[dict]:
         except Exception:
             ext_map = {}
 
+        # Pull dd2, td3 from League_Dash_Player_Stats (actual recorded counts)
+        try:
+            dash_rows = conn.execute(
+                "SELECT player_id, dd2, td3, gp FROM League_Dash_Player_Stats"
+            ).fetchall()
+            dash_map = {int(r["player_id"]): r for r in dash_rows}
+        except Exception:
+            dash_map = {}
+
+        # Pull usg_pct, ts_pct, oreb_pct, dreb_pct, net_rating from Player_Bio
+        try:
+            bio_rows = conn.execute(
+                "SELECT player_id, usg_pct, ts_pct, oreb_pct, dreb_pct, net_rating FROM Player_Bio"
+            ).fetchall()
+            bio_map = {int(r["player_id"]): r for r in bio_rows}
+        except Exception:
+            bio_map = {}
+
         # Bulk std-dev query — one pass over all game logs
         try:
             _all_logs = conn.execute(
@@ -348,6 +366,16 @@ def get_all_players() -> list[dict]:
         for row in rows:
             pid = int(row["player_id"])
             ext = ext_map.get(pid)
+            dash = dash_map.get(pid)
+            bio = bio_map.get(pid)
+            gp_count = int(row["gp"] or 0)
+            # Compute actual DD/TD rates from League_Dash_Player_Stats
+            _dd2 = int(dash["dd2"] or 0) if dash else 0
+            _td3 = int(dash["td3"] or 0) if dash else 0
+            _dash_gp = int(dash["gp"] or 0) if dash else 0
+            _eff_gp = _dash_gp if _dash_gp > 0 else gp_count
+            _dd_rate = round(_dd2 / _eff_gp, 4) if _eff_gp > 0 else 0.0
+            _td_rate = round(_td3 / _eff_gp, 4) if _eff_gp > 0 else 0.0
             result.append({
                 "player_id":         pid,
                 "first_name":        row["first_name"] or "",
@@ -386,6 +414,15 @@ def get_all_players() -> list[dict]:
                 "ftm_std":        std_map.get(pid, {}).get("ftm_std", 0.0),
                 "oreb_std":       std_map.get(pid, {}).get("oreb_std", 0.0),
                 "plus_minus_std": std_map.get(pid, {}).get("plus_minus_std", 0.0),
+                # Actual DD/TD rates from League_Dash_Player_Stats
+                "double_double_rate": _dd_rate,
+                "triple_double_rate": _td_rate,
+                # Usage and efficiency from Player_Bio
+                "usg_pct":   _r(bio["usg_pct"], 3)   if bio else 0.0,
+                "ts_pct":    _r(bio["ts_pct"], 3)     if bio else 0.0,
+                "oreb_pct":  _r(bio["oreb_pct"], 3)   if bio else 0.0,
+                "dreb_pct":  _r(bio["dreb_pct"], 3)   if bio else 0.0,
+                "net_rating": _r(bio["net_rating"], 1) if bio else 0.0,
             })
         return result
     except Exception as exc:

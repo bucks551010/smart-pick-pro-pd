@@ -196,6 +196,12 @@ def _normalize_db_player(p: dict) -> dict:
         "offensive_rebounds_avg": p.get("oreb_avg", 0.0),
         "defensive_rebounds_avg": p.get("dreb_avg", 0.0),
         "personal_fouls_avg":     p.get("pf_avg", 0.0),
+        # Usage, efficiency, and DD/TD rates (from Player_Bio + League_Dash)
+        "usg_pct":             p.get("usg_pct", 0.0),
+        "ts_pct":              p.get("ts_pct", 0.0),
+        "usage_rate":          p.get("usg_pct", 0.0),
+        "double_double_rate":  p.get("double_double_rate", 0.0),
+        "triple_double_rate":  p.get("triple_double_rate", 0.0),
         "plus_minus_avg":  p.get("plus_minus_avg", 0.0),
         # Standard deviations — pass through
         "points_std":      p.get("points_std", 0.0),

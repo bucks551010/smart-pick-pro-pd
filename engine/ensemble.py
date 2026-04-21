@@ -132,6 +132,14 @@ def _model_b_recent_form(player_data, game_context, game_logs):
     _key_map = {
         "points": "PTS", "rebounds": "REB", "assists": "AST",
         "steals": "STL", "blocks": "BLK", "threes": "FG3M", "turnovers": "TOV",
+        # Secondary stats: DB log key differs from stat_type name.
+        # The fallback chain (log_key → log_key_lower → log_key.lower()) means
+        # PTS/REB etc. already work, but these 4 have no match without explicit mapping.
+        "offensive_rebounds": "OREB",
+        "defensive_rebounds": "DREB",
+        "personal_fouls": "PF",
+        "minutes": "MIN",
+        "ftm": "FTM", "fga": "FGA", "fgm": "FGM", "fta": "FTA",
     }
     log_key = _key_map.get(stat_type.lower(), stat_type.upper())
 
@@ -230,6 +238,9 @@ def _model_c_matchup_history(player_data, game_context, game_logs):
     _key_map = {
         "points": "PTS", "rebounds": "REB", "assists": "AST",
         "steals": "STL", "blocks": "BLK", "threes": "FG3M", "turnovers": "TOV",
+        "offensive_rebounds": "OREB", "defensive_rebounds": "DREB",
+        "personal_fouls": "PF", "minutes": "MIN",
+        "ftm": "FTM", "fga": "FGA", "fgm": "FGM", "fta": "FTA",
     }
     log_key = _key_map.get(stat_type.lower(), stat_type.upper())
     log_key_lower = log_key.lower()

@@ -151,6 +151,13 @@ _STAT_LOG_KEY_MAP = {
     "points": "pts", "rebounds": "reb", "assists": "ast",
     "threes": "fg3m", "steals": "stl", "blocks": "blk",
     "turnovers": "tov",
+    # Secondary stats: DB log key differs from stat_type name.
+    # Without these, recent_game_log_values is always empty for these
+    # stats and KDE sampling never activates, degrading simulation quality.
+    "offensive_rebounds": "oreb",
+    "defensive_rebounds": "dreb",
+    "personal_fouls": "pf",
+    "minutes": "min",
 }
 
 # ── Season avg field names for the result dict ───────────────────────────

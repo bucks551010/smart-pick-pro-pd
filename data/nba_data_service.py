@@ -192,6 +192,10 @@ def _normalize_db_player(p: dict) -> dict:
         "oreb_avg":        p.get("oreb_avg", 0.0),
         "dreb_avg":        p.get("dreb_avg", 0.0),
         "pf_avg":          p.get("pf_avg", 0.0),
+        # Engine-expected aliases for extended stats
+        "offensive_rebounds_avg": p.get("oreb_avg", 0.0),
+        "defensive_rebounds_avg": p.get("dreb_avg", 0.0),
+        "personal_fouls_avg":     p.get("pf_avg", 0.0),
         "plus_minus_avg":  p.get("plus_minus_avg", 0.0),
         # Standard deviations — pass through
         "points_std":      p.get("points_std", 0.0),

@@ -119,15 +119,25 @@ BAYESIAN_SMALL_SAMPLE_THRESHOLD = 25  # games played below which to blend
 
 POSITION_PRIORS = {
     "PG": {"points": 18.5, "rebounds": 4.0, "assists": 6.5, "threes": 2.2,
-           "steals": 1.3, "blocks": 0.4, "turnovers": 2.5, "ftm": 3.5},
+           "steals": 1.3, "blocks": 0.4, "turnovers": 2.5, "ftm": 3.5,
+           "fga": 13.5, "fgm": 6.2, "fta": 4.5, "fta_made": 3.5,
+           "offensive_rebounds": 0.5, "defensive_rebounds": 3.5, "personal_fouls": 2.0, "minutes": 30.0},
     "SG": {"points": 17.0, "rebounds": 3.8, "assists": 4.0, "threes": 2.0,
-           "steals": 1.1, "blocks": 0.4, "turnovers": 1.8, "ftm": 3.2},
+           "steals": 1.1, "blocks": 0.4, "turnovers": 1.8, "ftm": 3.2,
+           "fga": 13.0, "fgm": 5.8, "fta": 4.0, "fta_made": 3.2,
+           "offensive_rebounds": 0.5, "defensive_rebounds": 3.3, "personal_fouls": 2.0, "minutes": 30.0},
     "SF": {"points": 16.0, "rebounds": 5.5, "assists": 3.5, "threes": 1.5,
-           "steals": 1.0, "blocks": 0.6, "turnovers": 1.5, "ftm": 2.8},
+           "steals": 1.0, "blocks": 0.6, "turnovers": 1.5, "ftm": 2.8,
+           "fga": 12.0, "fgm": 5.5, "fta": 3.5, "fta_made": 2.8,
+           "offensive_rebounds": 0.8, "defensive_rebounds": 4.7, "personal_fouls": 2.1, "minutes": 29.0},
     "PF": {"points": 15.5, "rebounds": 7.0, "assists": 3.0, "threes": 1.0,
-           "steals": 0.8, "blocks": 0.8, "turnovers": 1.5, "ftm": 3.1},
+           "steals": 0.8, "blocks": 0.8, "turnovers": 1.5, "ftm": 3.1,
+           "fga": 11.5, "fgm": 5.3, "fta": 4.0, "fta_made": 3.1,
+           "offensive_rebounds": 1.5, "defensive_rebounds": 5.5, "personal_fouls": 2.4, "minutes": 28.0},
     "C":  {"points": 14.0, "rebounds": 9.0, "assists": 2.5, "threes": 0.5,
-           "steals": 0.7, "blocks": 1.4, "turnovers": 1.8, "ftm": 2.9},
+           "steals": 0.7, "blocks": 1.4, "turnovers": 1.8, "ftm": 2.9,
+           "fga": 10.5, "fgm": 5.0, "fta": 3.8, "fta_made": 2.9,
+           "offensive_rebounds": 2.5, "defensive_rebounds": 6.5, "personal_fouls": 2.8, "minutes": 27.0},
 }
 # Default prior for unknown positions
 _DEFAULT_POSITION_PRIOR = POSITION_PRIORS["SF"]

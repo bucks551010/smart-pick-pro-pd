@@ -4471,6 +4471,29 @@ def require_login() -> bool:
     </div>
     """, unsafe_allow_html=True)
 
+    # ── Free Picks Today — shown BEFORE the login form ────────────────────────
+    # Load the top 5 platform picks from today's QAM analysis and render them
+    # as scrollable pick cards so visitors see real value before signing up.
+    _preview_picks_early, _preview_date_early = _load_top_preview_picks(5)
+    st.markdown(
+        '<div id="sec-picks" data-section-id="picks" style="height:0;overflow:hidden;"></div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown("""
+<div style="text-align:center;padding:8px 0 4px;">
+  <div style="display:inline-block;font-family:'JetBrains Mono',monospace;font-size:0.52rem;font-weight:800;
+    color:#080C18;background:linear-gradient(135deg,#00D559,#2D9EFF);padding:3px 14px;border-radius:100px;
+    letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">&#x26A1; Live Tonight</div>
+  <h2 style="font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:800;color:#fff;margin:0 0 6px;">
+    Free Picks Today</h2>
+  <p style="font-size:0.78rem;color:rgba(255,255,255,0.35);margin:0 0 4px;">
+    Top 5 AI picks from tonight&rsquo;s Quantum Analysis Matrix &mdash; updated every game night</p>
+</div>""", unsafe_allow_html=True)
+    _early_preview_html = _build_preview_section_html(_preview_picks_early, _preview_date_early)
+    st.html(_early_preview_html)
+
+    st.markdown('<div style="margin:8px 0 4px;border-top:1px solid rgba(0,213,89,0.08);"></div>', unsafe_allow_html=True)
+
     # ── Auth tabs + forms ─────────────────────────────────
     tab_signup, tab_login = st.tabs(["\u26A1  Create Free Account", "\U0001F513  Log In"])
 
@@ -5186,23 +5209,8 @@ html,body{background:transparent;overflow-y:hidden}
 
     <div class="ag-divider"></div>
 
-    <!-- Product Preview -->
-    <div class="ag-preview">
-      <div class="ag-section-head">
-        <h3><span class="em">Free Picks Today</span></h3>
-        <p>Live AI picks from today&rsquo;s Quantum Analysis Matrix &mdash; updated every game night</p>
-      </div>
-    </div>
     </div><!-- /ag-section -->
     """, unsafe_allow_html=True)
-
-    # ── Product Preview: live platform picks from today's analysis ──
-    _preview_picks, _preview_date = _load_top_preview_picks(5)
-    _preview_html = _build_preview_section_html(_preview_picks, _preview_date)
-    st.html(_preview_html)
-
-    # ── Section anchor: Free Picks ──
-    st.markdown('<div id="sec-picks" data-section-id="picks" style="height:0;overflow:hidden;"></div>', unsafe_allow_html=True)
 
     # ── Below-fold: Winning Picks Carousel ───────────────────
     # Uses st.html() to bypass Streamlit's markdown parser which

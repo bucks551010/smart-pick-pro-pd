@@ -566,58 +566,61 @@ def _display_stat_label(raw: str) -> str:
 
 
 def _load_top_preview_picks(limit: int = 5) -> tuple[list[dict], str]:
-    """Load the most recent analysis picks for the landing page preview.
+    """Load today's top platform picks for the landing page preview.
+
+    Filters to picks that have a ``platform`` set (PrizePicks / Underdog /
+    DraftKings) — matching exactly what the QAM Platform AI Picks section
+    shows — ordered by confidence_score DESC.
 
     Priority:
-      1. Today's picks from the SQLite DB (best case — analysis ran today).
-      2. Most recent date's picks from the SQLite DB (catches same-day Railway
-         restart where cache hasn't been re-written yet).
-      3. JSON cache file ``cache/latest_picks.json`` regardless of date.
-    
+      1. Today's platform picks from the SQLite DB.
+      2. Today's picks from the JSON cache file (written by scheduler).
+      3. Most recent date's platform picks from DB (Railway restart fallback).
+
     Returns:
         (picks, pick_date) — list of pick dicts and the ISO date they belong to.
         Returns ([], "") when no data exists at all.
     """
     initialize_database()
     today = _nba_today_str()
+    _PLATFORM_PICK_SQL = """
+        SELECT player_name, team, stat_type, prop_line, direction,
+               platform, confidence_score, probability_over,
+               edge_percentage, tier
+        FROM all_analysis_picks
+        WHERE pick_date = ?
+          AND platform IS NOT NULL
+          AND TRIM(platform) != ''
+        ORDER BY confidence_score DESC
+        LIMIT ?"""
     try:
         with get_database_connection() as conn:
             conn.row_factory = sqlite3.Row
-            # Try today first
-            rows = conn.execute(
-                """SELECT player_name, team, stat_type, prop_line, direction,
-                          platform, confidence_score, probability_over,
-                          edge_percentage, tier
-                   FROM all_analysis_picks
-                   WHERE pick_date = ?
-                   ORDER BY confidence_score DESC
-                   LIMIT ?""",
-                (today, limit),
-            ).fetchall()
+            # ── 1. Today's platform picks ──────────────────────────────────
+            rows = conn.execute(_PLATFORM_PICK_SQL, (today, limit)).fetchall()
             if rows:
                 return [dict(r) for r in rows], today
-            # Fall back to most recent date in DB
+
+            # ── 2. Today's picks from JSON cache (scheduler may have written
+            #       them but DB hasn't been updated in this Railway instance) ─
+            cache_result = _load_picks_from_cache(limit)
+            if cache_result[0] and cache_result[1] == today:
+                return cache_result
+
+            # ── 3. Most recent date fallback (Railway restart / same-day deploy)
             latest_date_row = conn.execute(
-                "SELECT MAX(pick_date) FROM all_analysis_picks"
+                "SELECT MAX(pick_date) FROM all_analysis_picks "
+                "WHERE platform IS NOT NULL AND TRIM(platform) != ''"
             ).fetchone()
             latest_date = latest_date_row[0] if latest_date_row else None
             if latest_date:
-                rows = conn.execute(
-                    """SELECT player_name, team, stat_type, prop_line, direction,
-                              platform, confidence_score, probability_over,
-                              edge_percentage, tier
-                       FROM all_analysis_picks
-                       WHERE pick_date = ?
-                       ORDER BY confidence_score DESC
-                       LIMIT ?""",
-                    (latest_date, limit),
-                ).fetchall()
+                rows = conn.execute(_PLATFORM_PICK_SQL, (latest_date, limit)).fetchall()
                 if rows:
                     return [dict(r) for r in rows], latest_date
     except Exception as exc:
         _logger.debug("_load_top_preview_picks DB: %s", exc)
 
-    # ── JSON cache fallback — use regardless of date (show real picks, not fake) ──
+    # ── Final fallback: JSON cache regardless of date ───────────────────────
     return _load_picks_from_cache(limit)
 
 
@@ -4259,6 +4262,17 @@ def _render_token_reset_form(raw_token: str) -> None:
                 )
 
 
+@st.fragment(run_every=180)
+def _render_free_picks_fragment() -> None:
+    """Auto-refreshing fragment: re-queries the DB every 3 minutes and renders
+    the top 5 platform picks for today.  When the background scheduler writes
+    new picks, visitors on the landing page see them within 3 minutes without
+    needing to reload the page.
+    """
+    _picks, _date = _load_top_preview_picks(5)
+    st.html(_build_preview_section_html(_picks, _date))
+
+
 def require_login() -> bool:
     """Render the Smart Pick Pro auth gate.
 
@@ -4472,9 +4486,8 @@ def require_login() -> bool:
     """, unsafe_allow_html=True)
 
     # ── Free Picks Today — shown BEFORE the login form ────────────────────────
-    # Load the top 5 platform picks from today's QAM analysis and render them
-    # as scrollable pick cards so visitors see real value before signing up.
-    _preview_picks_early, _preview_date_early = _load_top_preview_picks(5)
+    # Auto-refreshing fragment re-queries the DB every 3 min so visitors
+    # see today's picks as soon as the background scheduler generates them.
     st.markdown(
         '<div id="sec-picks" data-section-id="picks" style="height:0;overflow:hidden;"></div>',
         unsafe_allow_html=True,
@@ -4489,8 +4502,7 @@ def require_login() -> bool:
   <p style="font-size:0.78rem;color:rgba(255,255,255,0.35);margin:0 0 4px;">
     Top 5 AI picks from tonight&rsquo;s Quantum Analysis Matrix &mdash; updated every game night</p>
 </div>""", unsafe_allow_html=True)
-    _early_preview_html = _build_preview_section_html(_preview_picks_early, _preview_date_early)
-    st.html(_early_preview_html)
+    _render_free_picks_fragment()
 
     st.markdown('<div style="margin:8px 0 4px;border-top:1px solid rgba(0,213,89,0.08);"></div>', unsafe_allow_html=True)
 

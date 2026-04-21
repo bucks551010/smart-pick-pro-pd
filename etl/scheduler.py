@@ -65,19 +65,23 @@ _DISABLED = os.environ.get("ETL_SCHEDULER_DISABLED", "").strip() in ("1", "true"
 
 # QAM auto-analysis config
 _QAM_DISABLED = os.environ.get("QAM_AUTO_ANALYSIS_DISABLED", "").strip() in ("1", "true", "yes")
-_QAM_HOUR_START = int(os.environ.get("QAM_ANALYSIS_HOUR_START", "17"))   # 5 PM ET
+_QAM_HOUR_START = int(os.environ.get("QAM_ANALYSIS_HOUR_START", "13"))   # 1 PM ET — props available by early afternoon
 _QAM_HOUR_END = int(os.environ.get("QAM_ANALYSIS_HOUR_END", "23"))       # 11 PM ET
 _QAM_SIM_DEPTH = int(os.environ.get("QAM_SIM_DEPTH", "1000"))
 
-# QAM auto-analysis config
-_QAM_DISABLED = os.environ.get("QAM_AUTO_ANALYSIS_DISABLED", "").strip() in ("1", "true", "yes")
-_QAM_HOUR_START = int(os.environ.get("QAM_ANALYSIS_HOUR_START", "17"))   # 5 PM ET
-_QAM_HOUR_END = int(os.environ.get("QAM_ANALYSIS_HOUR_END", "23"))       # 11 PM ET
-_QAM_SIM_DEPTH = int(os.environ.get("QAM_SIM_DEPTH", "1000"))
+# DST-aware Eastern Time via zoneinfo (falls back to UTC-4 hardcoded if unavailable).
+# Using a fixed offset like UTC-5 would shift QAM/game-window checks by 1 hour during EDT.
+try:
+    from zoneinfo import ZoneInfo as _ZoneInfo
+    def _et_now() -> datetime:
+        return datetime.now(_ZoneInfo("America/New_York"))
+except Exception:
+    _ET_FALLBACK = timezone(timedelta(hours=-4))  # EDT
+    def _et_now() -> datetime:
+        return datetime.now(_ET_FALLBACK)
 
-# US-Eastern offset (ET).  During DST this is UTC-4; standard is UTC-5.
-# We approximate with UTC-5 (close enough for a 6 PM–2 AM window).
-_ET = timezone(timedelta(hours=-5))
+# Keep _ET for any legacy references below
+_ET = timezone(timedelta(hours=-4))
 
 # ── Singleton guard ───────────────────────────────────────────────────────
 
@@ -87,7 +91,7 @@ _lock = threading.Lock()
 
 def _in_game_window() -> bool:
     """Return True if the current ET hour falls inside the NBA game window."""
-    et_hour = datetime.now(_ET).hour
+    et_hour = _et_now().hour
     if _GAME_WINDOW_START < _GAME_WINDOW_END:
         # e.g. 10 AM → 6 PM (unlikely but handled)
         return _GAME_WINDOW_START <= et_hour < _GAME_WINDOW_END
@@ -145,7 +149,7 @@ def _run_auto_analysis(today_str: str) -> int:
         _logger.info("[ETL Scheduler] QAM auto-analysis disabled via env var.")
         return 0
 
-    et_hour = datetime.now(_ET).hour
+    et_hour = _et_now().hour
     if not (_QAM_HOUR_START <= et_hour < _QAM_HOUR_END):
         _logger.debug(
             "[ETL Scheduler] QAM auto-analysis skipped — ET hour %d outside window %d–%d.",
@@ -241,7 +245,7 @@ def _loop() -> None:
     while True:
         game_window = _in_game_window()
         interval = _FAST_INTERVAL if game_window else _SLOW_INTERVAL
-        today_str = datetime.now(_ET).strftime("%Y-%m-%d")
+        today_str = _et_now().strftime("%Y-%m-%d")
 
         # ── ETL database refresh (game logs, standings, injuries) ──
         # Wrapped in a thread executor so a hung nba_api call cannot block

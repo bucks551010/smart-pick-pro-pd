@@ -299,33 +299,50 @@ def _render_session_bridge() -> str | None:
 
 
 def _write_session_to_storage(token: str) -> None:
-    """Write the session token into the browser's localStorage."""
+    """Write the session token as an HTTP cookie (read by Python on every load)."""
     import streamlit.components.v1 as _components
     _components.html(f"""
 <script>
 (function() {{
-  localStorage.setItem("{_LS_KEY}", "{token}");
-  // Navigate to a clean home URL with just the session token,
-  // removing ?auth=login and any other stale params from the address bar.
-  window.parent.location.href = "/?_st={token}";
+  // Set a 7-day persistent session cookie.
+  // Python reads this from st.context.headers on every page load (incl. F5).
+  document.cookie = "spp_session={token}; path=/; max-age=604800; SameSite=Lax";
+  // Also keep localStorage as a fallback for environments that block cookies.
+  try {{ localStorage.setItem("{_LS_KEY}", "{token}"); }} catch(e) {{}}
+  // Clean the URL — remove ?auth=login and any other stale params.
+  var cleanUrl = window.parent.location.origin + window.parent.location.pathname;
+  window.parent.history.replaceState(null, "", cleanUrl);
 }})();
 </script>
 """, height=0)
 
 
 def _clear_session_from_storage() -> None:
-    """Remove the session token from the browser's localStorage."""
+    """Expire the session cookie and clear localStorage."""
     import streamlit.components.v1 as _components
     _components.html(f"""
 <script>
 (function() {{
-  localStorage.removeItem("{_LS_KEY}");
-  var url = new URL(window.parent.location.href);
-  url.searchParams.delete("_st");
-  window.parent.history.replaceState(null, "", url.toString());
+  document.cookie = "spp_session=; path=/; max-age=0; SameSite=Lax";
+  try {{ localStorage.removeItem("{_LS_KEY}"); }} catch(e) {{}}
+  var cleanUrl = window.parent.location.origin + window.parent.location.pathname;
+  window.parent.history.replaceState(null, "", cleanUrl);
 }})();
 </script>
 """, height=0)
+
+
+def _get_session_cookie() -> str:
+    """Read the spp_session cookie from request headers (works on every F5)."""
+    try:
+        cookie_header = st.context.headers.get("Cookie", "")
+        for _part in cookie_header.split(";"):
+            _part = _part.strip()
+            if _part.startswith("spp_session="):
+                return _part[len("spp_session="):]
+    except Exception:
+        pass
+    return ""
 
 
 # ── Password hashing helpers ──────────────────────────────────
@@ -3940,7 +3957,7 @@ def require_login() -> bool:
         return True
 
     if is_logged_in():
-        # Clean up any stale auth/token params left in the URL after login.
+        # Clean any stale auth/token params from the URL after login.
         try:
             _qp = st.query_params
             if _qp.get("auth") or _qp.get("_st"):
@@ -3950,21 +3967,32 @@ def require_login() -> bool:
             pass
         return True
 
-    # ── Render JS bridge to restore session from localStorage on fresh page loads ──
-    # Reads the token from localStorage and sets ?_st=<token> in the URL, then
-    # reloads once so Python can read it in the block below. No-op when empty.
-    _render_session_bridge()
+    # ── Cookie-based session restore (survives F5 / new tab) ─────────────────
+    # Python reads the spp_session cookie from the HTTP request headers on
+    # every page load — no JS timing issues, no bridge reloads needed.
+    _cookie_tok = _get_session_cookie()
+    if _cookie_tok:
+        _cookie_user = _load_session_by_token(_cookie_tok)
+        if _cookie_user:
+            _set_logged_in(_cookie_user, _write_storage=False)
+            try:
+                st.query_params.pop("auth", None)
+                st.query_params.pop("_st", None)
+            except Exception:
+                pass
+            return True
+        else:
+            # Cookie token expired — clear it.
+            _clear_session_from_storage()
 
-    # ── Try restoring from persistent localStorage token ─────────────────────
-    # After _write_session_to_storage navigates to /?_st=<token>, or after
-    # the bridge restores it, we validate and log in here.
+    # ── Fallback: localStorage bridge for environments that block cookies ─────
+    _render_session_bridge()
     try:
         _tok = st.query_params.get("_st", "")
         if _tok:
             _user = _load_session_by_token(_tok)
             if _user:
                 _set_logged_in(_user, _write_storage=False)
-                # Clean token and auth params so the final URL is plain /
                 try:
                     st.query_params.pop("_st", None)
                     st.query_params.pop("auth", None)
@@ -3972,7 +4000,6 @@ def require_login() -> bool:
                     pass
                 return True
             else:
-                # Token expired or not found — clear stale storage.
                 _clear_session_from_storage()
                 st.query_params.pop("_st", None)
     except Exception:

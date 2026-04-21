@@ -299,19 +299,24 @@ def _render_session_bridge() -> str | None:
 
 
 def _write_session_to_storage(token: str) -> None:
-    """Write the session token as an HTTP cookie (read by Python on every load)."""
+    """Write the session token as an HTTP cookie on the PARENT page."""
     import streamlit.components.v1 as _components
     _components.html(f"""
 <script>
 (function() {{
-  // Set a 7-day persistent session cookie.
-  // Python reads this from st.context.headers on every page load (incl. F5).
-  document.cookie = "spp_session={token}; path=/; max-age=604800; SameSite=Lax";
-  // Also keep localStorage as a fallback for environments that block cookies.
-  try {{ localStorage.setItem("{_LS_KEY}", "{token}"); }} catch(e) {{}}
-  // Clean the URL — remove ?auth=login and any other stale params.
-  var cleanUrl = window.parent.location.origin + window.parent.location.pathname;
-  window.parent.history.replaceState(null, "", cleanUrl);
+  // Set on the parent page (not the sandboxed iframe) so the browser
+  // sends it with every request including F5 / new tab.
+  try {{
+    window.parent.document.cookie = "spp_session={token}; path=/; max-age=604800; SameSite=Lax";
+  }} catch(e) {{
+    document.cookie = "spp_session={token}; path=/; max-age=604800; SameSite=Lax";
+  }}
+  try {{ window.parent.localStorage.setItem("{_LS_KEY}", "{token}"); }} catch(e) {{}}
+  // Strip ?auth= and ?_st= from the address bar.
+  try {{
+    var cleanUrl = window.parent.location.origin + window.parent.location.pathname;
+    window.parent.history.replaceState(null, "", cleanUrl);
+  }} catch(e) {{}}
 }})();
 </script>
 """, height=0)
@@ -323,17 +328,29 @@ def _clear_session_from_storage() -> None:
     _components.html(f"""
 <script>
 (function() {{
-  document.cookie = "spp_session=; path=/; max-age=0; SameSite=Lax";
-  try {{ localStorage.removeItem("{_LS_KEY}"); }} catch(e) {{}}
-  var cleanUrl = window.parent.location.origin + window.parent.location.pathname;
-  window.parent.history.replaceState(null, "", cleanUrl);
+  try {{
+    window.parent.document.cookie = "spp_session=; path=/; max-age=0; SameSite=Lax";
+  }} catch(e) {{
+    document.cookie = "spp_session=; path=/; max-age=0; SameSite=Lax";
+  }}
+  try {{ window.parent.localStorage.removeItem("{_LS_KEY}"); }} catch(e) {{}}
+  try {{
+    var cleanUrl = window.parent.location.origin + window.parent.location.pathname;
+    window.parent.history.replaceState(null, "", cleanUrl);
+  }} catch(e) {{}}
 }})();
 </script>
 """, height=0)
 
 
 def _get_session_cookie() -> str:
-    """Read the spp_session cookie from request headers (works on every F5)."""
+    """Read the spp_session cookie (works on every F5 / new tab)."""
+    # Primary: Streamlit 1.44+ proper cookie API
+    try:
+        return st.context.cookies.get("spp_session", "") or ""
+    except Exception:
+        pass
+    # Fallback: parse Cookie header manually
     try:
         cookie_header = st.context.headers.get("Cookie", "")
         for _part in cookie_header.split(";"):

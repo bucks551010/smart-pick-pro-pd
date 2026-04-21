@@ -48,7 +48,22 @@ def _seed_volume():
         src = _APP_DB_DIR / db_name
         dst = _VOLUME_DIR / db_name
         if dst.exists():
-            _logger.info("Volume already has %s (%.1f MB)", db_name, dst.stat().st_size / 1e6)
+            dst_mb = dst.stat().st_size / 1e6
+            if src.exists():
+                src_mb = src.stat().st_size / 1e6
+                if src_mb > dst_mb + 0.5:
+                    # Image DB is meaningfully larger — local analysis was pushed;
+                    # overwrite the volume so the new data shows on production.
+                    _logger.info(
+                        "Image %s (%.1f MB) > volume (%.1f MB) — overwriting volume with fresh data",
+                        db_name, src_mb, dst_mb,
+                    )
+                    shutil.copy2(str(src), str(dst))
+                    _logger.info("Overwrote volume %s (%.1f MB)", db_name, dst.stat().st_size / 1e6)
+                else:
+                    _logger.info("Volume already has %s (%.1f MB)", db_name, dst_mb)
+            else:
+                _logger.info("Volume already has %s (%.1f MB)", db_name, dst_mb)
             continue
         if src.exists():
             _logger.info("Seeding %s to volume...", db_name)

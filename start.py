@@ -176,15 +176,21 @@ def _seed_subscriptions_from_env():
         _logger.error("SEED_SUBSCRIPTIONS: unexpected error — %s", exc)
 
 
+def _run_daily_update_bg() -> None:
+    """Run the ETL daily updater in a background thread so Streamlit starts immediately."""
+    import threading
 
-    """Run the ETL daily updater to refresh data on deploy."""
-    try:
-        from etl.data_updater import run_update
-        _logger.info("Running ETL daily update...")
-        run_update()
-        _logger.info("ETL daily update complete.")
-    except Exception as exc:
-        _logger.warning("ETL daily update failed (non-fatal): %s", exc)
+    def _worker():
+        try:
+            from etl.data_updater import run_update
+            _logger.info("ETL daily update starting (background)...")
+            run_update()
+            _logger.info("ETL daily update complete.")
+        except Exception as exc:
+            _logger.warning("ETL daily update failed (non-fatal): %s", exc)
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
 
 
 if __name__ == "__main__":
@@ -212,7 +218,7 @@ if __name__ == "__main__":
 
     _seed_user_from_env()
     _seed_subscriptions_from_env()
-    _run_daily_update()
+    _run_daily_update_bg()
 
     # Launch Streamlit
     _logger.info("Starting Streamlit...")

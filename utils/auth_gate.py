@@ -619,16 +619,9 @@ def _load_top_preview_picks(limit: int = 5) -> tuple[list[dict], str]:
             if cache_result[0] and cache_result[1] == today:
                 return cache_result
 
-            # ── 3. Most recent date fallback (Railway restart / same-day deploy)
-            latest_date_row = conn.execute(
-                "SELECT MAX(pick_date) FROM all_analysis_picks "
-                "WHERE platform IS NOT NULL AND TRIM(platform) != ''"
-            ).fetchone()
-            latest_date = latest_date_row[0] if latest_date_row else None
-            if latest_date:
-                rows = conn.execute(_PLATFORM_PICK_SQL, (latest_date, limit)).fetchall()
-                if rows:
-                    return [dict(r) for r in rows], latest_date
+            # ── 3. No picks for today — return empty so landing page
+            #       shows 'Picks update daily' instead of yesterday's slate.
+            return [], today
     except Exception as exc:
         _logger.debug("_load_top_preview_picks DB: %s", exc)
 
@@ -3671,7 +3664,9 @@ def _render_signup_form() -> None:
                             pass
                         for k in (_SU_STAGE, _SU_EMAIL, _SU_NAME):
                             st.session_state.pop(k, None)
-                        st.success("Account created! Welcome to Smart Pick Pro.")
+                        st.session_state["_show_onboarding_tour"] = True
+                        st.session_state["_tour_step"] = 0
+                        st.session_state["_just_signed_up"] = True
                         st.rerun()
                     else:
                         st.error("Account created but login failed. Please try logging in.")
@@ -3879,6 +3874,8 @@ def _render_auth_portal(mode: str, logo_b64: str) -> None:
 
 
 # ── Form helpers (shared by landing-page tabs AND the auth portal) ───────────
+# NOTE: _render_signup_form is defined once here (the earlier definition above
+# is superseded by this one in Python's module namespace).
 
 def _render_signup_form() -> None:
     """Render the two-step sign-up form. Safe to call from any rendering context."""
@@ -3981,7 +3978,9 @@ def _render_signup_form() -> None:
                             pass
                         for k in (_SU_STAGE, _SU_EMAIL, _SU_NAME):
                             st.session_state.pop(k, None)
-                        st.success("Account created! Welcome to Smart Pick Pro.")
+                        st.session_state["_show_onboarding_tour"] = True
+                        st.session_state["_tour_step"] = 0
+                        st.session_state["_just_signed_up"] = True
                         st.rerun()
                     else:
                         st.error("Account created but login failed. Please try logging in.")
@@ -4925,6 +4924,12 @@ def require_login() -> bool:
             show_verification_banner(st.session_state.get("_auth_user_email", ""))
         except Exception:
             pass
+        # ── First-login onboarding tour (triggered by new signups) ──────────
+        if st.session_state.get("_just_signed_up"):
+            st.session_state.pop("_just_signed_up", None)
+            if not st.session_state.get("_show_onboarding_tour"):
+                st.session_state["_show_onboarding_tour"] = True
+                st.session_state["_tour_step"] = 0
         return True
 
     # ── Cookie-based session restore (survives F5 / new tab) ─────────────────

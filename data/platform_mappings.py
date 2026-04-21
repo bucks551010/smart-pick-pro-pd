@@ -44,7 +44,9 @@ PRIZEPICKS_STAT_MAP = {
     "FT Attempted": "fta",
     "Free Throws Attempted": "fta",    # full-word form from some API versions
     "Double Double": "double_double",
+    "Double-Double": "double_double",  # PrizePicks hyphen form
     "Triple Double": "triple_double",
+    "Triple-Double": "triple_double",  # PrizePicks hyphen form
     "Minutes": "minutes",
     "Personal Fouls": "personal_fouls",
     "Offensive Rebounds": "offensive_rebounds",
@@ -56,6 +58,24 @@ PRIZEPICKS_STAT_MAP = {
     "Blks + Stls": "blocks_steals",
     # Singular abbreviation for PRA
     "Pts+Reb+Ast": "points_rebounds_assists",
+    # "(Combo)" multi-leg variants — same underlying stat
+    "Points (Combo)": "points",
+    "Rebounds (Combo)": "rebounds",
+    "Assists (Combo)": "assists",
+    "3-PT Made (Combo)": "threes",
+    # Shooting attempts
+    "3-PT Attempted": "threes_attempted",
+    "Two Pointers Made": "two_pointers_made",
+    "Two Pointers Attempted": "two_pointers_attempted",
+    # Partial-game props (PP "- 1st 3 Minutes" series)
+    "Points - 1st 3 Minutes": "points_first_3min",
+    "Rebounds - 1st 3 Minutes": "rebounds_first_3min",
+    "Assists - 1st 3 Minutes": "assists_first_3min",
+    # Quarter milestone props
+    "Quarters with 3+ Points": "quarters_3plus_points",
+    "Quarters with 5+ Points": "quarters_5plus_points",
+    # Novelty
+    "Dunks": "dunks",
 }
 
 # DraftKings Pick6 stat type mappings (also used for standard sportsbooks)
@@ -95,9 +115,14 @@ DRAFTKINGS_STAT_MAP = {
 # Legacy Underdog Fantasy stat type mappings (backward compat)
 UNDERDOG_STAT_MAP = {
     "Points": "points",
+    "Total Points": "points",       # Underdog alternate label
+    "Player Points": "points",
     "Rebounds": "rebounds",
+    "Player Rebounds": "rebounds",  # Underdog alternate label
     "Assists": "assists",
+    "Player Assists": "assists",    # Underdog alternate label
     "3-Pointers Made": "threes",
+    "3s Made": "threes",
     "Steals": "steals",
     "Blocks": "blocks",
     "Turnovers": "turnovers",
@@ -105,18 +130,37 @@ UNDERDOG_STAT_MAP = {
     "Points + Assists": "points_assists",
     "Rebounds + Assists": "rebounds_assists",
     "Pts + Rebs + Asts": "points_rebounds_assists",
+    "Points + Rebounds + Assists": "points_rebounds_assists",
     "Fantasy Points": "fantasy_score_ud",
     "Free Throws Made": "ftm",
+    "FTM": "ftm",
     "FG Attempted": "fga",
-    "Field Goals Attempted": "fga",    # full-word form from some API versions
+    "Field Goals Attempted": "fga",
+    "FGA": "fga",
     "FG Made": "fgm",
-    "Field Goals Made": "fgm",         # full-word form from some API versions
+    "Field Goals Made": "fgm",
+    "FGM": "fgm",
     "FT Attempted": "fta",
-    "Free Throws Attempted": "fta",    # full-word form from some API versions
+    "Free Throws Attempted": "fta",
+    "FTA": "fta",
+    "Double Double": "double_double",
+    "Double Doubles": "double_double",  # Underdog plural form
+    "Triple Double": "triple_double",
+    "Triple Doubles": "triple_double",
+    # Shooting attempts
+    "3s Attempted": "threes_attempted",
+    "3-Pointers Attempted": "threes_attempted",
+    # Quarter props
+    "1Q Points": "1q_points",
+    "1Q Rebounds": "1q_rebounds",
+    # Game/team props
+    "Margin of Victory": "margin_of_victory",
     "Minutes": "minutes",
     "Personal Fouls": "personal_fouls",
     "Offensive Rebounds": "offensive_rebounds",
     "Defensive Rebounds": "defensive_rebounds",
+    "Blocks + Steals": "blocks_steals",
+    "Blks+Stls": "blocks_steals",
 }
 
 # Combined reverse-lookup: all platform names → internal key

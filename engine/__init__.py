@@ -46,16 +46,37 @@ YESNO_STAT_TYPES = frozenset({
     "triple_double",
 })
 
+# Novelty / specialty stat types offered by PrizePicks and Underdog.
+NOVELTY_STAT_TYPES = frozenset({
+    # Shooting attempts
+    "threes_attempted",       # 3-PT Attempted
+    "two_pointers_made",      # Two Pointers Made
+    "two_pointers_attempted", # Two Pointers Attempted
+    # Segment/partial-game props (PP "- 1st 3 Minutes")
+    "points_first_3min",
+    "rebounds_first_3min",
+    "assists_first_3min",
+    # Quarter-based milestone props
+    "quarters_3plus_points",  # Quarters with 3+ Points
+    "quarters_5plus_points",  # Quarters with 5+ Points
+    # Novelty plays
+    "dunks",
+    # Team/game props
+    "margin_of_victory",
+    # First-quarter props (Underdog)
+    "1q_points",
+    "1q_rebounds",
+    # Underdog 3-point attempts
+    "threes_attempted_ud",
+})
+
 # All supported stat types across the app.
 # This is the single source of truth — don't define this elsewhere.
-VALID_STAT_TYPES = SIMPLE_STAT_TYPES | COMBO_STAT_TYPES | FANTASY_STAT_TYPES | YESNO_STAT_TYPES
+VALID_STAT_TYPES = SIMPLE_STAT_TYPES | COMBO_STAT_TYPES | FANTASY_STAT_TYPES | YESNO_STAT_TYPES | NOVELTY_STAT_TYPES
 
-# Stat types that should NEVER appear in output — either unverifiable
-# (no box-score column) or period-specific (we only model full-game).
-BLOCKED_STAT_TYPES = frozenset({
-    "dunks",
-    "slam_dunks",
-})
+# Stat types that should NEVER appear in output — previously used to block dunks,
+# but novelty stats are now preserved for Prop Scanner display.
+BLOCKED_STAT_TYPES = frozenset()
 
 # Substrings that indicate a period-specific prop (1st half, 2nd half,
 # 1st quarter, etc.).  Any stat_type containing one of these tokens is
@@ -87,6 +108,10 @@ def is_unbettable_line(result: dict) -> bool:
     # Block explicitly banned stat types
     if stat in BLOCKED_STAT_TYPES:
         return True
+
+    # Novelty stat types are always allowed through — never period-block them
+    if stat in NOVELTY_STAT_TYPES:
+        return False
 
     # Block period-specific props (1st half, 2nd quarter, etc.)
     if any(tok in stat for tok in _PERIOD_TOKENS):

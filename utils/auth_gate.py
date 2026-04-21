@@ -4955,23 +4955,6 @@ def require_login() -> bool:
             _clear_session_from_storage()
 
     # ── Fallback: localStorage bridge for environments that block cookies ─────
-    # Show a minimal "restoring session" spinner on the FIRST run where we
-    # have no cookie but may have a localStorage token.  This prevents the
-    # full landing page from flashing before the bridge reload brings the
-    # user back to their destination page.
-    _has_ls_candidate = not st.session_state.get("_spp_bridge_fired", False)
-    if _has_ls_candidate:
-        st.html("""
-<div style="position:fixed;inset:0;background:#04070f;z-index:9999;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
-  <div style="width:48px;height:48px;border:3px solid #1a2540;
-    border-top-color:#00D559;border-radius:50%;
-    animation:spp-spin 0.8s linear infinite"></div>
-  <p style="color:#94a3b8;font-family:system-ui,sans-serif;font-size:14px;margin:0">
-    Restoring your session…</p>
-</div>
-<style>@keyframes spp-spin{to{transform:rotate(360deg)}}</style>
-""")
     _render_session_bridge()
     try:
         _tok = st.query_params.get("_st", "")

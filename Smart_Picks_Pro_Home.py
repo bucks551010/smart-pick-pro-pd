@@ -1440,6 +1440,23 @@ if not _has_analysis and not _onboard_dismissed:
 
 _home_analysis = st.session_state.get("analysis_results", [])
 
+if _user_tier == TIER_FREE:
+    _cta_html = (
+        "<div style='text-align:center;padding:36px 20px;"
+        "background:rgba(19,25,32,0.7);border:1px solid rgba(0,212,255,0.15);"
+        "border-radius:16px;margin-bottom:24px;'>"
+        "<div style='font-size:2.4rem;margin-bottom:10px;'>🔒</div>"
+        "<p style='color:#00d4ff;font-size:1.2rem;font-weight:800;margin:0 0 8px;'>"
+        "Tonight's Top Picks</p>"
+        "<p style='color:#a0b4d0;font-size:0.92rem;margin:0 0 18px;'>"
+        "Upgrade to unlock the AI nightly Platinum &amp; Gold picks.</p>"
+        f"<a href='{_PREM_PATH}' style='display:inline-block;"
+        "background:linear-gradient(135deg,#F9C62B,#FF8C00);color:#0a0e14;"
+        "font-weight:800;font-size:0.95rem;padding:12px 32px;border-radius:10px;"
+        "text-decoration:none;'>⚡ Upgrade Now</a></div>"
+    )
+    st.markdown(_cta_html, unsafe_allow_html=True)
+
 # Build Top 3 hero pool: Platinum/Gold, conf >= 65, not avoided/out
 _hero_pool = [
     r for r in _home_analysis
@@ -1454,7 +1471,7 @@ _hero_pool = sorted(
     reverse=True,
 )[:3]
 
-if _hero_pool:
+if _user_tier != TIER_FREE and _hero_pool:
     # Attach Joseph short takes if available
     _joseph_results = st.session_state.get("joseph_results", [])
     if _joseph_results:
@@ -1492,7 +1509,7 @@ _home_edge_gap_picks = sorted(
     reverse=True,
 )
 
-if _home_edge_gap_picks:
+if _user_tier != TIER_FREE and _home_edge_gap_picks:
     st.markdown(_get_qcm_css(), unsafe_allow_html=True)
     st.markdown(
         _render_edge_gap_banner_html(_home_edge_gap_picks),

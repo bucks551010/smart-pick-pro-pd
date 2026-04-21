@@ -123,12 +123,20 @@ def _seed_subscriptions_from_env():
             _logger.warning("SEED_SUBSCRIPTIONS set but no valid 'email:Plan' entries found")
             return
 
+        # plan_name → plan_tier key for the users table
+        _PLAN_TO_TIER = {
+            "insider circle":  "insider_circle",
+            "smart money":     "smart_money",
+            "sharp iq":        "sharp_iq",
+        }
+
         for entry in entries:
             email, _, plan = entry.partition(":")
             email = email.strip().lower()
             plan = plan.strip()
             if not email or not plan:
                 continue
+            plan_tier_key = _PLAN_TO_TIER.get(plan.lower(), "free")
             # Deterministic otp_ ID so the same email always gets the same row
             sub_id = "otp_" + _hl.md5(email.encode()).hexdigest()[:16]
             cus_id = "cus_" + _hl.md5(email.encode()).hexdigest()[:16]
@@ -149,9 +157,14 @@ def _seed_subscriptions_from_env():
                                 plan_name    = EXCLUDED.plan_name,
                                 updated_at   = NOW()
                         """, params)
+                        # Stamp plan_tier on users row so login reads it directly
+                        cur.execute(
+                            "UPDATE users SET plan_tier = %s WHERE LOWER(email) = %s",
+                            (plan_tier_key, email),
+                        )
                     conn.commit()
                     conn.close()
-                    _logger.info("SEED_SUB (PG): %s → %s", email, plan)
+                    _logger.info("SEED_SUB (PG): %s -> %s (tier=%s)", email, plan, plan_tier_key)
                 except Exception as exc:
                     _logger.error("SEED_SUB (PG) failed for %s: %s", email, exc)
             else:
@@ -168,8 +181,12 @@ def _seed_subscriptions_from_env():
                                 plan_name  = excluded.plan_name,
                                 updated_at = datetime('now')
                         """, params)
+                        conn.execute(
+                            "UPDATE users SET plan_tier = ? WHERE LOWER(email) = ?",
+                            (plan_tier_key, email),
+                        )
                         conn.commit()
-                    _logger.info("SEED_SUB (SQLite): %s → %s", email, plan)
+                    _logger.info("SEED_SUB (SQLite): %s -> %s (tier=%s)", email, plan, plan_tier_key)
                 except Exception as exc:
                     _logger.error("SEED_SUB (SQLite) failed for %s: %s", email, exc)
     except Exception as exc:

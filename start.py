@@ -237,6 +237,14 @@ if __name__ == "__main__":
     _seed_subscriptions_from_env()
     _run_daily_update_bg()
 
+    # Start the background ETL scheduler (keeps games, props, and analysis fresh)
+    try:
+        from etl.scheduler import start as _start_scheduler
+        _start_scheduler()
+        _logger.info("ETL scheduler started.")
+    except Exception as exc:
+        _logger.warning("ETL scheduler failed to start (non-fatal): %s", exc)
+
     # Launch Streamlit
     _logger.info("Starting Streamlit...")
     sys.exit(subprocess.call([

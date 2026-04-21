@@ -60,6 +60,24 @@ CREATE TABLE IF NOT EXISTS notification_tokens (
 )
 """
 
+_SQL_DRIP_EMAILS = """
+CREATE TABLE IF NOT EXISTS drip_emails (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    email        TEXT NOT NULL,
+    display_name TEXT NOT NULL DEFAULT '',
+    plan_name    TEXT NOT NULL DEFAULT '',
+    sequence_step INTEGER NOT NULL,   -- 0=immediate, 1=day2, 2=day5
+    send_after   TEXT NOT NULL,       -- ISO-8601 UTC datetime
+    sent_at      TEXT,
+    status       TEXT NOT NULL DEFAULT 'pending'  -- pending|sent|failed
+)
+"""
+
+_SQL_DRIP_IDX = (
+    "CREATE INDEX IF NOT EXISTS idx_drip_pending "
+    "ON drip_emails(status, send_after)"
+)
+
 _SQL_RATE_LIMITS = """
 CREATE TABLE IF NOT EXISTS notification_rate_limits (
     rate_key TEXT NOT NULL,
@@ -93,6 +111,8 @@ def _ensure_notification_tables() -> None:
         from utils.auth_gate import _AuthConn  # type: ignore[reportPrivateUsage]
         with _AuthConn() as db:
             db.execute(_SQL_NOTIFICATION_TOKENS)
+            db.execute(_SQL_DRIP_EMAILS)
+            db.execute(_SQL_DRIP_IDX)
             db.execute(_SQL_RATE_LIMITS)
             db.execute(_SQL_RATE_LIMITS_IDX)
             db.execute(_SQL_AUDIT_LOG)
@@ -594,3 +614,159 @@ def show_verification_banner(email: str) -> None:
             )
     except Exception:
         pass
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DRIP EMAIL SEQUENCE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Offsets for each drip step (in whole days from subscription time)
+_DRIP_OFFSETS_DAYS: dict[int, int] = {
+    0: 0,   # Email 1 — Immediate (send_after = now)
+    1: 2,   # Email 2 — Day 2
+    2: 5,   # Email 3 — Day 5
+}
+
+
+def schedule_drip_sequence(
+    email: str,
+    display_name: str = "",
+    plan_name: str = "Smart Pick Pro",
+) -> None:
+    """Insert the 3-step drip email sequence into drip_emails for this subscriber.
+
+    Idempotent — if a pending/sent record already exists for this email +
+    sequence_step it will NOT be duplicated.  Call once immediately after
+    Stripe confirms the subscription.
+
+    All errors are logged but never raised so payment flow is never blocked.
+    """
+    if not email:
+        return
+    email = email.strip().lower()
+    display_name = display_name.strip() or email.split("@")[0]
+    _ensure_notification_tables()
+    now_utc = datetime.now(timezone.utc)
+    try:
+        from utils.auth_gate import _AuthConn  # type: ignore[reportPrivateUsage]
+        with _AuthConn() as db:
+            for step, offset_days in _DRIP_OFFSETS_DAYS.items():
+                send_after = (now_utc + timedelta(days=offset_days)).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                )
+                # Idempotency: skip if already scheduled or sent
+                existing = db.fetchone(
+                    "SELECT id FROM drip_emails "
+                    "WHERE email = ? AND sequence_step = ? AND status IN ('pending','sent')",
+                    (email, step),
+                )
+                if existing:
+                    continue
+                db.execute(
+                    "INSERT INTO drip_emails "
+                    "(email, display_name, plan_name, sequence_step, send_after, status) "
+                    "VALUES (?, ?, ?, ?, ?, 'pending')",
+                    (email, display_name, plan_name, step, send_after),
+                )
+        _logger.info(
+            "[Drip] Scheduled 3-step drip sequence for %s (plan: %s)",
+            email, plan_name,
+        )
+    except Exception as exc:
+        _logger.warning("schedule_drip_sequence failed for %s: %s", email, exc)
+
+
+def send_pending_drip_emails() -> int:
+    """Send all drip emails whose send_after time has passed.
+
+    Called by the ETL scheduler on every slow cycle (approx. every 4 hours).
+    Returns the number of emails successfully sent.
+
+    Rendering map:
+        step 0 → render_paid_welcome_email
+        step 1 → render_day2_protip_email
+        step 2 → render_day5_roi_email
+    """
+    _ensure_notification_tables()
+    _APP_URL = os.environ.get("APP_BASE_URL", "https://smartpickpro.ai")
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    sent = 0
+
+    try:
+        from utils.auth_gate import _AuthConn  # type: ignore[reportPrivateUsage]
+        from utils.email_utils import send_transactional_email
+        from utils.email_templates import (
+            render_paid_welcome_email,
+            render_day2_protip_email,
+            render_day5_roi_email,
+        )
+
+        _render_map = {
+            0: render_paid_welcome_email,
+            1: render_day2_protip_email,
+            2: render_day5_roi_email,
+        }
+
+        with _AuthConn() as db:
+            rows = db.fetchall(
+                "SELECT id, email, display_name, plan_name, sequence_step "
+                "FROM drip_emails "
+                "WHERE status = 'pending' AND send_after <= ? "
+                "ORDER BY send_after ASC "
+                "LIMIT 50",  # Cap per cycle to avoid burst sending
+                (now_iso,),
+            )
+
+        for row in rows:
+            row_id    = row["id"]
+            to_email  = row["email"]
+            disp_name = row["display_name"] or to_email.split("@")[0]
+            plan      = row["plan_name"] or "Smart Pick Pro"
+            step      = row["sequence_step"]
+
+            render_fn = _render_map.get(step)
+            if render_fn is None:
+                _logger.warning("[Drip] Unknown step %d for %s — skipping", step, to_email)
+                continue
+
+            try:
+                html_body, plain_text = render_fn(disp_name, plan, _APP_URL)
+                # Extract subject from html (first <title> content) or build fallback
+                import re as _re
+                _title_m = _re.search(r"<title>(.*?)</title>", html_body, _re.IGNORECASE | _re.DOTALL)
+                subject = _title_m.group(1).strip() if _title_m else f"Smart Pick Pro — Step {step + 1}"
+
+                send_transactional_email(
+                    to_email=to_email,
+                    to_name=disp_name,
+                    subject=subject,
+                    html_body=html_body,
+                    plain_text=plain_text,
+                )
+
+                with _AuthConn() as db:
+                    db.execute(
+                        "UPDATE drip_emails SET status='sent', sent_at=? WHERE id=?",
+                        (_now_iso(), row_id),
+                    )
+                sent += 1
+                _logger.info(
+                    "[Drip] Sent step %d to %s (id=%d)", step, to_email, row_id
+                )
+            except Exception as exc:
+                _logger.warning(
+                    "[Drip] Failed step %d to %s: %s", step, to_email, exc
+                )
+                try:
+                    with _AuthConn() as db:
+                        db.execute(
+                            "UPDATE drip_emails SET status='failed' WHERE id=?",
+                            (row_id,),
+                        )
+                except Exception:
+                    pass
+
+    except Exception as exc:
+        _logger.warning("send_pending_drip_emails error: %s", exc)
+
+    return sent

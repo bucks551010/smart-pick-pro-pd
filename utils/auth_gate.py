@@ -4307,6 +4307,346 @@ def _render_token_reset_form(raw_token: str) -> None:
                 )
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# POST-SUBSCRIPTION SUCCESS PAGE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Shepherd.js tour steps — reference JSON for the guided tour.
+# In Streamlit this is implemented natively via session-state steps below.
+# When migrating to a JS-heavy frontend, pass SHEPHERD_TOUR_STEPS directly to
+# the Shepherd.Tour constructor.
+SHEPHERD_TOUR_STEPS: list[dict] = [
+    {
+        "id": "step-qam",
+        "title": "⚡ Your AI Props Engine",
+        "text": (
+            "The <strong>Quantum Analysis Matrix</strong> is the core of the platform. "
+            "It scans 300+ props across PrizePicks, DraftKings & Underdog each night "
+            "using 6 neural models. Click <em>Analyze</em> to run it."
+        ),
+        "attachTo": {"element": "[data-testid='stSidebarNavLink']:nth-child(3)", "on": "right"},
+        "buttons": [
+            {"text": "Skip tour", "action": "tour.cancel", "secondary": True},
+            {"text": "Next (1/3)", "action": "tour.next"},
+        ],
+        "progressBar": True,
+    },
+    {
+        "id": "step-platform-picks",
+        "title": "🎯 Tonight's Best Bets",
+        "text": (
+            "The <strong>Platform AI Picks</strong> section shows your top-rated "
+            "picks formatted for PrizePicks & Underdog slates. "
+            "Each card shows the SAFE Score, edge %, and direction — "
+            "everything you need to build tonight's entry."
+        ),
+        "attachTo": {"element": ".platform-picks-section", "on": "top"},
+        "buttons": [
+            {"text": "Back", "action": "tour.back", "secondary": True},
+            {"text": "Next (2/3)", "action": "tour.next"},
+        ],
+        "progressBar": True,
+    },
+    {
+        "id": "step-tier",
+        "title": "📈 Unlock Your Full Edge",
+        "text": (
+            "Your current tier determines how many props you see and which "
+            "analysis sections are accessible. "
+            "Upgrade at any time via <strong>Subscription Level</strong> in the sidebar "
+            "to unlock unlimited props, QEG analysis, and premium filters."
+        ),
+        "attachTo": {"element": "[data-testid='stSidebarNavLink']:last-child", "on": "right"},
+        "buttons": [
+            {"text": "Back", "action": "tour.back", "secondary": True},
+            {"text": "Done \u2714", "action": "tour.complete"},
+        ],
+        "progressBar": True,
+    },
+]
+
+
+def render_subscription_success_page(plan_name: str = "Smart Pick Pro") -> bool:
+    """Render the post-payment success celebration page.
+
+    Call this on every authenticated page render.  It checks session state
+    for ``_just_subscribed`` and, when True, renders a full-width celebration
+    panel with CSS confetti, tier badge, feature highlights, and a
+    'Launch Dashboard' button that starts the guided tour.
+
+    Returns True if the success page was rendered (caller should st.stop()
+    to prevent the normal page from rendering underneath), False otherwise.
+    """
+    import streamlit as st
+
+    if not st.session_state.get("_just_subscribed"):
+        return False
+
+    plan = st.session_state.get("_just_subscribed_plan", plan_name) or plan_name
+
+    # Determine tier label and feature list from plan name
+    _plan_lower = plan.lower()
+    if "insider" in _plan_lower:
+        tier_label  = "👑 Insider Circle"
+        tier_color  = "#c084fc"
+        tier_glow   = "rgba(192,132,252,.35)"
+        feature_list = [
+            ("👑", "Unlimited QAM props", "No caps — every pick the AI finds"),
+            ("⚡", "QEG + Platform Picks", "Full access, no blur, no limits"),
+            ("📊", "Priority analysis queue", "Your analysis runs first"),
+            ("🔔", "SMS game-night alerts", "Push picks 2 hours before tip-off"),
+        ]
+    elif "smart money" in _plan_lower or "smart_money" in _plan_lower:
+        tier_label  = "💎 Smart Money"
+        tier_color  = "#2D9EFF"
+        tier_glow   = "rgba(45,158,255,.35)"
+        feature_list = [
+            ("💎", "Unlimited QAM props", "No caps on tonight's analysis"),
+            ("⚡", "Full QEG + Platform Picks", "All sections unlocked"),
+            ("📊", "Advanced filters", "Edge %, tier, platform, direction"),
+            ("📈", "Historical back-test", "See the AI's track record by stat type"),
+        ]
+    elif "sharp" in _plan_lower:
+        tier_label  = "🔷 Sharp IQ"
+        tier_color  = "#00D559"
+        tier_glow   = "rgba(0,213,89,.35)"
+        feature_list = [
+            ("🔷", "35 QAM props per session", "Expanded nightly analysis"),
+            ("⚡", "QEG Analysis", "Full Quantum Edge Generator visible"),
+            ("🎯", "Platform AI Picks teaser", "See top 5 platform picks"),
+            ("📊", "Confidence tier filters", "Filter by SAFE score tier"),
+        ]
+    else:
+        tier_label  = "🚀 Smart Pick Pro"
+        tier_color  = "#00D559"
+        tier_glow   = "rgba(0,213,89,.35)"
+        feature_list = [
+            ("⚡", "Quantum Analysis Matrix", "AI-powered nightly prop analysis"),
+            ("🎯", "Platform AI Picks", "PrizePicks & Underdog recommendations"),
+            ("📈", "SAFE Score + Edge %", "Confidence and edge metrics on every pick"),
+            ("🔔", "Auto-refresh picks", "Live updates throughout game night"),
+        ]
+
+    feature_rows = "".join(
+        f"""<div style="display:flex;align-items:flex-start;gap:14px;padding:10px 0;
+                border-bottom:1px solid rgba(255,255,255,.05);">
+              <div style="font-size:1.4rem;flex-shrink:0;">{ico}</div>
+              <div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:.85rem;
+                     font-weight:700;color:#fff;">{title}</div>
+                <div style="font-size:.72rem;color:rgba(255,255,255,.4);margin-top:2px;">
+                  {desc}</div>
+              </div>
+            </div>"""
+        for ico, title, desc in feature_list
+    )
+
+    # CSS confetti particles (pure CSS, no JS required)
+    confetti_particles = "".join(
+        f"""<div style="position:absolute;top:-10px;left:{5 + i * 9}%;width:{3 + (i % 4)}px;
+             height:{8 + (i % 5)}px;background:{c};border-radius:2px;
+             animation:confettiFall {2.5 + (i % 3) * 0.4}s linear {i * 0.1}s infinite;
+             opacity:.85;transform:rotate({i * 37}deg);"></div>"""
+        for i, c in enumerate([
+            "#00D559","#2D9EFF","#c084fc","#fbbf24","#f472b6",
+            "#34d399","#60a5fa","#a78bfa","#fb923c","#f87171",
+            "#4ade80","#38bdf8","#e879f9","#facc15","#fd8a8a",
+            "#00D559","#2D9EFF","#c084fc","#fbbf24","#f472b6",
+        ])
+    )
+
+    st.markdown(f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;800&family=JetBrains+Mono:wght@700;800&display=swap');
+@keyframes confettiFall {{
+    0%   {{ transform: translateY(-20px) rotate(0deg);   opacity: .9; }}
+    100% {{ transform: translateY(110vh) rotate(720deg); opacity: 0;  }}
+}}
+@keyframes successPulse {{
+    0%,100% {{ box-shadow: 0 0 40px {tier_glow}, 0 0 0 0 {tier_glow}; }}
+    50%      {{ box-shadow: 0 0 60px {tier_glow}, 0 0 30px {tier_glow}; }}
+}}
+@keyframes slideUp {{
+    from {{ opacity:0; transform:translateY(24px); }}
+    to   {{ opacity:1; transform:translateY(0);    }}
+}}
+.spp-success-overlay {{
+    position:relative;overflow:hidden;
+    background:linear-gradient(160deg,#060911 0%,#0c1220 60%,#070b15 100%);
+    border:1px solid rgba(255,255,255,.07);border-radius:20px;
+    padding:48px 32px 40px;margin:0 auto 32px;max-width:640px;
+    animation:successPulse 3s ease-in-out infinite,slideUp .5s ease both;
+    text-align:center;
+}}
+.spp-tier-badge {{
+    display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.55rem;
+    font-weight:800;letter-spacing:.15em;text-transform:uppercase;
+    padding:5px 18px;border-radius:100px;margin-bottom:20px;
+    color:{tier_color};background:rgba({",".join(str(int(tier_color.lstrip("#")[i:i+2],16)) for i in (0,2,4))},.12);
+    border:1px solid rgba({",".join(str(int(tier_color.lstrip("#")[i:i+2],16)) for i in (0,2,4))},.3);
+}}
+.spp-checkmark {{
+    width:72px;height:72px;border-radius:50%;margin:0 auto 20px;
+    background:linear-gradient(135deg,{tier_color},{tier_color}88);
+    display:flex;align-items:center;justify-content:center;
+    font-size:2rem;box-shadow:0 0 32px {tier_glow};
+}}
+.spp-title {{
+    font-family:'Space Grotesk',sans-serif;font-size:1.8rem;font-weight:800;
+    color:#fff;margin:0 0 10px;letter-spacing:-.5px;
+}}
+.spp-subtitle {{
+    font-family:'Space Grotesk',sans-serif;font-size:.9rem;
+    color:rgba(255,255,255,.45);margin:0 0 28px;line-height:1.6;
+}}
+.spp-features {{
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+    border-radius:12px;padding:4px 20px 4px;margin:0 0 28px;text-align:left;
+}}
+.spp-confetti-wrap {{
+    position:absolute;inset:0;overflow:hidden;pointer-events:none;
+}}
+</style>
+<div class="spp-success-overlay">
+  <div class="spp-confetti-wrap">
+    {confetti_particles}
+  </div>
+  <div class="spp-tier-badge">{tier_label}</div>
+  <div class="spp-checkmark">✓</div>
+  <div class="spp-title">You're in! 🎉</div>
+  <div class="spp-subtitle">
+    Your <strong style="color:{tier_color};">{plan}</strong> subscription is confirmed
+    and active.<br>The AI is processing tonight's slate right now.
+  </div>
+  <div class="spp-features">
+    {feature_rows}
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button(
+            "🚀 Launch My Dashboard",
+            key="_success_launch_btn",
+            type="primary",
+            use_container_width=True,
+        ):
+            # Clear the success flag and activate the tour for the first session
+            st.session_state.pop("_just_subscribed", None)
+            st.session_state.pop("_just_subscribed_plan", None)
+            st.session_state["_show_onboarding_tour"] = True
+            st.session_state["_tour_step"] = 0
+            try:
+                # Strip the Stripe session_id from the URL for a clean dashboard URL
+                st.query_params.clear()
+            except Exception:
+                pass
+            st.rerun()
+
+    return True
+
+
+def render_onboarding_tour() -> None:
+    """Render the 3-step native Streamlit guided tour.
+
+    Shown once to new subscribers immediately after the success page.
+    Persists via ``_show_onboarding_tour`` + ``_tour_step`` session state.
+    Includes Skip, Back, Next, and a progress bar.
+
+    Tour steps:
+        1 / 3 — Quantum Analysis Matrix  (your AI props engine)
+        2 / 3 — Platform AI Picks        (tonight's best bets)
+        3 / 3 — Tier & Upgrade           (unlock more)
+    """
+    import streamlit as st
+
+    if not st.session_state.get("_show_onboarding_tour"):
+        return
+
+    step = int(st.session_state.get("_tour_step", 0))
+    total = len(SHEPHERD_TOUR_STEPS)
+
+    if step >= total:
+        st.session_state.pop("_show_onboarding_tour", None)
+        st.session_state.pop("_tour_step", None)
+        return
+
+    step_data = SHEPHERD_TOUR_STEPS[step]
+    progress_pct = int(((step + 1) / total) * 100)
+
+    # Strip HTML tags for the plain-text progress label
+    import re as _re_tour
+    plain_text = _re_tour.sub(r"<[^>]+>", "", step_data["text"])
+
+    st.markdown(f"""
+<style>
+@keyframes tourSlide {{
+    from {{ opacity:0; transform:translateY(-8px); }}
+    to   {{ opacity:1; transform:translateY(0);    }}
+}}
+.spp-tour-card {{
+    background:linear-gradient(145deg,#0d1525,#111c2e);
+    border:1px solid rgba(0,213,89,.25);border-radius:16px;
+    padding:20px 24px 16px;margin-bottom:16px;
+    box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 0 1px rgba(0,213,89,.08);
+    animation:tourSlide .25s ease both;
+}}
+.spp-tour-step-label {{
+    font-family:'JetBrains Mono',monospace;font-size:.48rem;font-weight:800;
+    color:rgba(0,213,89,.6);text-transform:uppercase;letter-spacing:.12em;
+    margin-bottom:8px;
+}}
+.spp-tour-title {{
+    font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:800;
+    color:#fff;margin:0 0 8px;
+}}
+.spp-tour-body {{
+    font-family:'Space Grotesk',sans-serif;font-size:.82rem;
+    color:rgba(255,255,255,.6);line-height:1.65;margin:0 0 14px;
+}}
+.spp-tour-progress-bar {{
+    height:3px;background:rgba(255,255,255,.08);border-radius:2px;
+    margin-bottom:16px;overflow:hidden;
+}}
+.spp-tour-progress-fill {{
+    height:100%;width:{progress_pct}%;
+    background:linear-gradient(90deg,#00D559,#2D9EFF);
+    border-radius:2px;transition:width .3s ease;
+}}
+</style>
+<div class="spp-tour-card">
+  <div class="spp-tour-step-label">Guided Tour &mdash; Step {step + 1} of {total}</div>
+  <div class="spp-tour-progress-bar">
+    <div class="spp-tour-progress-fill"></div>
+  </div>
+  <div class="spp-tour-title">{step_data["title"]}</div>
+  <div class="spp-tour-body">{plain_text}</div>
+</div>
+""", unsafe_allow_html=True)
+
+    btn_cols = st.columns([1, 1, 1, 2])
+    with btn_cols[0]:
+        if st.button("✕ Skip", key=f"_tour_skip_{step}"):
+            st.session_state.pop("_show_onboarding_tour", None)
+            st.session_state.pop("_tour_step", None)
+            st.rerun()
+    with btn_cols[1]:
+        if step > 0 and st.button("← Back", key=f"_tour_back_{step}"):
+            st.session_state["_tour_step"] = step - 1
+            st.rerun()
+    with btn_cols[3]:
+        if step < total - 1:
+            if st.button(f"Next ({step + 1}/{total}) →", key=f"_tour_next_{step}", type="primary"):
+                st.session_state["_tour_step"] = step + 1
+                st.rerun()
+        else:
+            if st.button("Done ✓", key="_tour_done", type="primary"):
+                st.session_state.pop("_show_onboarding_tour", None)
+                st.session_state.pop("_tour_step", None)
+                st.rerun()
+
+
 @st.fragment(run_every=180)
 def _render_free_picks_fragment() -> None:
     """Auto-refreshing fragment: re-queries the DB every 3 minutes and renders

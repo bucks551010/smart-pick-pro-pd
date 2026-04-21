@@ -401,6 +401,26 @@ def handle_checkout_redirect() -> bool:
     # Mark session as processed so we don't re-verify on reruns
     st.session_state["_checkout_session_processed"] = session_id
 
+    # Flag that triggers the success celebration page + guided tour
+    st.session_state["_just_subscribed"] = True
+    st.session_state["_just_subscribed_plan"] = result.get("plan_name", "Smart Pick Pro")
+
+    # Schedule the 3-part drip welcome email sequence (non-blocking, best-effort)
+    try:
+        from utils.notifications import schedule_drip_sequence
+        _cust_email = result.get("customer_email", "")
+        _cust_name = result.get(
+            "customer_name",
+            (_cust_email.split("@")[0] if _cust_email else ""),
+        )
+        schedule_drip_sequence(
+            _cust_email,
+            _cust_name,
+            result.get("plan_name", "Smart Pick Pro"),
+        )
+    except Exception as _drip_exc:
+        _logger.debug("schedule_drip_sequence skipped: %s", _drip_exc)
+
     return True
 
 

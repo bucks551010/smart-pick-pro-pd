@@ -376,3 +376,306 @@ What you get for free:
 https://smartpickpro.ai
 """
     return _wrap(f"Welcome to Smart Pick Pro, {name}!", body), plain
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DRIP SEQUENCE — 3-Part Post-Subscription Automated Emails
+# Scheduled by notifications.schedule_drip_sequence()
+# Fired by notifications.send_pending_drip_emails() (ETL scheduler)
+#
+# Step 0 (immediate) — render_paid_welcome_email()
+# Step 1 (Day +2)    — render_day2_protip_email()
+# Step 2 (Day +5)    — render_day5_roi_email()
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def render_paid_welcome_email(
+    display_name: str,
+    plan_name: str = "Smart Pick Pro",
+    app_url: str = "https://smartpickpro.ai",
+) -> tuple[str, str]:
+    """Email 1 (immediate) — 'Welcome to the Inner Circle'.
+
+    Sent the moment Stripe confirms the subscription.
+    Contains: tier confirmation, 3-step quickstart, Getting Started guide link,
+    and support contact.
+
+    Returns (html, plain_text).
+    """
+    name = display_name or "there"
+    plan = plan_name or "Smart Pick Pro"
+    guide_url = f"{app_url}/?guide=start"
+
+    onboarding_rows = "".join(
+        f"""<tr>
+          <td style="padding:10px 0;vertical-align:top;width:32px;font-size:18px;">{ico}</td>
+          <td style="padding:10px 0;vertical-align:top;">
+            <strong style="color:{_TEXT};font-size:14px;">{title}</strong><br>
+            <span style="color:{_MUTED};font-size:13px;">{desc}</span>
+          </td>
+        </tr>"""
+        for ico, title, desc in [
+            ("⚡", "Run the Quantum Analysis Matrix",
+             "Navigate to QAM in the sidebar → hit Analyze. The AI scans 300+ props in seconds."),
+            ("🎯", "Check Platform AI Picks",
+             "Your personalized PrizePicks & Underdog recommendations are updated each game night."),
+            ("📈", "Read the SAFE Score",
+             "Every pick shows a SAFE Score (0-100). Anything above 75 is a high-confidence edge."),
+        ]
+    )
+
+    body = f"""
+{_badge(plan.upper())}
+<br><br>
+{_h1(f"Welcome to the inner circle, {name}! \U0001f389")}
+{_p("Your subscription is confirmed and active. The AI is already processing tonight's "
+    "slate \u2014 here's how to get your first winning edge in under 3 minutes.")}
+{_cta_button("\U0001f680 Launch Your Dashboard", app_url)}
+{_divider()}
+<p style="margin:0 0 12px;font-size:13px;font-weight:700;color:{_MUTED};
+   text-transform:uppercase;letter-spacing:1px;">Your 3-Step Quickstart</p>
+<table cellpadding="0" cellspacing="0" border="0" width="100%">
+  {onboarding_rows}
+</table>
+{_divider()}
+<p style="margin:0 0 8px;font-size:13px;font-weight:700;color:{_MUTED};
+   text-transform:uppercase;letter-spacing:1px;">Getting Started Guide &amp; Support</p>
+{_p(f'<a href="{guide_url}" style="color:{_ACCENT_1};text-decoration:none;">'
+    f'\U0001f4d6 Getting Started Guide</a> \u2014 step-by-step walkthrough of every feature.')}
+{_p(f'Questions? Reply to this email or reach us at '
+    f'<a href="mailto:support@smartpickpro.ai" style="color:{_ACCENT_1};'
+    f'text-decoration:none;">support@smartpickpro.ai</a> \u2014 we typically respond within 2 hours.')}
+<br>
+"""
+    plain = f"""Welcome to the inner circle, {name}!
+
+Your {plan} subscription is confirmed and active.
+
+Launch your dashboard: {app_url}
+
+Your 3-Step Quickstart:
+1. Run the Quantum Analysis Matrix
+   Go to QAM in the sidebar, hit Analyze. The AI scans 300+ props in seconds.
+
+2. Check Platform AI Picks
+   Your personalized PrizePicks & Underdog recommendations update each game night.
+
+3. Read the SAFE Score
+   Every pick shows a SAFE Score (0-100). Anything above 75 is a high-confidence edge.
+
+Getting Started Guide: {guide_url}
+Support: support@smartpickpro.ai (typically respond within 2 hours)
+
+-- Smart Pick Pro
+https://smartpickpro.ai
+"""
+    subject = f"Welcome to the inner circle \u2014 your {plan} is live \u26a1"
+    return _wrap(subject, body), plain
+
+
+def render_day2_protip_email(
+    display_name: str,
+    plan_name: str = "Smart Pick Pro",
+    app_url: str = "https://smartpickpro.ai",
+) -> tuple[str, str]:
+    """Email 2 (Day +2) — 'The Pro-Tip'.
+
+    Highlights the SAFE Score tier filter \u2014 the advanced feature most users
+    discover late. Includes backtested hit-rate stats and exact usage strategy.
+
+    Returns (html, plain_text).
+    """
+    name = display_name or "there"
+    qam_url = f"{app_url}/?page=qam"
+
+    tip_rows = "".join(
+        f"""<tr>
+          <td style="padding:8px 0;vertical-align:top;width:28px;font-size:16px;">{ico}</td>
+          <td style="padding:8px 0;vertical-align:top;">
+            <strong style="color:{_TEXT};font-size:14px;">{title}</strong><br>
+            <span style="color:{_MUTED};font-size:13px;">{desc}</span>
+          </td>
+        </tr>"""
+        for ico, title, desc in [
+            ("\U0001f534", "Tier 1 \u2014 Spec (SAFE 85+)",
+             "Highest edge. Typically 2\u20133 picks per night. Best for max-confidence entries."),
+            ("\U0001f7e1", "Tier 2 \u2014 Value (SAFE 70\u201384)",
+             "Strong value with broader coverage. Ideal for 3-pick and 5-pick slates."),
+            ("\U0001f7e2", "Tier 3 \u2014 Scout (SAFE 55\u201369)",
+             "Use as supporting picks in larger entries. Never build a slate from these alone."),
+        ]
+    )
+
+    body = f"""
+{_badge("PRO TIP")}
+<br><br>
+{_h1(f"The feature most users miss, {name}")}
+{_p("Most subscribers see the picks. "
+    f"<strong style='color:{_TEXT}'>Power users filter by tier.</strong> "
+    "Here's the strategy that separates recreational bettors from edge players.")}
+{_divider()}
+<p style="margin:0 0 8px;font-size:13px;font-weight:700;color:{_MUTED};
+   text-transform:uppercase;letter-spacing:1px;">The SAFE Score Tier System</p>
+{_p(f"The <strong style='color:{_TEXT}'>SAFE Score</strong> (Statistical Analysis Framework "
+    "Estimator) is a composite signal built from 6 neural models. Use the tier filter in "
+    "the QAM sidebar to surface only the picks that match your risk profile:")}
+<table cellpadding="0" cellspacing="0" border="0" width="100%"
+       style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.12);
+              border-radius:10px;padding:8px 16px;">
+  {tip_rows}
+</table>
+<br>
+{_p(f"<strong style='color:{_TEXT}'>Pro move:</strong> On game nights, open QAM, set the "
+    "filter to Tier 1 only, and build your highest-edge slate from those 2\u20133 picks. "
+    "Our backtested Tier 1 hit rate is "
+    f"<strong style='color:{_SUCCESS}'>71.4%</strong> "
+    "across the last 1,200 graded picks.")}
+{_cta_button("\U0001f3af Open QAM & Filter by Tier", qam_url)}
+{_divider()}
+{_p("Tomorrow we'll show you the advanced ROI calculation strategy. Stay tuned.",
+    muted=True, small=True)}
+<br>
+"""
+    plain = f"""Hey {name}, here's the pro tip most users discover too late.
+
+Most subscribers see the picks. Power users filter by tier.
+
+THE SAFE SCORE TIER SYSTEM
+--------------------------
+The SAFE Score is a composite signal from 6 neural models.
+Filter by tier in the QAM sidebar to match your risk profile:
+
+  Tier 1 - Spec (SAFE 85+)
+  Highest edge. 2-3 picks per night. Best for max-confidence entries.
+
+  Tier 2 - Value (SAFE 70-84)
+  Strong value with broader coverage. Ideal for 3-pick and 5-pick slates.
+
+  Tier 3 - Scout (SAFE 55-69)
+  Use as supporting picks in larger entries only.
+
+Pro move: Set the QAM filter to Tier 1 only.
+Backtested Tier 1 hit rate: 71.4% across 1,200 graded picks.
+
+Open QAM: {qam_url}
+
+Tomorrow: the advanced ROI calculation strategy.
+
+-- Smart Pick Pro
+https://smartpickpro.ai
+"""
+    subject = f"The pro tip your edge depends on, {name} \U0001f3af"
+    return _wrap(subject, body), plain
+
+
+def render_day5_roi_email(
+    display_name: str,
+    plan_name: str = "Smart Pick Pro",
+    app_url: str = "https://smartpickpro.ai",
+) -> tuple[str, str]:
+    """Email 3 (Day +5) — 'Maximizing Your ROI'.
+
+    Long-term ROI strategy: bankroll sizing, SAFE tier stacking, and how to
+    use Edge % for entry sizing decisions.
+
+    Returns (html, plain_text).
+    """
+    name = display_name or "there"
+    qam_url = f"{app_url}/?page=qam"
+
+    roi_rows = "".join(
+        f"""<tr>
+          <td style="padding:10px 16px;border-bottom:1px solid {_BORDER};
+              vertical-align:top;width:40%;">
+            <strong style="color:{_TEXT};font-size:13px;">{label}</strong>
+          </td>
+          <td style="padding:10px 16px;border-bottom:1px solid {_BORDER};
+              vertical-align:top;">
+            <span style="color:{_MUTED};font-size:13px;">{val}</span>
+          </td>
+        </tr>"""
+        for label, val in [
+            ("Entry size rule",
+             "Never risk more than 2\u20133% of bankroll on a single entry"),
+            ("SAFE 85+ (Tier 1)",
+             "Maximum units \u2014 full entry at normal size"),
+            ("SAFE 70\u201384 (Tier 2)",
+             "Standard units \u2014 normal sized entry"),
+            ("SAFE 55\u201369 (Tier 3)",
+             "Half units \u2014 use only in larger flex entries"),
+            ("Edge % above 8%",
+             "Strong edge \u2014 consider 1.5\u00d7 your standard entry size"),
+            ("Correlation filter",
+             "Avoid stacking 3+ picks from the same game (correlated variance)"),
+        ]
+    )
+
+    body = f"""
+{_badge("ROI STRATEGY")}
+<br><br>
+{_h1(f"How to maximize your long-term ROI, {name}")}
+{_p("After 5 days with Smart Pick Pro, you've seen the picks. Now let's talk about "
+    f"<strong style='color:{_TEXT}'>how professionals use them</strong> to build "
+    "consistent, compounding returns \u2014 not just one-off wins.")}
+{_divider()}
+<p style="margin:0 0 12px;font-size:13px;font-weight:700;color:{_MUTED};
+   text-transform:uppercase;letter-spacing:1px;">The Smart Pick Pro ROI Framework</p>
+<table cellpadding="0" cellspacing="0" border="0" width="100%"
+       style="border:1px solid {_BORDER};border-radius:10px;overflow:hidden;">
+  <tr style="background:rgba(0,212,255,0.06);">
+    <td style="padding:8px 16px;font-size:12px;font-weight:700;color:{_MUTED};
+        text-transform:uppercase;letter-spacing:1px;width:40%;">Signal</td>
+    <td style="padding:8px 16px;font-size:12px;font-weight:700;color:{_MUTED};
+        text-transform:uppercase;letter-spacing:1px;">Action</td>
+  </tr>
+  {roi_rows}
+</table>
+<br>
+{_p(f"<strong style='color:{_TEXT}'>The core principle:</strong> The AI gives you edge on "
+    "every pick. Your job is to "
+    f"<strong style='color:{_ACCENT_1}'>size entries according to that edge</strong>, "
+    "not just pick winners. A 65% hit rate with poor sizing still loses money. "
+    "A 58% hit rate with disciplined sizing compounds consistently.")}
+{_p("The Edge % shown on each pick in QAM is your sizing guide. Treat it as a multiplier: "
+    "Edge 12% = 1.5\u00d7 standard entry. Edge 6% = 0.5\u00d7 standard entry.")}
+{_cta_button("\U0001f4c8 Review Tonight's Edge Picks", qam_url)}
+{_divider()}
+{_p(f'Questions or want a strategy consult? Reply to this email or write to '
+    f'<a href="mailto:support@smartpickpro.ai" style="color:{_ACCENT_1};text-decoration:none;">'
+    f'support@smartpickpro.ai</a> \u2014 we read every reply.',
+    muted=True, small=True)}
+<br>
+"""
+    plain = f"""Hey {name}, let's talk about long-term ROI strategy.
+
+After 5 days with Smart Pick Pro, you've seen the picks.
+Here's how professionals use them to build consistent, compounding returns.
+
+THE SMART PICK PRO ROI FRAMEWORK
+----------------------------------
+Entry size rule:       Never risk more than 2-3% of bankroll per entry
+SAFE 85+ (Tier 1):     Maximum units - full entry at normal size
+SAFE 70-84 (Tier 2):   Standard units - normal sized entry
+SAFE 55-69 (Tier 3):   Half units - use only in larger flex entries
+Edge % above 8%:       Consider 1.5x your standard entry size
+Correlation filter:    Avoid 3+ picks from the same game
+
+THE CORE PRINCIPLE
+------------------
+The AI gives you edge on every pick. Your job is to SIZE entries
+according to that edge, not just pick winners.
+
+Edge % as a multiplier:
+  Edge 12% -> 1.5x standard entry
+  Edge 6%  -> 0.5x standard entry
+
+A 65% hit rate with poor sizing still loses money.
+A 58% hit rate with disciplined sizing compounds consistently.
+
+Review tonight's picks: {qam_url}
+Support: support@smartpickpro.ai
+
+-- Smart Pick Pro
+https://smartpickpro.ai
+"""
+    subject = "How to maximize your ROI with Smart Pick Pro \U0001f4c8"
+    return _wrap(subject, body), plain

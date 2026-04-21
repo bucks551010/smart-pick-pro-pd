@@ -309,6 +309,17 @@ def _loop() -> None:
                     inserted, round(time.monotonic() - t0, 1),
                 )
 
+        # ── Drip email sender (slow cycle only — runs ~every 4 hours off-peak) ─
+        # Fires scheduled welcome drip emails for new subscribers.
+        if not game_window:
+            try:
+                from utils.notifications import send_pending_drip_emails
+                _drip_sent = send_pending_drip_emails()
+                if _drip_sent:
+                    _logger.info("[ETL Scheduler] Drip emails sent: %d", _drip_sent)
+            except Exception:
+                _logger.debug("[ETL Scheduler] send_pending_drip_emails skipped", exc_info=True)
+
         time.sleep(interval)
 
 

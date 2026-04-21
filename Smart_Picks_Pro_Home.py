@@ -1057,9 +1057,11 @@ try:
     _user_tier = _get_user_tier()
     _user_tier_label = _get_tier_label(_user_tier)
     if _checkout_ok:
-        st.balloons()
-        st.success("✅ Payment confirmed! Your premium subscription is now active.")
-        st.info("👉 **Next step:** Head to your [💎 Subscription page](pages/15_💎_Subscription_Level.py) to set up your premium profile.")
+        # Show rich success celebration page + launch tour
+        from utils.auth_gate import render_subscription_success_page, render_onboarding_tour
+        if render_subscription_success_page(_user_tier_label):
+            st.stop()
+        render_onboarding_tour()
 except Exception:
     _user_is_premium = True  # Fail open — don't block the home page
     _user_tier = "insider_circle"

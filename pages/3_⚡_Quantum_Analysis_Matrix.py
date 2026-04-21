@@ -1038,6 +1038,34 @@ if run_analysis:
             progress_bar.empty()
             st.stop()
 
+        # ── Hard cap: prevent OOM crashes on Railway with very large batches ──
+        # Analyzing 1000+ props with Monte Carlo simulations exhausts memory,
+        # crashes the container, loses session state, and forces a sign-out.
+        # Cap at 800 props (sorted by source order so the most relevant are kept).
+        _PROPS_HARD_CAP = 800
+        if total_props_count > _PROPS_HARD_CAP:
+            st.warning(
+                f"⚠️ {total_props_count:,} props loaded — capped at **{_PROPS_HARD_CAP:,}** to "
+                f"prevent memory overload. Remove duplicate platforms or use platform filters "
+                f"(⚙️ Settings) to stay under the limit."
+            )
+            props_to_analyze = props_to_analyze[:_PROPS_HARD_CAP]
+            total_props_count = _PROPS_HARD_CAP
+
+        # ── Auto-scale simulation depth for large batches ─────────────────
+        # Full 2000-sim depth is fine for ≤300 props.  For larger batches,
+        # reduce depth to keep peak memory within Railway container limits.
+        _effective_sim_depth = simulation_depth
+        if total_props_count > 500:
+            _effective_sim_depth = min(simulation_depth, 500)
+        elif total_props_count > 300:
+            _effective_sim_depth = min(simulation_depth, 1000)
+        if _effective_sim_depth < simulation_depth:
+            st.caption(
+                f"ℹ️ Sim depth auto-scaled to **{_effective_sim_depth:,}** "
+                f"(from {simulation_depth:,}) for {total_props_count:,} props to avoid memory overload."
+            )
+
         # ── Analysis runs on ALL available props regardless of tier ────────
         # Display caps are applied to the output list after analysis completes.
 
@@ -1078,11 +1106,16 @@ if run_analysis:
 
         _line_snapshots = st.session_state.setdefault("line_snapshots", {})
 
+        # Throttle progress bar: update at most every 10 props to avoid
+        # flooding the WebSocket with rapid-fire messages on large batches.
+        _PROGRESS_UPDATE_INTERVAL = max(1, total_props_count // 50)
+
         def _progress_cb(idx: int, total: int, name: str):
-            progress_bar.progress(
-                (idx + 1) / total,
-                text=f"Analyzing {name}… ({idx + 1}/{total})",
-            )
+            if idx % _PROGRESS_UPDATE_INTERVAL == 0 or idx == total - 1:
+                progress_bar.progress(
+                    (idx + 1) / total,
+                    text=f"Analyzing {name}… ({idx + 1}/{total})",
+                )
 
         analysis_results_list = _analyze_batch(
             props_to_analyze,
@@ -1091,7 +1124,7 @@ if run_analysis:
             injury_map=st.session_state.get("injury_status_map", {}),
             defensive_ratings_data=defensive_ratings_data,
             teams_data=teams_data,
-            simulation_depth=simulation_depth,
+            simulation_depth=_effective_sim_depth,
             prefetched_bios=_prefetched_bios,
             advanced_enrichment=st.session_state.get("advanced_enrichment", {}),
             line_snapshots=_line_snapshots,

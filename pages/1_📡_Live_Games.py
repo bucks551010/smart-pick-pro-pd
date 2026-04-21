@@ -188,7 +188,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("📡 Live Games")
-st.markdown(f"**{datetime.date.today().strftime('%A, %B %d, %Y')}** — Tonight's NBA Slate")
+try:
+    from zoneinfo import ZoneInfo as _ZI_LG
+    _today_et_lg = datetime.datetime.now(_ZI_LG("America/New_York"))
+except Exception:
+    _today_et_lg = datetime.datetime.now()
+st.markdown(f"**{_today_et_lg.strftime('%A, %B %d, %Y')}** — Tonight's NBA Slate")
 
 # ── Auto-Refresh Toggle (Enhancement #6) ─────────────────────
 _auto_ref_col, _auto_ref_info = st.columns([1, 3])
@@ -1228,7 +1233,11 @@ if platform_props_clicked:
                 import sqlite3 as _sqlite3
                 initialize_database()
                 import datetime as _dt2
-                _today = _dt2.date.today().isoformat()
+                try:
+                    from zoneinfo import ZoneInfo as _ZI_b
+                    _today = _dt2.datetime.now(_ZI_b("America/New_York")).date().isoformat()
+                except Exception:
+                    _today = _dt2.date.today().isoformat()
 
                 # 5a. Persist ALL analysed picks to all_analysis_picks (deduped inside)
                 _picks_stored = insert_analysis_picks(analyzed_props)
@@ -1593,7 +1602,7 @@ if current_games:
     else:
         _ticker_inner = f'<div class="espn-ticker-track">{_ticker_cards_html}</div>'
 
-    _ticker_header = f"🏀 TONIGHT'S SLATE — {datetime.date.today().strftime('%b %d, %Y')}"
+    _ticker_header = f"🏀 TONIGHT'S SLATE — {_today_et_lg.strftime('%b %d, %Y')}"
     st.markdown(
         f'<div class="espn-ticker-container">'
         f'<div class="espn-ticker-header">{_ticker_header}</div>'
@@ -2151,7 +2160,7 @@ with st.expander("➕ Manually Add Games", expanded=not bool(current_games)):
                 "away_team_name": away.split(" — ")[1] if " — " in away else away,
                 "vegas_spread": float(entry["vegas_spread"]),
                 "game_total": float(entry["game_total"]),
-                "game_date": datetime.date.today().isoformat(),
+                "game_date": _today_et_lg.strftime("%Y-%m-%d"),
                 "home_wins": 0, "home_losses": 0, "home_streak": "",
                 "away_wins": 0, "away_losses": 0, "away_streak": "",
             }

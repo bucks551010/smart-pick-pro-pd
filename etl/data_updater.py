@@ -266,7 +266,13 @@ def sync_todays_games(conn: sqlite3.Connection) -> int:
     Returns:
         Number of new game rows inserted into the ``Games`` table.
     """
-    today_str = date.today().isoformat()
+    # Use Eastern Time — NBA API uses ET dates for scheduling.
+    try:
+        from zoneinfo import ZoneInfo as _ZI
+        from datetime import datetime as _dt
+        today_str = _dt.now(_ZI("America/New_York")).date().isoformat()
+    except Exception:
+        today_str = date.today().isoformat()
     logger.info("Syncing today's schedule (%s) via ScoreboardV3 …", today_str)
 
     try:

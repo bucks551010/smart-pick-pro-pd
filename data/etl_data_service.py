@@ -794,7 +794,14 @@ def get_todays_games() -> list[dict]:
     DB-only — no live API fallback.  Data must be populated
     by the ETL initial pull before this function is used.
     """
-    today = datetime.date.today().strftime("%Y-%m-%d")
+    # Use Eastern Time — the NBA schedules games by ET date.
+    # A server running UTC would roll to the next day at 6-7 PM CST
+    # (midnight UTC), causing CST users to see tomorrow's slate.
+    try:
+        from zoneinfo import ZoneInfo as _ZI
+        today = datetime.datetime.now(_ZI("America/New_York")).strftime("%Y-%m-%d")
+    except Exception:
+        today = datetime.date.today().strftime("%Y-%m-%d")
 
     conn = _get_conn()
     db_games: list[dict] = []

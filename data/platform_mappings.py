@@ -58,24 +58,12 @@ PRIZEPICKS_STAT_MAP = {
     "Blks + Stls": "blocks_steals",
     # Singular abbreviation for PRA
     "Pts+Reb+Ast": "points_rebounds_assists",
-    # "(Combo)" multi-leg variants — same underlying stat
+    # "(Combo)" multi-leg variants — map to the same underlying stat so they
+    # are analyzed identically to the single-stat version.
     "Points (Combo)": "points",
     "Rebounds (Combo)": "rebounds",
     "Assists (Combo)": "assists",
     "3-PT Made (Combo)": "threes",
-    # Shooting attempts
-    "3-PT Attempted": "threes_attempted",
-    "Two Pointers Made": "two_pointers_made",
-    "Two Pointers Attempted": "two_pointers_attempted",
-    # Partial-game props (PP "- 1st 3 Minutes" series)
-    "Points - 1st 3 Minutes": "points_first_3min",
-    "Rebounds - 1st 3 Minutes": "rebounds_first_3min",
-    "Assists - 1st 3 Minutes": "assists_first_3min",
-    # Quarter milestone props
-    "Quarters with 3+ Points": "quarters_3plus_points",
-    "Quarters with 5+ Points": "quarters_5plus_points",
-    # Novelty
-    "Dunks": "dunks",
 }
 
 # DraftKings Pick6 stat type mappings (also used for standard sportsbooks)
@@ -147,14 +135,13 @@ UNDERDOG_STAT_MAP = {
     "Double Doubles": "double_double",  # Underdog plural form
     "Triple Double": "triple_double",
     "Triple Doubles": "triple_double",
-    # Shooting attempts
-    "3s Attempted": "threes_attempted",
-    "3-Pointers Attempted": "threes_attempted",
-    # Quarter props
-    "1Q Points": "1q_points",
-    "1Q Rebounds": "1q_rebounds",
-    # Game/team props
-    "Margin of Victory": "margin_of_victory",
+    # Alternate labels that map to standard stats
+    "Total Points": "points",
+    "Player Points": "points",
+    "Player Rebounds": "rebounds",
+    "Player Assists": "assists",
+    # Shooting attempts, quarter props, and novelty are intentionally omitted
+    # so they are silently dropped by the VALID_STAT_TYPES filter.
     "Minutes": "minutes",
     "Personal Fouls": "personal_fouls",
     "Offensive Rebounds": "offensive_rebounds",

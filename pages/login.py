@@ -2025,6 +2025,490 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
+# GAME REPORT + PLAYER SIMULATOR SHOWCASE
+# ════════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+/* ══ Tool Showcase — shared layout ════════════════════════ */
+.lp-tool-showcase {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+/* Section label + headline already defined globally */
+
+/* ── Split layout: description left, mock right ─────────── */
+.lp-tool-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+    margin-bottom: 80px;
+}
+.lp-tool-split.reverse { direction: rtl; }
+.lp-tool-split.reverse > * { direction: ltr; }
+@media (max-width: 860px) {
+    .lp-tool-split, .lp-tool-split.reverse { grid-template-columns: 1fr; direction: ltr; gap: 36px; }
+}
+
+/* Left panel — copy */
+.lp-tool-copy { display: flex; flex-direction: column; gap: 0; }
+.lp-tool-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .52rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--tool-color, #00D559);
+    background: color-mix(in srgb, var(--tool-color, #00D559) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tool-color, #00D559) 22%, transparent);
+    padding: 4px 14px; border-radius: 100px;
+    width: fit-content; margin-bottom: 22px;
+}
+.lp-tool-h {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(1.6rem, 2.6vw, 2.4rem);
+    font-weight: 900; letter-spacing: -.04em; line-height: 1.18;
+    color: #fff; margin-bottom: 16px;
+}
+.lp-tool-h span {
+    background: linear-gradient(90deg, var(--tool-color, #00D559), var(--tool-color2, #00FF85));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.lp-tool-p {
+    font-family: 'Inter', sans-serif;
+    font-size: .95rem; color: rgba(255,255,255,.42);
+    line-height: 1.78; margin-bottom: 28px;
+}
+.lp-tool-bullets {
+    list-style: none; padding: 0; margin: 0 0 32px; display: flex; flex-direction: column; gap: 12px;
+}
+.lp-tool-bullets li {
+    display: flex; align-items: flex-start; gap: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: .88rem; color: rgba(255,255,255,.62);
+    line-height: 1.6;
+}
+.lp-tool-bullets li::before {
+    content: '';
+    width: 18px; height: 18px; border-radius: 6px; flex-shrink: 0; margin-top: 1px;
+    background: color-mix(in srgb, var(--tool-color, #00D559) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tool-color, #00D559) 35%, transparent);
+    display: flex; align-items: center; justify-content: center;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 10 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 4l2.5 2.5L9 1' stroke='%2300D559' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: center; background-size: 10px;
+}
+.lp-tool-bullets li b { color: #fff; font-weight: 700; }
+.lp-tool-cta-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: .85rem; font-weight: 800; letter-spacing: -.01em;
+    color: var(--tool-color, #00D559);
+    border-bottom: 1px solid color-mix(in srgb, var(--tool-color, #00D559) 30%, transparent);
+    padding-bottom: 2px; text-decoration: none;
+    transition: gap .25s, border-color .25s;
+    width: fit-content;
+}
+.lp-tool-cta-link:hover { gap: 14px; border-color: var(--tool-color, #00D559); text-decoration: none; color: var(--tool-color, #00D559); }
+.lp-tool-cta-link::after { content: '→'; font-size: .9rem; }
+
+/* Right panel — mock UI card */
+.lp-tool-mockup {
+    position: relative;
+    background: rgba(255,255,255,0.022);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,0.04);
+    transition: transform .4s cubic-bezier(0.16,1,0.3,1), box-shadow .4s;
+}
+.lp-tool-mockup:hover {
+    transform: translateY(-8px) scale(1.015);
+    box-shadow: 0 40px 100px rgba(0,0,0,.6),
+                0 0 60px color-mix(in srgb, var(--tool-color, #00D559) 14%, transparent),
+                0 0 0 1px color-mix(in srgb, var(--tool-color, #00D559) 18%, transparent);
+}
+/* Chromatic top glow bar */
+.lp-tool-mockup::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--tool-color, #00D559), var(--tool-color2, #00FF85), transparent);
+    z-index: 2;
+}
+/* Mock browser chrome */
+.lp-mock-chrome {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.lp-mock-dots { display: flex; gap: 5px; }
+.lp-mock-dots span {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+}
+.lp-mock-url {
+    flex: 1;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .55rem; font-weight: 600;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: .04em;
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px; padding: 4px 12px;
+    text-align: center;
+}
+.lp-mock-body { padding: 20px; }
+
+/* ── Game Report mock UI ────────────────────────────────── */
+.gr-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+}
+.gr-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: .82rem; font-weight: 900; color: #fff; letter-spacing: -.02em;
+}
+.gr-live-badge {
+    display: flex; align-items: center; gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .48rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+    color: #00D559;
+    background: rgba(0,213,89,0.1); border: 1px solid rgba(0,213,89,0.22);
+    padding: 3px 10px; border-radius: 100px;
+}
+.gr-live-badge::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: #00D559; box-shadow: 0 0 6px #00D559;
+    animation: agLivePulse 1.8s ease-in-out infinite;
+}
+/* Matchup card */
+.gr-matchup {
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px; padding: 14px 18px;
+    margin-bottom: 14px;
+}
+.gr-team {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-family: 'Space Grotesk', sans-serif;
+}
+.gr-team-abbrev {
+    font-size: 1.1rem; font-weight: 900; color: #fff; letter-spacing: -.03em;
+}
+.gr-team-name { font-size: .52rem; color: rgba(255,255,255,.3); letter-spacing: .04em; }
+.gr-vs {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .62rem; font-weight: 800; color: rgba(255,255,255,.2);
+    letter-spacing: .1em;
+}
+.gr-meta {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.gr-meta-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .5rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 6px;
+    color: rgba(255,255,255,.4);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+}
+.gr-meta-pill.hi { color: #00D559; background: rgba(0,213,89,.08); border-color: rgba(0,213,89,.18); }
+.gr-meta-pill.blue { color: #2D9EFF; background: rgba(45,158,255,.08); border-color: rgba(45,158,255,.18); }
+/* Confidence bars */
+.gr-bars { display: flex; flex-direction: column; gap: 8px; }
+.gr-bar-row { display: flex; align-items: center; gap: 10px; }
+.gr-bar-label {
+    font-family: 'Inter', sans-serif; font-size: .6rem; font-weight: 600;
+    color: rgba(255,255,255,.3); width: 80px; flex-shrink: 0; text-align: right;
+}
+.gr-bar-track {
+    flex: 1; height: 5px; background: rgba(255,255,255,.07); border-radius: 3px; overflow: hidden;
+}
+.gr-bar-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, var(--gb-c1), var(--gb-c2));
+    box-shadow: 0 0 6px var(--gb-glow);
+}
+.gr-bar-val {
+    font-family: 'JetBrains Mono', monospace; font-size: .6rem; font-weight: 800;
+    color: var(--gb-c1); width: 32px; text-align: right; flex-shrink: 0;
+}
+
+/* ── Player Simulator mock UI ───────────────────────────── */
+.ps-player-row {
+    display: flex; align-items: center; gap: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px; padding: 14px 16px;
+    margin-bottom: 14px;
+}
+.ps-avatar {
+    width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: .72rem; font-weight: 900; color: #020C07;
+    background: var(--ps-av-bg, linear-gradient(135deg,#00FF85,#00D559));
+    box-shadow: 0 0 14px var(--ps-av-glow, rgba(0,213,89,.4));
+}
+.ps-info { flex: 1; min-width: 0; }
+.ps-name {
+    font-family: 'Space Grotesk', sans-serif; font-size: .85rem; font-weight: 800;
+    color: #fff; letter-spacing: -.02em; margin-bottom: 3px;
+}
+.ps-detail {
+    font-family: 'JetBrains Mono', monospace; font-size: .5rem; font-weight: 600;
+    color: rgba(255,255,255,.28); letter-spacing: .05em; text-transform: uppercase;
+}
+.ps-dark-horse-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .47rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+    color: #F9C62B;
+    background: rgba(249,198,43,0.1); border: 1px solid rgba(249,198,43,0.25);
+    padding: 3px 9px; border-radius: 100px; flex-shrink: 0;
+}
+.ps-stat-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px;
+}
+.ps-stat-box {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px; padding: 10px 8px; text-align: center;
+}
+.ps-stat-box.dh {
+    border-color: rgba(249,198,43,0.3);
+    background: rgba(249,198,43,0.06);
+    box-shadow: 0 0 14px rgba(249,198,43,0.12);
+}
+.ps-stat-val {
+    font-family: 'Space Grotesk', sans-serif; font-size: .95rem; font-weight: 900;
+    color: #fff; letter-spacing: -.03em; line-height: 1;
+    margin-bottom: 3px;
+}
+.ps-stat-box.dh .ps-stat-val { color: #F9C62B; text-shadow: 0 0 12px rgba(249,198,43,.5); }
+.ps-stat-label {
+    font-family: 'JetBrains Mono', monospace; font-size: .46rem; font-weight: 700;
+    color: rgba(255,255,255,.22); text-transform: uppercase; letter-spacing: .07em;
+}
+.ps-sim-bar-wrap {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px; padding: 12px 14px;
+}
+.ps-sim-bar-label {
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace; font-size: .5rem; font-weight: 700;
+    color: rgba(255,255,255,.2); text-transform: uppercase; letter-spacing: .07em;
+    margin-bottom: 8px;
+}
+.ps-sim-bar-label span { color: #F9C62B; font-size: .6rem; }
+.ps-dist-bar { display: flex; align-items: flex-end; gap: 3px; height: 32px; }
+.ps-dist-col {
+    flex: 1; border-radius: 3px 3px 0 0;
+    background: rgba(255,255,255,0.1);
+    transition: background .3s;
+}
+.ps-dist-col.peak { background: linear-gradient(180deg, #F9C62B, rgba(249,198,43,.4)); box-shadow: 0 0 8px rgba(249,198,43,.3); }
+.ps-dist-col.dark-horse { background: linear-gradient(180deg, #00D559, rgba(0,213,89,.4)); box-shadow: 0 0 8px rgba(0,213,89,.3); }
+</style>
+
+<!-- section divider -->
+<div style="padding:0 24px;"><div class="lp-divider"></div></div>
+
+<div id="lp-tools" style="padding: 100px 24px 0;">
+  <div class="lp-tool-showcase">
+
+    <div class="lp-section" style="padding:0;margin-bottom:72px;">
+      <div class="lp-section-label">Inside the Platform</div>
+      <h2 class="lp-section-h2">See Exactly<br>What You Get.</h2>
+      <p class="lp-section-sub">Not a black box. Every tool is built to show its work — so you understand the edge, not just follow it blindly.</p>
+    </div>
+
+    <!-- ═══ GAME REPORT ════════════════════════════ -->
+    <div class="lp-tool-split lp-reveal">
+      <!-- Copy -->
+      <div class="lp-tool-copy" style="--tool-color:#00D559;--tool-color2:#00FF85;">
+        <div class="lp-tool-eyebrow">📋 Game Report</div>
+        <h3 class="lp-tool-h">Every Matchup.<br><span>Fully Decoded.</span></h3>
+        <p class="lp-tool-p">
+          The Game Report is your pre-game intelligence briefing. Pick any matchup on tonight's slate
+          and the platform generates a comprehensive AI breakdown in seconds — covering win probability,
+          key player mismatches, pace factors, total projections, and the exact props with the most edge.
+        </p>
+        <ul class="lp-tool-bullets">
+          <li><b>AI Win Probability</b> — 6-model consensus probability for each team, updated as lines move.</li>
+          <li><b>Pace &amp; Total Projection</b> — True game total estimate vs. the posted line. Know when the book has it wrong.</li>
+          <li><b>Key Player Matchup Cards</b> — Player A vs. Defender B, head-to-head stats, defensive rating exposure.</li>
+          <li><b>Top Props for the Matchup</b> — Auto-sorted by SAFE Score™. One click to run full Neural analysis on any prop.</li>
+          <li><b>Entry Strategy Matrix</b> — Recommended parlays and single-leg bets based on your risk tolerance.</li>
+        </ul>
+        <a href="?auth=signup" class="lp-tool-cta-link" style="--tool-color:#00D559;">Access Game Reports Free</a>
+      </div>
+
+      <!-- Mock UI -->
+      <div class="lp-tool-mockup" style="--tool-color:#00D559;--tool-color2:#00FF85;">
+        <div class="lp-mock-chrome">
+          <div class="lp-mock-dots"><span></span><span></span><span></span></div>
+          <div class="lp-mock-url">smartpickpro.ai · Game Report</div>
+        </div>
+        <div class="lp-mock-body">
+          <div class="gr-header">
+            <div class="gr-title">📋 Game Report</div>
+            <div class="gr-live-badge">Live Analysis</div>
+          </div>
+
+          <!-- Matchup -->
+          <div class="gr-matchup">
+            <div class="gr-team">
+              <div class="gr-team-abbrev" style="color:#00D559;">BOS</div>
+              <div class="gr-team-name">Celtics</div>
+            </div>
+            <div style="text-align:center;">
+              <div class="gr-vs">VS</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:.5rem;color:rgba(255,255,255,.18);margin-top:4px;">O/U 218.5</div>
+            </div>
+            <div class="gr-team">
+              <div class="gr-team-abbrev" style="color:#2D9EFF;">MIA</div>
+              <div class="gr-team-name">Heat</div>
+            </div>
+          </div>
+
+          <!-- Meta pills -->
+          <div class="gr-meta">
+            <span class="gr-meta-pill hi">BOS −5.5</span>
+            <span class="gr-meta-pill blue">Pace 99.4</span>
+            <span class="gr-meta-pill">TD Garden</span>
+            <span class="gr-meta-pill hi">4 Sharp Plays</span>
+          </div>
+
+          <!-- Confidence bars -->
+          <div class="gr-bars">
+            <div class="gr-bar-row">
+              <div class="gr-bar-label">BOS Win Prob</div>
+              <div class="gr-bar-track">
+                <div class="gr-bar-fill" style="width:67%;--gb-c1:#00D559;--gb-c2:#00FF85;--gb-glow:rgba(0,213,89,.4);"></div>
+              </div>
+              <div class="gr-bar-val" style="--gb-c1:#00D559;">67%</div>
+            </div>
+            <div class="gr-bar-row">
+              <div class="gr-bar-label">Tatum PTS Edge</div>
+              <div class="gr-bar-track">
+                <div class="gr-bar-fill" style="width:82%;--gb-c1:#F9C62B;--gb-c2:#FFE066;--gb-glow:rgba(249,198,43,.4);"></div>
+              </div>
+              <div class="gr-bar-val" style="--gb-c1:#F9C62B;">+4.8%</div>
+            </div>
+            <div class="gr-bar-row">
+              <div class="gr-bar-label">SAFE Consensus</div>
+              <div class="gr-bar-track">
+                <div class="gr-bar-fill" style="width:88%;--gb-c1:#2D9EFF;--gb-c2:#60b4ff;--gb-glow:rgba(45,158,255,.4);"></div>
+              </div>
+              <div class="gr-bar-val" style="--gb-c1:#2D9EFF;">88</div>
+            </div>
+            <div class="gr-bar-row">
+              <div class="gr-bar-label">Total Proj Δ</div>
+              <div class="gr-bar-track">
+                <div class="gr-bar-fill" style="width:55%;--gb-c1:#c084fc;--gb-c2:#d8b4fe;--gb-glow:rgba(192,132,252,.4);"></div>
+              </div>
+              <div class="gr-bar-val" style="--gb-c1:#c084fc;">+3.2</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /lp-tool-split -->
+
+    <!-- Divider between tools -->
+    <div style="margin-bottom:80px;"><div class="lp-divider"></div></div>
+
+    <!-- ═══ PLAYER SIMULATOR + DARK HORSE ═════════════════ -->
+    <div class="lp-tool-split reverse lp-reveal">
+      <!-- Mock UI -->
+      <div class="lp-tool-mockup" style="--tool-color:#F9C62B;--tool-color2:#FFE066;">
+        <div class="lp-mock-chrome">
+          <div class="lp-mock-dots"><span></span><span></span><span></span></div>
+          <div class="lp-mock-url">smartpickpro.ai · Player Simulator</div>
+        </div>
+        <div class="lp-mock-body">
+
+          <!-- Player header -->
+          <div class="ps-player-row">
+            <div class="ps-avatar" style="--ps-av-bg:linear-gradient(135deg,#F9C62B,#FFE066);--ps-av-glow:rgba(249,198,43,.45);">JT</div>
+            <div class="ps-info">
+              <div class="ps-name">Jayson Tatum</div>
+              <div class="ps-detail">BOS · vs MIA · Home · 10,000 sims</div>
+            </div>
+            <div class="ps-dark-horse-badge">🐴 Dark Horse</div>
+          </div>
+
+          <!-- Stat projection grid -->
+          <div class="ps-stat-grid">
+            <div class="ps-stat-box">
+              <div class="ps-stat-val">28.4</div>
+              <div class="ps-stat-label">PTS Med</div>
+            </div>
+            <div class="ps-stat-box dh">
+              <div class="ps-stat-val">9.2</div>
+              <div class="ps-stat-label">REB ↑ DH</div>
+            </div>
+            <div class="ps-stat-box">
+              <div class="ps-stat-val">5.1</div>
+              <div class="ps-stat-label">AST Med</div>
+            </div>
+            <div class="ps-stat-box">
+              <div class="ps-stat-val">3.8</div>
+              <div class="ps-stat-label">3PM Med</div>
+            </div>
+          </div>
+
+          <!-- Distribution chart for highlighted stat -->
+          <div class="ps-sim-bar-wrap">
+            <div class="ps-sim-bar-label">
+              <span>REB Distribution — 10k sims</span>
+              <span>Ceiling: 14</span>
+            </div>
+            <div class="ps-dist-bar">
+              <div class="ps-dist-col" style="height:18%;"></div>
+              <div class="ps-dist-col" style="height:35%;"></div>
+              <div class="ps-dist-col" style="height:55%;"></div>
+              <div class="ps-dist-col peak" style="height:90%;"></div>
+              <div class="ps-dist-col peak" style="height:100%;"></div>
+              <div class="ps-dist-col peak" style="height:82%;"></div>
+              <div class="ps-dist-col" style="height:60%;"></div>
+              <div class="ps-dist-col dark-horse" style="height:45%;"></div>
+              <div class="ps-dist-col dark-horse" style="height:32%;"></div>
+              <div class="ps-dist-col" style="height:18%;"></div>
+              <div class="ps-dist-col" style="height:10%;"></div>
+              <div class="ps-dist-col" style="height:5%;"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Copy -->
+      <div class="lp-tool-copy" style="--tool-color:#F9C62B;--tool-color2:#FFE066;">
+        <div class="lp-tool-eyebrow">🔮 Player Simulator</div>
+        <h3 class="lp-tool-h">10,000 Sims.<br><span>One True Number.</span></h3>
+        <p class="lp-tool-p">
+          The Player Simulator runs the Quantum Matrix Engine 5.6 — 10,000 simulated game iterations
+          per player, per stat, per night. The result is a full distribution of outcomes: floor, median,
+          mean, ceiling, and standard deviation — giving you the actual probability of hitting any prop line,
+          not just a gut feeling.
+        </p>
+        <ul class="lp-tool-bullets" style="--tool-color:#F9C62B;">
+          <li><b>Full Stat Line Projection</b> — Points, rebounds, assists, steals, blocks, threes, and turnovers. Every category simulated simultaneously.</li>
+          <li><b>Dark Horse Detection 🐴</b> — Automatically flags props where a player's simulated ceiling is meaningfully above the market line. Hidden upside, surfaced for you.</li>
+          <li><b>Context-Aware Inputs</b> — Auto-detects tonight's opponent, pace, home/away status, game total, and defensive matchup for each player.</li>
+          <li><b>Outcome Distribution Charts</b> — See exactly where outcomes cluster. High variance = better OVER. Low variance = better UNDER.</li>
+          <li><b>Compare to Prop Lines</b> — Simulator output syncs with Prop Scanner lines. Spot the gap between projected median and the posted number instantly.</li>
+        </ul>
+        <a href="?auth=signup" class="lp-tool-cta-link" style="--tool-color:#F9C62B;">Run Your First Simulation Free</a>
+      </div>
+    </div><!-- /lp-tool-split -->
+
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════
 # LIVE PICKS PREVIEW SECTION  (#lp-picks)
 # ════════════════════════════════════════════════════════════
 st.markdown("""

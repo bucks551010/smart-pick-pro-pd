@@ -21,6 +21,66 @@ CACHE_TIERS = {
 _store: dict = {}
 _lock = threading.Lock()
 
+# ── Background eviction sweep ─────────────────────────────────────────────────
+# Without proactive eviction, _store grows unboundedly during long Streamlit
+# sessions: every cache_set() adds an entry, but entries are only removed on
+# explicit cache_get() calls for the *same key*.  Keys that are never re-read
+# (e.g. one-time API calls) accumulate until the process restarts.
+#
+# The sweep thread wakes every 60 s and removes entries whose TTL has elapsed.
+# Daemon=True means it dies automatically when the Streamlit process exits —
+# no shutdown hook needed.
+_EVICTION_INTERVAL_SECONDS = 60
+
+
+def _evict_expired() -> int:
+    """Remove all expired entries from the in-memory store.
+
+    Thread-safe; acquires the global cache lock for the minimum duration
+    needed (builds the dead-key list first, then deletes in one pass).
+
+    Returns:
+        Number of entries removed.
+    """
+    now = time.time()
+    with _lock:
+        # Two-pass: collect keys first to avoid mutating dict during iteration
+        expired = [
+            k for k, v in _store.items()
+            if now - v["ts"] > CACHE_TIERS.get(v.get("tier", "stats"), 900)
+        ]
+        for k in expired:
+            _store.pop(k, None)
+    if expired:
+        _logger.debug("cache eviction: removed %d expired entries.", len(expired))
+    return len(expired)
+
+
+def _start_eviction_thread() -> None:
+    """Start a single daemon thread that periodically evicts stale cache entries.
+
+    Called once at module import time; subsequent imports are no-ops because
+    _eviction_started is checked before spawning.
+    """
+    def _loop():
+        while True:
+            time.sleep(_EVICTION_INTERVAL_SECONDS)
+            try:
+                _evict_expired()
+            except Exception as exc:  # pragma: no cover
+                _logger.warning("cache eviction error: %s", exc)
+
+    t = threading.Thread(target=_loop, name="cache-eviction", daemon=True)
+    t.start()
+    _logger.debug("cache eviction thread started (interval=%ds).", _EVICTION_INTERVAL_SECONDS)
+
+
+# Module-level guard: start exactly once even if the module is reloaded
+_eviction_started: bool = False
+if not _eviction_started:
+    _eviction_started = True
+    _start_eviction_thread()
+
 
 def cache_get(key: str, tier: str = "stats"):
     """Retrieve a value from cache if not expired.

@@ -394,6 +394,11 @@ def _initialize_pg_database() -> bool:
         "CREATE INDEX IF NOT EXISTS idx_bets_date ON bets (bet_date)",
         "CREATE INDEX IF NOT EXISTS idx_bets_date_result ON bets (bet_date, result)",
         "CREATE INDEX IF NOT EXISTS idx_bets_created ON bets (created_at)",
+        # Compound index for save_daily_snapshot & load_bets_page: the two most
+        # frequent query predicates are (bet_date, entry_id IS NULL).  A covering
+        # index on both columns lets SQLite satisfy the WHERE clause with a single
+        # B-tree seek instead of a full bet_date scan + Python filter.
+        "CREATE INDEX IF NOT EXISTS idx_bets_date_entry ON bets (bet_date, entry_id)",
         "CREATE INDEX IF NOT EXISTS idx_aap_date ON all_analysis_picks (pick_date)",
         "CREATE INDEX IF NOT EXISTS idx_aap_player ON all_analysis_picks (player_name)",
         "CREATE INDEX IF NOT EXISTS idx_aap_date_result ON all_analysis_picks (pick_date, result)",
@@ -859,6 +864,10 @@ def initialize_database():
                 ("idx_bets_stat_type", "bets", "(stat_type)"),
                 ("idx_bets_platform", "bets", "(platform)"),
                 ("idx_bets_date_result", "bets", "(bet_date, result)"),
+                # Compound covering index for the most common filter pattern:
+                # WHERE bet_date = ? AND entry_id IS NULL.  Eliminates a full
+                # bet_date scan followed by Python-side entry_id filtering.
+                ("idx_bets_date_entry", "bets", "(bet_date, entry_id)"),
                 ("idx_ph_date", "prediction_history", "(prediction_date)"),
                 ("idx_ph_stat", "prediction_history", "(stat_type)"),
                 ("idx_aap_date", "all_analysis_picks", "(pick_date)"),
@@ -2260,17 +2269,63 @@ def save_daily_snapshot(date_str=None):
         conn = get_database_connection()
         cursor = conn.cursor()
 
-        # Retrieve all bets for that date, excluding parlay legs.
-        # Bets with entry_id IS NOT NULL are linked to a parlay entry and
-        # should not be double-counted alongside the entry itself, so we
-        # filter for entry_id IS NULL to keep only standalone bets.
+        # ── DB-side aggregation (replaces full SELECT * + Python loops) ───────
+        # Previous approach: load every bet row into Python memory, then run
+        # four separate for-loops to build wins/losses, platform, tier, and
+        # stat-type breakdowns.  On a heavy session (1000+ bets) this allocated
+        # ~1000 dicts and ran O(4n) Python iterations.
+        #
+        # New approach: a single GROUP BY query returns only summary counts
+        # (< 100 rows for any realistic slate).  All aggregation happens inside
+        # SQLite's C layer — O(n) with zero Python object allocation per bet.
         cursor.execute(
-            "SELECT * FROM bets WHERE bet_date = ? AND (entry_id IS NULL)",
+            """
+            SELECT
+                COALESCE(result, '')         AS result,
+                COALESCE(platform, 'Unknown') AS platform,
+                COALESCE(tier,     'Unknown') AS tier,
+                COALESCE(stat_type,'Unknown') AS stat_type,
+                COUNT(*)                      AS cnt
+            FROM bets
+            WHERE bet_date = ? AND entry_id IS NULL
+            GROUP BY
+                COALESCE(result,''),
+                COALESCE(platform,'Unknown'),
+                COALESCE(tier,'Unknown'),
+                COALESCE(stat_type,'Unknown')
+            """,
             (date_str,),
         )
-        rows = cursor.fetchall()
-        cols = [d[0] for d in cursor.description]
-        bets = [dict(zip(cols, row)) for row in rows]
+        summary_rows = [dict(zip([d[0] for d in cursor.description], row))
+                        for row in cursor.fetchall()]
+
+        # For best/worst pick we need two lightweight ORDER BY queries —
+        # still O(1) I/O vs loading the full table into Python.
+        cursor.execute(
+            """
+            SELECT player_name, stat_type, edge_percentage, result
+            FROM bets
+            WHERE bet_date = ? AND entry_id IS NULL
+              AND result IN ('WIN', 'LOSS')
+            ORDER BY COALESCE(edge_percentage, 0) DESC
+            LIMIT 1
+            """,
+            (date_str,),
+        )
+        _best_row = cursor.fetchone()
+
+        cursor.execute(
+            """
+            SELECT player_name, stat_type, edge_percentage, result
+            FROM bets
+            WHERE bet_date = ? AND entry_id IS NULL
+              AND result IN ('WIN', 'LOSS')
+            ORDER BY COALESCE(edge_percentage, 0) ASC
+            LIMIT 1
+            """,
+            (date_str,),
+        )
+        _worst_row = cursor.fetchone()
     except Exception as exc:
         _logger.error(f"[database] save_daily_snapshot read error: {exc}")
         return False
@@ -2282,80 +2337,62 @@ def save_daily_snapshot(date_str=None):
             pass
 
     try:
-        total = len(bets)
-        wins = sum(1 for b in bets if b.get("result") == "WIN")
-        losses = sum(1 for b in bets if b.get("result") == "LOSS")
-        pushes = sum(1 for b in bets if b.get("result") == "EVEN")
-        pending = sum(1 for b in bets if not b.get("result"))
-        # win_rate is 0.0 when there are no resolved bets (wins + losses == 0)
+        # ── Collapse GROUP BY rows into breakdown dicts — O(rows) not O(bets) ─
+        total = wins = losses = pushes = pending = 0
+        platform_breakdown: dict = {}
+        tier_breakdown: dict = {}
+        stat_type_breakdown: dict = {}
+
+        for r in summary_rows:
+            res   = r["result"]
+            plat  = r["platform"]
+            tier_ = r["tier"]
+            stype = r["stat_type"]
+            cnt   = int(r["cnt"])
+
+            total += cnt
+            if   res == "WIN":  wins    += cnt
+            elif res == "LOSS": losses  += cnt
+            elif res == "EVEN": pushes  += cnt
+            else:               pending += cnt
+
+            # Platform breakdown
+            if plat not in platform_breakdown:
+                platform_breakdown[plat] = {"wins": 0, "losses": 0, "pushes": 0, "pending": 0}
+            if   res == "WIN":  platform_breakdown[plat]["wins"]    += cnt
+            elif res == "LOSS": platform_breakdown[plat]["losses"]  += cnt
+            elif res == "EVEN": platform_breakdown[plat]["pushes"]  += cnt
+            else:               platform_breakdown[plat]["pending"] += cnt
+
+            # Tier breakdown
+            if tier_ not in tier_breakdown:
+                tier_breakdown[tier_] = {"wins": 0, "losses": 0, "pushes": 0, "pending": 0}
+            if   res == "WIN":  tier_breakdown[tier_]["wins"]    += cnt
+            elif res == "LOSS": tier_breakdown[tier_]["losses"]  += cnt
+            elif res == "EVEN": tier_breakdown[tier_]["pushes"]  += cnt
+            else:               tier_breakdown[tier_]["pending"] += cnt
+
+            # Stat-type breakdown
+            if stype not in stat_type_breakdown:
+                stat_type_breakdown[stype] = {"wins": 0, "losses": 0, "pushes": 0, "pending": 0}
+            if   res == "WIN":  stat_type_breakdown[stype]["wins"]    += cnt
+            elif res == "LOSS": stat_type_breakdown[stype]["losses"]  += cnt
+            elif res == "EVEN": stat_type_breakdown[stype]["pushes"]  += cnt
+            else:               stat_type_breakdown[stype]["pending"] += cnt
+
         win_rate = round(wins / (wins + losses) * 100, 2) if (wins + losses) > 0 else 0.0
 
-        # Platform breakdown
-        platform_breakdown: dict = {}
-        for b in bets:
-            p = b.get("platform") or "Unknown"
-            if p not in platform_breakdown:
-                platform_breakdown[p] = {"wins": 0, "losses": 0, "pushes": 0, "pending": 0}
-            res = b.get("result")
-            if res == "WIN":
-                platform_breakdown[p]["wins"] += 1
-            elif res == "LOSS":
-                platform_breakdown[p]["losses"] += 1
-            elif res == "EVEN":
-                platform_breakdown[p]["pushes"] += 1
-            else:
-                platform_breakdown[p]["pending"] += 1
-
-        # Tier breakdown
-        tier_breakdown: dict = {}
-        for b in bets:
-            t = b.get("tier") or "Unknown"
-            if t not in tier_breakdown:
-                tier_breakdown[t] = {"wins": 0, "losses": 0, "pushes": 0, "pending": 0}
-            res = b.get("result")
-            if res == "WIN":
-                tier_breakdown[t]["wins"] += 1
-            elif res == "LOSS":
-                tier_breakdown[t]["losses"] += 1
-            elif res == "EVEN":
-                tier_breakdown[t]["pushes"] += 1
-            else:
-                tier_breakdown[t]["pending"] += 1
-
-        # Stat-type breakdown
-        stat_type_breakdown: dict = {}
-        for b in bets:
-            s = b.get("stat_type") or "Unknown"
-            if s not in stat_type_breakdown:
-                stat_type_breakdown[s] = {"wins": 0, "losses": 0, "pushes": 0, "pending": 0}
-            res = b.get("result")
-            if res == "WIN":
-                stat_type_breakdown[s]["wins"] += 1
-            elif res == "LOSS":
-                stat_type_breakdown[s]["losses"] += 1
-            elif res == "EVEN":
-                stat_type_breakdown[s]["pushes"] += 1
-            else:
-                stat_type_breakdown[s]["pending"] += 1
-
-        # Best / worst pick (by edge_percentage, resolved only)
-        resolved = [b for b in bets if b.get("result") in ("WIN", "LOSS")]
-        best_pick = ""
-        worst_pick = ""
-        if resolved:
-            best = max(resolved, key=lambda b: float(b.get("edge_percentage") or 0))
-            worst = min(resolved, key=lambda b: float(b.get("edge_percentage") or 0))
+        # ── Best / worst pick from targeted ORDER BY queries ──────────────────
+        best_pick = worst_pick = ""
+        if _best_row:
             best_pick = json.dumps({
-                "player": best.get("player_name", ""),
-                "stat": best.get("stat_type", ""),
-                "edge": best.get("edge_percentage", 0),
-                "result": best.get("result", ""),
+                "player": _best_row[0], "stat": _best_row[1],
+                "edge": _best_row[2],   "result": _best_row[3],
             })
+        if _worst_row:
             worst_pick = json.dumps({
-                "player": worst.get("player_name", ""),
-                "stat": worst.get("stat_type", ""),
-                "edge": worst.get("edge_percentage", 0),
-                "result": worst.get("result", ""),
+                "player": _worst_row[0], "stat": _worst_row[1],
+                "edge": _worst_row[2],   "result": _worst_row[3],
             })
 
         _upsert_sql = """
@@ -2378,18 +2415,9 @@ def save_daily_snapshot(date_str=None):
                 worst_pick         = excluded.worst_pick
             """
         _upsert_params = (
-            date_str,
-            total,
-            wins,
-            losses,
-            pushes,
-            pending,
-            win_rate,
-            json.dumps(platform_breakdown),
-            json.dumps(tier_breakdown),
-            json.dumps(stat_type_breakdown),
-            best_pick,
-            worst_pick,
+            date_str, total, wins, losses, pushes, pending, win_rate,
+            json.dumps(platform_breakdown), json.dumps(tier_breakdown),
+            json.dumps(stat_type_breakdown), best_pick, worst_pick,
         )
         result = _execute_write(_upsert_sql, _upsert_params, caller="save_daily_snapshot")
         return result is not None

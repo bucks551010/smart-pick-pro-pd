@@ -1188,3 +1188,119 @@ def inject_aria_enhancements() -> None:
         '</script>'
     )
     st.markdown(_aria_script, unsafe_allow_html=True)
+
+
+# ── Lazy-loading pagination helpers ──────────────────────────────────────────
+# Prevents browser OOM / slow renders when the bets table has 10 000+ rows.
+# Uses session_state to persist the current page across Streamlit reruns, and
+# delegates the actual DB fetch to a caller-supplied load_fn / count_fn pair.
+#
+# Usage (Tracking page example):
+#
+#   from utils.components import render_paginated_table
+#   from tracking.database import load_bets_page, count_bets
+#
+#   def _load(offset, limit, filters):
+#       return load_bets_page(offset=offset, limit=limit, **filters)
+#
+#   def _count(filters):
+#       return count_bets(**filters)
+#
+#   render_paginated_table(_load, _count, filters, page_key="bets_page")
+
+def render_paginated_table(
+    load_fn,
+    count_fn,
+    filters: dict,
+    *,
+    page_size: int = 50,
+    page_key: str = "paginated_table_page",
+    df_height: int = 600,
+) -> None:
+    """Render a paginated dataframe using DB-side LIMIT / OFFSET queries.
+
+    Fetches only *page_size* rows at a time so the Streamlit frontend never
+    materialises the full result set in browser memory.
+
+    Args:
+        load_fn:   Callable(offset: int, limit: int, filters: dict) → list[dict]
+                   Should map to database.load_bets_page() or equivalent.
+        count_fn:  Callable(filters: dict) → int
+                   Returns total row count matching *filters* (for page math).
+        filters:   Arbitrary filter kwargs forwarded verbatim to both callables.
+        page_size: Rows per page (default 50).
+        page_key:  Unique session_state key for this table's current page index.
+                   Override when multiple paginated tables appear on one page.
+        df_height: Pixel height passed to st.dataframe (default 600).
+    """
+    import pandas as _pd
+
+    # ── Page state ──────────────────────────────────────────────────────────
+    if page_key not in st.session_state:
+        st.session_state[page_key] = 0
+
+    current_page: int = int(st.session_state[page_key])
+
+    # ── Total row count (cheap COUNT(*) query) ───────────────────────────────
+    try:
+        total_rows = int(count_fn(filters) or 0)
+    except Exception as _e:
+        st.warning(f"Could not count rows: {_e}")
+        total_rows = 0
+
+    total_pages = max(1, (total_rows + page_size - 1) // page_size)
+    # Clamp page index in case filters changed and shrunk the result set
+    current_page = min(current_page, total_pages - 1)
+    st.session_state[page_key] = current_page
+
+    # ── Load current page ────────────────────────────────────────────────────
+    offset = current_page * page_size
+    try:
+        rows = load_fn(offset, page_size, filters)
+    except Exception as _e:
+        st.error(f"Failed to load data: {_e}")
+        return
+
+    if not rows:
+        st.info("No data found for the selected filters.")
+        return
+
+    # ── Render dataframe ─────────────────────────────────────────────────────
+    df = _pd.DataFrame(rows)
+    st.dataframe(df, use_container_width=True, height=df_height)
+
+    # ── Pagination controls ──────────────────────────────────────────────────
+    col_prev, col_info, col_next = st.columns([1, 3, 1])
+
+    with col_prev:
+        if st.button("← Prev", key=f"{page_key}_prev", disabled=(current_page == 0)):
+            st.session_state[page_key] = current_page - 1
+            st.rerun()
+
+    with col_info:
+        start_row = offset + 1
+        end_row = min(offset + len(rows), total_rows)
+        st.markdown(
+            f"<div style='text-align:center;font-size:0.8rem;color:#6B7A9A;padding-top:6px;'>"
+            f"Rows {start_row}–{end_row} of {total_rows:,} &nbsp;|&nbsp; "
+            f"Page {current_page + 1} of {total_pages}"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+
+    with col_next:
+        if st.button("Next →", key=f"{page_key}_next", disabled=(current_page >= total_pages - 1)):
+            st.session_state[page_key] = current_page + 1
+            st.rerun()
+
+
+def reset_paginated_table(page_key: str = "paginated_table_page") -> None:
+    """Reset a paginated table back to page 0.
+
+    Call this whenever the user changes a filter so the view returns to the
+    first page instead of landing mid-way through a stale result set.
+
+    Args:
+        page_key: Must match the page_key used when calling render_paginated_table().
+    """
+    st.session_state[page_key] = 0

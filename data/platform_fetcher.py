@@ -897,7 +897,9 @@ def fetch_prizepicks_props(league="NBA"):
 
         # Capture the PrizePicks odds_type: "standard", "goblin", or "demon"
         # Goblin = lower/easier line; Demon = higher/harder line.
-        odds_type = str(attrs.get("odds_type", "standard")).lower()
+        # The live API uses camelCase "oddsType"; fall back to snake_case "odds_type"
+        # for any future normalised responses, then default to "standard".
+        odds_type = str(attrs.get("oddsType") or attrs.get("odds_type") or "standard").lower()
 
         # Prefer relationship game.start_time; fallback to projection start_time.
         _game_rel = relationships.get("game", {}).get("data", {})
@@ -1666,7 +1668,8 @@ async def _async_fetch_prizepicks(session, semaphore):
             if true_line <= 0:
                 continue  # KILL SWITCH: non-positive line → discard
             # Capture the PrizePicks odds_type: "standard", "goblin", or "demon"
-            odds_type = str(attrs.get("odds_type", "standard")).lower()
+            # Live API uses camelCase "oddsType"; accept both forms.
+            odds_type = str(attrs.get("oddsType") or attrs.get("odds_type") or "standard").lower()
             props.append({
                 "player_name": player_name, "team": team,
                 "stat_type": stat_type, "line": true_line,

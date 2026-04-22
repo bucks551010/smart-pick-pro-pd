@@ -1220,40 +1220,9 @@ except Exception:
     _PREM_PATH = "/15_%F0%9F%92%8E_Subscription_Level"
     TIER_FREE = "free"
 
+from utils.components import render_sidebar_auth as _render_sb_auth
 with st.sidebar:
-    # ── Logged-in user + logout button ────────────────────────
-    from utils.auth_gate import get_logged_in_email, logout_user, is_logged_in
-    if is_logged_in():
-        _auth_email = _html.escape(get_logged_in_email() or "")
-        st.markdown(
-            f'<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);'
-            f'border-radius:10px;padding:8px 14px;text-align:center;margin-bottom:8px;">'
-            f'<span style="color:#a0b4d0;font-size:0.78rem;">👤 {_auth_email}</span>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-        if st.button("🚪 Log Out", key="_sidebar_logout", use_container_width=True):
-            logout_user()
-            st.rerun()
-
-    if _user_tier != TIER_FREE:
-        st.markdown(
-            f'<div style="background:rgba(0,213,89,0.08);border:1px solid rgba(0,213,89,0.28);'
-            f'border-radius:10px;padding:10px 14px;text-align:center;margin-bottom:8px;">'
-            f'<span style="color:#00D559;font-weight:700;font-size:0.9rem;">{_user_tier_label}</span>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-    else:
-        st.markdown(
-            f'<div style="background:rgba(255,94,0,0.08);border:1px solid rgba(255,94,0,0.25);'
-            f'border-radius:10px;padding:10px 14px;text-align:center;margin-bottom:8px;">'
-            f'<span style="color:#a0b4d0;font-size:0.85rem;">⭐ Smart Rookie — Free</span><br>'
-            f'<a href="{_PREM_PATH}" style="color:#ff5e00;font-size:0.78rem;'
-            f'font-weight:600;text-decoration:none;">Upgrade Now →</a>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+    _render_sb_auth()
 
 # ── Restore user settings from database before applying defaults ───────
 # On a fresh browser reload st.session_state is empty.  We read the
@@ -2182,7 +2151,12 @@ try:
     from data.nba_data_service import get_teams_staleness_warning
     _staleness_warn = get_teams_staleness_warning()
     if _staleness_warn:
-        st.sidebar.warning(_staleness_warn)
+        # Route staleness info to the notification center instead of bare st.warning()
+        try:
+            from utils.components import add_notification
+            add_notification("Data Refresh Needed", _staleness_warn, level="warning")
+        except Exception:
+            pass
 except Exception as _exc:
     logging.getLogger(__name__).warning(f"[App] Setup step failed: {_exc}")
 

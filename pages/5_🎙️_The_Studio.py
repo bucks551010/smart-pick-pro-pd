@@ -82,8 +82,9 @@ st.markdown(get_qds_css(), unsafe_allow_html=True)
 
 # ── Sidebar global settings ──────────────────────────────────
 try:
-    from utils.components import render_global_settings, inject_joseph_floating, render_joseph_hero_banner
+    from utils.components import render_global_settings, render_sidebar_auth, inject_joseph_floating, render_joseph_hero_banner
     with st.sidebar:
+        render_sidebar_auth()
         render_global_settings()
     st.session_state["joseph_page_context"] = "page_studio"
     inject_joseph_floating()

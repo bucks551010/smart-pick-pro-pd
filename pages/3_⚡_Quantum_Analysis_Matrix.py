@@ -401,8 +401,9 @@ st.markdown(
 )
 
 # ── Global Settings Popover (accessible from sidebar) ─────────
-from utils.components import render_global_settings, inject_joseph_floating, render_joseph_hero_banner
+from utils.components import render_global_settings, render_sidebar_auth, inject_joseph_floating, render_joseph_hero_banner
 with st.sidebar:
+    render_sidebar_auth()
     render_global_settings()
 st.session_state.setdefault("joseph_page_context", "page_analysis")
 inject_joseph_floating()

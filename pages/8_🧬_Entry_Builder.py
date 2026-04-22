@@ -72,8 +72,9 @@ from styles.theme import get_global_css, get_neural_header_html, get_education_b
 st.markdown(get_global_css(), unsafe_allow_html=True)
 
 # ── Global Settings Popover (accessible from sidebar) ─────────
-from utils.components import render_global_settings, inject_joseph_floating, render_joseph_hero_banner
+from utils.components import render_global_settings, render_sidebar_auth, inject_joseph_floating, render_joseph_hero_banner
 with st.sidebar:
+    render_sidebar_auth()
     render_global_settings()
 st.session_state["joseph_page_context"] = "page_entry_builder"
 inject_joseph_floating()

@@ -91,12 +91,13 @@ def render_joseph_hero_banner() -> None:
 
 
 def render_sidebar_auth() -> None:
-    """Render premium tier identity card + logout button in the sidebar."""
+    """Render premium tier identity card + logout button in the sidebar.
+
+    Safe to call once per page; does NOT use a session-state guard because
+    the guard prevented rendering when navigating between pages (session
+    state persists across Streamlit page switches).
+    """
     import html as _html
-    # Guard: render only once per page render cycle
-    if st.session_state.get("_sidebar_auth_rendered"):
-        return
-    st.session_state["_sidebar_auth_rendered"] = True
 
     try:
         from utils.auth_gate import get_logged_in_email, logout_user, is_logged_in
@@ -119,44 +120,48 @@ def render_sidebar_auth() -> None:
         # Tier-specific palette
         _TIER_STYLES = {
             "insider_circle": {
-                "bg":       "linear-gradient(135deg,rgba(168,85,247,0.18) 0%,rgba(99,102,241,0.14) 100%)",
-                "border":   "rgba(168,85,247,0.55)",
-                "glow":     "0 0 28px rgba(168,85,247,0.30),0 4px 16px rgba(0,0,0,0.55)",
+                "bg":       "linear-gradient(135deg,rgba(168,85,247,0.20) 0%,rgba(99,102,241,0.16) 100%)",
+                "border":   "rgba(168,85,247,0.60)",
+                "glow":     "0 0 32px rgba(168,85,247,0.35),0 4px 20px rgba(0,0,0,0.60)",
                 "badge_bg": "linear-gradient(90deg,#a855f7,#6366f1)",
                 "badge_clr":"#fff",
                 "icon":     "💎",
                 "avatar_bg":"linear-gradient(135deg,#a855f7,#6366f1)",
-                "bar_clr":  "#a855f7",
+                "avatar_glow":"0 0 14px rgba(168,85,247,0.70)",
+                "top_bar":  "linear-gradient(90deg,#a855f7,#6366f1,#a855f7)",
             },
             "smart_money": {
-                "bg":       "linear-gradient(135deg,rgba(249,198,43,0.14) 0%,rgba(245,158,11,0.10) 100%)",
-                "border":   "rgba(249,198,43,0.55)",
-                "glow":     "0 0 28px rgba(249,198,43,0.28),0 4px 16px rgba(0,0,0,0.55)",
+                "bg":       "linear-gradient(135deg,rgba(249,198,43,0.16) 0%,rgba(245,158,11,0.12) 100%)",
+                "border":   "rgba(249,198,43,0.60)",
+                "glow":     "0 0 32px rgba(249,198,43,0.32),0 4px 20px rgba(0,0,0,0.60)",
                 "badge_bg": "linear-gradient(90deg,#f9c62b,#f59e0b)",
                 "badge_clr":"#1a1200",
                 "icon":     "💰",
                 "avatar_bg":"linear-gradient(135deg,#f9c62b,#f59e0b)",
-                "bar_clr":  "#f9c62b",
+                "avatar_glow":"0 0 14px rgba(249,198,43,0.65)",
+                "top_bar":  "linear-gradient(90deg,#f9c62b,#f59e0b,#f9c62b)",
             },
             "sharp_iq": {
-                "bg":       "linear-gradient(135deg,rgba(45,158,255,0.14) 0%,rgba(0,213,89,0.10) 100%)",
-                "border":   "rgba(45,158,255,0.55)",
-                "glow":     "0 0 28px rgba(45,158,255,0.28),0 4px 16px rgba(0,0,0,0.55)",
+                "bg":       "linear-gradient(135deg,rgba(45,158,255,0.16) 0%,rgba(0,213,89,0.12) 100%)",
+                "border":   "rgba(45,158,255,0.60)",
+                "glow":     "0 0 32px rgba(45,158,255,0.32),0 4px 20px rgba(0,0,0,0.60)",
                 "badge_bg": "linear-gradient(90deg,#2D9EFF,#00D559)",
                 "badge_clr":"#fff",
                 "icon":     "⚡",
                 "avatar_bg":"linear-gradient(135deg,#2D9EFF,#00D559)",
-                "bar_clr":  "#2D9EFF",
+                "avatar_glow":"0 0 14px rgba(45,158,255,0.65)",
+                "top_bar":  "linear-gradient(90deg,#2D9EFF,#00D559,#2D9EFF)",
             },
             "free": {
                 "bg":       "linear-gradient(135deg,rgba(255,255,255,0.05) 0%,rgba(160,180,208,0.04) 100%)",
-                "border":   "rgba(160,180,208,0.22)",
-                "glow":     "0 4px 16px rgba(0,0,0,0.45)",
-                "badge_bg": "rgba(255,255,255,0.07)",
+                "border":   "rgba(160,180,208,0.25)",
+                "glow":     "0 4px 18px rgba(0,0,0,0.50)",
+                "badge_bg": "rgba(255,255,255,0.08)",
                 "badge_clr":"#a0b4d0",
                 "icon":     "⭐",
                 "avatar_bg":"linear-gradient(135deg,#3a4560,#232c40)",
-                "bar_clr":  "rgba(160,180,208,0.30)",
+                "avatar_glow":"none",
+                "top_bar":  "rgba(160,180,208,0.20)",
             },
         }
         _s = _TIER_STYLES.get(_tier, _TIER_STYLES["free"])
@@ -166,37 +171,80 @@ def render_sidebar_auth() -> None:
 
         st.markdown(f"""
 <style>
-.sb-card {{position:relative;border-radius:16px;padding:14px 14px 12px;
+/* ── Smart Pick Pro sidebar identity card ── */
+.sb-card {{
+  position:relative;border-radius:16px;padding:14px 14px 13px;
   background:{_s['bg']};border:1px solid {_s['border']};
-  box-shadow:{_s['glow']};margin-bottom:8px;overflow:hidden;}}
-.sb-card::before {{content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:{_s['badge_bg']};border-radius:16px 16px 0 0;}}
-.sb-avatar {{width:34px;height:34px;border-radius:50%;
+  box-shadow:{_s['glow']};margin-bottom:10px;overflow:hidden;
+}}
+.sb-card::before {{
+  content:'';position:absolute;top:0;left:0;right:0;height:2.5px;
+  background:{_s['top_bar']};border-radius:16px 16px 0 0;
+  animation:sb-shimmer 3s linear infinite;background-size:200% 100%;
+}}
+@keyframes sb-shimmer {{
+  0%{{background-position:200% center}}
+  100%{{background-position:-200% center}}
+}}
+.sb-avatar {{
+  width:36px;height:36px;border-radius:50%;
   background:{_s['avatar_bg']};display:inline-flex;align-items:center;
-  justify-content:center;font-weight:900;font-size:0.95rem;
-  color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.45);}}
-.sb-email {{color:#c8d8ee;font-size:0.75rem;font-weight:500;
+  justify-content:center;font-weight:900;font-size:1.0rem;
+  color:#fff;flex-shrink:0;
+  box-shadow:{_s['avatar_glow']},0 2px 8px rgba(0,0,0,0.50);
+}}
+.sb-email {{
+  color:#c8d8ee;font-size:0.74rem;font-weight:500;
   font-family:'JetBrains Mono',monospace;letter-spacing:0.01em;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:148px;}}
-.sb-badge {{display:inline-block;padding:3px 10px;border-radius:100px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:148px;
+  opacity:0.90;
+}}
+.sb-badge {{
+  display:inline-block;padding:3px 10px;border-radius:100px;
   background:{_s['badge_bg']};color:{_s['badge_clr']};
-  font-size:0.68rem;font-weight:800;letter-spacing:0.07em;
+  font-size:0.67rem;font-weight:800;letter-spacing:0.08em;
   text-transform:uppercase;font-family:'Inter',sans-serif;
-  box-shadow:0 1px 6px rgba(0,0,0,0.35);}}
-.sb-upgrade-btn {{display:block;margin-top:10px;padding:8px 0;
+  box-shadow:0 1px 8px rgba(0,0,0,0.40);
+}}
+.sb-upgrade-btn {{
+  display:block;margin-top:11px;padding:9px 0;
   background:linear-gradient(90deg,#ff5e00,#ff8c00);border-radius:10px;
   text-align:center;color:#fff!important;font-weight:800;
-  font-size:0.78rem;letter-spacing:0.06em;text-decoration:none!important;
+  font-size:0.78rem;letter-spacing:0.07em;text-decoration:none!important;
   font-family:'Inter',sans-serif;text-transform:uppercase;
-  box-shadow:0 0 18px rgba(255,94,0,0.40),0 2px 8px rgba(0,0,0,0.40);
-  transition:filter 0.2s;}} 
-.sb-upgrade-btn:hover{{filter:brightness(1.15);}}
+  box-shadow:0 0 20px rgba(255,94,0,0.45),0 2px 8px rgba(0,0,0,0.40);
+  transition:filter 0.2s,transform 0.2s;
+}}
+.sb-upgrade-btn:hover{{filter:brightness(1.18);transform:translateY(-1px);}}
+
+/* ── Elite Log Out button — crimson glow ── */
+[data-testid="stSidebar"] .stButton > button {{
+  background: rgba(242,67,54,0.07) !important;
+  border: 1px solid rgba(242,67,54,0.30) !important;
+  color: #F0B8B4 !important;
+  font-weight: 700 !important;
+  font-size: 0.83rem !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  border-radius: 100px !important;
+  padding: 10px 22px !important;
+  min-height: 42px !important;
+  transition: all 0.22s ease !important;
+  font-family: 'Inter', sans-serif !important;
+}}
+[data-testid="stSidebar"] .stButton > button:hover {{
+  background: rgba(242,67,54,0.18) !important;
+  border-color: rgba(242,67,54,0.60) !important;
+  color: #F24336 !important;
+  box-shadow: 0 4px 22px rgba(242,67,54,0.30) !important;
+  transform: translateY(-1px) !important;
+}}
 </style>
 <div class="sb-card">
   <div style="display:flex;align-items:center;gap:10px;">
     <div class="sb-avatar">{_initial}</div>
     <div style="min-width:0;flex:1;">
-      <div class="sb-email">{_disp_email}</div>
+      <div class="sb-email" title="{_email}">{_disp_email}</div>
       <div style="margin-top:5px;"><span class="sb-badge">{_s['icon']} {_tier_label}</span></div>
     </div>
   </div>
@@ -204,10 +252,9 @@ def render_sidebar_auth() -> None:
 </div>
 """, unsafe_allow_html=True)
 
-        if st.button("Sign Out", key="_global_sidebar_logout", use_container_width=True,
-                     help="Log out of your account"):
+        if st.button("🚪 Log Out", key="_global_sidebar_logout", use_container_width=True,
+                     help="Sign out of your Smart Pick Pro account"):
             logout_user()
-            st.session_state.pop("_sidebar_auth_rendered", None)
             st.rerun()
         st.divider()
     except Exception:

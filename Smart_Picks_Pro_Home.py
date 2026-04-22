@@ -292,9 +292,8 @@ if not st.session_state.get("analysis_results"):
             _ai_games_sess = st.session_state.get("todays_games", [])
 
             if _ai_props and _ai_players:
-                # Cap at 300 props for the silent auto-init to keep it fast
                 _ai_results = _ai_analyze(
-                    _ai_props[:300],
+                    _ai_props,
                     players_data=_ai_players,
                     todays_games=_ai_games_sess,
                     injury_map=st.session_state.get("injury_status_map", {}),
@@ -1497,14 +1496,72 @@ if _home_one_click:
             except Exception:
                 pass
 
+        # ── Phase 4: Run Neural Analysis on all loaded props ─────────
+        _hoc_analysis_msg = ""
+        try:
+            _hoc_status2 = st.empty()
+            _hoc_bar2 = st.progress(0)
+            _hoc_status2.text("⏳ Phase 4/4 — Running Neural Analysis on all loaded props…")
+            _hoc_bar2.progress(10)
+            from data.data_manager import (
+                load_props_from_session as _hoc_lps,
+                load_players_data as _hoc_lpd,
+                load_teams_data as _hoc_ltd,
+                load_defensive_ratings_data as _hoc_ldr,
+            )
+            from engine.analysis_orchestrator import analyze_props_batch as _hoc_analyze
+            _hoc_aprops   = _hoc_lps(st.session_state)
+            _hoc_aplayers = _hoc_lpd()
+            _hoc_ateams   = _hoc_ltd()
+            _hoc_aratings = _hoc_ldr()
+            _hoc_agames   = st.session_state.get("todays_games", [])
+            _hoc_bar2.progress(20)
+            if _hoc_aprops and _hoc_aplayers:
+                _hoc_results = _hoc_analyze(
+                    _hoc_aprops,
+                    players_data=_hoc_aplayers,
+                    todays_games=_hoc_agames,
+                    injury_map=st.session_state.get("injury_status_map", {}),
+                    defensive_ratings_data=_hoc_aratings,
+                    teams_data=_hoc_ateams,
+                    simulation_depth=1000,
+                )
+                _hoc_bar2.progress(90)
+                if _hoc_results:
+                    st.session_state["analysis_results"] = _hoc_results
+                    import datetime as _hoc_dt
+                    st.session_state["analysis_timestamp"] = _hoc_dt.datetime.now()
+                    try:
+                        from tracking.database import (
+                            save_analysis_session as _hoc_sas,
+                            insert_analysis_picks as _hoc_iap,
+                        )
+                        _hoc_sas(
+                            analysis_results=_hoc_results,
+                            todays_games=_hoc_agames,
+                            selected_picks=st.session_state.get("selected_picks", []),
+                        )
+                        _hoc_iap(_hoc_results)
+                    except Exception:
+                        pass
+                    _hoc_analysis_msg = f"✅ {len(_hoc_results)} picks analyzed"
+                else:
+                    _hoc_analysis_msg = "⚠️ Analysis returned no results"
+            else:
+                _hoc_analysis_msg = "⚠️ No props or player data to analyze"
+            _hoc_bar2.progress(100)
+            _hoc_bar2.empty()
+            _hoc_status2.empty()
+        except Exception as _hoc_ae:
+            _hoc_analysis_msg = f"⚠️ Analysis failed: {_hoc_ae}"
+
         _hoc_total = len(st.session_state.get("current_props", []))
         st.success(
             f"✅ **One-Click Setup complete!** "
             f"Games: {'✅ ' + str(len(_hoc_games)) if _hoc_games else '⚠️ none'} | "
             f"Players: {'✅' if _hoc_players_ok else '⚠️ check data'} | "
             f"Props: {_hoc_platform_msg} | "
-            f"Total props loaded: **{_hoc_total}**\n\n"
-            "👉 Go to **⚡ Neural Analysis** and click **Run Analysis** to analyze all loaded props."
+            f"Analysis: {_hoc_analysis_msg}"
         )
         _hoc_time.sleep(1)
         st.rerun()

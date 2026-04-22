@@ -1486,14 +1486,71 @@ if one_click_setup_clicked:
         _oc_status.empty()
         _oc_bar.empty()
 
-        _oc_total_props = len(st.session_state.get("current_props", []))
+        # ── Phase 4: Run Neural Analysis on all loaded props ──────────
+        _oc_analysis_msg = ""
+        try:
+            _oc_astatus = st.empty()
+            _oc_abar = st.progress(0)
+            _oc_astatus.text("⏳ Phase 4/4 — Running Neural Analysis on all loaded props…")
+            _oc_abar.progress(10)
+            from data.data_manager import (
+                load_props_from_session as _oc_lps,
+                load_players_data as _oc_lpd,
+                load_teams_data as _oc_ltd,
+                load_defensive_ratings_data as _oc_ldr,
+            )
+            from engine.analysis_orchestrator import analyze_props_batch as _oc_analyze
+            _oc_aprops   = _oc_lps(st.session_state)
+            _oc_aplayers = _oc_lpd()
+            _oc_ateams   = _oc_ltd()
+            _oc_aratings = _oc_ldr()
+            _oc_agames   = st.session_state.get("todays_games", [])
+            _oc_abar.progress(20)
+            if _oc_aprops and _oc_aplayers:
+                _oc_results = _oc_analyze(
+                    _oc_aprops,
+                    players_data=_oc_aplayers,
+                    todays_games=_oc_agames,
+                    injury_map=st.session_state.get("injury_status_map", {}),
+                    defensive_ratings_data=_oc_aratings,
+                    teams_data=_oc_ateams,
+                    simulation_depth=1000,
+                )
+                _oc_abar.progress(90)
+                if _oc_results:
+                    st.session_state["analysis_results"] = _oc_results
+                    import datetime as _oc_dt
+                    st.session_state["analysis_timestamp"] = _oc_dt.datetime.now()
+                    try:
+                        from tracking.database import (
+                            save_analysis_session as _oc_sas,
+                            insert_analysis_picks as _oc_iap,
+                        )
+                        _oc_sas(
+                            analysis_results=_oc_results,
+                            todays_games=_oc_agames,
+                            selected_picks=st.session_state.get("selected_picks", []),
+                        )
+                        _oc_iap(_oc_results)
+                    except Exception:
+                        pass
+                    _oc_analysis_msg = f"✅ {len(_oc_results)} picks analyzed"
+                else:
+                    _oc_analysis_msg = "⚠️ Analysis returned no results"
+            else:
+                _oc_analysis_msg = "⚠️ No props or player data to analyze"
+            _oc_abar.progress(100)
+            _oc_abar.empty()
+            _oc_astatus.empty()
+        except Exception as _oc_ae:
+            _oc_analysis_msg = f"⚠️ Analysis failed: {_oc_ae}"
+
         st.success(
             f"✅ **One-Click Setup complete!** "
             f"Games: {'✅ ' + str(len(_oc_games)) if _oc_games else '⚠️ none'} | "
             f"Players: {'✅' if _oc_players_ok else '⚠️ check data'} | "
             f"Props: {_oc_platform_msg} | "
-            f"Total props loaded: **{_oc_total_props}**\n\n"
-            "👉 Go to **⚡ Neural Analysis** and click **Run Analysis** to analyze all loaded props."
+            f"Analysis: {_oc_analysis_msg}"
         )
         time.sleep(1)
         st.rerun()

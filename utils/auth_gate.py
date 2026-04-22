@@ -2102,6 +2102,46 @@ html, body, .stApp, .stApp * {
     box-shadow: 0 0 20px rgba(0, 213, 89, 0.06);
 }
 
+/* ── Hero CTA Button ─────────────────────────────────────── */
+@keyframes agCtaPulse {
+    0%, 100% { box-shadow: 0 0 40px rgba(0,213,89,0.45), 0 4px 20px rgba(0,213,89,0.30), inset 0 1px 0 rgba(255,255,255,0.18); }
+    50%      { box-shadow: 0 0 70px rgba(0,213,89,0.65), 0 8px 32px rgba(0,213,89,0.45), inset 0 1px 0 rgba(255,255,255,0.18); }
+}
+.ag-hero-cta-row {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    margin-top: 32px;
+    animation: agHeroTextReveal 0.8s 0.80s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ag-hero-cta-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.06rem; font-weight: 800; letter-spacing: -0.01em;
+    color: #030810 !important;
+    background: linear-gradient(135deg, #00E865 0%, #00D559 50%, #00B74D 100%);
+    border-radius: 100px; padding: 17px 46px;
+    text-decoration: none !important;
+    box-shadow: 0 0 40px rgba(0,213,89,0.45), 0 4px 20px rgba(0,213,89,0.30), inset 0 1px 0 rgba(255,255,255,0.18);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative; overflow: hidden;
+    animation: agCtaPulse 2.5s ease-in-out infinite;
+}
+.ag-hero-cta-btn::after {
+    content: ''; position: absolute; top: 0; left: -100%; width: 55%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.5s;
+}
+.ag-hero-cta-btn:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 0 60px rgba(0,213,89,0.65), 0 8px 32px rgba(0,213,89,0.45); }
+.ag-hero-cta-btn:hover::after { left: 155%; }
+.ag-hero-cta-note {
+    font-family: 'Inter', sans-serif; font-size: 0.68rem;
+    color: rgba(255,255,255,0.28); letter-spacing: 0.01em;
+}
+@media (max-width: 640px) {
+    .ag-hero-cta-btn { font-size: 0.88rem; padding: 14px 32px; }
+    .ag-hero-cta-note { font-size: 0.60rem; text-align: center; padding: 0 16px; }
+}
+
 /* ── Proof strip (4 glass cards) ──────────────────────────── */
 .ag-proof-strip {
     width: 100vw; position: relative;
@@ -5387,16 +5427,21 @@ def require_login() -> bool:
       <div class="ag-hero-ai-badge"><span class="ai-dot"></span> NEURAL ENGINE v6.0 &mdash; 6 AI MODELS ACTIVE</div>
       <h1>The House<br><span class="line2">Has a Problem.</span><br><span class="em">It&rsquo;s Us.</span></h1>
       <div class="ag-hero-sub">
-        <strong>6 neural networks. 300+ props. Every single night.</strong><br>
-        The only AI platform that fuses machine learning, ensemble modeling &amp;
-        real-time edge detection into a single confidence score
-        across PrizePicks, DraftKings &amp; Underdog.
+        <strong>The NBA prop machine the Twitter gurus don&rsquo;t want you to know about.</strong><br>
+        Every night, 6 AI models scan 300+ props across PrizePicks, DraftKings &amp; Underdog
+        and score each one with a proprietary <strong>SAFE Score&trade;</strong> &mdash; a 0&ndash;100
+        confidence rating powered by Monte Carlo simulation, ensemble modeling &amp; real-time edge
+        detection. Stop playing blind. Start playing with a verifiable edge.
       </div>
       <div class="ag-hero-badges">
         <span class="ag-hero-badge primary"><span class="badge-ico">&#x26A1;</span> Free Forever</span>
-        <span class="ag-hero-badge"><span class="badge-ico">&#x1F9E0;</span> 6 Neural Nets</span>
-        <span class="ag-hero-badge"><span class="badge-ico">&#x1F4CA;</span> Real-Time Edge</span>
-        <span class="ag-hero-badge"><span class="badge-ico">&#x1F3AF;</span> Instant Access</span>
+        <span class="ag-hero-badge"><span class="badge-ico">&#x1F3AF;</span> 62.4% Hit Rate</span>
+        <span class="ag-hero-badge"><span class="badge-ico">&#x1F4CA;</span> SAFE Score&trade; System</span>
+        <span class="ag-hero-badge"><span class="badge-ico">&#x1F3C0;</span> NBA Specialists</span>
+      </div>
+      <div class="ag-hero-cta-row">
+        <a class="ag-hero-cta-btn" href="?auth=signup">&#x26A1; Get Free Access &mdash; Takes 30 Seconds</a>
+        <span class="ag-hero-cta-note">2,400+ sharps already inside &nbsp;&middot;&nbsp; No credit card &nbsp;&middot;&nbsp; No trial period &nbsp;&middot;&nbsp; Cancel nothing</span>
       </div>
     </div>
 
@@ -5404,9 +5449,9 @@ def require_login() -> bool:
     <div class="ag-proof-strip">
       <div class="ag-proof-inner">
         <div class="ag-proof-stat">
-          <div class="ag-proof-big">62%</div>
+          <div class="ag-proof-big">62.4%</div>
           <div class="ag-proof-label">Hit Rate</div>
-          <div class="ag-proof-sub">8,400+ graded picks</div>
+          <div class="ag-proof-sub">8,400+ verified picks</div>
         </div>
         <div class="ag-proof-stat">
           <div class="ag-proof-big">300+</div>
@@ -5414,13 +5459,13 @@ def require_login() -> bool:
           <div class="ag-proof-sub">3 platforms scanned</div>
         </div>
         <div class="ag-proof-stat">
-          <div class="ag-proof-big">+18%</div>
+          <div class="ag-proof-big">+18.3%</div>
           <div class="ag-proof-label">Avg ROI</div>
           <div class="ag-proof-sub">Rolling 30-day window</div>
         </div>
         <div class="ag-proof-stat">
           <div class="ag-proof-big">$0</div>
-          <div class="ag-proof-label">Price</div>
+          <div class="ag-proof-label">Forever</div>
           <div class="ag-proof-sub">Others charge $99&ndash;$299/mo</div>
         </div>
       </div>
@@ -5440,9 +5485,9 @@ def require_login() -> bool:
     color:#080C18;background:linear-gradient(135deg,#00D559,#2D9EFF);padding:3px 14px;border-radius:100px;
     letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">&#x26A1; Live Tonight</div>
   <h2 style="font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:800;color:#fff;margin:0 0 6px;">
-    Free Picks Today</h2>
+    Tonight&rsquo;s AI Picks &mdash; Free</h2>
   <p style="font-size:0.78rem;color:rgba(255,255,255,0.35);margin:0 0 4px;">
-    Top 5 AI picks from tonight&rsquo;s Quantum Analysis Matrix &mdash; updated every game night</p>
+    The top 5 highest-confidence props from tonight&rsquo;s Quantum Analysis Matrix. No paywall. Updated nightly.</p>
 </div>""", unsafe_allow_html=True)
     _render_free_picks_fragment()
 
@@ -5793,9 +5838,10 @@ a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
               background:#00D559;animation:spPulse 2s ease-in-out infinite"></span>
         <span style="font-family:'Space Grotesk',sans-serif;font-size:0.72rem;font-weight:600;
               color:rgba(255,255,255,0.6)">
-          <strong style="color:#00D559">2,400+</strong>&nbsp;sharps signed up&nbsp;&nbsp;&middot;&nbsp;&nbsp;
+          <strong style="color:#00D559">2,400+</strong>&nbsp;sharps inside&nbsp;&nbsp;&middot;&nbsp;&nbsp;
           <strong style="color:rgba(255,255,255,0.8)">8,400+</strong>&nbsp;picks graded&nbsp;&nbsp;&middot;&nbsp;&nbsp;
-          <strong style="color:#2D9EFF">62.4%</strong>&nbsp;verified hit rate
+          <strong style="color:#2D9EFF">62.4%</strong>&nbsp;verified hit rate&nbsp;&nbsp;&middot;&nbsp;&nbsp;
+          <strong style="color:#F9C62B">$0</strong>&nbsp;forever
         </span>
       </div>
     </div>
@@ -5813,29 +5859,29 @@ a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
     <div class="ag-section">
     <div class="ag-how">
       <div class="ag-section-head">
-        <h3>Start Winning<br>in <span class="em">3 Steps</span></h3>
-        <p>From signup to payout in under 60 seconds</p>
+        <h3>From Zero to <span class="em">Edge</span> in 3 Steps</h3>
+        <p>Signup takes 30 seconds. Your first AI-rated picks are ready immediately.</p>
       </div>
       <div class="ag-how-steps">
         <div class="ag-how-step">
           <span class="ag-how-num">1</span>
           <span class="ag-how-ico">&#x1F4DD;</span>
-          <div class="ag-how-title">Create Free Account</div>
-          <div class="ag-how-desc">No credit card. No trial. Just your email. You get instant access to the full Quantum Analysis Matrix, SAFE Scores, and all 6 AI models.</div>
+          <div class="ag-how-title">Create Your Free Account</div>
+          <div class="ag-how-desc">Email and password &mdash; done. No credit card. No 7-day trial that expires. You get full, permanent access to the Quantum Analysis Matrix, all 6 AI models, and every SAFE Score.</div>
           <span class="ag-how-arrow">&#x25B6;</span>
         </div>
         <div class="ag-how-step">
           <span class="ag-how-num">2</span>
           <span class="ag-how-ico">&#x1F3AF;</span>
-          <div class="ag-how-title">Pick AI-Rated Props</div>
-          <div class="ag-how-desc">Every prop gets a 0&ndash;100 SAFE Score, edge percentage, probability, and projection. Sort by confidence and play only the highest-rated picks.</div>
+          <div class="ag-how-title">Pick High-Confidence Props</div>
+          <div class="ag-how-desc">Every prop gets a 0&ndash;100 SAFE Score&trade;, edge %, win probability, and AI projection. Sort by confidence &mdash; play 70+ and skip the rest. The math does the work.</div>
           <span class="ag-how-arrow">&#x25B6;</span>
         </div>
         <div class="ag-how-step">
           <span class="ag-how-num">3</span>
           <span class="ag-how-ico">&#x1F4B0;</span>
-          <div class="ag-how-title">Get Paid</div>
-          <div class="ag-how-desc">62% hit rate across 8,400+ graded picks. Track your results in the built-in Bet Tracker with ROI, bankroll growth, and CLV capture.</div>
+          <div class="ag-how-title">Win More. Track Everything.</div>
+          <div class="ag-how-desc">62.4% hit rate across 8,400+ graded picks. The built-in Bet Tracker auto-grades your results, tracks bankroll growth, ROI by platform, and shows exactly which SAFE Score ranges are printing for you.</div>
         </div>
       </div>
     </div>

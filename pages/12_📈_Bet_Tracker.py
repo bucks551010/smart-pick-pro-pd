@@ -504,11 +504,13 @@ with _filter_col2:
 
 with _filter_col3:
     _today_dt = tracker_today_date()
+    import datetime as _dt_mod
+    _week_ago_dt = _today_dt - _dt_mod.timedelta(days=7)
     _date_range = st.date_input(
         "📅 Date Range",
-        value=[_today_dt, _today_dt],
+        value=[_week_ago_dt, _today_dt],
         key="date_range_filter",
-        help="Filter bets by date range. Defaults to today — clear or widen to see history.",
+        help="Filter bets by date range. Defaults to the last 7 days.",
     )
 
 with _filter_col4:

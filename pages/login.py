@@ -750,6 +750,67 @@ st.markdown(f"""
 <div class="lp-page-offset"></div>
 """, unsafe_allow_html=True)
 
+st.markdown("""
+<script>
+/* ── Navbar scroll behaviour ───────────────────────────── */
+(function(){
+  var NAV_OFFSET = 98; /* 34px ticker + 64px nav */
+  function getNav(doc){ return doc.querySelector('.lp-nav'); }
+
+  function applyScroll(doc){
+    var nav = getNav(doc);
+    if(!nav) return;
+    var scrolled = (doc.scrollingElement || doc.documentElement).scrollTop > 24;
+    nav.style.background  = scrolled
+      ? 'rgba(2,6,14,0.97)'
+      : 'rgba(2,6,14,0.88)';
+    nav.style.boxShadow   = scrolled
+      ? '0 1px 0 rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.4)'
+      : 'none';
+    nav.style.borderBottomColor = scrolled
+      ? 'rgba(0,213,89,0.1)'
+      : 'rgba(255,255,255,0.06)';
+  }
+
+  function initNav(){
+    [document, window.parent && window.parent.document].forEach(function(doc){
+      if(!doc) return;
+      try{
+        applyScroll(doc);
+        doc.addEventListener('scroll', function(){ applyScroll(doc); });
+      }catch(e){}
+    });
+  }
+
+  /* ── Smooth scroll with fixed-nav offset ──────────────── */
+  function initSmoothScroll(doc){
+    doc.querySelectorAll('a[href^="#"]').forEach(function(a){
+      a.addEventListener('click', function(e){
+        var id = a.getAttribute('href').slice(1);
+        var target = doc.getElementById(id);
+        if(!target) return;
+        e.preventDefault();
+        var top = target.getBoundingClientRect().top
+                  + (doc.scrollingElement||doc.documentElement).scrollTop
+                  - NAV_OFFSET - 12;
+        (doc.scrollingElement||doc.documentElement).scrollTo({top:top, behavior:'smooth'});
+      });
+    });
+  }
+
+  function tryAll(){
+    initNav();
+    try{ initSmoothScroll(document); }catch(e){}
+    try{ initSmoothScroll(window.parent.document); }catch(e){}
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', tryAll);
+  else tryAll();
+  setTimeout(tryAll, 700);
+})();
+</script>
+""", unsafe_allow_html=True)
+
 # ── Get logo ──────────────────────────────────────────────────
 _logo_b64 = _get_logo_b64()
 _logo_img_hero = (
@@ -1741,6 +1802,229 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
+# AI MODEL PERFORMANCE SECTION
+# ════════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+/* ── Model Performance Section ──────────────────────────── */
+.lp-models-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+.lp-model-card {
+    background: rgba(255,255,255,0.022);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 22px;
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .35s, transform .35s, background .35s, box-shadow .35s;
+}
+.lp-model-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--mc-color), transparent);
+    opacity: .5;
+    transition: opacity .3s, height .3s;
+}
+.lp-model-card:hover {
+    border-color: color-mix(in srgb, var(--mc-color) 30%, transparent);
+    transform: translateY(-5px);
+    background: rgba(255,255,255,0.04);
+    box-shadow: 0 20px 60px rgba(0,0,0,.45), 0 0 40px color-mix(in srgb, var(--mc-color) 12%, transparent);
+}
+.lp-model-card:hover::before { opacity: 1; height: 3px; }
+.lp-model-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px;
+}
+.lp-model-icon {
+    font-size: 1.6rem; line-height: 1;
+    filter: drop-shadow(0 0 12px var(--mc-glow));
+    transition: filter .3s, transform .3s;
+}
+.lp-model-card:hover .lp-model-icon {
+    filter: drop-shadow(0 0 22px var(--mc-glow));
+    transform: scale(1.12) rotate(-3deg);
+}
+.lp-model-accuracy {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.4rem; font-weight: 900;
+    letter-spacing: -0.05em;
+    color: var(--mc-color);
+    text-shadow: 0 0 18px var(--mc-glow);
+}
+.lp-model-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: .97rem; font-weight: 800;
+    color: #fff; margin-bottom: 6px;
+    letter-spacing: -.02em;
+}
+.lp-model-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: .8rem; color: rgba(255,255,255,.32);
+    line-height: 1.65; margin-bottom: 18px;
+}
+.lp-model-bar-wrap {
+    height: 6px;
+    background: rgba(255,255,255,.07);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+.lp-model-bar {
+    height: 100%; width: 0%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--mc-color), var(--mc-color2, var(--mc-color)));
+    box-shadow: 0 0 8px var(--mc-glow);
+    transition: width 1.4s cubic-bezier(.16,1,.3,1);
+}
+.lp-model-bar-label {
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .52rem; font-weight: 700;
+    color: rgba(255,255,255,.2);
+    text-transform: uppercase; letter-spacing: .08em;
+}
+.lp-model-tag {
+    display: inline-flex; align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .5rem; font-weight: 800;
+    color: var(--mc-color);
+    background: color-mix(in srgb, var(--mc-color) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mc-color) 22%, transparent);
+    padding: 3px 10px; border-radius: 100px;
+    text-transform: uppercase; letter-spacing: .09em;
+    margin-bottom: 12px;
+}
+</style>
+
+<!-- section divider -->
+<div style="padding:0 24px;"><div class="lp-divider"></div></div>
+
+<div id="lp-models" style="padding: 100px 24px 0;">
+  <div class="lp-section" style="padding:0;">
+    <div class="lp-section-label">Under the Hood</div>
+    <h2 class="lp-section-h2">6 Models.<br>Zero Bias.</h2>
+    <p class="lp-section-sub">Every prop runs through 6 independent AI models. They vote. The SAFE Score™ is the verdict.</p>
+
+    <div class="lp-models-grid">
+
+      <div class="lp-model-card" style="--mc-color:#00D559;--mc-glow:rgba(0,213,89,.45);--mc-color2:#00FF85;"
+           data-model-pct="68">
+        <div class="lp-model-tag">Core Model</div>
+        <div class="lp-model-header">
+          <span class="lp-model-icon">🧠</span>
+          <span class="lp-model-accuracy">68.4%</span>
+        </div>
+        <div class="lp-model-name">Ensemble Neural Network</div>
+        <p class="lp-model-desc">The anchor model. Multi-layer perceptron trained on 3+ years of prop outcomes, game logs, and situational context. Highest single-model accuracy.</p>
+        <div class="lp-model-bar-wrap"><div class="lp-model-bar" data-target-pct="68.4"></div></div>
+        <div class="lp-model-bar-label"><span>Accuracy</span><span>68.4%</span></div>
+      </div>
+
+      <div class="lp-model-card" style="--mc-color:#2D9EFF;--mc-glow:rgba(45,158,255,.45);--mc-color2:#60b4ff;"
+           data-model-pct="64">
+        <div class="lp-model-tag">Probabilistic</div>
+        <div class="lp-model-header">
+          <span class="lp-model-icon">📐</span>
+          <span class="lp-model-accuracy">64.1%</span>
+        </div>
+        <div class="lp-model-name">Bayesian Inference</div>
+        <p class="lp-model-desc">Updates prop probabilities dynamically as new data arrives — injuries, lineup changes, sharp money flow. Strongest on same-day news events.</p>
+        <div class="lp-model-bar-wrap"><div class="lp-model-bar" data-target-pct="64.1"></div></div>
+        <div class="lp-model-bar-label"><span>Accuracy</span><span>64.1%</span></div>
+      </div>
+
+      <div class="lp-model-card" style="--mc-color:#c084fc;--mc-glow:rgba(192,132,252,.45);--mc-color2:#d8b4fe;"
+           data-model-pct="62">
+        <div class="lp-model-tag">Simulation</div>
+        <div class="lp-model-header">
+          <span class="lp-model-icon">🎲</span>
+          <span class="lp-model-accuracy">62.8%</span>
+        </div>
+        <div class="lp-model-name">Monte Carlo Simulation</div>
+        <p class="lp-model-desc">Runs 10,000+ game simulations per prop. Maps outcome distributions, calculates true fair probability, exposes mispriced lines with precision.</p>
+        <div class="lp-model-bar-wrap"><div class="lp-model-bar" data-target-pct="62.8"></div></div>
+        <div class="lp-model-bar-label"><span>Accuracy</span><span>62.8%</span></div>
+      </div>
+
+      <div class="lp-model-card" style="--mc-color:#F9C62B;--mc-glow:rgba(249,198,43,.45);--mc-color2:#fde68a;"
+           data-model-pct="61">
+        <div class="lp-model-tag">Regression</div>
+        <div class="lp-model-header">
+          <span class="lp-model-icon">📊</span>
+          <span class="lp-model-accuracy">61.3%</span>
+        </div>
+        <div class="lp-model-name">Linear Regression</div>
+        <p class="lp-model-desc">Classic statistical approach with modern feature engineering. Stable, interpretable, and best at flagging line discrepancies vs. long-term averages.</p>
+        <div class="lp-model-bar-wrap"><div class="lp-model-bar" data-target-pct="61.3"></div></div>
+        <div class="lp-model-bar-label"><span>Accuracy</span><span>61.3%</span></div>
+      </div>
+
+      <div class="lp-model-card" style="--mc-color:#00D559;--mc-glow:rgba(0,213,89,.45);--mc-color2:#2D9EFF;"
+           data-model-pct="66">
+        <div class="lp-model-tag">Sharp Money</div>
+        <div class="lp-model-header">
+          <span class="lp-model-icon">📈</span>
+          <span class="lp-model-accuracy">66.2%</span>
+        </div>
+        <div class="lp-model-name">CLV Tracker</div>
+        <p class="lp-model-desc">Monitors closing line value in real-time. Bets that close on the right side of the number generate CLV — the truest signal of a winning bet.</p>
+        <div class="lp-model-bar-wrap"><div class="lp-model-bar" data-target-pct="66.2"></div></div>
+        <div class="lp-model-bar-label"><span>Accuracy</span><span>66.2%</span></div>
+      </div>
+
+      <div class="lp-model-card" style="--mc-color:#2D9EFF;--mc-glow:rgba(45,158,255,.45);--mc-color2:#c084fc;"
+           data-model-pct="63">
+        <div class="lp-model-tag">Sharp Signal</div>
+        <div class="lp-model-header">
+          <span class="lp-model-icon">🔭</span>
+          <span class="lp-model-accuracy">63.5%</span>
+        </div>
+        <div class="lp-model-name">Line Movement Mirror</div>
+        <p class="lp-model-desc">Tracks bet percentage vs. money percentage splits to detect sharp vs. public action. When sharp money diverges from public — it wins 3 to 1.</p>
+        <div class="lp-model-bar-wrap"><div class="lp-model-bar" data-target-pct="63.5"></div></div>
+        <div class="lp-model-bar-label"><span>Accuracy</span><span>63.5%</span></div>
+      </div>
+
+    </div><!-- /lp-models-grid -->
+  </div>
+</div>
+
+<script>
+/* Animate model accuracy bars on scroll-in */
+(function(){
+  function animateBars(doc){
+    var bars = doc.querySelectorAll('.lp-model-bar[data-target-pct]');
+    if(!bars.length) return;
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          var pct = parseFloat(e.target.dataset.targetPct) || 0;
+          e.target.style.width = pct + '%';
+          io.unobserve(e.target);
+        }
+      });
+    }, {threshold: .2});
+    bars.forEach(function(b){ io.observe(b); });
+  }
+  function tryBars(){
+    animateBars(document);
+    try{ animateBars(window.parent.document); }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', tryBars);
+  else tryBars();
+  setTimeout(tryBars, 700);
+  setTimeout(tryBars, 2000);
+})();
+</script>
+""", unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════
 # LIVE PICKS PREVIEW SECTION  (#lp-picks)
 # ════════════════════════════════════════════════════════════
 st.markdown("""
@@ -2206,25 +2490,55 @@ st.markdown("""
 .lp-pc-sharp   { --pc-grad: linear-gradient(90deg,#60b4ff,#2D9EFF); --pc-color: #2D9EFF; --pc-cta-bg: rgba(45,158,255,0.1); --pc-cta-color: #2D9EFF; --pc-cta-border: rgba(45,158,255,0.25); }
 .lp-pc-smart   { --pc-grad: linear-gradient(90deg,#00FF85,#00D559); --pc-color: #00D559; --pc-cta-bg: linear-gradient(135deg,#00FF85,#00D559); --pc-cta-color: #020C07; --pc-cta-border: transparent; }
 
-/* ── Testimonials ─────────────────────────────────────────── */
-.lp-testimonials {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-    max-width: 1000px;
+/* ── Testimonials – infinite marquee ─────────────────────── */
+.lp-testi-marquee-wrap {
+    overflow: hidden;
+    width: 100%;
+    max-width: 1200px;
     margin: 0 auto;
+    /* fade edges */
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+.lp-testi-marquee-track {
+    display: flex;
+    gap: 20px;
+    width: max-content;
+    animation: testiScroll 42s linear infinite;
+}
+.lp-testi-marquee-track:hover { animation-play-state: paused; }
+@keyframes testiScroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.lp-testimonials {
+    display: contents; /* replaced by marquee */
 }
 .lp-testi-card {
-    background: rgba(255,255,255,0.022);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 20px;
-    padding: 28px 24px;
-    transition: transform 0.3s, border-color 0.3s;
+    background: rgba(255,255,255,0.028);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 22px;
+    padding: 28px 26px;
+    width: 320px;
+    flex-shrink: 0;
+    transition: transform 0.35s, border-color 0.35s, box-shadow 0.35s, background 0.35s;
+    position: relative;
+    overflow: hidden;
+}
+.lp-testi-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0,213,89,0.4), transparent);
+    opacity: 0;
+    transition: opacity 0.35s;
 }
 .lp-testi-card:hover {
-    transform: translateY(-3px);
-    border-color: rgba(0,213,89,0.15);
+    transform: translateY(-6px) scale(1.015);
+    border-color: rgba(0,213,89,0.2);
+    background: rgba(0,213,89,0.025);
+    box-shadow: 0 0 50px rgba(0,213,89,0.08), 0 20px 50px rgba(0,0,0,0.5);
 }
+.lp-testi-card:hover::before { opacity: 1; }
 .lp-testi-stars {
     color: #F9C62B;
     font-size: 0.85rem;
@@ -2233,8 +2547,8 @@ st.markdown("""
 }
 .lp-testi-quote {
     font-family: 'Inter', sans-serif;
-    font-size: 0.88rem; line-height: 1.75;
-    color: rgba(255,255,255,0.55);
+    font-size: 0.875rem; line-height: 1.78;
+    color: rgba(255,255,255,0.52);
     margin-bottom: 20px;
     font-style: italic;
 }
@@ -2244,23 +2558,36 @@ st.markdown("""
     display: flex; align-items: center; gap: 12px;
 }
 .lp-testi-avatar {
-    width: 38px; height: 38px; border-radius: 50%;
+    width: 40px; height: 40px; border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
     font-family: 'Space Grotesk', sans-serif;
     font-size: 0.75rem; font-weight: 800;
     color: #020C07;
-    background: linear-gradient(135deg, #00FF85, #00D559);
+    background: var(--av-bg, linear-gradient(135deg, #00FF85, #00D559));
     flex-shrink: 0;
+    box-shadow: 0 0 18px var(--av-glow, rgba(0,213,89,0.4));
 }
 .lp-testi-name {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.82rem; font-weight: 700;
+    font-size: 0.84rem; font-weight: 700;
     color: #fff;
 }
 .lp-testi-handle {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.6rem; color: rgba(255,255,255,0.25);
+    font-size: 0.58rem; color: rgba(255,255,255,0.25);
     letter-spacing: .04em;
+    margin-top: 2px;
+}
+.lp-testi-stat {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.56rem; font-weight: 800;
+    color: #00D559;
+    background: rgba(0,213,89,0.08);
+    border: 1px solid rgba(0,213,89,0.18);
+    border-radius: 100px;
+    padding: 3px 10px;
+    margin-bottom: 14px;
 }
 </style>
 
@@ -2273,6 +2600,32 @@ st.markdown("""
     <div class="lp-section-label">Pricing</div>
     <h2 class="lp-section-h2">Start Free.<br>Scale Your Edge.</h2>
     <p class="lp-section-sub">No credit card to start. Upgrade when you're ready to unlock the full Neural Engine.</p>
+
+    <!-- Billing toggle -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:44px;">
+      <span id="lp-toggle-mo-label" style="font-family:'Space Grotesk',sans-serif;font-size:.85rem;
+            font-weight:700;color:#fff;transition:color .25s;">Monthly</span>
+      <div id="lp-billing-toggle"
+           onclick="lpToggleBilling()"
+           style="width:52px;height:28px;border-radius:100px;background:rgba(0,213,89,0.15);
+                  border:1px solid rgba(0,213,89,0.3);position:relative;cursor:pointer;
+                  transition:background .3s;flex-shrink:0;">
+        <div id="lp-toggle-knob"
+             style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+                    background:#00D559;box-shadow:0 0 10px rgba(0,213,89,0.6);
+                    transition:transform .3s cubic-bezier(0.34,1.56,0.64,1);"></div>
+      </div>
+      <span id="lp-toggle-an-label" style="font-family:'Space Grotesk',sans-serif;font-size:.85rem;
+            font-weight:700;color:rgba(255,255,255,0.38);transition:color .25s;">
+        Annual
+        <span id="lp-annual-badge" style="
+          font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:800;
+          color:#020C07;background:#00D559;border-radius:100px;padding:2px 8px;
+          margin-left:6px;letter-spacing:.06em;vertical-align:middle;opacity:0.85;">
+          SAVE 20%
+        </span>
+      </span>
+    </div>
 
     <div class="lp-pricing-grid">
 
@@ -2338,48 +2691,177 @@ st.markdown("""
     <div class="lp-section-label">Member Results</div>
     <h2 class="lp-section-h2">The Numbers<br>Don't Lie.</h2>
     <p class="lp-section-sub">Real members. Real results. No cherry-picked picks — full P&amp;L tracked in the dashboard.</p>
-
-    <div class="lp-testimonials">
-
-      <div class="lp-testi-card">
-        <div class="lp-testi-stars">★★★★★</div>
-        <p class="lp-testi-quote">Hit 8 of my last 10 PrizePicks entries using the SAFE Score filter. ROI is sitting at +23% for the month. Nothing else comes close.</p>
-        <div class="lp-testi-author">
-          <div class="lp-testi-avatar">MR</div>
-          <div>
-            <div class="lp-testi-name">Marcus R.</div>
-            <div class="lp-testi-handle">Smart Money · 4 months</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="lp-testi-card">
-        <div class="lp-testi-stars">★★★★★</div>
-        <p class="lp-testi-quote">The line movement alerts alone paid for 6 months. Caught a huge CLV swing on Tatum points last week. This tool is ridiculous.</p>
-        <div class="lp-testi-author">
-          <div class="lp-testi-avatar">JT</div>
-          <div>
-            <div class="lp-testi-name">Jake T.</div>
-            <div class="lp-testi-handle">Sharp IQ · 7 months</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="lp-testi-card">
-        <div class="lp-testi-stars">★★★★★</div>
-        <p class="lp-testi-quote">I was skeptical — now I don't touch a prop without running it through the Neural Engine first. 64% hit rate over 200+ tracked picks.</p>
-        <div class="lp-testi-author">
-          <div class="lp-testi-avatar">AL</div>
-          <div>
-            <div class="lp-testi-name">Alex L.</div>
-            <div class="lp-testi-handle">Smart Money · 2 months</div>
-          </div>
-        </div>
-      </div>
-
-    </div>
   </div>
+
+  <!-- Infinite marquee — hover to pause -->
+  <div class="lp-testi-marquee-wrap">
+    <div class="lp-testi-marquee-track">
+
+      <!-- Card 1 -->
+      <div class="lp-testi-card">
+        <div class="lp-testi-stat">📈 +23% ROI This Month</div>
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">Hit 8 of my last 10 PrizePicks entries using the SAFE Score filter. ROI sitting at +23% for the month. Nothing else comes close.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar" style="--av-bg:linear-gradient(135deg,#00FF85,#00D559);--av-glow:rgba(0,213,89,0.4);">MR</div>
+          <div><div class="lp-testi-name">Marcus R.</div><div class="lp-testi-handle">Smart Money · 4 months</div></div>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="lp-testi-card">
+        <div class="lp-testi-stat">⚡ CLV +4.1% last week</div>
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">The line movement alerts alone paid for 6 months of the sub. Caught a massive CLV swing on Tatum points last week. This tool is ridiculous.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar" style="--av-bg:linear-gradient(135deg,#60b4ff,#2D9EFF);--av-glow:rgba(45,158,255,0.4);">JT</div>
+          <div><div class="lp-testi-name">Jake T.</div><div class="lp-testi-handle">Sharp IQ · 7 months</div></div>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="lp-testi-card">
+        <div class="lp-testi-stat">🎯 64% hit rate / 200+ picks</div>
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">I was skeptical — now I don't touch a prop without the Neural Engine first. 64% hit rate over 200+ tracked picks. It's not even close.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar" style="--av-bg:linear-gradient(135deg,#d8b4fe,#c084fc);--av-glow:rgba(192,132,252,0.4);">AL</div>
+          <div><div class="lp-testi-name">Alex L.</div><div class="lp-testi-handle">Smart Money · 2 months</div></div>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="lp-testi-card">
+        <div class="lp-testi-stat">💰 +$1,840 net in 30 days</div>
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">Was losing money every week before this. First month using Smart Pick Pro I tracked +$1,840 net. The bankroll optimizer alone is worth the price.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar" style="--av-bg:linear-gradient(135deg,#fde68a,#F9C62B);--av-glow:rgba(249,198,43,0.4);">RK</div>
+          <div><div class="lp-testi-name">Ryan K.</div><div class="lp-testi-handle">Smart Money · 3 months</div></div>
+        </div>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="lp-testi-card">
+        <div class="lp-testi-stat">🔥 9/10 on last slate</div>
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">Went 9 for 10 on my last DraftKings slate using nothing but the top-10 SAFE Score picks. I actually screenshotted it because I didn't believe it.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar" style="--av-bg:linear-gradient(135deg,#00FF85,#00D559);--av-glow:rgba(0,213,89,0.4);">TW</div>
+          <div><div class="lp-testi-name">Tyler W.</div><div class="lp-testi-handle">Sharp IQ · 5 months</div></div>
+        </div>
+      </div>
+
+      <!-- Card 6 -->
+      <div class="lp-testi-card">
+        <div class="lp-testi-stat">📊 Verified 18.6% ROI</div>
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">The Bet Tracker dashboard showing my 18.6% ROI with full P&amp;L history is the first time I've ever had proof that my process actually works. This is it.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar" style="--av-bg:linear-gradient(135deg,#60b4ff,#2D9EFF);--av-glow:rgba(45,158,255,0.4);">SN</div>
+          <div><div class="lp-testi-name">Sarah N.</div><div class="lp-testi-handle">Smart Money · 6 months</div></div>
+        </div>
+      </div>
+
+      <!-- Duplicate set for seamless loop -->
+      <div class="lp-testi-card">
+        <div class="lp-testi-stat">📈 +23% ROI This Month</div>
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">Hit 8 of my last 10 PrizePicks entries using the SAFE Score filter. ROI sitting at +23% for the month. Nothing else comes close.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar" style="--av-bg:linear-gradient(135deg,#00FF85,#00D559);--av-glow:rgba(0,213,89,0.4);">MR</div>
+          <div><div class="lp-testi-name">Marcus R.</div><div class="lp-testi-handle">Smart Money · 4 months</div></div>
+        </div>
+      </div>
+      <div class="lp-testi-card">
+        <div class="lp-testi-stat">⚡ CLV +4.1% last week</div>
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">The line movement alerts alone paid for 6 months of the sub. Caught a massive CLV swing on Tatum points last week. This tool is ridiculous.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar" style="--av-bg:linear-gradient(135deg,#60b4ff,#2D9EFF);--av-glow:rgba(45,158,255,0.4);">JT</div>
+          <div><div class="lp-testi-name">Jake T.</div><div class="lp-testi-handle">Sharp IQ · 7 months</div></div>
+        </div>
+      </div>
+      <div class="lp-testi-card">
+        <div class="lp-testi-stat">🎯 64% hit rate / 200+ picks</div>
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">I was skeptical — now I don't touch a prop without the Neural Engine first. 64% hit rate over 200+ tracked picks. It's not even close.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar" style="--av-bg:linear-gradient(135deg,#d8b4fe,#c084fc);--av-glow:rgba(192,132,252,0.4);">AL</div>
+          <div><div class="lp-testi-name">Alex L.</div><div class="lp-testi-handle">Smart Money · 2 months</div></div>
+        </div>
+      </div>
+      <div class="lp-testi-card">
+        <div class="lp-testi-stat">💰 +$1,840 net in 30 days</div>
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">Was losing money every week before this. First month using Smart Pick Pro I tracked +$1,840 net. The bankroll optimizer alone is worth the price.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar" style="--av-bg:linear-gradient(135deg,#fde68a,#F9C62B);--av-glow:rgba(249,198,43,0.4);">RK</div>
+          <div><div class="lp-testi-name">Ryan K.</div><div class="lp-testi-handle">Smart Money · 3 months</div></div>
+        </div>
+      </div>
+      <div class="lp-testi-card">
+        <div class="lp-testi-stat">🔥 9/10 on last slate</div>
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">Went 9 for 10 on my last DraftKings slate using nothing but the top-10 SAFE Score picks. I actually screenshotted it because I didn't believe it.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar" style="--av-bg:linear-gradient(135deg,#00FF85,#00D559);--av-glow:rgba(0,213,89,0.4);">TW</div>
+          <div><div class="lp-testi-name">Tyler W.</div><div class="lp-testi-handle">Sharp IQ · 5 months</div></div>
+        </div>
+      </div>
+      <div class="lp-testi-card">
+        <div class="lp-testi-stat">📊 Verified 18.6% ROI</div>
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">The Bet Tracker dashboard showing my 18.6% ROI with full P&amp;L history is the first time I've ever had proof that my process actually works. This is it.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar" style="--av-bg:linear-gradient(135deg,#60b4ff,#2D9EFF);--av-glow:rgba(45,158,255,0.4);">SN</div>
+          <div><div class="lp-testi-name">Sarah N.</div><div class="lp-testi-handle">Smart Money · 6 months</div></div>
+        </div>
+      </div>
+
+    </div><!-- /lp-testi-marquee-track -->
+  </div><!-- /lp-testi-marquee-wrap -->
 </div>
+
+<script>
+/* ── Pricing billing toggle ───────────────────────────── */
+(function(){
+  var annual = false;
+  var prices = {
+    sharp:  { mo: '$9<span class="lp-price-amount-sub">.99 / mo</span>',  an: '$7<span class="lp-price-amount-sub">.99 / mo</span>' },
+    smart:  { mo: '$24<span class="lp-price-amount-sub">.99 / mo</span>', an: '$19<span class="lp-price-amount-sub">.99 / mo</span>' }
+  };
+
+  function updatePricing(doc){
+    var sharpAmt = doc.querySelectorAll('.lp-pc-sharp .lp-price-amount');
+    var smartAmt = doc.querySelectorAll('.lp-pc-smart .lp-price-amount');
+    var sharpPer = doc.querySelectorAll('.lp-pc-sharp .lp-price-period');
+    var smartPer = doc.querySelectorAll('.lp-pc-smart .lp-price-period');
+    var knob    = doc.getElementById('lp-toggle-knob');
+    var moLabel = doc.getElementById('lp-toggle-mo-label');
+    var anLabel = doc.getElementById('lp-toggle-an-label');
+
+    if(sharpAmt.length) sharpAmt[0].innerHTML = annual ? prices.sharp.an : prices.sharp.mo;
+    if(smartAmt.length) smartAmt[0].innerHTML = annual ? prices.smart.an : prices.smart.mo;
+    if(sharpPer.length) sharpPer[0].textContent = annual ? 'billed annually · 2 months free' : 'billed monthly';
+    if(smartPer.length) smartPer[0].textContent = annual ? 'billed annually · 2 months free' : 'billed monthly · save 20% annual';
+
+    if(knob) knob.style.transform = annual ? 'translateX(24px)' : 'translateX(0)';
+    if(moLabel) moLabel.style.color = annual ? 'rgba(255,255,255,0.35)' : '#fff';
+    if(anLabel) anLabel.style.color = annual ? '#fff' : 'rgba(255,255,255,0.38)';
+  }
+
+  window.lpToggleBilling = function(){
+    annual = !annual;
+    updatePricing(document);
+    try{ updatePricing(window.parent.document); }catch(e){}
+  };
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ updatePricing(document); });
+  else updatePricing(document);
+  setTimeout(function(){ updatePricing(document); try{ updatePricing(window.parent.document); }catch(e){} }, 600);
+})();
+</script>
 """, unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
@@ -3397,6 +3879,159 @@ st.markdown("""
   <span class="spp-trust-item">⚡ Free Forever</span>
   <span class="spp-trust-item">🚫 No Credit Card</span>
   <span class="spp-trust-item">❌ Cancel Nothing</span>
+</div>
+""", unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════
+# PRE-FOOTER CTA BANNER
+# ════════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+/* ── Pre-footer CTA Banner ──────────────────────────────── */
+.lp-prefooter-cta {
+    position: relative;
+    overflow: hidden;
+    border-radius: 28px;
+    max-width: 1100px;
+    margin: 100px auto 0;
+    padding: 80px 48px;
+    background: linear-gradient(135deg,
+        rgba(0,213,89,0.12) 0%,
+        rgba(2,6,14,0.97) 50%,
+        rgba(45,158,255,0.10) 100%);
+    border: 1px solid rgba(0,213,89,0.2);
+    text-align: center;
+    isolation: isolate;
+}
+.lp-prefooter-cta::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+        radial-gradient(ellipse 70% 50% at 20% 50%, rgba(0,213,89,0.12), transparent),
+        radial-gradient(ellipse 50% 60% at 80% 50%, rgba(45,158,255,0.10), transparent);
+    z-index: 0;
+    pointer-events: none;
+}
+/* grid mesh */
+.lp-prefooter-cta::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(rgba(0,213,89,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,213,89,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 0;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
+    pointer-events: none;
+}
+.lp-pfcta-inner { position: relative; z-index: 1; }
+.lp-pfcta-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .55rem; font-weight: 800;
+    color: #00D559;
+    background: rgba(0,213,89,0.1);
+    border: 1px solid rgba(0,213,89,0.22);
+    padding: 5px 14px; border-radius: 100px;
+    letter-spacing: .1em; text-transform: uppercase;
+    margin-bottom: 26px;
+}
+.lp-pfcta-badge::before {
+    content: '';
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #00D559;
+    box-shadow: 0 0 8px #00D559;
+    animation: agLivePulse 1.8s ease-in-out infinite;
+}
+.lp-pfcta-h {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 900; letter-spacing: -.04em;
+    color: #fff; line-height: 1.15;
+    margin-bottom: 18px;
+}
+.lp-pfcta-h span {
+    background: linear-gradient(90deg, #00D559, #00FF85);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.lp-pfcta-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.05rem; font-weight: 400;
+    color: rgba(255,255,255,0.48);
+    max-width: 560px; margin: 0 auto 38px;
+    line-height: 1.7;
+}
+.lp-pfcta-btns {
+    display: flex; align-items: center; justify-content: center;
+    gap: 16px; flex-wrap: wrap;
+}
+.lp-pfcta-primary {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem; font-weight: 800; letter-spacing: -.02em;
+    color: #020C07;
+    background: linear-gradient(135deg, #00D559, #00FF85);
+    padding: 16px 38px; border-radius: 12px;
+    text-decoration: none;
+    box-shadow: 0 6px 30px rgba(0,213,89,0.40), 0 0 0 0 rgba(0,213,89,0);
+    transition: transform .25s, box-shadow .25s;
+}
+.lp-pfcta-primary:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 14px 40px rgba(0,213,89,0.55), 0 0 60px rgba(0,213,89,0.2);
+    color: #020C07; text-decoration: none;
+}
+.lp-pfcta-secondary {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: .9rem; font-weight: 700;
+    color: rgba(255,255,255,0.55);
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 15px 28px; border-radius: 12px;
+    text-decoration: none;
+    transition: color .25s, border-color .25s, background .25s;
+}
+.lp-pfcta-secondary:hover {
+    color: #fff; border-color: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.05);
+    text-decoration: none;
+}
+.lp-pfcta-micro {
+    margin-top: 22px;
+    font-family: 'Inter', sans-serif;
+    font-size: .72rem;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: .03em;
+}
+.lp-pfcta-micro span {
+    color: rgba(0,213,89,0.5);
+    margin: 0 8px;
+}
+@media (max-width: 600px) {
+    .lp-prefooter-cta { padding: 56px 24px; border-radius: 20px; }
+}
+</style>
+
+<div class="lp-prefooter-cta lp-reveal">
+  <div class="lp-pfcta-inner">
+    <div class="lp-pfcta-badge">Live Picks Ready</div>
+    <h2 class="lp-pfcta-h">Stop Guessing.<br><span>Start Winning.</span></h2>
+    <p class="lp-pfcta-sub">
+      Join thousands of sharp bettors using AI-powered props analysis every single night.
+      Free to start — upgrade when the results speak for themselves.
+    </p>
+    <div class="lp-pfcta-btns">
+      <a href="?auth=signup" class="lp-pfcta-primary">⚡ Get Free Access Now</a>
+      <a href="#lp-pricing" class="lp-pfcta-secondary">See Pricing →</a>
+    </div>
+    <p class="lp-pfcta-micro">
+      No credit card required <span>·</span> Free plan forever <span>·</span> Cancel anytime
+    </p>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 

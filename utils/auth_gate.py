@@ -1479,6 +1479,9 @@ def _set_logged_in(user: dict, _write_storage: bool = True) -> None:
     st.session_state[_SS_USER_NAME]  = user.get("display_name", "")
     st.session_state[_SS_USER_ID]    = user.get("user_id", 0)
     st.session_state["_auth_is_admin"] = bool(user.get("is_admin", 0))
+    # Flag: after a fresh login, redirect the user to the Home page so they
+    # always land on Smart Pick Pro Home rather than whatever page they were on.
+    st.session_state["_redirect_to_home"] = True
 
     # ── Tier injection: prefer plan_tier column on the user row ──
     # This is the fast, reliable path — no separate subscriptions
@@ -5509,6 +5512,16 @@ def require_login() -> bool:
         return True
 
     if is_logged_in():
+        # ── Post-login: redirect to Home so user always lands on Smart Pick Pro Home ──
+        # _set_logged_in() sets this flag on every fresh login. We consume it here
+        # (pop = runs only once) and navigate to the Home page. Cookie-based restores
+        # do NOT set this flag so existing sessions are unaffected.
+        if st.session_state.pop("_redirect_to_home", False):
+            try:
+                st.switch_page("Smart_Picks_Pro_Home.py")
+            except Exception:
+                pass  # switch_page unavailable (older Streamlit) — fall through normally
+
         # Flush any pending cookie token.  This runs on the run AFTER login
         # (post-st.rerun()), so no st.rerun() follows — the JS executes cleanly.
         _pending = st.session_state.pop("_pending_cookie_token", None)

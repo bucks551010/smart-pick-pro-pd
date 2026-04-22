@@ -79,6 +79,11 @@ from utils.auth_gate import require_login as _require_login
 if not _require_login():
     st.stop()
 
+# ─── Inject Global CSS Theme ── MUST be first st.markdown after login ──────
+# Injecting here ensures the dark theme is applied BEFORE any spinners or
+# content render, eliminating the white-flash / old-theme glitch on login.
+st.markdown(get_global_css(), unsafe_allow_html=True)
+
 # ─── Analytics: GA4 injection + server-side page view ─────────
 from utils.analytics import inject_ga4, track_page_view
 inject_ga4()
@@ -225,7 +230,15 @@ if not st.session_state.get("analysis_results"):
         st.session_state["_auto_init_date"] = _ai_today  # mark attempted immediately
 
         _ai_placeholder = st.empty()
-        _ai_placeholder.info("⚡ Loading tonight's slate and running analysis — hold tight…")
+        # Use a minimal styled banner so it renders with the already-injected
+        # dark theme instead of the bare Streamlit default styling.
+        _ai_placeholder.markdown(
+            "<div style='padding:12px 18px;background:rgba(0,213,89,0.07);"
+            "border:1px solid rgba(0,213,89,0.25);border-radius:10px;"
+            "color:#00D559;font-size:0.88rem;font-weight:600;'>"
+            "⚡ Loading tonight's slate &amp; running analysis…</div>",
+            unsafe_allow_html=True,
+        )
 
         try:
             # ── Phase 1: Games & rosters ──────────────────────────────────
@@ -310,9 +323,6 @@ if not st.session_state.get("analysis_results"):
             pass  # non-fatal — user can still trigger manually
 
         _ai_placeholder.empty()
-
-# ─── Inject Global CSS Theme ──────────────────────────────────
-st.markdown(get_global_css(), unsafe_allow_html=True)
 
 # ─── Landing Page Theme CSS — page-level overrides ───────────
 st.markdown("""

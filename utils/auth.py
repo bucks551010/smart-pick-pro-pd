@@ -556,8 +556,9 @@ def restore_subscription_by_email(email: str) -> bool:
     db_row = _load_subscription_by_email_from_db(email)
     if db_row and db_row.get("status") in ("active", "trialing"):
         subscription_id = db_row.get("subscription_id", "")
-        # One-time payments (otp_ prefix) are perpetual — skip Stripe check
-        if subscription_id.startswith("otp_"):
+        # Synthetic/non-Stripe IDs (otp_ = one-time payment, acct_ = account
+        # mirror created at signup) are perpetual — skip Stripe verification.
+        if subscription_id.startswith("otp_") or subscription_id.startswith("acct_"):
             _store_premium_in_session({
                 "subscription_id": subscription_id,
                 "customer_id": db_row.get("customer_id", ""),

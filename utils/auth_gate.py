@@ -225,7 +225,8 @@ def _ensure_sessions_table() -> None:
                     is_admin     INTEGER DEFAULT 0,
                     expires_at   TEXT NOT NULL,
                     last_seen    TEXT,
-                    created_at   TEXT
+                    created_at   TEXT,
+                    plan_tier    TEXT DEFAULT 'free'
                 )
             """)
     except Exception as _exc:
@@ -238,6 +239,11 @@ def _ensure_sessions_table() -> None:
     try:
         with _AuthConn() as db:
             db.execute("ALTER TABLE login_sessions ADD COLUMN last_seen TEXT")
+    except Exception:
+        pass  # Column already exists — safe to ignore.
+    try:
+        with _AuthConn() as db:
+            db.execute("ALTER TABLE login_sessions ADD COLUMN plan_tier TEXT DEFAULT 'free'")
     except Exception:
         pass  # Column already exists — safe to ignore.
     _sessions_table_ok = True
@@ -253,12 +259,12 @@ def _save_login_session(token: str, user: dict) -> None:
             db.execute(
                 """INSERT INTO login_sessions
                        (token, user_id, email, display_name, is_admin,
-                        expires_at, last_seen)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)
+                        expires_at, last_seen, plan_tier)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                    ON CONFLICT(token) DO NOTHING""",
                 (token, user.get("user_id", 0), user.get("email", ""),
                  user.get("display_name", ""), int(bool(user.get("is_admin", 0))),
-                 expires, now.isoformat()),
+                 expires, now.isoformat(), user.get("plan_tier", "free") or "free"),
             )
     except Exception as _exc:
         _logger.error("Failed to save login session: %s", _exc)
@@ -1476,17 +1482,39 @@ def _set_logged_in(user: dict, _write_storage: bool = True) -> None:
 
     # ── Tier injection: prefer plan_tier column on the user row ──
     # This is the fast, reliable path — no separate subscriptions
-    # table lookup needed.  Falls back to restore_subscription_by_email
-    # for Stripe-purchased accounts that pre-date this column.
+    # table lookup needed.  Falls back to a direct users-table lookup
+    # when plan_tier is absent (e.g. session restored from cookie where
+    # login_sessions doesn't carry plan_tier), and finally to
+    # restore_subscription_by_email for Stripe-purchased accounts.
     plan_tier = (user.get("plan_tier") or "").strip()
+
+    # If plan_tier is missing from the session record (cookie restore path),
+    # do a fast DB lookup so the user doesn't lose their tier on reload.
+    if not plan_tier or plan_tier == "free":
+        try:
+            _uid = user.get("user_id", 0)
+            _email = user.get("email", "")
+            with _AuthConn() as _udb:
+                if _uid:
+                    _urow = _udb.fetchone(
+                        "SELECT plan_tier FROM users WHERE user_id = ?", (_uid,)
+                    )
+                else:
+                    _urow = _udb.fetchone(
+                        "SELECT plan_tier FROM users WHERE email = ?", (_email,)
+                    )
+            if _urow:
+                plan_tier = (_urow.get("plan_tier") or "").strip()
+        except Exception:
+            pass
+
+    _TIER_KEY_TO_PLAN = {
+        "sharp_iq":       "Sharp IQ",
+        "smart_money":    "Smart Money",
+        "insider_circle": "Insider Circle",
+        "insider":        "Insider Circle",
+    }
     if plan_tier and plan_tier != "free":
-        # Map DB tier key → plan_name that get_user_tier() understands
-        _TIER_KEY_TO_PLAN = {
-            "sharp_iq":      "Sharp IQ",
-            "smart_money":   "Smart Money",
-            "insider_circle": "Insider Circle",
-            "insider":       "Insider Circle",
-        }
         plan_name = _TIER_KEY_TO_PLAN.get(plan_tier.lower(), plan_tier)
         st.session_state["_sub_is_premium"]      = True
         st.session_state["_sub_subscription_id"] = f"otp_{user.get('user_id', 0)}"

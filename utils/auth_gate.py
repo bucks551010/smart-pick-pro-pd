@@ -6148,182 +6148,279 @@ html,body{background:transparent;overflow-y:hidden}
 
     <div class="ag-divider"></div>
 
-    <!-- ══ TOOL SHOWCASE: GAME REPORT + PLAYER SIMULATOR ══ -->
+    <!-- ══ TOOL SHOWCASE v2: GAME REPORT + PLAYER SIMULATOR ══ -->
     <style>
-    .ag-tool-split{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center;margin-bottom:72px}
-    .ag-tool-split.rev{direction:rtl}
-    .ag-tool-split.rev>*{direction:ltr}
-    @media(max-width:820px){.ag-tool-split,.ag-tool-split.rev{grid-template-columns:1fr;direction:ltr;gap:28px;margin-bottom:48px}}
-    .ag-tool-eyebrow{display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:var(--tc,#00D559);background:color-mix(in srgb,var(--tc,#00D559) 10%,transparent);border:1px solid color-mix(in srgb,var(--tc,#00D559) 22%,transparent);padding:4px 13px;border-radius:100px;width:fit-content;margin-bottom:18px}
-    .ag-tool-h{font-family:'Space Grotesk',sans-serif;font-size:clamp(1.4rem,2.4vw,2.1rem);font-weight:900;letter-spacing:-.04em;line-height:1.2;color:#fff;margin-bottom:14px}
-    .ag-tool-h .em{background:linear-gradient(90deg,var(--tc,#00D559),var(--tc2,#00FF85));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .ag-tool-p{font-family:'Inter',sans-serif;font-size:.85rem;color:rgba(255,255,255,.38);line-height:1.75;margin-bottom:22px}
-    .ag-tool-bullets{list-style:none;padding:0;margin:0 0 26px;display:flex;flex-direction:column;gap:10px}
-    .ag-tool-bullets li{display:flex;align-items:flex-start;gap:10px;font-family:'Inter',sans-serif;font-size:.82rem;color:rgba(255,255,255,.55);line-height:1.6}
-    .ag-tool-bullets li b{color:#fff;font-weight:700}
-    .ag-tool-bullets li::before{content:'';width:16px;height:16px;border-radius:5px;flex-shrink:0;margin-top:2px;background:color-mix(in srgb,var(--tc,#00D559) 12%,transparent);border:1px solid color-mix(in srgb,var(--tc,#00D559) 30%,transparent);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 10 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 4l2.5 2.5L9 1' stroke='%2300D559' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center;background-size:9px}
-    .ag-tool-cta{display:inline-flex;align-items:center;gap:7px;font-family:'Space Grotesk',sans-serif;font-size:.8rem;font-weight:800;letter-spacing:-.01em;color:var(--tc,#00D559);border-bottom:1px solid color-mix(in srgb,var(--tc,#00D559) 30%,transparent);padding-bottom:2px;text-decoration:none;transition:gap .25s,border-color .25s;width:fit-content}
-    .ag-tool-cta:hover{gap:13px;border-color:var(--tc,#00D559)}
-    /* mockup shell */
-    .ag-tool-mockup{position:relative;background:rgba(255,255,255,0.022);border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;box-shadow:0 20px 70px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,0.04);transition:transform .4s cubic-bezier(.16,1,.3,1),box-shadow .4s}
-    .ag-tool-mockup:hover{transform:translateY(-7px) scale(1.012);box-shadow:0 36px 90px rgba(0,0,0,.6),0 0 55px color-mix(in srgb,var(--tc,#00D559) 13%,transparent),0 0 0 1px color-mix(in srgb,var(--tc,#00D559) 17%,transparent)}
-    .ag-tool-mockup::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--tc,#00D559),var(--tc2,#00FF85),transparent);z-index:2}
-    .ag-mock-chrome{display:flex;align-items:center;gap:7px;padding:10px 14px;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.05)}
-    .ag-mock-dots{display:flex;gap:4px}
-    .ag-mock-dots span{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.12)}
-    .ag-mock-url{flex:1;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:600;color:rgba(255,255,255,.18);background:rgba(255,255,255,.04);border-radius:5px;padding:3px 10px;text-align:center}
-    .ag-mock-body{padding:16px}
-    /* Game Report mock */
-    .gr-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
-    .gr-title{font-family:'Space Grotesk',sans-serif;font-size:.78rem;font-weight:900;color:#fff;letter-spacing:-.02em}
-    .gr-live{display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#00D559;background:rgba(0,213,89,.1);border:1px solid rgba(0,213,89,.22);padding:3px 9px;border-radius:100px}
-    .gr-live::before{content:'';width:5px;height:5px;border-radius:50%;background:#00D559;box-shadow:0 0 6px #00D559;animation:agLivePulse 1.8s ease-in-out infinite;flex-shrink:0}
-    .gr-matchup{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 16px;margin-bottom:11px}
-    .gr-team{display:flex;flex-direction:column;align-items:center;gap:3px;font-family:'Space Grotesk',sans-serif}
-    .gr-abbrev{font-size:1rem;font-weight:900;letter-spacing:-.03em}
-    .gr-name{font-size:.48rem;color:rgba(255,255,255,.28);letter-spacing:.04em}
-    .gr-vs{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:800;color:rgba(255,255,255,.18);letter-spacing:.1em;text-align:center}
-    .gr-ou{font-size:.46rem;color:rgba(255,255,255,.15);font-family:'JetBrains Mono',monospace;margin-top:3px}
-    .gr-pills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:11px}
-    .gr-pill{font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 9px;border-radius:5px;color:rgba(255,255,255,.35);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
-    .gr-pill.g{color:#00D559;background:rgba(0,213,89,.08);border-color:rgba(0,213,89,.18)}
-    .gr-pill.b{color:#2D9EFF;background:rgba(45,158,255,.08);border-color:rgba(45,158,255,.18)}
-    .gr-bars{display:flex;flex-direction:column;gap:7px}
-    .gr-bar-row{display:flex;align-items:center;gap:8px}
-    .gr-bar-lbl{font-family:'Inter',sans-serif;font-size:.56rem;font-weight:600;color:rgba(255,255,255,.28);width:76px;flex-shrink:0;text-align:right}
-    .gr-bar-track{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
-    .gr-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--bc1),var(--bc2));box-shadow:0 0 5px var(--bglow)}
-    .gr-bar-val{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:800;color:var(--bc1);width:30px;text-align:right;flex-shrink:0}
-    /* Player Sim mock */
-    .ps-pr{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 14px;margin-bottom:11px}
-    .ps-av{width:36px;height:36px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:.65rem;font-weight:900;color:#020C07;background:var(--av-bg,linear-gradient(135deg,#F9C62B,#FFE066));box-shadow:0 0 12px var(--av-glow,rgba(249,198,43,.4))}
-    .ps-pname{font-family:'Space Grotesk',sans-serif;font-size:.8rem;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:2px}
-    .ps-pdet{font-family:'JetBrains Mono',monospace;font-size:.47rem;font-weight:600;color:rgba(255,255,255,.25);letter-spacing:.04em;text-transform:uppercase}
-    .ps-dh-badge{display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#F9C62B;background:rgba(249,198,43,.1);border:1px solid rgba(249,198,43,.25);padding:2px 8px;border-radius:100px;flex-shrink:0;margin-left:auto}
-    .ps-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:11px}
-    .ps-stat-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:9px 6px;text-align:center}
-    .ps-stat-box.dh{border-color:rgba(249,198,43,.3);background:rgba(249,198,43,.06);box-shadow:0 0 12px rgba(249,198,43,.1)}
-    .ps-stat-val{font-family:'Space Grotesk',sans-serif;font-size:.88rem;font-weight:900;color:#fff;letter-spacing:-.03em;line-height:1;margin-bottom:2px}
-    .ps-stat-box.dh .ps-stat-val{color:#F9C62B;text-shadow:0 0 10px rgba(249,198,43,.5)}
-    .ps-stat-lbl{font-family:'JetBrains Mono',monospace;font-size:.43rem;font-weight:700;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.06em}
-    .ps-dist-wrap{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:10px 12px}
-    .ps-dist-top{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:.47rem;font-weight:700;color:rgba(255,255,255,.18);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
-    .ps-dist-top span{color:#F9C62B;font-size:.56rem}
-    .ps-dist-bar{display:flex;align-items:flex-end;gap:2px;height:28px}
-    .ps-dist-col{flex:1;border-radius:2px 2px 0 0;background:rgba(255,255,255,.1)}
-    .ps-dist-col.pk{background:linear-gradient(180deg,#F9C62B,rgba(249,198,43,.4));box-shadow:0 0 6px rgba(249,198,43,.3)}
-    .ps-dist-col.dh-col{background:linear-gradient(180deg,#00D559,rgba(0,213,89,.4));box-shadow:0 0 6px rgba(0,213,89,.3)}
+    /* ── SECTION WRAPPER ── */
+    .ag-ts-wrap{position:relative;padding:80px 0 20px;overflow:hidden}
+    .ag-ts-bg-dots{position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.03) 1px,transparent 1px);background-size:30px 30px;pointer-events:none;-webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,#000 30%,transparent 100%);mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,#000 30%,transparent 100%)}
+    .ag-ts-orb-l{position:absolute;top:0;left:-20%;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(0,213,89,.11) 0%,transparent 60%);filter:blur(24px);pointer-events:none}
+    .ag-ts-orb-r{position:absolute;bottom:5%;right:-18%;width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(249,198,43,.09) 0%,transparent 60%);filter:blur(24px);pointer-events:none}
+    /* ── INTRO ── */
+    .ag-ts-intro{text-align:center;padding:0 0 68px;position:relative;z-index:1}
+    .ag-ts-eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#00D559;background:rgba(0,213,89,.07);border:1px solid rgba(0,213,89,.2);padding:6px 18px;border-radius:100px;margin-bottom:24px}
+    .ag-ts-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:#00D559;box-shadow:0 0 10px #00D559;animation:agLivePulse 2s ease-in-out infinite;flex-shrink:0}
+    .ag-ts-h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(2rem,4.2vw,3.5rem);font-weight:900;letter-spacing:-.055em;line-height:1.06;color:#fff;margin-bottom:18px}
+    .ag-ts-h1 .g{background:linear-gradient(90deg,#00D559,#00FF85);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .ag-ts-sub{font-family:'Inter',sans-serif;font-size:.92rem;color:rgba(255,255,255,.35);max-width:520px;margin:0 auto 46px;line-height:1.78}
+    .ag-ts-kpis{display:flex;justify-content:center;gap:0;flex-wrap:wrap;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);border-radius:22px;overflow:hidden;width:fit-content;margin:0 auto;backdrop-filter:blur(8px)}
+    .ag-ts-kpi{padding:18px 38px;text-align:center;border-right:1px solid rgba(255,255,255,.06)}
+    .ag-ts-kpi:last-child{border-right:none}
+    .ag-ts-kpi-n{font-family:'Space Grotesk',sans-serif;font-size:1.7rem;font-weight:900;letter-spacing:-.04em;color:#fff;line-height:1;margin-bottom:5px}
+    .ag-ts-kpi-n em{font-style:normal;background:linear-gradient(90deg,#00D559,#00FF85);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .ag-ts-kpi-l{font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:700;color:rgba(255,255,255,.22);text-transform:uppercase;letter-spacing:.09em}
+    @media(max-width:620px){.ag-ts-kpi{padding:14px 20px}.ag-ts-kpi-n{font-size:1.3rem}}
+    /* ── TOOL ROWS ── */
+    .ag-ts-row{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;margin-bottom:110px;position:relative;z-index:1}
+    .ag-ts-row.rev{direction:rtl}
+    .ag-ts-row.rev>*{direction:ltr}
+    @media(max-width:880px){.ag-ts-row,.ag-ts-row.rev{grid-template-columns:1fr;direction:ltr;gap:36px;margin-bottom:60px}}
+    /* ── COPY PANEL ── */
+    .ag-ts-tag{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tc,#00D559);background:color-mix(in srgb,var(--tc,#00D559) 8%,transparent);border:1px solid color-mix(in srgb,var(--tc,#00D559) 22%,transparent);padding:5px 15px;border-radius:100px;margin-bottom:22px;width:fit-content}
+    .ag-ts-tag-dot{width:6px;height:6px;border-radius:50%;background:var(--tc,#00D559);box-shadow:0 0 8px var(--tc,#00D559)}
+    .ag-ts-copy-h{font-family:'Space Grotesk',sans-serif;font-size:clamp(1.8rem,2.9vw,2.7rem);font-weight:900;letter-spacing:-.055em;line-height:1.08;color:#fff;margin-bottom:16px}
+    .ag-ts-copy-h .em{background:linear-gradient(90deg,var(--tc,#00D559),var(--tc2,#00FF85));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .ag-ts-copy-p{font-family:'Inter',sans-serif;font-size:.88rem;color:rgba(255,255,255,.38);line-height:1.82;margin-bottom:30px}
+    .ag-ts-list{list-style:none;padding:0;margin:0 0 34px;display:flex;flex-direction:column}
+    .ag-ts-li{display:flex;align-items:flex-start;gap:14px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.04);font-family:'Inter',sans-serif;font-size:.84rem;color:rgba(255,255,255,.45);line-height:1.6}
+    .ag-ts-li:first-child{padding-top:0}
+    .ag-ts-li:last-child{border-bottom:none;padding-bottom:0}
+    .ag-ts-li b{color:rgba(255,255,255,.92);font-weight:700}
+    .ag-ts-li-num{min-width:24px;height:24px;border-radius:7px;background:color-mix(in srgb,var(--tc,#00D559) 12%,transparent);border:1px solid color-mix(in srgb,var(--tc,#00D559) 26%,transparent);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:900;color:var(--tc,#00D559);flex-shrink:0;margin-top:1px}
+    .ag-ts-btn{display:inline-flex;align-items:center;gap:10px;font-family:'Space Grotesk',sans-serif;font-size:.86rem;font-weight:800;letter-spacing:-.02em;color:var(--tc,#00D559);background:color-mix(in srgb,var(--tc,#00D559) 9%,transparent);border:1.5px solid color-mix(in srgb,var(--tc,#00D559) 28%,transparent);padding:13px 26px;border-radius:100px;text-decoration:none;transition:all .3s cubic-bezier(.16,1,.3,1);width:fit-content}
+    .ag-ts-btn:hover{background:color-mix(in srgb,var(--tc,#00D559) 16%,transparent);border-color:color-mix(in srgb,var(--tc,#00D559) 55%,transparent);gap:16px;box-shadow:0 0 32px color-mix(in srgb,var(--tc,#00D559) 24%,transparent),0 10px 28px rgba(0,0,0,.3)}
+    /* ── MOCKUP PANEL ── */
+    .ag-ts-mk-wrap{position:relative}
+    .ag-ts-mk-orb{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:88%;height:88%;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--tc,#00D559) 18%,transparent) 0%,transparent 65%);filter:blur(55px);pointer-events:none;z-index:0}
+    .ag-ts-mk{position:relative;z-index:1;background:linear-gradient(155deg,rgba(255,255,255,.048) 0%,rgba(255,255,255,.016) 100%);border:1px solid rgba(255,255,255,.1);border-radius:24px;overflow:hidden;box-shadow:0 36px 90px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.05);transform:perspective(1100px) rotateY(-5deg) rotateX(2deg);transition:transform .6s cubic-bezier(.16,1,.3,1),box-shadow .6s}
+    .ag-ts-row.rev .ag-ts-mk{transform:perspective(1100px) rotateY(5deg) rotateX(2deg)}
+    .ag-ts-mk:hover,.ag-ts-row.rev .ag-ts-mk:hover{transform:perspective(1100px) rotateY(0deg) rotateX(0deg) translateY(-10px) scale(1.018);box-shadow:0 50px 110px rgba(0,0,0,.7),0 0 70px color-mix(in srgb,var(--tc,#00D559) 16%,transparent),0 0 0 1px color-mix(in srgb,var(--tc,#00D559) 22%,transparent)}
+    .ag-ts-mk::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 0%,var(--tc,#00D559) 30%,var(--tc2,#00FF85) 70%,transparent 100%);z-index:3}
+    .ag-mk-chrome{display:flex;align-items:center;gap:8px;padding:13px 18px;background:rgba(0,0,0,.28);border-bottom:1px solid rgba(255,255,255,.07);backdrop-filter:blur(10px)}
+    .ag-mk-dots{display:flex;gap:5px}
+    .ag-mk-dots span{width:9px;height:9px;border-radius:50%}
+    .ag-mk-dots span:nth-child(1){background:rgba(242,67,54,.7)}
+    .ag-mk-dots span:nth-child(2){background:rgba(249,198,43,.7)}
+    .ag-mk-dots span:nth-child(3){background:rgba(0,213,89,.7)}
+    .ag-mk-url-bar{flex:1;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:600;color:rgba(255,255,255,.22);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:4px 14px;text-align:center;letter-spacing:.02em}
+    .ag-mk-body{padding:22px}
+    /* ── GAME REPORT MOCK STYLES ── */
+    @keyframes tsBarGrow{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}
+    .gr2-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .gr2-title{font-family:'Space Grotesk',sans-serif;font-size:.84rem;font-weight:900;color:#fff;letter-spacing:-.02em}
+    .gr2-live{display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:.45rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#00D559;background:rgba(0,213,89,.1);border:1px solid rgba(0,213,89,.24);padding:3px 11px;border-radius:100px}
+    .gr2-live::before{content:'';width:5px;height:5px;border-radius:50%;background:#00D559;box-shadow:0 0 8px #00D559;animation:agLivePulse 1.6s ease-in-out infinite;flex-shrink:0}
+    .gr2-game{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px 20px;margin-bottom:15px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
+    .gr2-game::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,213,89,.04) 0%,transparent 45%,transparent 55%,rgba(45,158,255,.04) 100%);pointer-events:none}
+    .gr2-team{display:flex;flex-direction:column;align-items:center;gap:5px}
+    .gr2-abbr{font-family:'Space Grotesk',sans-serif;font-size:1.45rem;font-weight:900;letter-spacing:-.04em;line-height:1}
+    .gr2-rec{font-family:'JetBrains Mono',monospace;font-size:.42rem;font-weight:600;color:rgba(255,255,255,.2);letter-spacing:.04em}
+    .gr2-mid{text-align:center;flex:1}
+    .gr2-vs{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:800;color:rgba(255,255,255,.14);letter-spacing:.12em}
+    .gr2-spread{font-family:'Space Grotesk',sans-serif;font-size:.7rem;font-weight:700;color:rgba(255,255,255,.5);margin:3px 0}
+    .gr2-ou{font-family:'JetBrains Mono',monospace;font-size:.43rem;color:rgba(255,255,255,.2)}
+    .gr2-pills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:15px}
+    .gr2-pill{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 10px;border-radius:6px;color:rgba(255,255,255,.28);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
+    .gr2-pill.g{color:#00D559;background:rgba(0,213,89,.08);border-color:rgba(0,213,89,.2)}
+    .gr2-pill.b{color:#2D9EFF;background:rgba(45,158,255,.08);border-color:rgba(45,158,255,.2)}
+    .gr2-pill.p{color:#c084fc;background:rgba(192,132,252,.08);border-color:rgba(192,132,252,.2)}
+    .gr2-sec-lbl{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.18);margin-bottom:10px}
+    .gr2-bars{display:flex;flex-direction:column;gap:10px}
+    .gr2-brow{display:flex;align-items:center;gap:10px}
+    .gr2-blbl{font-family:'Inter',sans-serif;font-size:.58rem;font-weight:600;color:rgba(255,255,255,.28);width:80px;flex-shrink:0;text-align:right}
+    .gr2-btrack{flex:1;height:7px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden}
+    .gr2-bfill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--bc1),var(--bc2));box-shadow:0 0 10px var(--bglow);width:var(--w,50%);animation:tsBarGrow .9s cubic-bezier(.34,1.56,.64,1) forwards}
+    .gr2-bval{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:900;color:var(--bc1);width:36px;text-align:right;flex-shrink:0}
+    .gr2-alert{margin-top:16px;background:rgba(0,213,89,.06);border:1px solid rgba(0,213,89,.2);border-radius:12px;padding:10px 14px;display:flex;align-items:flex-start;gap:10px}
+    .gr2-alert-ico{font-size:.9rem;flex-shrink:0;margin-top:1px}
+    .gr2-alert-txt{font-family:'Inter',sans-serif;font-size:.62rem;font-weight:600;color:rgba(255,255,255,.48);line-height:1.55}
+    .gr2-alert-txt b{color:#00D559;font-weight:700}
+    /* ── PLAYER SIM MOCK STYLES ── */
+    .ps2-hd{display:flex;align-items:center;gap:14px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px;margin-bottom:14px;position:relative;overflow:hidden}
+    .ps2-hd::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(249,198,43,.06) 0%,transparent 55%);pointer-events:none}
+    .ps2-av{width:42px;height:42px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:.74rem;font-weight:900;color:#020C07;background:linear-gradient(135deg,#F9C62B,#FFE066);box-shadow:0 0 20px rgba(249,198,43,.55)}
+    .ps2-info{flex:1;min-width:0}
+    .ps2-name{font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:900;color:#fff;letter-spacing:-.02em;margin-bottom:2px}
+    .ps2-meta{font-family:'JetBrains Mono',monospace;font-size:.45rem;font-weight:600;color:rgba(255,255,255,.22);letter-spacing:.05em;text-transform:uppercase}
+    .ps2-dh{display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#F9C62B;background:rgba(249,198,43,.1);border:1px solid rgba(249,198,43,.3);padding:3px 10px;border-radius:100px;flex-shrink:0}
+    .ps2-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}
+    .ps2-stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:11px 6px;text-align:center}
+    .ps2-stat.hi{border-color:rgba(249,198,43,.35);background:rgba(249,198,43,.07);box-shadow:0 0 18px rgba(249,198,43,.12)}
+    .ps2-sv{font-family:'Space Grotesk',sans-serif;font-size:1.0rem;font-weight:900;color:#fff;letter-spacing:-.03em;line-height:1;margin-bottom:3px}
+    .ps2-stat.hi .ps2-sv{color:#F9C62B;text-shadow:0 0 16px rgba(249,198,43,.6)}
+    .ps2-sl{font-family:'JetBrains Mono',monospace;font-size:.42rem;font-weight:700;color:rgba(255,255,255,.18);text-transform:uppercase;letter-spacing:.07em}
+    .ps2-vs{display:flex;align-items:center;justify-content:space-between;background:rgba(249,198,43,.06);border:1px solid rgba(249,198,43,.16);border-radius:11px;padding:10px 14px;margin-bottom:14px}
+    .ps2-vs-lbl{font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:700;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.08em}
+    .ps2-vs-nums{display:flex;align-items:baseline;gap:8px}
+    .ps2-vs-sim{font-family:'Space Grotesk',sans-serif;font-size:.86rem;font-weight:900;color:#F9C62B}
+    .ps2-vs-sep{font-family:'JetBrains Mono',monospace;font-size:.42rem;color:rgba(255,255,255,.15)}
+    .ps2-vs-book{font-family:'Space Grotesk',sans-serif;font-size:.72rem;font-weight:700;color:rgba(255,255,255,.3);text-decoration:line-through}
+    .ps2-edge{font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:900;color:#00D559;background:rgba(0,213,89,.1);border:1px solid rgba(0,213,89,.24);padding:2px 9px;border-radius:5px;margin-left:auto}
+    .ps2-dist{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 15px}
+    .ps2-dist-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+    .ps2-dist-lbl{font-family:'JetBrains Mono',monospace;font-size:.45rem;font-weight:700;color:rgba(255,255,255,.18);text-transform:uppercase;letter-spacing:.07em}
+    .ps2-dist-ceil{font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:800;color:#F9C62B}
+    .ps2-dist-chart{display:flex;align-items:flex-end;gap:3px;height:38px;margin-bottom:5px}
+    .ps2-dc{flex:1;border-radius:3px 3px 0 0;background:rgba(255,255,255,.09)}
+    .ps2-dc.pk{background:linear-gradient(180deg,#F9C62B,rgba(249,198,43,.3));box-shadow:0 0 9px rgba(249,198,43,.4)}
+    .ps2-dc.dh{background:linear-gradient(180deg,#00D559,rgba(0,213,89,.3));box-shadow:0 0 9px rgba(0,213,89,.35)}
+    .ps2-dist-foot{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:.4rem;color:rgba(255,255,255,.14);padding:0 2px}
     </style>
 
-    <div class="ag-section-head" style="text-align:center;padding:40px 0 16px">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(0,213,89,0.55);margin-bottom:10px">Inside the Platform</div>
-      <h3 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(1.4rem,2.8vw,2rem);font-weight:900;letter-spacing:-.04em;color:#fff;margin-bottom:8px">See Exactly <span class="em">What You Get.</span></h3>
-      <p style="font-family:'Inter',sans-serif;font-size:.8rem;color:rgba(255,255,255,.35);max-width:500px;margin:0 auto 40px">Not a black box. Every tool shows its work &mdash; so you understand the edge, not just follow it blindly.</p>
-    </div>
+    <div class="ag-ts-wrap">
+      <div class="ag-ts-bg-dots"></div>
+      <div class="ag-ts-orb-l"></div>
+      <div class="ag-ts-orb-r"></div>
 
-    <!-- ── Game Report ── -->
-    <div class="ag-tool-split" style="--tc:#00D559;--tc2:#00FF85;">
-      <div>
-        <div class="ag-tool-eyebrow">&#x1F4CB; Game Report</div>
-        <h3 class="ag-tool-h">Every Matchup.<br><span class="em">Fully Decoded.</span></h3>
-        <p class="ag-tool-p">Pick any matchup on tonight&rsquo;s slate and get a full AI briefing in seconds &mdash; win probability, pace factors, total projections, key player mismatches, and the exact props with the most edge.</p>
-        <ul class="ag-tool-bullets">
-          <li><b>AI Win Probability</b> &mdash; 6-model consensus for each team, updated as lines move.</li>
-          <li><b>Pace &amp; Total Projection</b> &mdash; True game total vs. the posted line. Know when the book has it wrong.</li>
-          <li><b>Key Player Matchup Cards</b> &mdash; Head-to-head stats, defensive rating exposure, and minute projections.</li>
-          <li><b>Top Props for the Game</b> &mdash; Auto-sorted by SAFE Score. One click to run full Neural analysis on any prop.</li>
-          <li><b>Entry Strategy Matrix</b> &mdash; Recommended parlay combos and singles based on your risk profile.</li>
-        </ul>
-        <a href="?auth=signup" class="ag-tool-cta">Access Game Reports Free &rarr;</a>
-      </div>
-      <div class="ag-tool-mockup" style="--tc:#00D559;--tc2:#00FF85;">
-        <div class="ag-mock-chrome">
-          <div class="ag-mock-dots"><span></span><span></span><span></span></div>
-          <div class="ag-mock-url">smartpickpro.ai &middot; Game Report</div>
-        </div>
-        <div class="ag-mock-body">
-          <div class="gr-hd">
-            <div class="gr-title">&#x1F4CB; Game Report</div>
-            <div class="gr-live">Live Analysis</div>
-          </div>
-          <div class="gr-matchup">
-            <div class="gr-team"><div class="gr-abbrev" style="color:#00D559">BOS</div><div class="gr-name">Celtics</div></div>
-            <div style="text-align:center"><div class="gr-vs">VS</div><div class="gr-ou">O/U 218.5</div></div>
-            <div class="gr-team"><div class="gr-abbrev" style="color:#2D9EFF">MIA</div><div class="gr-name">Heat</div></div>
-          </div>
-          <div class="gr-pills">
-            <span class="gr-pill g">BOS &minus;5.5</span>
-            <span class="gr-pill b">Pace 99.4</span>
-            <span class="gr-pill">TD Garden</span>
-            <span class="gr-pill g">4 Sharp Plays</span>
-          </div>
-          <div class="gr-bars">
-            <div class="gr-bar-row"><div class="gr-bar-lbl">BOS Win Prob</div><div class="gr-bar-track"><div class="gr-bar-fill" style="width:67%;--bc1:#00D559;--bc2:#00FF85;--bglow:rgba(0,213,89,.4)"></div></div><div class="gr-bar-val" style="--bc1:#00D559">67%</div></div>
-            <div class="gr-bar-row"><div class="gr-bar-lbl">Tatum PTS Edge</div><div class="gr-bar-track"><div class="gr-bar-fill" style="width:82%;--bc1:#F9C62B;--bc2:#FFE066;--bglow:rgba(249,198,43,.4)"></div></div><div class="gr-bar-val" style="--bc1:#F9C62B">+4.8%</div></div>
-            <div class="gr-bar-row"><div class="gr-bar-lbl">SAFE Consensus</div><div class="gr-bar-track"><div class="gr-bar-fill" style="width:88%;--bc1:#2D9EFF;--bc2:#60b4ff;--bglow:rgba(45,158,255,.4)"></div></div><div class="gr-bar-val" style="--bc1:#2D9EFF">88</div></div>
-            <div class="gr-bar-row"><div class="gr-bar-lbl">Total Proj &Delta;</div><div class="gr-bar-track"><div class="gr-bar-fill" style="width:55%;--bc1:#c084fc;--bc2:#d8b4fe;--bglow:rgba(192,132,252,.4)"></div></div><div class="gr-bar-val" style="--bc1:#c084fc">+3.2</div></div>
-          </div>
+      <!-- Section intro -->
+      <div class="ag-ts-intro">
+        <div class="ag-ts-eyebrow">Inside the Platform</div>
+        <h2 class="ag-ts-h1">See Exactly<br><span class="g">What You&rsquo;re Getting.</span></h2>
+        <p class="ag-ts-sub">Not a black box. Every tool shows its work &mdash; so you understand the edge, not just follow it blindly.</p>
+        <div class="ag-ts-kpis">
+          <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>10k</em></div><div class="ag-ts-kpi-l">Sims / Player</div></div>
+          <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>6</em></div><div class="ag-ts-kpi-l">AI Models Fused</div></div>
+          <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>347+</em></div><div class="ag-ts-kpi-l">Props / Night</div></div>
+          <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>91%</em></div><div class="ag-ts-kpi-l">Model Accuracy</div></div>
         </div>
       </div>
-    </div>
 
-    <div class="ag-divider"></div>
-
-    <!-- ── Player Simulator + Dark Horse ── -->
-    <div class="ag-tool-split rev" style="--tc:#F9C62B;--tc2:#FFE066;">
-      <div class="ag-tool-mockup" style="--tc:#F9C62B;--tc2:#FFE066;">
-        <div class="ag-mock-chrome">
-          <div class="ag-mock-dots"><span></span><span></span><span></span></div>
-          <div class="ag-mock-url">smartpickpro.ai &middot; Player Simulator</div>
+      <!-- ── GAME REPORT ROW ── -->
+      <div class="ag-ts-row" style="--tc:#00D559;--tc2:#00FF85;">
+        <div>
+          <div class="ag-ts-tag"><span class="ag-ts-tag-dot"></span>&#x1F4CB;&nbsp; Game Report</div>
+          <h3 class="ag-ts-copy-h">Every Matchup.<br><span class="em">Fully Decoded.</span></h3>
+          <p class="ag-ts-copy-p">Pick any game on tonight&rsquo;s slate and get a full AI briefing in seconds &mdash; win probability, pace factors, total projections, defensive mismatches, and the exact props with the sharpest edge.</p>
+          <ul class="ag-ts-list">
+            <li class="ag-ts-li"><span class="ag-ts-li-num">1</span><span><b>AI Win Probability</b> &mdash; 6-model consensus for each team, updated live as lines move.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">2</span><span><b>Pace &amp; Total Projection</b> &mdash; True game total vs. the posted line. Know when the book is wrong.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">3</span><span><b>Key Player Matchup Cards</b> &mdash; Head-to-head stats, def. rating exposure, and minute projections.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">4</span><span><b>Top Props for the Game</b> &mdash; Auto-sorted by SAFE Score with one-click Neural deep-dive.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">5</span><span><b>Entry Strategy Matrix</b> &mdash; Recommended parlay combos and singles for your risk profile.</span></li>
+          </ul>
+          <a href="?auth=signup" class="ag-ts-btn">Access Game Reports Free <span>&#x2192;</span></a>
         </div>
-        <div class="ag-mock-body">
-          <div class="ps-pr">
-            <div class="ps-av" style="--av-bg:linear-gradient(135deg,#F9C62B,#FFE066);--av-glow:rgba(249,198,43,.45)">JT</div>
-            <div style="flex:1;min-width:0">
-              <div class="ps-pname">Jayson Tatum</div>
-              <div class="ps-pdet">BOS &middot; vs MIA &middot; Home &middot; 10k sims</div>
+        <div class="ag-ts-mk-wrap">
+          <div class="ag-ts-mk-orb"></div>
+          <div class="ag-ts-mk">
+            <div class="ag-mk-chrome">
+              <div class="ag-mk-dots"><span></span><span></span><span></span></div>
+              <div class="ag-mk-url-bar">smartpickpro.ai &nbsp;&middot;&nbsp; Game Report</div>
             </div>
-            <div class="ps-dh-badge">&#x1F434; Dark Horse</div>
-          </div>
-          <div class="ps-stat-grid">
-            <div class="ps-stat-box"><div class="ps-stat-val">28.4</div><div class="ps-stat-lbl">PTS Med</div></div>
-            <div class="ps-stat-box dh"><div class="ps-stat-val">9.2</div><div class="ps-stat-lbl">REB &#x2191; DH</div></div>
-            <div class="ps-stat-box"><div class="ps-stat-val">5.1</div><div class="ps-stat-lbl">AST Med</div></div>
-            <div class="ps-stat-box"><div class="ps-stat-val">3.8</div><div class="ps-stat-lbl">3PM Med</div></div>
-          </div>
-          <div class="ps-dist-wrap">
-            <div class="ps-dist-top"><span>REB Distribution &mdash; 10k sims</span><span>Ceiling: 14</span></div>
-            <div class="ps-dist-bar">
-              <div class="ps-dist-col" style="height:18%"></div>
-              <div class="ps-dist-col" style="height:34%"></div>
-              <div class="ps-dist-col" style="height:54%"></div>
-              <div class="ps-dist-col pk" style="height:90%"></div>
-              <div class="ps-dist-col pk" style="height:100%"></div>
-              <div class="ps-dist-col pk" style="height:82%"></div>
-              <div class="ps-dist-col" style="height:60%"></div>
-              <div class="ps-dist-col dh-col" style="height:44%"></div>
-              <div class="ps-dist-col dh-col" style="height:30%"></div>
-              <div class="ps-dist-col" style="height:18%"></div>
-              <div class="ps-dist-col" style="height:10%"></div>
-              <div class="ps-dist-col" style="height:5%"></div>
+            <div class="ag-mk-body">
+              <div class="gr2-hd">
+                <div class="gr2-title">&#x1F4CB; Game Report</div>
+                <div class="gr2-live">Live Analysis</div>
+              </div>
+              <div class="gr2-game">
+                <div class="gr2-team">
+                  <div class="gr2-abbr" style="color:#00D559">BOS</div>
+                  <div class="gr2-rec">47&ndash;22</div>
+                </div>
+                <div class="gr2-mid">
+                  <div class="gr2-vs">VS</div>
+                  <div class="gr2-spread">BOS &minus;5.5</div>
+                  <div class="gr2-ou">O/U 218.5</div>
+                </div>
+                <div class="gr2-team">
+                  <div class="gr2-abbr" style="color:#2D9EFF">MIA</div>
+                  <div class="gr2-rec">31&ndash;38</div>
+                </div>
+              </div>
+              <div class="gr2-pills">
+                <span class="gr2-pill g">4 Sharp Plays</span>
+                <span class="gr2-pill b">Pace 99.4</span>
+                <span class="gr2-pill">TD Garden</span>
+                <span class="gr2-pill p">7:30 PM ET</span>
+              </div>
+              <div class="gr2-sec-lbl">AI Consensus Metrics</div>
+              <div class="gr2-bars">
+                <div class="gr2-brow"><div class="gr2-blbl">BOS Win Prob</div><div class="gr2-btrack"><div class="gr2-bfill" style="--w:67%;--bc1:#00D559;--bc2:#00FF85;--bglow:rgba(0,213,89,.45)"></div></div><div class="gr2-bval" style="--bc1:#00D559">67%</div></div>
+                <div class="gr2-brow"><div class="gr2-blbl">Tatum PTS Edge</div><div class="gr2-btrack"><div class="gr2-bfill" style="--w:82%;--bc1:#F9C62B;--bc2:#FFE066;--bglow:rgba(249,198,43,.45)"></div></div><div class="gr2-bval" style="--bc1:#F9C62B">+4.8%</div></div>
+                <div class="gr2-brow"><div class="gr2-blbl">SAFE Consensus</div><div class="gr2-btrack"><div class="gr2-bfill" style="--w:88%;--bc1:#2D9EFF;--bc2:#60b4ff;--bglow:rgba(45,158,255,.45)"></div></div><div class="gr2-bval" style="--bc1:#2D9EFF">88</div></div>
+                <div class="gr2-brow"><div class="gr2-blbl">Total Proj &Delta;</div><div class="gr2-btrack"><div class="gr2-bfill" style="--w:55%;--bc1:#c084fc;--bc2:#d8b4fe;--bglow:rgba(192,132,252,.45)"></div></div><div class="gr2-bval" style="--bc1:#c084fc">+3.2</div></div>
+              </div>
+              <div class="gr2-alert">
+                <div class="gr2-alert-ico">&#x26A1;</div>
+                <div class="gr2-alert-txt"><b>Sharp Money Alert</b> &mdash; 74% of handle on BOS &minus;5.5 with line movement from &minus;4.5. Strong consensus signal.</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <div>
-        <div class="ag-tool-eyebrow" style="--tc:#F9C62B">&#x1F52E; Player Simulator</div>
-        <h3 class="ag-tool-h" style="--tc:#F9C62B;--tc2:#FFE066">10,000 Sims.<br><span class="em">One True Number.</span></h3>
-        <p class="ag-tool-p">The Quantum Matrix Engine 5.6 runs 10,000 simulated game iterations per player, per stat, per night &mdash; producing a full outcome distribution so you know the actual probability of any prop hitting, not just a guess.</p>
-        <ul class="ag-tool-bullets" style="--tc:#F9C62B">
-          <li><b>Full Stat Line Projection</b> &mdash; Points, rebounds, assists, steals, blocks, threes, and turnovers. Every category, every night.</li>
-          <li><b>Dark Horse Detection &#x1F434;</b> &mdash; Auto-flags props where a player&rsquo;s simulated ceiling is meaningfully above the market line. Hidden upside, found for you.</li>
-          <li><b>Context-Aware Inputs</b> &mdash; Opponent, pace, home/away status, game total, and defensive matchup auto-loaded for every player.</li>
-          <li><b>Outcome Distribution Charts</b> &mdash; See exactly where outcomes cluster. High variance = better OVER. Low variance = better UNDER.</li>
-          <li><b>Syncs with Prop Scanner</b> &mdash; Gap between simulator median and posted line visible instantly. Spot mispriced props in seconds.</li>
-        </ul>
-        <a href="?auth=signup" class="ag-tool-cta" style="--tc:#F9C62B">Run Your First Simulation Free &rarr;</a>
+
+      <!-- ── PLAYER SIMULATOR ROW ── -->
+      <div class="ag-ts-row rev" style="--tc:#F9C62B;--tc2:#FFE066;">
+        <div class="ag-ts-mk-wrap">
+          <div class="ag-ts-mk-orb"></div>
+          <div class="ag-ts-mk">
+            <div class="ag-mk-chrome">
+              <div class="ag-mk-dots"><span></span><span></span><span></span></div>
+              <div class="ag-mk-url-bar">smartpickpro.ai &nbsp;&middot;&nbsp; Player Simulator</div>
+            </div>
+            <div class="ag-mk-body">
+              <div class="ps2-hd">
+                <div class="ps2-av">JT</div>
+                <div class="ps2-info">
+                  <div class="ps2-name">Jayson Tatum</div>
+                  <div class="ps2-meta">BOS &middot; vs MIA &middot; Home &middot; 10,000 sims</div>
+                </div>
+                <div class="ps2-dh">&#x1F434; Dark Horse</div>
+              </div>
+              <div class="ps2-grid">
+                <div class="ps2-stat"><div class="ps2-sv">28.4</div><div class="ps2-sl">PTS Med</div></div>
+                <div class="ps2-stat hi"><div class="ps2-sv">9.2</div><div class="ps2-sl">REB &#x2191; DH</div></div>
+                <div class="ps2-stat"><div class="ps2-sv">5.1</div><div class="ps2-sl">AST Med</div></div>
+                <div class="ps2-stat"><div class="ps2-sv">3.8</div><div class="ps2-sl">3PM Med</div></div>
+              </div>
+              <div class="ps2-vs">
+                <div class="ps2-vs-lbl">Sim vs. Book Line</div>
+                <div class="ps2-vs-nums">
+                  <span class="ps2-vs-sim">9.2</span>
+                  <span class="ps2-vs-sep">vs</span>
+                  <span class="ps2-vs-book">7.5</span>
+                </div>
+                <div class="ps2-edge">+1.7 Edge</div>
+              </div>
+              <div class="ps2-dist">
+                <div class="ps2-dist-hd">
+                  <div class="ps2-dist-lbl">REB Distribution &mdash; 10k sims</div>
+                  <div class="ps2-dist-ceil">Ceiling: 14</div>
+                </div>
+                <div class="ps2-dist-chart">
+                  <div class="ps2-dc" style="height:15%"></div>
+                  <div class="ps2-dc" style="height:28%"></div>
+                  <div class="ps2-dc" style="height:46%"></div>
+                  <div class="ps2-dc pk" style="height:75%"></div>
+                  <div class="ps2-dc pk" style="height:100%"></div>
+                  <div class="ps2-dc pk" style="height:85%"></div>
+                  <div class="ps2-dc" style="height:60%"></div>
+                  <div class="ps2-dc dh" style="height:44%"></div>
+                  <div class="ps2-dc dh" style="height:28%"></div>
+                  <div class="ps2-dc" style="height:16%"></div>
+                  <div class="ps2-dc" style="height:8%"></div>
+                  <div class="ps2-dc" style="height:4%"></div>
+                </div>
+                <div class="ps2-dist-foot"><span>3</span><span>5</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>&nbsp;</span><span>&nbsp;</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="ag-ts-tag"><span class="ag-ts-tag-dot"></span>&#x1F52E;&nbsp; Player Simulator</div>
+          <h3 class="ag-ts-copy-h">10,000 Sims.<br><span class="em">One True Number.</span></h3>
+          <p class="ag-ts-copy-p">The Quantum Matrix Engine runs 10,000 simulated game iterations per player, per stat, per night &mdash; producing a full outcome distribution so you know the actual probability of any prop hitting, not just a guess.</p>
+          <ul class="ag-ts-list">
+            <li class="ag-ts-li"><span class="ag-ts-li-num">1</span><span><b>Full Stat Line Projection</b> &mdash; Points, rebounds, assists, steals, blocks, threes, and turnovers. Every category, every night.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">2</span><span><b>Dark Horse Detection &#x1F434;</b> &mdash; Auto-flags props where the sim ceiling is meaningfully above the market line.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">3</span><span><b>Sim vs. Book Line</b> &mdash; See the exact gap between your simulated median and the posted prop. Mispriced props found instantly.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">4</span><span><b>Outcome Distribution Charts</b> &mdash; See exactly where outcomes cluster. High variance = better OVER. Low variance = better UNDER.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">5</span><span><b>Context-Aware Inputs</b> &mdash; Opponent, pace, home/away, game total, and defensive matchup auto-loaded for every player.</span></li>
+          </ul>
+          <a href="?auth=signup" class="ag-ts-btn">Run Your First Simulation Free <span>&#x2192;</span></a>
+        </div>
       </div>
-    </div>
+
+    </div><!-- /ag-ts-wrap -->
 
     <div class="ag-divider"></div>
 

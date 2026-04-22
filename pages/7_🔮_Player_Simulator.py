@@ -7,6 +7,7 @@
 # ============================================================
 
 import streamlit as st
+from utils.rbac import has_permission, permission_gate
 import html as _html
 import logging as _logging
 import hashlib as _hashlib
@@ -1460,13 +1461,17 @@ if _all_sim_results:
                         _sv.get("p10", 0), _sv.get("p50", 0), _sv.get("p90", 0),
                         _sv.get("season_avg", 0), _sv.get("upside_ratio", 1.0),
                     ])
-            st.download_button(
-                label="📥 Download Report (CSV)",
-                data=_csv_buf.getvalue(),
-                file_name=f"simulation_report_{_datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-                use_container_width=True,
-            )
+            if has_permission("export_data"):
+                st.download_button(
+                    label="📥 Download Report (CSV)",
+                    data=_csv_buf.getvalue(),
+                    file_name=f"simulation_report_{_datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
+            else:
+                permission_gate("export_data", show_upgrade_button=False)
+                st.caption("🔒 Report export requires **Smart Money** or above.")
         except Exception as _csv_err:
             _logger.debug("CSV export failed: %s", _csv_err)
 

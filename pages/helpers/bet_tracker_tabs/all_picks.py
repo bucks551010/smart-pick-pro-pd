@@ -1,5 +1,6 @@
 """All Picks tab for Bet Tracker."""
 import streamlit as st
+from utils.rbac import has_permission, permission_gate
 from styles.theme import (
     get_summary_cards_html,
     get_styled_stats_table_html,
@@ -314,11 +315,15 @@ def render(platform_selections, player_search, date_range, direction_filter):
     _mc[3].metric("Avg Confidence", f"{_avg_conf:.0f}/100")
     with _mc[4]:
         if all_picks_data:
-            st.download_button(
-                "📥 Export CSV", data=export_bets_csv(all_picks_data),
-                file_name=f"smartai_all_picks_{_today_str}.csv", mime="text/csv",
-                key="export_all_picks_csv",
-            )
+            if has_permission("export_data"):
+                st.download_button(
+                    "📥 Export CSV", data=export_bets_csv(all_picks_data),
+                    file_name=f"smartai_all_picks_{_today_str}.csv", mime="text/csv",
+                    key="export_all_picks_csv",
+                )
+            else:
+                permission_gate("export_data", show_upgrade_button=False)
+                st.caption("🔒 Export requires **Smart Money** or above.")
 
     st.divider()
 

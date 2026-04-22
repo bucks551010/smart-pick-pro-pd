@@ -3,6 +3,7 @@
 # Runs the prediction model against historical game log data to validate accuracy.
 
 import streamlit as st
+from utils.rbac import has_permission, permission_gate
 
 st.set_page_config(
     page_title="Proving Grounds — Smart Pick Pro",
@@ -1412,25 +1413,30 @@ def _render_results(result, config_label=""):
             # Download buttons — JSON and CSV
             _dl_col1, _dl_col2 = st.columns(2)
             _log_json = _json.dumps(pick_log, indent=2)
-            _dl_col1.download_button(
-                "⬇️ Download Pick Log (JSON)",
-                data=_log_json,
-                file_name=f"backtest_pick_log_{result.get('season','')}.json",
-                mime="application/json",
-            )
+            if has_permission("export_data"):
+                _dl_col1.download_button(
+                    "⬇️ Download Pick Log (JSON)",
+                    data=_log_json,
+                    file_name=f"backtest_pick_log_{result.get('season','')}.json",
+                    mime="application/json",
+                )
 
-            # CSV export
-            _csv_buffer = _io.StringIO()
-            if pick_log:
-                _writer = _csv.DictWriter(_csv_buffer, fieldnames=pick_log[0].keys())
-                _writer.writeheader()
-                _writer.writerows(pick_log)
-            _dl_col2.download_button(
-                "⬇️ Download Pick Log (CSV)",
-                data=_csv_buffer.getvalue(),
-                file_name=f"backtest_pick_log_{result.get('season','')}.csv",
-                mime="text/csv",
-            )
+                # CSV export
+                _csv_buffer = _io.StringIO()
+                if pick_log:
+                    _writer = _csv.DictWriter(_csv_buffer, fieldnames=pick_log[0].keys())
+                    _writer.writeheader()
+                    _writer.writerows(pick_log)
+                _dl_col2.download_button(
+                    "⬇️ Download Pick Log (CSV)",
+                    data=_csv_buffer.getvalue(),
+                    file_name=f"backtest_pick_log_{result.get('season','')}.csv",
+                    mime="text/csv",
+                )
+            else:
+                with _dl_col1:
+                    permission_gate("export_data", show_upgrade_button=False)
+                    st.caption("🔒 Export requires **Smart Money** or above.")
         else:
             st.caption("No picks in the log.")
 

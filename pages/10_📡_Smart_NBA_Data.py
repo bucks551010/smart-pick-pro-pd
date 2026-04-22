@@ -17,6 +17,7 @@ import contextlib
 import traceback
 
 import streamlit as st
+from utils.rbac import has_permission, permission_gate
 import pandas as pd
 
 # ── Data layer imports ─────────────────────────────────────────
@@ -1986,13 +1987,17 @@ with st.expander("📥 Export & Backup", expanded=False):
             _exp_db = _ExpPath("db") / "smartai_nba.db"
             if _exp_db.exists():
                 with open(_exp_db, "rb") as _db_file:
-                    st.download_button(
-                        "📥 Download smartai_nba.db",
-                        data=_db_file.read(),
-                        file_name="smartai_nba.db",
-                        mime="application/octet-stream",
-                        key="btn_export_db",
-                    )
+                    if has_permission("export_data"):
+                        st.download_button(
+                            "📥 Download smartai_nba.db",
+                            data=_db_file.read(),
+                            file_name="smartai_nba.db",
+                            mime="application/octet-stream",
+                            key="btn_export_db",
+                        )
+                    else:
+                        permission_gate("export_data", show_upgrade_button=False)
+                        st.caption("🔒 DB export requires **Smart Money** or above.")
                 if st.button("🧰 Create Backup Snapshot", key="btn_create_db_backup"):
                     try:
                         from tracking.database import create_database_backup
@@ -2022,13 +2027,17 @@ with st.expander("📥 Export & Backup", expanded=False):
                     with zipfile.ZipFile(_zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
                         for cf in _csv_files:
                             zf.write(cf, cf.name)
-                    st.download_button(
-                        "📥 Download CSVs.zip",
-                        data=_zip_buffer.getvalue(),
-                        file_name="smartpicks_csvs.zip",
-                        mime="application/zip",
-                        key="btn_download_csvs_zip",
-                    )
+                    if has_permission("export_data"):
+                        st.download_button(
+                            "📥 Download CSVs.zip",
+                            data=_zip_buffer.getvalue(),
+                            file_name="smartpicks_csvs.zip",
+                            mime="application/zip",
+                            key="btn_download_csvs_zip",
+                        )
+                    else:
+                        permission_gate("export_data", show_upgrade_button=False)
+                        st.caption("🔒 CSV export requires **Smart Money** or above.")
                 else:
                     st.info("No CSV files found in the data directory.")
             except Exception as _csv_err:

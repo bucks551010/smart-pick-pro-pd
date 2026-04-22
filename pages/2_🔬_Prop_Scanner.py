@@ -7,6 +7,7 @@
 # ============================================================
 
 import streamlit as st
+from utils.rbac import has_permission, permission_gate
 import datetime
 import csv
 import io
@@ -764,12 +765,16 @@ with tab_load:
         )
 
         template_csv = get_csv_template()
-        st.download_button(
-            label="⬇️ Download CSV Template",
-            data=template_csv,
-            file_name="props_template.csv",
-            mime="text/csv",
-        )
+        if has_permission("export_data"):
+            st.download_button(
+                label="⬇️ Download CSV Template",
+                data=template_csv,
+                file_name="props_template.csv",
+                mime="text/csv",
+            )
+        else:
+            permission_gate("export_data", show_upgrade_button=False)
+            st.caption("🔒 Template download requires **Smart Money** or above.")
 
         st.markdown("---")
 
@@ -1094,13 +1099,17 @@ with tab_table:
                         "team": sp.get("player_team", sp.get("team", "")),
                         "game_date": sp.get("game_date", ""),
                     })
-                st.download_button(
-                    "📋 Export Filtered Props as CSV",
-                    data=export_buf.getvalue(),
-                    file_name="filtered_props.csv",
-                    mime="text/csv",
-                    key="export_filtered_csv",
-                )
+                if has_permission("export_data"):
+                    st.download_button(
+                        "📋 Export Filtered Props as CSV",
+                        data=export_buf.getvalue(),
+                        file_name="filtered_props.csv",
+                        mime="text/csv",
+                        key="export_filtered_csv",
+                    )
+                else:
+                    permission_gate("export_data", show_upgrade_button=False)
+                    st.caption("🔒 Export requires **Smart Money** or above.")
 
             # ── Bulk edit ─────────────────────────────────────────
             with st.expander("✏️ Bulk Edit Lines", expanded=False):

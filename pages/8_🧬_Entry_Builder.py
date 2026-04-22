@@ -7,6 +7,7 @@
 # ============================================================
 
 import streamlit as st  # Main UI framework
+from utils.rbac import has_permission, permission_gate
 import logging
 import html as _html_eb  # HTML escaping – single import for the whole file
 import datetime as _dt
@@ -1220,13 +1221,16 @@ if _stored_entries:
                     f',{_lp.get("line",0)},{_lp_dir},{_lp.get("tier","")}'
                     f',{_lp.get("edge_percentage",0):+.1f}%,{_lp_prob_val:.0f}%'
                 )
-            st.download_button(
-                f"📥 CSV",
-                data="\n".join(_csv_lines),
-                file_name=f"entry_{entry_rank}.csv",
-                mime="text/csv",
-                key=f"csv_entry_{entry_rank}",
-            )
+            if has_permission("export_data"):
+                st.download_button(
+                    f"📥 CSV",
+                    data="\n".join(_csv_lines),
+                    file_name=f"entry_{entry_rank}.csv",
+                    mime="text/csv",
+                    key=f"csv_entry_{entry_rank}",
+                )
+            else:
+                st.caption("🔒 Smart Money+")
         with _action_col3:
             # Clipboard-friendly text
             _clip_lines = [f"Entry #{entry_rank} — {selected_platform} — EV: {ev_label}"]
@@ -1235,13 +1239,16 @@ if _stored_entries:
                     f"  {_lp.get('player_name','')} — {_lp.get('stat_type','').title()} "
                     f"{_lp.get('direction','OVER')} {_lp.get('line',0)} ({_lp.get('tier','')})"
                 )
-            st.download_button(
-                f"📋 Copy",
-                data="\n".join(_clip_lines),
-                file_name=f"entry_{entry_rank}.txt",
-                mime="text/plain",
-                key=f"copy_entry_{entry_rank}",
-            )
+            if has_permission("export_data"):
+                st.download_button(
+                    f"📋 Copy",
+                    data="\n".join(_clip_lines),
+                    file_name=f"entry_{entry_rank}.txt",
+                    mime="text/plain",
+                    key=f"copy_entry_{entry_rank}",
+                )
+            else:
+                st.caption("🔒 Smart Money+")
 
         st.markdown("---")
 
@@ -1795,52 +1802,57 @@ if _slips:
 
     st.markdown(_ticket_html, unsafe_allow_html=True)
 
-    # ── Export Slip (#15) ────────────────────────────────────
+    # ── Export Slip (#15) ────────────────────────────────────────────
     _exp_col1, _exp_col2, _exp_col3 = st.columns(3)
-    with _exp_col1:
-        st.download_button(
-            label="📸 Export HTML",
-            data=(
-                '<!DOCTYPE html><html><head><meta charset="utf-8">'
-                '<style>body{background:#070A13;margin:20px;font-family:Inter,system-ui,sans-serif;}</style>'
-                '</head><body>' + _ticket_html + '</body></html>'
-            ),
-            file_name="optimal_slip.html",
-            mime="text/html",
-            key="export_slip_html",
-        )
-    with _exp_col2:
-        _slip_csv = ["Player,Team,Stat,Line,Direction,Tier,Edge,Prob"]
-        for _pk in _picks:
-            _pk_dir = _pk.get("direction", "OVER")
-            _pk_p = _pk.get("probability_over", 0.5)
-            _pk_pv = (_pk_p if _pk_dir == "OVER" else 1.0 - _pk_p) * 100
-            _slip_csv.append(
-                f'{_pk.get("player_name","")},{_pk.get("player_team",_pk.get("team",""))}'
-                f',{_pk.get("stat_type","")},{_pk.get("line",0)},{_pk_dir}'
-                f',{_pk.get("tier","")},{_pk.get("edge_percentage",0):+.1f}%,{_pk_pv:.0f}%'
+    if has_permission("export_data"):
+        with _exp_col1:
+            st.download_button(
+                label="📸 Export HTML",
+                data=(
+                    '<!DOCTYPE html><html><head><meta charset="utf-8">'
+                    '<style>body{background:#070A13;margin:20px;font-family:Inter,system-ui,sans-serif;}</style>'
+                    '</head><body>' + _ticket_html + '</body></html>'
+                ),
+                file_name="optimal_slip.html",
+                mime="text/html",
+                key="export_slip_html",
             )
-        st.download_button(
-            label="📥 Export CSV",
-            data="\n".join(_slip_csv),
-            file_name="optimal_slip.csv",
-            mime="text/csv",
-            key="export_slip_csv",
-        )
-    with _exp_col3:
-        _slip_txt = [f"Optimal {_slip_size}-Man Slip — {_opt_platform} — EV: {_ev_sign}{_ev*100:.1f}%"]
-        for _pk in _picks:
-            _slip_txt.append(
-                f"  {_pk.get('player_name','')} — {_pk.get('stat_type','').title()} "
-                f"{_pk.get('direction','OVER')} {_pk.get('line',0)} ({_pk.get('tier','')})"
+        with _exp_col2:
+            _slip_csv = ["Player,Team,Stat,Line,Direction,Tier,Edge,Prob"]
+            for _pk in _picks:
+                _pk_dir = _pk.get("direction", "OVER")
+                _pk_p = _pk.get("probability_over", 0.5)
+                _pk_pv = (_pk_p if _pk_dir == "OVER" else 1.0 - _pk_p) * 100
+                _slip_csv.append(
+                    f'{_pk.get("player_name","")},{_pk.get("player_team",_pk.get("team",""))}'
+                    f',{_pk.get("stat_type","")},{_pk.get("line",0)},{_pk_dir}'
+                    f',{_pk.get("tier","")},{_pk.get("edge_percentage",0):+.1f}%,{_pk_pv:.0f}%'
+                )
+            st.download_button(
+                label="📥 Export CSV",
+                data="\n".join(_slip_csv),
+                file_name="optimal_slip.csv",
+                mime="text/csv",
+                key="export_slip_csv",
             )
-        st.download_button(
-            label="📋 Copy Text",
-            data="\n".join(_slip_txt),
-            file_name="optimal_slip.txt",
-            mime="text/plain",
-            key="export_slip_txt",
-        )
+        with _exp_col3:
+            _slip_txt = [f"Optimal {_slip_size}-Man Slip — {_opt_platform} — EV: {_ev_sign}{_ev*100:.1f}%"]
+            for _pk in _picks:
+                _slip_txt.append(
+                    f"  {_pk.get('player_name','')} — {_pk.get('stat_type','').title()} "
+                    f"{_pk.get('direction','OVER')} {_pk.get('line',0)} ({_pk.get('tier','')})"
+                )
+            st.download_button(
+                label="📋 Copy Text",
+                data="\n".join(_slip_txt),
+                file_name="optimal_slip.txt",
+                mime="text/plain",
+                key="export_slip_txt",
+            )
+    else:
+        with _exp_col1:
+            permission_gate("export_data", show_upgrade_button=False)
+            st.caption("🔒 Slip export requires **Smart Money** or above.")
 
     # Show runner-up slips
     if len(_slips) > 1:

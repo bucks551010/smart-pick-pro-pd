@@ -215,9 +215,22 @@ def render(platform_selections, player_search, date_range, direction_filter):
                     st.error(f"❌ {msg}")
 
     # ── Bet Cards Grid by date ────────────────────────────────
+    import datetime as _dt
+    from tracking.bet_tracker import auto_resolve_bet_results
+    from tracking.database import save_daily_snapshot
+
     if not filtered_bets:
         st.info(f"No bets match the '{filter_choice}' filter on this page.")
         return
+
+    def _fmt_date(iso_str: str) -> str:
+        try:
+            return _dt.date.fromisoformat(iso_str).strftime("%B %-d, %Y")
+        except Exception:
+            try:
+                return _dt.date.fromisoformat(iso_str).strftime("%B %d, %Y").replace(" 0", " ")
+            except Exception:
+                return iso_str
 
     _today_str = tracker_today_iso()
     _today_bets = [b for b in filtered_bets if b.get("bet_date", "") == _today_str]
@@ -236,9 +249,34 @@ def render(platform_selections, player_search, date_range, direction_filter):
         _pw = sum(1 for b in _bets if b.get("result") == "WIN")
         _pl2 = sum(1 for b in _bets if b.get("result") == "LOSS")
         _pp = sum(1 for b in _bets if not b.get("result"))
+        _pretty = _fmt_date(_pd)
         _label = (
-            f"📅 {_pd} — {len(_bets)} bet(s) · ✅{_pw} ❌{_pl2}"
-            + (f" ⏳{_pp} pending" if _pp else "")
+            f"📅 {_pretty} — {len(_bets)} bet(s) · ✅{_pw} WIN  ❌{_pl2} LOSS"
+            + (f"  ⏳ {_pp} PENDING" if _pp else "")
         )
-        with st.expander(_label, expanded=False):
+        # Auto-expand date groups that still have pending bets
+        with st.expander(_label, expanded=bool(_pp)):
             render_bet_cards_chunked(_bets)
+            if _pp:
+                st.markdown("---")
+                _rbtn_key = f"resolve_date_btn_{_pd}"
+                if st.button(f"⚡ Resolve {_pretty} Picks", key=_rbtn_key, type="primary"):
+                    with st.spinner(f"Resolving {_pretty}…"):
+                        try:
+                            _resolved, _errors = auto_resolve_bet_results(date_str=_pd)
+                        except Exception as _re:
+                            _resolved, _errors = 0, [str(_re)]
+                    if _resolved > 0:
+                        try:
+                            save_daily_snapshot(_pd)
+                        except Exception:
+                            pass
+                        st.success(f"✅ Resolved **{_resolved}** bet(s) for {_pretty}.")
+                        reload_bets()
+                        st.rerun()
+                    else:
+                        st.warning(f"⚠️ No bets auto-resolved for {_pretty}. Check the Resolve tab for manual grading.")
+                    if _errors:
+                        with st.expander(f"⚠️ {len(_errors)} error(s)"):
+                            for _err in _errors[:20]:
+                                st.markdown(f"- {_err}")

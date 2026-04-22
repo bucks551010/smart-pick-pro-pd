@@ -1129,13 +1129,29 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 def _create_user(email: str, password: str, display_name: str = "") -> bool:
     """Create a new user account. Returns True on success."""
     pw_hash = _hash_password(password)
+    clean_email = email.strip().lower()
     for attempt in range(_DB_RETRY_ATTEMPTS):
         try:
             with _AuthConn() as db:
                 db.execute(
                     "INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)",
-                    (email.strip().lower(), pw_hash, display_name.strip() or email.split("@")[0]),
+                    (clean_email, pw_hash, display_name.strip() or email.split("@")[0]),
                 )
+            # Mirror the new account into the subscriptions table so every
+            # user has a row there regardless of Stripe activity.
+            try:
+                from utils.auth import _save_subscription_to_db as _save_sub
+                _save_sub({
+                    "subscription_id": f"acct_{clean_email}",
+                    "customer_id":     f"cus_{clean_email}",
+                    "customer_email":  clean_email,
+                    "status":          "active",
+                    "plan_name":       "Free",
+                    "period_start":    "",
+                    "period_end":      "",
+                })
+            except Exception as _sub_exc:
+                _logger.debug("Subscription mirror failed (non-fatal): %s", _sub_exc)
             return True
         except Exception as exc:
             exc_str = str(exc).lower()

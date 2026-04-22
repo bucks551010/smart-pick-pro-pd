@@ -946,7 +946,7 @@ with st.expander(f"📋 {selected_platform} Payout Table"):
                 "Payout (multiplier)": f"{multiplier}x",
                 "On $10 entry": f"${multiplier * 10:.2f}",
             })
-        st.dataframe(payout_display, width="stretch", hide_index=True)
+        st.dataframe(payout_display, use_container_width=True, hide_index=True)
     else:
         st.caption(f"No payout data for {entry_size}-pick entries on this platform.")
 
@@ -963,7 +963,7 @@ st.divider()
 build_button = st.button(
     f"🔨 Build Top {max_entries} {selected_platform} {entry_size}-Pick Entries",
     type="primary",
-    width="stretch",
+    use_container_width=True,
 )
 
 if build_button:
@@ -1129,7 +1129,7 @@ if _stored_entries:
                     "Payout": f"${payout:.2f}",
                 })
 
-            st.dataframe(breakdown_rows, width="stretch", hide_index=True)
+            st.dataframe(breakdown_rows, use_container_width=True, hide_index=True)
             st.caption(
                 f"**Total Expected Return:** ${ev_result.get('total_expected_return', 0):.2f} "
                 f"on ${entry_fee:.2f} entry = **Net EV: {ev_label}**"

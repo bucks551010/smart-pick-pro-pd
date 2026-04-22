@@ -568,8 +568,7 @@ st.markdown('<div style="margin-bottom:8px"></div>', unsafe_allow_html=True)
         "🔮 Predict",
         "📅 History",
         "🏆 Awards",
-    ],
-    key="bet_tracker_tabs",
+    ]
 )
 
 with tab_model_health:

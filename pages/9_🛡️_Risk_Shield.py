@@ -319,7 +319,7 @@ if avoided_props:
 
     st.dataframe(
         avoided_rows,
-        width="stretch",
+        use_container_width=True,
         hide_index=True,
         column_config={
             "Line": st.column_config.NumberColumn(format="%.1f"),
@@ -387,7 +387,7 @@ if low_edge_props:
 
     st.dataframe(
         low_edge_rows,
-        width="stretch",
+        use_container_width=True,
         hide_index=True,
         column_config={
             "Line": st.column_config.NumberColumn(format="%.1f"),
@@ -460,7 +460,7 @@ if conflicting_props:
 
     st.dataframe(
         conflict_rows,
-        width="stretch",
+        use_container_width=True,
         hide_index=True,
         column_config={
             "Line": st.column_config.NumberColumn(format="%.1f"),

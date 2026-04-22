@@ -335,7 +335,7 @@ if todays_games:
         )
 
 elif not todays_games and analysis_results:
-    if st.button("📋 Generate Full Report for All Props", width="stretch"):
+    if st.button("📋 Generate Full Report for All Props", use_container_width=True):
         st.session_state["game_report_show_all"] = True
         st.rerun()
 
@@ -800,7 +800,7 @@ def _render_key_players(team_abbrev, label):
         })
     st.dataframe(
         rows,
-        width="stretch",
+        use_container_width=True,
         hide_index=True,
         column_config={
             "PTS": st.column_config.NumberColumn(format="%.1f"),
@@ -972,19 +972,19 @@ with _tab_report:
                             f"{_conf}/100",
                             help="Based on data quality, matchup clarity, Vegas alignment, and pace.",
                         )
-                        # Model factors detail (collapsed by default)
+                        # Model factors detail (shown inline — expanders cannot be nested)
                         _mf = game_pred.get("model_factors", {})
                         if _mf:
-                            with st.expander("🔬 Model Factors", expanded=False):
-                                _mf_cols = st.columns(4)
-                                _mf_labels = [
-                                    ("4-Factor Edge",      _mf.get("four_factor_edge", "—")),
-                                    ("Pace Environment",   _mf.get("pace_edge", "—")),
-                                    ("Home Court Boost",   _mf.get("home_court_boost", "—")),
-                                    ("Vegas Blend",        _mf.get("vegas_blend", "—")),
-                                ]
-                                for _c, (_lbl, _val) in zip(_mf_cols, _mf_labels):
-                                    _c.metric(_lbl, _val)
+                            st.markdown("**🔬 Model Factors**")
+                            _mf_cols = st.columns(4)
+                            _mf_labels = [
+                                ("4-Factor Edge",      _mf.get("four_factor_edge", "—")),
+                                ("Pace Environment",   _mf.get("pace_edge", "—")),
+                                ("Home Court Boost",   _mf.get("home_court_boost", "—")),
+                                ("Vegas Blend",        _mf.get("vegas_blend", "—")),
+                            ]
+                            for _c, (_lbl, _val) in zip(_mf_cols, _mf_labels):
+                                _c.metric(_lbl, _val)
                     else:
                         st.caption(
                             f"🔮 Predicted: **{away} {game_pred['away_score']:.0f}** vs "
@@ -1076,7 +1076,7 @@ with _tab_report:
                         st.markdown("#### 📋 All Player Props & Picks")
                         st.dataframe(
                             all_picks_rows,
-                            width="stretch",
+                            use_container_width=True,
                             hide_index=True,
                             height=min(len(all_picks_rows) * 36 + 38, 600),
                             column_config=_PICKS_COL_CONFIG,
@@ -1155,7 +1155,7 @@ with _tab_report:
             st.markdown("#### 📋 All Player Props & Picks")
             st.dataframe(
                 all_picks_rows_no_game,
-                width="stretch",
+                use_container_width=True,
                 hide_index=True,
                 height=min(len(all_picks_rows_no_game) * 36 + 38, 600),
                 column_config=_PICKS_COL_CONFIG,

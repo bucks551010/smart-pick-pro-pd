@@ -604,7 +604,7 @@ with tab_load:
             do_load = st.button(
                 "🔄 Get Live Props",
                 type="primary",
-                width="stretch",
+                use_container_width=True,
                 help="Pull tonight's live prop lines from all enabled platforms.",
                 disabled=not enabled_platforms,
             )
@@ -727,7 +727,7 @@ with tab_load:
                         comparison_rows.append(row)
 
                     if comparison_rows:
-                        st.dataframe(comparison_rows, width="stretch", hide_index=True)
+                        st.dataframe(comparison_rows, use_container_width=True, hide_index=True)
                         st.caption(
                             "💡 **Best OVER** = platform with the lowest line (easiest to beat). "
                             "**Best UNDER** = platform with the highest line (most room). "
@@ -816,7 +816,7 @@ with tab_load:
                     for p in enriched_preview[:10]
                 ]
                 st.markdown("**Preview:**")
-                st.dataframe(preview_rows, width="stretch", hide_index=True)
+                st.dataframe(preview_rows, use_container_width=True, hide_index=True)
 
                 if len(parsed_props) > 10:
                     st.caption(f"... and {len(parsed_props) - 10} more")
@@ -1069,7 +1069,7 @@ with tab_table:
                 })
             st.dataframe(
                 scan_rows,
-                width="stretch",
+                use_container_width=True,
                 hide_index=True,
                 column_config={
                     "Line": st.column_config.NumberColumn(format="%.1f"),
@@ -1245,7 +1245,7 @@ with tab_table:
 
             st.dataframe(
                 display_rows,
-                width="stretch",
+                use_container_width=True,
                 hide_index=True,
                 column_config={
                     "Line": st.column_config.NumberColumn(format="%.1f"),
@@ -1383,7 +1383,7 @@ with tab_manual:
 
         add_prop_button = st.form_submit_button(
             "➕ Add Prop",
-            width="stretch",
+            use_container_width=True,
             type="primary",
         )
 

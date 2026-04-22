@@ -286,7 +286,7 @@ with _one_click_col:
         "⚡ One-Click Setup",
         key="one_click_setup_btn",
         type="primary",
-        width="stretch",
+        use_container_width=True,
         help="Runs BOTH Auto-Load (tonight's games + rosters + stats) AND Get Live Props from all platforms in one click.",
     )
 with _one_click_info:
@@ -316,7 +316,7 @@ with st.expander("⚙️ Advanced Options — Individual Data Pipelines", expand
     with auto_col:
         auto_load_clicked = st.button(
             "🔄 Auto-Load Tonight's Games",
-            width="stretch",
+            use_container_width=True,
             type="primary",
             help="ONE CLICK: load tonight's games + current rosters + player stats + team stats",
         )
@@ -324,7 +324,7 @@ with st.expander("⚙️ Advanced Options — Individual Data Pipelines", expand
     with load_col:
         load_players_clicked = st.button(
             "⚡ Load Players Only",
-            width="stretch",
+            use_container_width=True,
             help="Re-load player stats for tonight's teams (games must already be loaded)",
         )
 
@@ -423,7 +423,7 @@ with st.expander("⚙️ Advanced Options — Individual Data Pipelines", expand
         _any_platform_selected = _include_pp or _include_ud or _include_dk
         platform_props_clicked = st.button(
             "📊 Get Live Props & Analyze",
-            width="stretch",
+            use_container_width=True,
             type="primary",
             help="Get REAL live prop lines from selected platforms, then run full Neural Analysis. Works independently — no need to Auto-Load first.",
             disabled=not _any_platform_selected,
@@ -2185,7 +2185,7 @@ with st.expander("➕ Manually Add Games", expanded=not bool(current_games)):
 
         submit_games_button = st.form_submit_button(
             "✅ Save Tonight's Games",
-            width="stretch",
+            use_container_width=True,
             type="primary",
         )
 

@@ -220,7 +220,7 @@ including games that haven't tipped off yet and games that are already final.
 | Element | Meaning |
 |---------|---------|
 | **Pace Bar** | Green = on pace to cash, Red = falling behind |
-| **Projected Total** | Current stat total + pace × remaining minutes |
+| **Projected Total** | Current stat total + pace — remaining minutes |
 | **OVER / UNDER Badge** | Which direction you bet |
 | **🔥 / 😰 Emoji** | Joseph's real-time vibe on this bet |
 | **Awaiting Tip-Off** | Game hasn't started yet — card is greyed out |
@@ -1326,7 +1326,7 @@ if vibe_checks:
                 st.write(reaction)
 
 
-# -- Attribution footer � Joseph M. Smith ----------------------
+# -- Attribution footer — Joseph M. Smith ----------------------
 try:
     render_attribution_footer()
 except Exception:

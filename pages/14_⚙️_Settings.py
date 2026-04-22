@@ -138,7 +138,7 @@ for _ci, (_pname, _pdata) in enumerate(_PROFILES.items()):
             f'</div>',
             unsafe_allow_html=True,
         )
-        if st.button(f"Apply {_pname}", key=f"profile_{_ci}", width="stretch"):
+        if st.button(f"Apply {_pname}", key=f"profile_{_ci}", use_container_width=True):
             for _k, _v in _pdata.items():
                 if _k != "description":
                     st.session_state[_k] = _v
@@ -430,7 +430,7 @@ settings_summary = {
 }
 
 summary_rows = [{"Setting": k, "Value": v} for k, v in settings_summary.items()]
-st.dataframe(summary_rows, width="stretch", hide_index=True)
+st.dataframe(summary_rows, use_container_width=True, hide_index=True)
 
 # Reset ALL settings button
 st.divider()

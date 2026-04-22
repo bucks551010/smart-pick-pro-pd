@@ -271,7 +271,7 @@ with col_depth:
 with col_dark_horse:
     run_dark_horse = st.button(
         "🌑 Dark Horse Finder",
-        width="stretch",
+        use_container_width=True,
         help="Scan ALL tonight's players and rank by upside vs season average",
     )
 
@@ -1239,7 +1239,7 @@ if _all_sim_results:
                     f"({_s.get('p10', 0)}–{_s.get('p90', 0)})"
                 )
             _cmp_rows.append(_row)
-        st.dataframe(_cmp_rows, width="stretch", hide_index=True)
+        st.dataframe(_cmp_rows, use_container_width=True, hide_index=True)
         st.caption("Format: Projected (10th pct – 90th pct)")
 
         # Enhancement 10: Plotly radar/spider chart for compare mode
@@ -1365,7 +1365,7 @@ if _all_sim_results:
                             "BLK": _to_float(_g.get("blk")),
                             "TOV": _to_float(_g.get("tov")),
                         })
-                    st.dataframe(_log_rows, width="stretch", hide_index=True)
+                    st.dataframe(_log_rows, use_container_width=True, hide_index=True)
 
                 # ── Matchup History vs Tonight's Opponent ─────────────────
                 _tonight_ctx = sim_result.get("context", {})

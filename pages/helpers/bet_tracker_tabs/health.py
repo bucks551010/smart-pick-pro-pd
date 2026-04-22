@@ -42,11 +42,14 @@ def render(platform_selections, player_search, date_range, direction_filter):
     ), unsafe_allow_html=True)
 
     _col1, _col2 = st.columns([2, 5])
+    # Force reset if stale "All Time" scope persists from an older session
+    if st.session_state.get("health_scope_filter") == "All Time":
+        st.session_state["health_scope_filter"] = "Today"
     st.session_state.setdefault("health_scope_filter", "Today")
     with _col1:
         _health_scope = st.selectbox(
             "Health Scope",
-            ["Today", "Last 7 Days", "All Time"],
+            ["Today", "Last 7 Days", "Last 30 Days"],
             key="health_scope_filter",
             help="Choose which date window feeds Model Health stats.",
         )

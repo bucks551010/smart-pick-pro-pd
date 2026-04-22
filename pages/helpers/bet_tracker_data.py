@@ -256,7 +256,8 @@ def scope_history_days(scope_label: str) -> int:
         return 7
     if scope_label == "Last 30 Days":
         return 30
-    return 3650
+    # "All Time" legacy value — treat as 30 days max to avoid loading all history
+    return 30
 
 
 @st.cache_data(ttl=10, show_spinner=False)
@@ -299,15 +300,14 @@ def build_merged_pick_universe(scope_label: str) -> dict:
             _line_key = str(round(float(_pick.get("prop_line") or _pick.get("line") or 0), 2))
         except (TypeError, ValueError):
             _line_key = "0"
+        # Dedup on player/stat/line/direction/date only — collapse same prop
+        # across different platforms, sources, or tiers to avoid inflating counts.
         _key = (
             str(_pick.get("player_name") or "").strip().lower(),
             str(_pick.get("stat_type") or "").strip().lower(),
             _line_key,
             str(_pick.get("direction") or "").strip().upper(),
             canonical_pick_date(_pick),
-            str(_pick.get("platform") or "").strip().lower(),
-            str(_pick.get("source") or "").strip().lower(),
-            str(_pick.get("tier") or "").strip().lower(),
         )
         if _key in _seen_keys:
             continue

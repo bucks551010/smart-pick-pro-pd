@@ -237,13 +237,14 @@ def bet_type_sort_key(bet_type: str):
 
 # ── Cached data loading ──────────────────────────────────────
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=10)
 def cached_load_all_bets(limit: int = 10000, exclude_linked: bool = True):
+    """Load bets from the live database. TTL=10s so DB edits appear within 10 seconds."""
     return load_all_bets(limit=limit, exclude_linked=exclude_linked)
 
 
 def reload_bets():
-    """Clear every data cache so the next access returns fresh data."""
+    """Force-clear every data cache so the very next access returns fresh DB data."""
     cached_load_all_bets.clear()
     build_merged_pick_universe.clear()
 
@@ -258,11 +259,12 @@ def scope_history_days(scope_label: str) -> int:
     return 3650
 
 
-@st.cache_data(ttl=30, show_spinner=False)
+@st.cache_data(ttl=10, show_spinner=False)
 def build_merged_pick_universe(scope_label: str) -> dict:
     """Build the shared merged pick universe used by Health and All Picks.
 
-    Now cached (TTL 30 s) so the second call with the same scope is free.
+    Cached (TTL 10 s) so the second call with the same scope is fast
+    while still reflecting live DB edits within 10 seconds.
     """
     _history_days = scope_history_days(scope_label)
     _analysis_all = load_all_analysis_picks(days=_history_days)

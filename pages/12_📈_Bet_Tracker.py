@@ -483,7 +483,7 @@ if _check_now_btn:
 # ============================================================
 
 st.markdown('<div class="bt-cmd-bar"><span class="bt-cmd-label">&#x1F3AF;&nbsp; Command Filters &mdash; Applied Across All Tabs</span>', unsafe_allow_html=True)
-_filter_col1, _filter_col2, _filter_col3, _filter_col4 = st.columns([2, 2, 2, 1])
+_filter_col1, _filter_col2, _filter_col3, _filter_col4, _filter_col5 = st.columns([2, 2, 2, 1, 1])
 
 with _filter_col1:
     platform_filter_selections = st.multiselect(
@@ -505,12 +505,12 @@ with _filter_col2:
 with _filter_col3:
     _today_dt = tracker_today_date()
     import datetime as _dt_mod
-    _week_ago_dt = _today_dt - _dt_mod.timedelta(days=7)
+    _two_weeks_ago_dt = _today_dt - _dt_mod.timedelta(days=13)
     _date_range = st.date_input(
         "📅 Date Range",
-        value=[_week_ago_dt, _today_dt],
+        value=[_two_weeks_ago_dt, _today_dt],
         key="date_range_filter",
-        help="Filter bets by date range. Defaults to the last 7 days.",
+        help="Filter bets by date range. Defaults to the last 14 days (includes 4/21 and earlier).",
     )
 
 with _filter_col4:
@@ -520,6 +520,17 @@ with _filter_col4:
         key="direction_filter",
         help="Filter by bet direction.",
     )
+
+with _filter_col5:
+    st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+    if st.button(
+        "🔄 Sync DB",
+        key="sync_db_btn",
+        help="Force-reload all bet data from the live database. Use this immediately after editing bets directly in the database.",
+        use_container_width=True,
+    ):
+        reload_bets()
+        st.success("✅ Synced!", icon="🔄")
 
 st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('<div style="margin-bottom:8px"></div>', unsafe_allow_html=True)

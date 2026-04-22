@@ -1386,8 +1386,8 @@ def _render_results(result, config_label=""):
                 st.markdown("**Top Performers** (sorted by pick count):")
                 st.dataframe(_player_rows[:20], hide_index=True, use_container_width=True)
                 if len(_player_rows) > 20:
-                    with st.expander("Show all players"):
-                        st.dataframe(_player_rows, hide_index=True, use_container_width=True)
+                    st.markdown("**All players:**")
+                    st.dataframe(_player_rows, hide_index=True, use_container_width=True)
 
     st.divider()
 

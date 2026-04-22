@@ -282,6 +282,6 @@ def render(platform_selections, player_search, date_range, direction_filter):
                     else:
                         st.warning(f"⚠️ No bets auto-resolved for {_pretty}. Check the Resolve tab for manual grading.")
                     if _errors:
-                        with st.expander(f"⚠️ {len(_errors)} error(s)"):
-                            for _err in _errors[:20]:
-                                st.markdown(f"- {_err}")
+                        st.markdown(f"**⚠️ {len(_errors)} error(s):**")
+                        for _err in _errors[:20]:
+                            st.markdown(f"- {_err}")

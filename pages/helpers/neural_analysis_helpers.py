@@ -1462,6 +1462,6 @@ def display_prop_analysis_card_qds(result):
 
     # ── Full Breakdown (QDS-styled HTML rendered via st.html for auto-sizing) ─
     breakdown_html = _render_qds_full_breakdown_html(result)
-    st.html(breakdown_html, unsafe_allow_javascript=True)
+    st.html(breakdown_html)
 
 

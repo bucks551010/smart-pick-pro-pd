@@ -1299,10 +1299,8 @@ def analyze_props_batch(
             _capped.append(r)
     active_results = _capped
 
-    # Cap output to the 500 best active picks.  The engine analyzes every
-    # fetched prop for accuracy, but only the top 500 are surfaced to the
-    # UI, auto-logged, and stored as analysis picks.
-    MAX_OUTPUT_PICKS = 500
+    # Cap output to the 1000 best active picks.
+    MAX_OUTPUT_PICKS = 1000
     active_results = active_results[:MAX_OUTPUT_PICKS]
 
     return active_results + out_results

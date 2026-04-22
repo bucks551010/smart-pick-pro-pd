@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: tracking/database.py
 # PURPOSE: SQLite database wrapper for storing bet history
 #          and tracking model performance over time.
@@ -533,14 +533,6 @@ def initialize_database():
                 )
             except sqlite3.OperationalError:
                 pass  # Column already exists
-
-            # Add is_risky flag to all_analysis_picks (1 = avoid/risky pick)
-            try:
-                cursor.execute(
-                    "ALTER TABLE all_analysis_picks ADD COLUMN is_risky INTEGER DEFAULT 0"
-                )
-            except sqlite3.OperationalError:
-                pass  # Column already exists â€” safe to ignore
 
             # Add bet_type to all_analysis_picks table
             try:

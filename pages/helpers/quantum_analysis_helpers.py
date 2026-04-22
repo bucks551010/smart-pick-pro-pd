@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # FILE: pages/helpers/quantum_analysis_helpers.py
 # PURPOSE: Helper functions for the Quantum Analysis Matrix page.
 #          Extracted from pages/3_⚡_Quantum_Analysis_Matrix.py to

@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # FILE: pages/helpers/joseph_live_desk.py
 # PURPOSE: Joseph M. Smith's Live Broadcast Desk — renders above
 #          prop cards on the Neural Analysis page (page 3).

@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # FILE: styles/theme.py
 # PURPOSE: All CSS/HTML generators for the SmartBetPro NBA UI.
 #          Provides a futuristic "AI Neural Network Lab" bright

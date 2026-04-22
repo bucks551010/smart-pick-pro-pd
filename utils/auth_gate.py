@@ -208,6 +208,9 @@ def _ensure_sessions_table() -> None:
     global _sessions_table_ok
     if _sessions_table_ok:
         return
+    # Step 1: CREATE TABLE in its own transaction so a failed migration below
+    # cannot abort / roll back the table creation (critical for PostgreSQL where
+    # any statement error aborts the entire transaction block).
     try:
         with _AuthConn() as db:
             # Use no DEFAULT clause on timestamp columns so the SQL is valid in
@@ -225,14 +228,19 @@ def _ensure_sessions_table() -> None:
                     created_at   TEXT
                 )
             """)
-            # Add last_seen column to existing tables that pre-date this change.
-            try:
-                db.execute("ALTER TABLE login_sessions ADD COLUMN last_seen TEXT")
-            except Exception:
-                pass  # Column already exists — safe to ignore.
-        _sessions_table_ok = True
     except Exception as _exc:
         _logger.error("Failed to create login_sessions table: %s", _exc)
+        return
+    # Step 2: Column migration in a SEPARATE transaction.  If the column already
+    # exists (table was just created with it, or a previous run added it) the
+    # ALTER TABLE fails and only this transaction is rolled back — the table
+    # itself is unaffected.
+    try:
+        with _AuthConn() as db:
+            db.execute("ALTER TABLE login_sessions ADD COLUMN last_seen TEXT")
+    except Exception:
+        pass  # Column already exists — safe to ignore.
+    _sessions_table_ok = True
 
 
 def _save_login_session(token: str, user: dict) -> None:

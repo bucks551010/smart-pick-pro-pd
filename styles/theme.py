@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: styles/theme.py
 # PURPOSE: All CSS/HTML generators for the SmartBetPro NBA UI.
 #          Provides a futuristic "AI Neural Network Lab" bright
@@ -464,56 +464,140 @@ h1, h2, h3, h4, h5, h6 {
 ::selection     { background: rgba(0,213,89,0.25); color: #fff; }
 ::-moz-selection{ background: rgba(0,213,89,0.25); color: #fff; }
 
-/* â”€â”€ Sidebar â€” PrizePicks dark style â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR — Ultra-Premium Navigation
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Sidebar shell ──────────────────────────────────────── */
 [data-testid="stSidebar"] {
-  background: #0A0D14 !important;
-  border-right: 1px solid rgba(255,255,255,0.06) !important;
-  box-shadow: 2px 0 24px rgba(0,0,0,0.5) !important;
-  min-width: 280px !important;
+  background: linear-gradient(180deg,
+    #080C18 0%,
+    #090D1A 40%,
+    #070A14 100%) !important;
+  border-right: 1px solid rgba(0,213,89,0.10) !important;
+  box-shadow: 4px 0 32px rgba(0,0,0,0.70),
+              inset -1px 0 0 rgba(0,213,89,0.04) !important;
+  min-width: 270px !important;
+  position: relative !important;
 }
+
+/* Animated top accent line */
+[data-testid="stSidebar"]::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 270px; height: 3px;
+  background: linear-gradient(90deg,
+    #00D559 0%, #2D9EFF 35%, #c084fc 65%, #00D559 100%);
+  background-size: 300% 100%;
+  animation: sidebarAccentFlow 6s linear infinite;
+  z-index: 9999;
+  pointer-events: none;
+}
+@keyframes sidebarAccentFlow {
+  0%   { background-position: 0%   50%; }
+  100% { background-position: 300% 50%; }
+}
+
+/* ── All text inside sidebar ──────────────────────────── */
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] span,
 [data-testid="stSidebar"] div,
-[data-testid="stSidebar"] label,
-[data-testid="stSidebar"] a {
-  color: #A0AABE !important;
-}
-[data-testid="stSidebar"] .stPageLink,
-[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] {
-  font-size: 0.88rem !important;
-  white-space: nowrap !important;
-  overflow: visible !important;
-  text-overflow: unset !important;
+[data-testid="stSidebar"] label {
+  color: #8B9DC3 !important;
 }
 
-/* Hide the /home marketing page from the sidebar nav */
+/* ── Nav link base ─────────────────────────────────────── */
+[data-testid="stSidebar"] .stPageLink a,
+[data-testid="stSidebar"] [data-testid="stSidebarNavLink"],
+[data-testid="stSidebar"] [data-testid="stSidebarNavItems"] a {
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  font-family: 'Inter', sans-serif !important;
+  color: #8B9DC3 !important;
+  padding: 10px 20px 10px 22px !important;
+  border-radius: 10px !important;
+  margin: 1px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  transition:
+    color      0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform  0.18s ease !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  border-left: 2px solid transparent !important;
+  position: relative !important;
+}
+
+/* ── Nav link hover ────────────────────────────────────── */
+[data-testid="stSidebar"] .stPageLink a:hover,
+[data-testid="stSidebar"] [data-testid="stSidebarNavLink"]:hover,
+[data-testid="stSidebar"] [data-testid="stSidebarNavItems"] a:hover {
+  color: #FFFFFF !important;
+  background: rgba(255,255,255,0.05) !important;
+  border-left-color: rgba(0,213,89,0.40) !important;
+  transform: translateX(4px) !important;
+  box-shadow: inset 0 0 24px rgba(0,213,89,0.04),
+              -2px 0 12px rgba(0,213,89,0.08) !important;
+}
+
+/* ── Nav link — active page ────────────────────────────── */
+[data-testid="stSidebar"] [data-testid="stSidebarNavLink"][aria-current="page"],
+[data-testid="stSidebar"] [data-testid="stSidebarNavItems"] a[aria-current="page"] {
+  background: linear-gradient(90deg,
+    rgba(0,213,89,0.12) 0%,
+    rgba(0,213,89,0.04) 100%) !important;
+  border-left: 2px solid #00D559 !important;
+  color: #00D559 !important;
+  font-weight: 800 !important;
+  box-shadow: inset 0 0 30px rgba(0,213,89,0.06),
+              0 0 12px rgba(0,213,89,0.08) !important;
+  transform: none !important;
+}
+
+/* Active page pulsing dot */
+[data-testid="stSidebar"] [data-testid="stSidebarNavLink"][aria-current="page"]::after,
+[data-testid="stSidebar"] [data-testid="stSidebarNavItems"] a[aria-current="page"]::after {
+  content: '';
+  position: absolute;
+  right: 14px; top: 50%;
+  transform: translateY(-50%);
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #00D559;
+  box-shadow: 0 0 8px rgba(0,213,89,0.8);
+  animation: navDotPulse 2s ease-in-out infinite;
+}
+@keyframes navDotPulse {
+  0%,100% { opacity: 0.7; transform: translateY(-50%) scale(1); }
+  50%     { opacity: 1;   transform: translateY(-50%) scale(1.4); }
+}
+
+/* ── Hide /home marketing page ─────────────────────────── */
 [data-testid="stSidebarNavItems"] a[href="/home"],
 [data-testid="stSidebarNavLink"][href="/home"],
 [data-testid="stSidebarNavItems"] li:has(a[href="/home"]) {
   display: none !important;
 }
-/* Active nav link â€” PP green left bar */
-[data-testid="stSidebar"] [data-testid="stSidebarNavLink"][aria-current="page"],
-[data-testid="stSidebar"] [data-testid="stSidebarNavItems"] a[aria-current="page"] {
-  background: rgba(0,213,89,0.08) !important;
-  border-left: 3px solid #00D559 !important;
-  color: #00D559 !important;
-  font-weight: 700 !important;
-}
+
+/* ── Footer badge ──────────────────────────────────────── */
 [data-testid="stSidebar"]::after {
-  content: "âš¡ Smart Pick Pro AI Engine";
+  content: "Smart Pick Pro  ·  AI Engine";
   display: block;
   position: fixed;
-  bottom: 18px; left: 0;
-  width: 100%;
-  padding: 0 20px;
-  box-sizing: border-box;
+  bottom: 16px; left: 0;
+  width: 270px;
   text-align: center;
-  font-size: 0.65rem;
+  font-size: 0.60rem;
   font-family: 'Inter', sans-serif;
   font-weight: 700;
-  color: rgba(0,213,89,0.50) !important;
-  letter-spacing: 0.06em;
+  color: rgba(0,213,89,0.35) !important;
+  letter-spacing: 0.12em;
   pointer-events: none;
   text-transform: uppercase;
 }

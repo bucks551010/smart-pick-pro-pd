@@ -1091,6 +1091,10 @@ def analyze_single_prop(
         full_result["standard_line"] = _standard_line
         full_result["risk_flags"] = _bet_classification.get("risk_flags", [])
         full_result["is_uncertain"] = _bet_classification.get("is_uncertain", False)
+        # Override bet_type to "risky" for avoid picks so they always
+        # surface in the Bet Tracker health tab regardless of is_risky column.
+        if full_result.get("should_avoid"):
+            full_result["bet_type"] = "risky"
     except Exception:
         full_result["bet_type"] = "standard"
         full_result["bet_type_emoji"] = ""

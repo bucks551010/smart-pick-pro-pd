@@ -122,6 +122,58 @@ def render(platform_selections, player_search, date_range, direction_filter):
         f"{len(filtered_health)} currently shown."
     )
 
+    # ── Risky/Avoid Bets — always visible, independent of resolved count ───────
+    _risky_all = [
+        b for b in filtered_health
+        if normalized_bet_type(b) == "risky"
+        or int(b.get("is_risky", 0) or 0) == 1
+    ]
+    _risky_resolved = [b for b in _risky_all if b.get("result") in ("WIN", "LOSS", "EVEN")]
+    _risky_wins    = sum(1 for b in _risky_resolved if b.get("result") == "WIN")
+    _risky_losses  = sum(1 for b in _risky_resolved if b.get("result") == "LOSS")
+    _risky_pending = len(_risky_all) - len(_risky_resolved)
+    _risky_win_pct = round(_risky_wins / max(_risky_wins + _risky_losses, 1) * 100, 1)
+
+    with st.expander(f"⚠️ Risky / Avoid Bets — {len(_risky_all)} logged", expanded=True):
+        if not _risky_all:
+            st.caption(
+                "No risky/avoid picks logged yet. "
+                "Run analysis and picks flagged as Avoid will be tracked here automatically."
+            )
+        else:
+            _rc1, _rc2, _rc3, _rc4 = st.columns(4)
+            _rc1.metric("⚠️ Total Risky",  len(_risky_all),   help="Picks flagged Avoid by the engine")
+            _rc2.metric("✅ Wins",          _risky_wins)
+            _rc3.metric("❌ Losses",        _risky_losses)
+            _rc4.metric("⏳ Pending",       _risky_pending,   help=f"Win %: {_risky_win_pct:.1f}%")
+            if _risky_resolved:
+                st.markdown(get_styled_stats_table_html(
+                    [{"Metric": "Total Logged",  "Value": len(_risky_all)},
+                     {"Metric": "Resolved",       "Value": len(_risky_resolved)},
+                     {"Metric": "Wins",            "Value": _risky_wins},
+                     {"Metric": "Losses",          "Value": _risky_losses},
+                     {"Metric": "Pending",         "Value": _risky_pending},
+                     {"Metric": "Win %",           "Value": f"{_risky_win_pct:.1f}%"},
+                     {"Metric": "Loss %",          "Value": f"{round(_risky_losses / max(_risky_wins + _risky_losses, 1) * 100, 1):.1f}%"}],
+                    ["Metric", "Value"]
+                ), unsafe_allow_html=True)
+                st.caption("💡 If Risky picks win >50%, the avoid signal may be over-conservative for your slate.")
+            # Individual risky pick list
+            st.markdown("**Individual Risky / Avoid Picks:**")
+            _sorted_risky = sorted(_risky_all, key=lambda b: b.get("pick_date") or b.get("bet_date") or "", reverse=True)
+            for _rp in _sorted_risky[:50]:
+                _res = _rp.get("result") or "⏳ Pending"
+                _res_icon = {"WIN": "✅", "LOSS": "❌", "EVEN": "➖"}.get(_res, "⏳")
+                _dt = ((_rp.get("pick_date") or _rp.get("bet_date") or ""))[:10]
+                st.markdown(
+                    f"{_res_icon} **{_rp.get('player_name', '?')}** — "
+                    f"{_rp.get('stat_type','?')} {_rp.get('direction','?')} "
+                    f"{_rp.get('prop_line') or _rp.get('line','?')} "
+                    f"| {_rp.get('platform','?')} | {_dt} | **{_res}**"
+                )
+
+    st.divider()
+
     if total_h == 0:
         from utils.components import render_empty_state
         render_empty_state(
@@ -253,39 +305,6 @@ def render(platform_selections, player_search, date_range, direction_filter):
                     for bt, d in sorted(_bt_perf.items(), key=lambda item: bet_type_sort_key(item[0]))
                 ]
                 st.markdown(get_styled_stats_table_html(bt_rows, ["Bet Type", "Total", "Wins", "Losses", "Win Rate"]), unsafe_allow_html=True)
-
-        # ── Risky/Avoid Bets tracker ─────────────────────────────────────────
-        _risky_all = [
-            b for b in filtered_health
-            if normalized_bet_type(b) == "risky"
-            or int(b.get("is_risky", 0) or 0) == 1
-        ]
-        _risky_resolved = [b for b in _risky_all if b.get("result") in ("WIN", "LOSS", "EVEN")]
-        _risky_wins = sum(1 for b in _risky_resolved if b.get("result") == "WIN")
-        _risky_losses = sum(1 for b in _risky_resolved if b.get("result") == "LOSS")
-        _risky_pending = len(_risky_all) - len(_risky_resolved)
-        _risky_win_pct = round(_risky_wins / max(_risky_wins + _risky_losses, 1) * 100, 1)
-        with st.expander(f"⚠️ Risky/Avoid Bets — {len(_risky_all)} logged", expanded=True):
-            if not _risky_all:
-                st.caption("No risky/avoid picks logged yet. Run analysis and avoid picks will be tracked here automatically.")
-            else:
-                _rc1, _rc2, _rc3, _rc4 = st.columns(4)
-                _rc1.metric("⚠️ Total Risky", len(_risky_all), help="Picks flagged as Avoid by the analysis engine")
-                _rc2.metric("✅ Wins", _risky_wins)
-                _rc3.metric("❌ Losses", _risky_losses)
-                _rc4.metric("Win %", f"{_risky_win_pct:.1f}%", help=f"Pending: {_risky_pending}")
-                if _risky_resolved:
-                    st.markdown(get_styled_stats_table_html(
-                        [{"Metric": "Total Logged", "Value": len(_risky_all)},
-                         {"Metric": "Resolved", "Value": len(_risky_resolved)},
-                         {"Metric": "Wins", "Value": _risky_wins},
-                         {"Metric": "Losses", "Value": _risky_losses},
-                         {"Metric": "Pending", "Value": _risky_pending},
-                         {"Metric": "Win %", "Value": f"{_risky_win_pct:.1f}%"},
-                         {"Metric": "Loss %", "Value": f"{round(_risky_losses / max(_risky_wins + _risky_losses, 1) * 100, 1):.1f}%"}],
-                        ["Metric", "Value"]
-                    ), unsafe_allow_html=True)
-                    st.caption("💡 If Risky picks are winning at >50%, the avoid signal may be over-conservative for your slate.")
 
         # Win rate by pick source
         _ps_all = performance_stats.get("all_bets", [])

@@ -47,13 +47,14 @@ def render(platform_selections, player_search, date_range, direction_filter):
     with _col1:
         _dates = get_analysis_pick_dates(days=30)
         _today = tracker_today_iso()
-        if _today not in _dates:
+        _today_has_picks = _today in _dates  # track before any prepend
+        if not _today_has_picks:
             _dates = [_today] + _dates
         _options = _dates + ["Last 7 Days", "Last 30 Days", "All Time"]
         # Default to yesterday if today has no picks yet but yesterday does
         import datetime as _dt_mod2
         _yesterday = (_dt_mod2.date.today() - _dt_mod2.timedelta(days=1)).isoformat()
-        _default_idx = _options.index(_yesterday) if (_today not in _dates or _dates[0] != _today) and _yesterday in _options else 0
+        _default_idx = _options.index(_yesterday) if not _today_has_picks and _yesterday in _options else 0
         _selected = st.selectbox("📅 Select Date / Scope", _options, index=_default_idx, key="all_picks_date_scope")
         _is_specific = _selected not in ("Last 7 Days", "Last 30 Days", "All Time")
         _scope = (

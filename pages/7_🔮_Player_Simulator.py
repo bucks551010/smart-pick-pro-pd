@@ -716,8 +716,9 @@ def _render_betting_recommendations(sim_result: dict, is_dark_horse: bool = Fals
         f"💡 Betting Recommendations — {player_name}" if player_name
         else "💡 Betting Recommendations"
     )
-    with st.expander(_exp_label, expanded=True):
-        st.markdown(html_out, unsafe_allow_html=True)
+    # Render inline — expanders cannot be nested (called from inside dark-horse expander)
+    st.markdown(f"**{_exp_label}**")
+    st.markdown(html_out, unsafe_allow_html=True)
 
 
 def _render_sim_card(sim_result: dict):

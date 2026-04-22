@@ -67,7 +67,9 @@ def _get_secret(key: str, default: str | None = None) -> str | None:
     """Read from st.secrets with env-var fallback; never raises."""
     try:
         return st.secrets[key]
-    except (KeyError, AttributeError):
+    except Exception:
+        # Catches KeyError, AttributeError, and StreamlitSecretNotFoundError
+        # (raised when no secrets.toml file exists, e.g. on Railway/Docker).
         return os.environ.get(key, default)
 
 

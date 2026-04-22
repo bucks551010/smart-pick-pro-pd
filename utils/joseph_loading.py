@@ -1271,7 +1271,7 @@ def render_joseph_loading_screen(
 }})();
 </script>"""
 
-    st.html(html_block, unsafe_allow_javascript=True)
+    st.html(html_block)
 
 
 def joseph_loading_placeholder(

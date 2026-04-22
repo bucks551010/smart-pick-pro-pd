@@ -594,18 +594,19 @@ def _display_stat_label(raw: str) -> str:
 def _load_top_preview_picks(limit: int = 5) -> tuple[list[dict], str]:
     """Load today's top platform picks for the landing page preview.
 
-    Filters to picks that have a ``platform`` set (PrizePicks / Underdog /
-    DraftKings) — matching exactly what the QAM Platform AI Picks section
-    shows — ordered by confidence_score DESC.
-
-    Priority:
-      1. Today's platform picks from the SQLite DB.
-      2. Today's picks from the JSON cache file (written by scheduler).
-      3. Most recent date's platform picks from DB (Railway restart fallback).
+    Priority (first non-empty wins):
+      1. Today's platform picks from the DB (platform IS NOT NULL).
+      2. Today's any picks from the DB (no platform filter — catches runs
+         where platform wasn't set on every prop).
+      3. Today's picks from the JSON cache file (written by scheduler).
+      4. Most recent platform picks within the last 7 days from the DB
+         (Railway restart / fresh-deploy fallback — shows real picks until
+         tonight's analysis replaces them).
+      5. Any JSON cache data regardless of date.
 
     Returns:
         (picks, pick_date) — list of pick dicts and the ISO date they belong to.
-        Returns ([], "") when no data exists at all.
+        Returns ([], today) when no data exists at all.
     """
     initialize_database()
     today = _nba_today_str()
@@ -619,6 +620,30 @@ def _load_top_preview_picks(limit: int = 5) -> tuple[list[dict], str]:
           AND TRIM(platform) != ''
         ORDER BY confidence_score DESC
         LIMIT ?"""
+    _ANY_PICK_SQL = """
+        SELECT player_name, team, stat_type, prop_line, direction,
+               platform, confidence_score, probability_over,
+               edge_percentage, tier
+        FROM all_analysis_picks
+        WHERE pick_date = ?
+        ORDER BY confidence_score DESC
+        LIMIT ?"""
+    _RECENT_PLATFORM_SQL = """
+        SELECT player_name, team, stat_type, prop_line, direction,
+               platform, confidence_score, probability_over,
+               edge_percentage, tier, pick_date
+        FROM all_analysis_picks
+        WHERE platform IS NOT NULL
+          AND TRIM(platform) != ''
+        ORDER BY pick_date DESC, confidence_score DESC
+        LIMIT ?"""
+    _RECENT_ANY_SQL = """
+        SELECT player_name, team, stat_type, prop_line, direction,
+               platform, confidence_score, probability_over,
+               edge_percentage, tier, pick_date
+        FROM all_analysis_picks
+        ORDER BY pick_date DESC, confidence_score DESC
+        LIMIT ?"""
     try:
         with get_database_connection() as conn:
             conn.row_factory = sqlite3.Row
@@ -627,14 +652,32 @@ def _load_top_preview_picks(limit: int = 5) -> tuple[list[dict], str]:
             if rows:
                 return [dict(r) for r in rows], today
 
-            # ── 2. Today's picks from JSON cache (scheduler may have written
-            #       them but DB hasn't been updated in this Railway instance) ─
+            # ── 2. Today's any picks (analysis ran but platform not set) ──
+            rows = conn.execute(_ANY_PICK_SQL, (today, limit)).fetchall()
+            if rows:
+                return [dict(r) for r in rows], today
+
+            # ── 3. Today's picks from JSON cache ──────────────────────────
             cache_result = _load_picks_from_cache(limit)
             if cache_result[0] and cache_result[1] == today:
                 return cache_result
 
-            # ── 3. No picks for today — return empty so landing page
-            #       shows 'Picks update daily' instead of yesterday's slate.
+            # ── 4. Most recent platform picks (up to any date) ────────────
+            rows = conn.execute(_RECENT_PLATFORM_SQL, (limit,)).fetchall()
+            if rows:
+                recent_date = dict(rows[0]).get("pick_date", today)
+                return [dict(r) for r in rows], recent_date
+
+            # ── 5. Most recent any picks (no platform filter) ─────────────
+            rows = conn.execute(_RECENT_ANY_SQL, (limit,)).fetchall()
+            if rows:
+                recent_date = dict(rows[0]).get("pick_date", today)
+                return [dict(r) for r in rows], recent_date
+
+            # ── 6. JSON cache regardless of date ──────────────────────────
+            if cache_result[0]:
+                return cache_result
+
             return [], today
     except Exception as exc:
         _logger.debug("_load_top_preview_picks DB: %s", exc)

@@ -1352,14 +1352,31 @@ st.markdown("""
 
 .pc2-period { color: rgba(255,255,255,.3); font-size: .72rem; margin: 2px 0 6px; }
 .pc2-savings {
-    display: inline-flex; align-items: center;
-    background: rgba(0,213,89,.1); border: 1px solid rgba(0,213,89,.2);
-    color: #00D559; font-size: .58rem; font-weight: 800;
-    padding: 3px 10px; border-radius: 100px; margin-bottom: 16px;
+    display: inline-flex; align-items: center; gap: 5px;
+    background: linear-gradient(135deg, rgba(0,213,89,.14), rgba(45,158,255,.08));
+    border: 1px solid rgba(0,213,89,.35);
+    color: #00D559; font-size: .63rem; font-weight: 800;
+    padding: 6px 14px; border-radius: 100px; margin-bottom: 16px;
     letter-spacing: .06em;
+    box-shadow: 0 4px 16px rgba(0,213,89,.15);
+    position: relative; overflow: hidden;
 }
-.pc2.sharp .pc2-savings { background:rgba(249,198,43,.1);border-color:rgba(249,198,43,.2);color:#F9C62B; }
-.pc2.insider .pc2-savings { background:rgba(192,132,252,.1);border-color:rgba(192,132,252,.2);color:#c084fc; }
+.pc2-savings::after {
+    content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
+    animation: savingsShimmer 3s ease-in-out infinite;
+}
+@keyframes savingsShimmer { 0%{left:-100%} 100%{left:200%} }
+.pc2.sharp .pc2-savings {
+    background: linear-gradient(135deg, rgba(249,198,43,.14), rgba(255,140,0,.08));
+    border-color: rgba(249,198,43,.35); color: #F9C62B;
+    box-shadow: 0 4px 16px rgba(249,198,43,.15);
+}
+.pc2.insider .pc2-savings {
+    background: linear-gradient(135deg, rgba(192,132,252,.14), rgba(147,51,234,.08));
+    border-color: rgba(192,132,252,.35); color: #c084fc;
+    box-shadow: 0 4px 16px rgba(192,132,252,.15);
+}
 
 .pc2-divider { height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent); margin: 0 0 16px; }
 
@@ -1394,29 +1411,187 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ── Billing toggle (monthly vs annual) ───────────────────────
-_billing_col1, _billing_col2, _billing_col3 = st.columns([2, 1, 2])
+# ── Premium billing frequency selector ───────────────────────
+st.markdown("""
+<style>
+/* ── Billing frequency pill selector ────────────────────────── */
+.billing-selector-wrap {
+    max-width: 540px;
+    margin: 0 auto 36px;
+}
+.billing-selector-label {
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-size: .72rem; font-weight: 700;
+    color: rgba(255,255,255,.3);
+    text-transform: uppercase; letter-spacing: .1em;
+    margin-bottom: 14px;
+}
+.billing-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background: rgba(255,255,255,.025);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 16px;
+    padding: 6px;
+}
+.billing-option {
+    border-radius: 12px;
+    padding: 16px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .3s cubic-bezier(.16,1,.3,1);
+    position: relative; overflow: hidden;
+}
+.billing-option.monthly {
+    background: rgba(255,255,255,.02);
+    border: 1px solid rgba(255,255,255,.06);
+}
+.billing-option.annual {
+    background: linear-gradient(135deg, rgba(0,213,89,.12), rgba(45,158,255,.08));
+    border: 1px solid rgba(0,213,89,.35);
+    box-shadow: 0 0 30px rgba(0,213,89,.1), inset 0 1px 0 rgba(0,213,89,.1);
+}
+.billing-option.annual::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, #00D559, #2D9EFF);
+}
+.billing-option-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: .95rem; font-weight: 800;
+    letter-spacing: -.02em;
+    margin-bottom: 4px;
+}
+.billing-option.monthly .billing-option-label { color: rgba(255,255,255,.55); }
+.billing-option.annual  .billing-option-label { color: #fff; }
+.billing-option-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: .68rem;
+    line-height: 1.4;
+}
+.billing-option.monthly .billing-option-sub { color: rgba(255,255,255,.25); }
+.billing-option.annual  .billing-option-sub { color: rgba(255,255,255,.6); }
+.billing-badge-save {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .56rem; font-weight: 800;
+    color: #020C07;
+    background: linear-gradient(135deg, #00D559, #2D9EFF);
+    padding: 3px 12px; border-radius: 100px;
+    text-transform: uppercase; letter-spacing: .08em;
+    margin-top: 8px;
+    box-shadow: 0 4px 14px rgba(0,213,89,.3);
+    animation: billingPulse 2.5s ease-in-out infinite;
+}
+@keyframes billingPulse {
+    0%,100% { box-shadow: 0 4px 14px rgba(0,213,89,.3); }
+    50%      { box-shadow: 0 4px 28px rgba(0,213,89,.55); }
+}
+.billing-checkmark {
+    position: absolute; top: 10px; right: 12px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #00D559;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .7rem; color: #020C07; font-weight: 900;
+    box-shadow: 0 0 10px rgba(0,213,89,.4);
+}
+/* Streamlit toggle override: hide but keep functional */
+.billing-toggle-wrapper [data-testid="stToggle"] {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+}
+/* Annual banner */
+.annual-active-banner {
+    background: linear-gradient(135deg, rgba(0,213,89,.08), rgba(45,158,255,.06));
+    border: 1px solid rgba(0,213,89,.2);
+    border-radius: 14px;
+    padding: 14px 24px;
+    text-align: center;
+    margin: 0 auto 8px;
+    max-width: 680px;
+    position: relative; overflow: hidden;
+}
+.annual-active-banner::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #00D559, #2D9EFF, transparent);
+}
+.annual-banner-text {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: .88rem; font-weight: 800;
+    color: #00D559; margin: 0 0 2px;
+}
+.annual-banner-sub {
+    font-size: .68rem;
+    color: rgba(255,255,255,.4);
+    margin: 0;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Hidden functional toggle — the visual selector below links to it
+_billing_col1, _billing_col2, _billing_col3 = st.columns([1, 2, 1])
 with _billing_col2:
-    _annual = st.toggle("Annual billing (save 10%)", key="_annual_billing", value=False)
+    st.markdown('<div class="billing-toggle-wrapper">', unsafe_allow_html=True)
+    _annual = st.toggle(
+        "Annual billing",
+        key="_annual_billing",
+        value=True,   # default to annual (best value)
+        help="Switch between monthly and annual billing",
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# Premium visual billing selector (purely decorative — actual state from toggle above)
+_m_style = "" if _annual else "annual"  # swap styles: annual = highlighted by default
+_a_style = "annual" if _annual else ""
+_m_label_style = "monthly" if not _annual else ""
+
+st.markdown(f"""
+<div class="billing-selector-wrap">
+  <p class="billing-selector-label">Billing Frequency</p>
+  <div class="billing-selector">
+
+    <div class="billing-option {'monthly' if not _annual else ''}">
+      <div class="billing-option-label">Monthly</div>
+      <div class="billing-option-sub">Flexible, cancel anytime</div>
+    </div>
+
+    <div class="billing-option {'annual' if _annual else 'monthly'}">
+      {'<div class="billing-checkmark">✓</div>' if _annual else ''}
+      <div class="billing-option-label">Annual</div>
+      <div class="billing-option-sub">Billed once per year</div>
+      <div class="billing-badge-save">✦ Save 10%</div>
+    </div>
+
+  </div>
+</div>
+
+{'<div class="annual-active-banner"><p class="annual-banner-text">🎉 Annual Billing Active — You\'re Saving Up to $29.99/yr</p><p class="annual-banner-sub">Sharp IQ saves $11.99/yr &nbsp;·&nbsp; Smart Money saves $29.99/yr &nbsp;·&nbsp; Best value for serious sharps</p></div>' if _annual else ''}
+""", unsafe_allow_html=True)
 
 # ── Build pricing data for selected billing cycle ────────────
 if _annual:
     _sharp_price   = "8.99"
     _sharp_period  = "per month, billed $107.89/yr"
-    _sharp_savings = "💰 SAVE $11.99/yr"
+    _sharp_savings = "✦ YOU SAVE $11.99/yr vs monthly"
     _sharp_lookup  = "sharp_iq_annual"
     _smart_price   = "22.49"
     _smart_period  = "per month, billed $269.89/yr"
-    _smart_savings = "💰 SAVE $29.99/yr"
+    _smart_savings = "✦ YOU SAVE $29.99/yr vs monthly"
     _smart_lookup  = "smart_money_annual"
 else:
     _sharp_price   = "9.99"
     _sharp_period  = "per month"
-    _sharp_savings = "💰 $107.89/yr if billed annually"
+    _sharp_savings = "💡 Switch to Annual — save $11.99/yr"
     _sharp_lookup  = "sharp_iq"
     _smart_price   = "24.99"
     _smart_period  = "per month"
-    _smart_savings = "💰 $269.89/yr if billed annually"
+    _smart_savings = "💡 Switch to Annual — save $29.99/yr"
     _smart_lookup  = "smart_money"
 
 _sharp_dollars, _sharp_cents = _sharp_price.split(".")
@@ -1569,8 +1744,9 @@ with _btn_cols[1]:
     if is_stripe_configured():
         with st.form("checkout_sharp_v2"):
             _email_s = st.text_input("Email", placeholder="you@example.com", key="_email_sharp2", label_visibility="collapsed")
-            _lbl_s = f"🔥 Get Sharp IQ — ${_sharp_price}/mo" if not _annual else f"🔥 Get Sharp IQ Annual — ${_sharp_price}/mo"
-            if st.form_submit_button(_lbl_s, type="primary", use_container_width=True):
+            _lbl_s = f"🔥 Get Sharp IQ Annual — ${_sharp_price}/mo" if _annual else f"🔥 Get Sharp IQ — ${_sharp_price}/mo"
+            _help_s = "Billed $107.89/year · Cancel anytime" if _annual else "Billed monthly · Cancel anytime"
+            if st.form_submit_button(_lbl_s, type="primary", use_container_width=True, help=_help_s):
                 with st.spinner("Creating secure checkout…"):
                     result = create_checkout_session(customer_email=_email_s.strip() if _email_s else "", price_lookup=_sharp_lookup)
                 if result["success"]:
@@ -1585,8 +1761,9 @@ with _btn_cols[2]:
     if is_stripe_configured():
         with st.form("checkout_smart_v2"):
             _email_m = st.text_input("Email", placeholder="you@example.com", key="_email_smart2", label_visibility="collapsed")
-            _lbl_m = f"💎 Get Smart Money — ${_smart_price}/mo" if not _annual else f"💎 Get Smart Money Annual — ${_smart_price}/mo"
-            if st.form_submit_button(_lbl_m, type="primary", use_container_width=True):
+            _lbl_m = f"💎 Get Smart Money Annual — ${_smart_price}/mo" if _annual else f"💎 Get Smart Money — ${_smart_price}/mo"
+            _help_m = "Billed $269.89/year · Cancel anytime" if _annual else "Billed monthly · Cancel anytime"
+            if st.form_submit_button(_lbl_m, type="primary", use_container_width=True, help=_help_m):
                 with st.spinner("Creating secure checkout…"):
                     result = create_checkout_session(customer_email=_email_m.strip() if _email_m else "", price_lookup=_smart_lookup)
                 if result["success"]:

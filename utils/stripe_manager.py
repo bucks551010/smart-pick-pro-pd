@@ -51,16 +51,20 @@ STRIPE_WEBHOOK_SECRET  = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 APP_URL                = os.environ.get("APP_URL", "http://localhost:8501")
 
 # ── Per-tier Price IDs (new 4-tier model) ─────────────────────
-STRIPE_PRICE_SHARP_IQ      = os.environ.get("STRIPE_PRICE_SHARP_IQ", "")
-STRIPE_PRICE_SMART_MONEY   = os.environ.get("STRIPE_PRICE_SMART_MONEY", "")
-STRIPE_PRICE_INSIDER_CIRCLE = os.environ.get("STRIPE_PRICE_INSIDER_CIRCLE", "")
+STRIPE_PRICE_SHARP_IQ           = os.environ.get("STRIPE_PRICE_SHARP_IQ", "")
+STRIPE_PRICE_SHARP_IQ_ANNUAL    = os.environ.get("STRIPE_PRICE_SHARP_IQ_ANNUAL", "")
+STRIPE_PRICE_SMART_MONEY        = os.environ.get("STRIPE_PRICE_SMART_MONEY", "")
+STRIPE_PRICE_SMART_MONEY_ANNUAL = os.environ.get("STRIPE_PRICE_SMART_MONEY_ANNUAL", "")
+STRIPE_PRICE_INSIDER_CIRCLE     = os.environ.get("STRIPE_PRICE_INSIDER_CIRCLE", "")
 
 # Map lookup keys → (price_id, checkout_mode)
 # "subscription" for recurring, "payment" for one-time.
 _PRICE_MAP = {
-    "sharp_iq":       (STRIPE_PRICE_SHARP_IQ,      "subscription"),
-    "smart_money":    (STRIPE_PRICE_SMART_MONEY,    "subscription"),
-    "insider_circle": (STRIPE_PRICE_INSIDER_CIRCLE, "payment"),
+    "sharp_iq":              (STRIPE_PRICE_SHARP_IQ,           "subscription"),
+    "sharp_iq_annual":       (STRIPE_PRICE_SHARP_IQ_ANNUAL,    "subscription"),
+    "smart_money":           (STRIPE_PRICE_SMART_MONEY,        "subscription"),
+    "smart_money_annual":    (STRIPE_PRICE_SMART_MONEY_ANNUAL,  "subscription"),
+    "insider_circle":        (STRIPE_PRICE_INSIDER_CIRCLE,     "payment"),
 }
 
 # Reverse map: price_id → canonical plan name (used when resolving
@@ -68,8 +72,12 @@ _PRICE_MAP = {
 _PRICE_ID_TO_PLAN_NAME: dict[str, str] = {}
 if STRIPE_PRICE_SHARP_IQ:
     _PRICE_ID_TO_PLAN_NAME[STRIPE_PRICE_SHARP_IQ] = "Sharp IQ"
+if STRIPE_PRICE_SHARP_IQ_ANNUAL:
+    _PRICE_ID_TO_PLAN_NAME[STRIPE_PRICE_SHARP_IQ_ANNUAL] = "Sharp IQ"
 if STRIPE_PRICE_SMART_MONEY:
     _PRICE_ID_TO_PLAN_NAME[STRIPE_PRICE_SMART_MONEY] = "Smart Money"
+if STRIPE_PRICE_SMART_MONEY_ANNUAL:
+    _PRICE_ID_TO_PLAN_NAME[STRIPE_PRICE_SMART_MONEY_ANNUAL] = "Smart Money"
 if STRIPE_PRICE_INSIDER_CIRCLE:
     _PRICE_ID_TO_PLAN_NAME[STRIPE_PRICE_INSIDER_CIRCLE] = "Insider Circle"
 

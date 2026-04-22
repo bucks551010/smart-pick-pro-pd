@@ -1961,10 +1961,11 @@ html, body, .stApp, .stApp * {
 }
 .ag-hero h1 {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 4.8rem; font-weight: 800;
-    line-height: 0.95; letter-spacing: -0.05em;
+    font-size: 5.8rem; font-weight: 800;
+    line-height: 0.92; letter-spacing: -0.06em;
     color: #fff; margin: 0;
     text-transform: uppercase;
+    text-shadow: 0 2px 80px rgba(255,255,255,0.04), 0 0 120px rgba(0,213,89,0.03);
     animation: agHeroTextReveal 0.8s 0.1s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .ag-hero h1 .line2 {
@@ -1988,9 +1989,9 @@ html, body, .stApp, .stApp * {
     animation: agHeroTextReveal 0.8s 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .ag-hero-sub {
-    font-size: 1.08rem; color: rgba(255, 255, 255, 0.5);
-    line-height: 1.75; margin-top: 24px;
-    max-width: 560px; margin-left: auto; margin-right: auto;
+    font-size: 1.15rem; color: rgba(255, 255, 255, 0.62);
+    line-height: 1.75; margin-top: 28px;
+    max-width: 580px; margin-left: auto; margin-right: auto;
     animation: agHeroTextReveal 0.8s 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .ag-hero-sub strong {
@@ -2021,17 +2022,77 @@ html, body, .stApp, .stApp * {
     box-shadow: 0 0 20px rgba(0, 213, 89, 0.06);
 }
 
+/* ── Hero dual CTA row ──────────────────────────────────────── */
+.ag-hero-cta {
+    display: flex; justify-content: center; align-items: center;
+    gap: 14px; flex-wrap: wrap; margin-top: 36px;
+    animation: agHeroTextReveal 0.8s 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ag-hero-cta-primary {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem; font-weight: 800; color: #050910;
+    background: linear-gradient(135deg, #00E865 0%, #00D559 45%, #00B74D 100%);
+    padding: 18px 48px; border-radius: 12px;
+    text-decoration: none; text-transform: uppercase; letter-spacing: 0.07em;
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: 0 0 50px rgba(0,213,89,0.4), 0 8px 32px rgba(0,213,89,0.22), inset 0 1px 0 rgba(255,255,255,0.22);
+    transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+    position: relative; overflow: hidden; cursor: pointer;
+}
+.ag-hero-cta-primary::after {
+    content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+    transform: skewX(-20deg); animation: agShimmer 3s ease-in-out infinite;
+}
+.ag-hero-cta-primary:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 0 80px rgba(0,213,89,0.6), 0 14px 48px rgba(0,213,89,0.32), inset 0 1px 0 rgba(255,255,255,0.25);
+    background: linear-gradient(135deg, #00FF75 0%, #00E865 45%, #00C04B 100%);
+}
+.ag-hero-cta-secondary {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.88rem; font-weight: 700;
+    color: rgba(255,255,255,0.62);
+    background: rgba(255,255,255,0.04);
+    padding: 17px 30px; border-radius: 12px;
+    text-decoration: none; letter-spacing: 0.04em;
+    border: 1px solid rgba(255,255,255,0.12);
+    transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+}
+.ag-hero-cta-secondary:hover {
+    color: #fff; border-color: rgba(255,255,255,0.28);
+    background: rgba(255,255,255,0.08);
+    transform: translateY(-2px);
+}
+.ag-hero-cta-trust {
+    width: 100%; text-align: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.54rem; font-weight: 600;
+    color: rgba(255,255,255,0.2); letter-spacing: 0.06em; margin-top: 6px;
+}
+@media (max-width: 520px) {
+    .ag-hero-cta { gap: 10px; margin-top: 28px; }
+    .ag-hero-cta-primary { padding: 15px 32px; font-size: 0.9rem; }
+    .ag-hero-cta-secondary { padding: 14px 22px; font-size: 0.8rem; }
+}
+@media (max-width: 380px) {
+    .ag-hero-cta { flex-direction: column; gap: 8px; }
+    .ag-hero-cta-primary, .ag-hero-cta-secondary { width: 100%; justify-content: center; }
+}
+
 /* ── Proof strip (4 glass cards) ──────────────────────────── */
 .ag-proof-strip {
     width: 100vw; position: relative;
     left: 50%; transform: translateX(-50%);
-    background: linear-gradient(180deg, rgba(0, 213, 89, 0.04) 0%, transparent 100%);
-    border-top: 1px solid rgba(0, 213, 89, 0.12);
-    border-bottom: 1px solid rgba(0, 213, 89, 0.06);
-    padding: 44px 0;
-    margin: 32px 0 0;
+    background: linear-gradient(180deg, rgba(0, 213, 89, 0.06) 0%, transparent 100%);
+    border-top: 1px solid rgba(0, 213, 89, 0.15);
+    border-bottom: 1px solid rgba(0, 213, 89, 0.08);
+    padding: 56px 0;
+    margin: 36px 0 0;
     overflow-x: hidden;
     max-width: 100%;
+    box-shadow: 0 0 80px rgba(0, 213, 89, 0.04) inset;
 }
 .ag-proof-inner {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
@@ -2056,9 +2117,9 @@ html, body, .stApp, .stApp * {
 }
 .ag-proof-stat:hover::before { opacity: 1; }
 .ag-proof-stat:hover {
-    border-color: rgba(0,213,89,0.25);
-    transform: translateY(-6px);
-    box-shadow: 0 20px 56px rgba(0,0,0,0.4), 0 0 40px rgba(0,213,89,0.08);
+    border-color: rgba(0,213,89,0.35);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 28px 72px rgba(0,0,0,0.5), 0 0 60px rgba(0,213,89,0.12);
 }
 .ag-proof-stat:nth-child(2) { animation-delay: 0.35s; }
 .ag-proof-stat:nth-child(3) { animation-delay: 0.5s; }
@@ -2068,21 +2129,22 @@ html, body, .stApp, .stApp * {
 .ag-proof-stat:nth-child(4)::before { background: linear-gradient(90deg, transparent, rgba(249, 198, 43, 0.4), transparent); }
 .ag-proof-big {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 3.4rem; font-weight: 800;
+    font-size: 4rem; font-weight: 800;
     letter-spacing: -0.04em; line-height: 1;
     background: linear-gradient(135deg, #00D559, #2D9EFF);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
+    filter: drop-shadow(0 0 16px rgba(0, 213, 89, 0.12));
 }
 .ag-proof-stat:nth-child(2) .ag-proof-big { background: linear-gradient(135deg, #2D9EFF, #c084fc); -webkit-background-clip: text; background-clip: text; }
 .ag-proof-stat:nth-child(3) .ag-proof-big { background: linear-gradient(135deg, #c084fc, #F9C62B); -webkit-background-clip: text; background-clip: text; }
 .ag-proof-stat:nth-child(4) .ag-proof-big { background: linear-gradient(135deg, #F9C62B, #00D559); -webkit-background-clip: text; background-clip: text; }
 .ag-proof-label {
     font-family: 'Inter', sans-serif;
-    font-size: 0.72rem; font-weight: 800;
-    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.78rem; font-weight: 800;
+    color: rgba(255, 255, 255, 0.65);
     text-transform: uppercase; letter-spacing: 0.1em;
-    margin-top: 8px;
+    margin-top: 10px;
 }
 .ag-proof-sub {
     font-size: 0.62rem; color: rgba(255, 255, 255, 0.22);
@@ -2280,18 +2342,20 @@ html, body, .stApp, .stApp * {
     position: relative;
 }
 .ag-section-head::before {
-    content: ''; display: block; width: 60px; height: 2px; margin: 0 auto 20px;
+    content: ''; display: block; width: 80px; height: 4px; margin: 0 auto 24px;
     background: linear-gradient(90deg, transparent, #00D559, #2D9EFF, #c084fc, transparent);
-    border-radius: 4px;
-    box-shadow: 0 0 24px rgba(0, 213, 89, 0.35), 0 0 60px rgba(0, 213, 89, 0.1);
+    border-radius: 6px;
+    box-shadow: 0 0 32px rgba(0, 213, 89, 0.5), 0 0 80px rgba(0, 213, 89, 0.15);
+    background-size: 200% 100%;
+    animation: agBarSlide 5s linear infinite;
 }
 .ag-section-head h3 {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 2rem; font-weight: 800;
-    color: #fff; margin: 0 0 10px;
-    letter-spacing: -0.04em;
+    font-size: 2.6rem; font-weight: 800;
+    color: #fff; margin: 0 0 12px;
+    letter-spacing: -0.05em;
     text-transform: uppercase;
-    text-shadow: 0 0 60px rgba(0, 213, 89, 0.08);
+    text-shadow: 0 0 80px rgba(0, 213, 89, 0.1), 0 2px 40px rgba(255,255,255,0.02);
 }
 .ag-section-head h3 .em {
     background: linear-gradient(135deg, #00D559 0%, #2D9EFF 50%, #c084fc 100%);
@@ -2586,13 +2650,14 @@ html, body, .stApp, .stApp * {
 .ag-stat:last-child { border-right: none; }
 .ag-stat-val {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 2.8rem; font-weight: 800;
+    font-size: 3.2rem; font-weight: 800;
     background: linear-gradient(135deg, #00D559 0%, #2D9EFF 50%, #c084fc 100%);
     background-size: 300% 300%;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: agGradientShift 5s ease infinite;
     line-height: 1;
+    filter: drop-shadow(0 0 20px rgba(0, 213, 89, 0.1));
 }
 .ag-stat-label {
     font-family: 'Space Grotesk', sans-serif;
@@ -2605,7 +2670,7 @@ html, body, .stApp, .stApp * {
 .ag-reviews {
     margin: 56px 0 0;
     animation: agFadeUp 0.6s 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
-    display: grid; grid-template-columns: 1fr; gap: 18px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
 }
 .ag-reviews .ag-section-head { grid-column: 1 / -1; }
 .ag-review {
@@ -2631,9 +2696,9 @@ html, body, .stApp, .stApp * {
 .ag-review:nth-child(3)::before { background: linear-gradient(90deg, #2D9EFF, #c084fc); }
 .ag-review:nth-child(4)::before { background: linear-gradient(90deg, #c084fc, #F9C62B); }
 .ag-review:hover {
-    border-color: rgba(0,213,89,0.25);
-    transform: translateY(-6px);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.35), 0 0 30px rgba(0,213,89,0.06);
+    border-color: rgba(0,213,89,0.3);
+    transform: translateY(-8px) scale(1.01);
+    box-shadow: 0 28px 80px rgba(0,0,0,0.45), 0 0 50px rgba(0,213,89,0.1);
 }
 /* Inner content area */
 .ag-review-body {
@@ -2665,7 +2730,7 @@ html, body, .stApp, .stApp * {
     color: #c084fc; background: rgba(192,132,252,0.1); border: 1px solid rgba(192,132,252,0.15);
 }
 .ag-review-text {
-    font-size: 1.02rem; color: rgba(255,255,255,0.72);
+    font-size: 1.05rem; color: rgba(255,255,255,0.8);
     font-style: italic; line-height: 1.8;
     position: relative;
 }
@@ -3435,8 +3500,8 @@ html, body, .stApp, .stApp * {
     .ag-section { padding-left: 18px; padding-right: 18px; }
     .ag-full-bleed .ag-section { padding-left: 18px; padding-right: 18px; }
     .ag-full-bleed { padding: 36px 0; }
-    .ag-hero h1 { font-size: 3.2rem; }
-    .ag-section-head h3, .ag-gy-head h3 { font-size: 1.8rem; }
+    .ag-hero h1 { font-size: 3.8rem; }
+    .ag-section-head h3, .ag-gy-head h3 { font-size: 2rem; }
     .ag-proof-big { font-size: 2.4rem; }
     .ag-proof-inner { grid-template-columns: repeat(2, 1fr); gap: 12px; }
     .ag-proof-stat { padding: 22px 14px 18px; }
@@ -3450,11 +3515,12 @@ html, body, .stApp, .stApp * {
     .ag-how-steps { grid-template-columns: 1fr; gap: 12px; }
     .ag-how-arrow { display: none; }
     .ag-us-price { font-size: 3.5rem; }
-    .ag-stat-val { font-size: 2rem; }
+    .ag-stat-val { font-size: 2.2rem; }
     .ag-stats { grid-template-columns: repeat(3, 1fr); }
     .ag-stats-strip { margin: 48px -18px 0; padding: 0 18px; }
     .ag-comp { grid-template-columns: auto 1fr auto; }
     .ag-comp-miss { display: none; }
+    .ag-reviews { grid-template-columns: 1fr; }
     .ag-review-text { font-size: 0.92rem; }
     .ag-review-avatar { width: 32px; height: 32px; font-size: 0.78rem; }
     .ag-review-body { padding: 24px 20px 18px; }
@@ -3470,9 +3536,9 @@ html, body, .stApp, .stApp * {
     .ag-section { padding-left: 14px; padding-right: 14px; }
     .ag-full-bleed .ag-section { padding-left: 14px; padding-right: 14px; }
     .ag-full-bleed { padding: 28px 0; }
-    .ag-hero h1 { font-size: 2.2rem; line-height: 1.1; }
+    .ag-hero h1 { font-size: 2.6rem; line-height: 1.05; }
     .ag-hero p { font-size: 0.82rem; padding: 0 8px; }
-    .ag-section-head h3, .ag-gy-head h3 { font-size: 1.4rem; }
+    .ag-section-head h3, .ag-gy-head h3 { font-size: 1.6rem; }
     .ag-section-head p { font-size: 0.78rem; padding: 0 4px; }
     .ag-logo-img { width: 160px; }
     .ag-logo-ring { width: 190px; height: 190px; }
@@ -3529,11 +3595,11 @@ html, body, .stApp, .stApp * {
     }
     .ag-section { padding-left: 10px; padding-right: 10px; }
     .ag-full-bleed .ag-section { padding-left: 10px; padding-right: 10px; }
-    .ag-hero h1 { font-size: 1.8rem; }
+    .ag-hero h1 { font-size: 2.2rem; }
     .ag-hero p { font-size: 0.78rem; }
     .ag-logo-img { width: 140px; }
     .ag-logo-ring { width: 170px; height: 170px; }
-    .ag-section-head h3, .ag-gy-head h3 { font-size: 1.2rem; }
+    .ag-section-head h3, .ag-gy-head h3 { font-size: 1.3rem; }
     .ag-proof-inner { grid-template-columns: 1fr 1fr; gap: 6px; }
     .ag-proof-big { font-size: 1.5rem; }
     .ag-proof-stat { padding: 14px 8px 12px; }
@@ -5077,6 +5143,11 @@ def require_login() -> bool:
         <span class="ag-hero-badge"><span class="badge-ico">&#x1F9E0;</span> 6 Neural Nets</span>
         <span class="ag-hero-badge"><span class="badge-ico">&#x1F4CA;</span> Real-Time Edge</span>
         <span class="ag-hero-badge"><span class="badge-ico">&#x1F3AF;</span> Instant Access</span>
+      </div>
+      <div class="ag-hero-cta">
+        <a class="ag-hero-cta-primary" href="?auth=signup">&#x26A1; Create Free Account &mdash; It&rsquo;s Free</a>
+        <a class="ag-hero-cta-secondary" href="?auth=login">Already a member? Log In &#x2192;</a>
+        <div class="ag-hero-cta-trust">&#x1F512; No credit card &nbsp;&middot;&nbsp; 10-second signup &nbsp;&middot;&nbsp; 2,400+ sharps already winning</div>
       </div>
     </div>
 

@@ -1,5 +1,6 @@
 """History tab for Bet Tracker."""
 import streamlit as st
+from utils.rbac import has_permission, permission_gate
 from tracking.database import get_rolling_stats
 from pages.helpers.bet_tracker_helpers import get_calendar_heatmap_html
 from pages.helpers.bet_tracker_data import (
@@ -61,13 +62,17 @@ def render(platform_selections, player_search, date_range, direction_filter):
             "best_platform": "",
             "date_range": "Last 14 Days",
         })
-        st.download_button(
-            "📊 Download Report Card",
-            data=_report_html,
-            file_name="smartbetpro_report_card.html",
-            mime="text/html",
-            key="download_report_card_history",
-        )
+        if has_permission("export_data"):
+            st.download_button(
+                "📊 Download Report Card",
+                data=_report_html,
+                file_name="smartbetpro_report_card.html",
+                mime="text/html",
+                key="download_report_card_history",
+            )
+        else:
+            permission_gate("export_data", show_upgrade_button=False)
+            st.caption("🔒 Report Card export requires **Smart Money** or above.")
         st.divider()
 
     # Cumulative P&L curve

@@ -35,8 +35,9 @@ if not require_tier():
     st.stop()
 
 # ─── Global CSS ───────────────────────────────────────────────
-from styles.theme import get_global_css
+from styles.theme import get_global_css, get_premium_ui_css
 st.markdown(get_global_css(), unsafe_allow_html=True)
+st.markdown(get_premium_ui_css(), unsafe_allow_html=True)
 
 # ─── Easy Money page: disable AI grid background, use gold/green vibe ──
 st.markdown("""<style>
@@ -60,7 +61,7 @@ html, body, [class*="css"] { background-color: #07090F !important; }
 </style>""", unsafe_allow_html=True)
 
 # ─── Joseph floating widget ──────────────────────────────────
-from utils.components import inject_joseph_floating, render_sidebar_auth
+from utils.components import inject_joseph_floating, render_sidebar_auth, render_attribution_footer
 st.session_state["joseph_page_context"] = "page_goblin_demon"
 inject_joseph_floating()
 with st.sidebar:
@@ -2342,3 +2343,7 @@ with tab_all:
             'No Smart Risk signals right now.</div>',
             unsafe_allow_html=True,
         )
+
+# ── Attribution footer — Joseph M. Smith ─────────────────────
+render_attribution_footer()
+

@@ -84,6 +84,10 @@ if not _require_login():
 # content render, eliminating the white-flash / old-theme glitch on login.
 st.markdown(get_global_css(), unsafe_allow_html=True)
 
+# ── Premium UI layer — metric cards, chart wraps, footer CSS ─
+from styles.theme import get_premium_ui_css as _get_premium_ui_css
+st.markdown(_get_premium_ui_css(), unsafe_allow_html=True)
+
 # ─── Analytics: GA4 injection + server-side page view ─────────
 from utils.analytics import inject_ga4, track_page_view
 inject_ga4()
@@ -2501,14 +2505,9 @@ with st.expander("⚠️ Important Legal Disclaimer — Please Read", expanded=F
     - 🌐 [www.begambleaware.org](https://www.begambleaware.org)
     """)
 
-st.markdown(
-    f'<div class="lp-footer">'
-    f'© {datetime.datetime.now().year} Smart Pick Pro | NBA Edition | '
-    f'For entertainment & educational purposes only. Not financial advice. '
-    f'Bet responsibly. 21+ | 1-800-GAMBLER'
-    f'</div>',
-    unsafe_allow_html=True,
-)
+# ── Full JMS attribution footer (replaces static lp-footer) ─
+from utils.components import render_attribution_footer as _render_home_footer
+_render_home_footer()
 
 # ============================================================
 # END SECTION 10: Footer

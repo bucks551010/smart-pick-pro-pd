@@ -292,6 +292,10 @@ st.markdown(_get_gm_css(), unsafe_allow_html=True)
 st.markdown(_get_qcm_css(), unsafe_allow_html=True)
 st.markdown(f'<style>{_PLAYER_CARD_CSS}</style>', unsafe_allow_html=True)
 
+# ── Premium UI layer ─────────────────────────────────────────
+from styles.theme import get_premium_ui_css as _qam_premium_css
+st.markdown(_qam_premium_css(), unsafe_allow_html=True)
+
 # ── Reduce excessive bottom padding / blank space ─────────────
 # Also disable pull-to-refresh on mobile to prevent accidental reloads
 # when scrolling through player bets.  The overscroll-behavior rule must
@@ -401,7 +405,7 @@ st.markdown(
 )
 
 # ── Global Settings Popover (accessible from sidebar) ─────────
-from utils.components import render_global_settings, render_sidebar_auth, inject_joseph_floating, render_joseph_hero_banner
+from utils.components import render_global_settings, render_sidebar_auth, inject_joseph_floating, render_joseph_hero_banner, render_attribution_footer
 with st.sidebar:
     render_sidebar_auth()
     render_global_settings()
@@ -2322,4 +2326,7 @@ _render_results_fragment()
 # ============================================================
 # END SECTION: Display Analysis Results
 # ============================================================
+
+# ── Attribution footer — Joseph M. Smith ─────────────────────
+render_attribution_footer()
 

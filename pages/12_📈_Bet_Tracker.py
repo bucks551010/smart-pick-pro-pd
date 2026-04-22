@@ -74,8 +74,12 @@ st.markdown(get_global_css(), unsafe_allow_html=True)
 st.markdown(get_qds_css(), unsafe_allow_html=True)
 st.markdown(get_bet_card_css(), unsafe_allow_html=True)
 
+# Premium UI layer — metric cards, chart wrap, footer CSS
+from styles.theme import get_premium_ui_css as _bt_premium_css
+st.markdown(_bt_premium_css(), unsafe_allow_html=True)
+
 # ── Joseph M. Smith Floating Widget ───────────────────────────
-from utils.components import render_joseph_hero_banner, inject_joseph_floating, render_sidebar_auth
+from utils.components import render_joseph_hero_banner, inject_joseph_floating, render_sidebar_auth, render_attribution_footer
 render_joseph_hero_banner()
 st.session_state["joseph_page_context"] = "page_bet_tracker"
 inject_joseph_floating()
@@ -600,3 +604,7 @@ with tab_history:
 
 with tab_achievements:
     achievements.render(platform_filter_selections, _player_search, _date_range, _direction_filter)
+
+
+# -- Attribution footer � Joseph M. Smith ----------------------
+render_attribution_footer()

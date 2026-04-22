@@ -55,11 +55,12 @@ from utils.seo import inject_page_seo
 inject_page_seo("Live Games")
 
 # ─── Inject Global CSS Theme ──────────────────────────────────
-from styles.theme import get_global_css, get_education_box_html, get_logo_img_tag, GOLD_LOGO_PATH
+from styles.theme import get_global_css, get_premium_ui_css, get_education_box_html, get_logo_img_tag, GOLD_LOGO_PATH
 st.markdown(get_global_css(), unsafe_allow_html=True)
+st.markdown(get_premium_ui_css(), unsafe_allow_html=True)
 
 # ── Joseph M. Smith Floating Widget ───────────────────────────
-from utils.components import render_joseph_hero_banner, inject_joseph_floating, render_sidebar_auth
+from utils.components import render_joseph_hero_banner, inject_joseph_floating, render_sidebar_auth, render_attribution_footer
 render_joseph_hero_banner()
 st.session_state["joseph_page_context"] = "page_live_games"
 inject_joseph_floating()
@@ -2252,3 +2253,7 @@ with st.expander("💡 Tips for Best Results"):
     - **Key Players**: Loaded from your player database. Go to **Update Data** to
       refresh with today's team rosters.
     """)
+
+# ── Attribution footer — Joseph M. Smith ─────────────────────
+render_attribution_footer()
+

@@ -256,6 +256,8 @@ def render_sidebar_auth() -> None:
                      help="Sign out of your Smart Pick Pro account"):
             logout_user()
             st.rerun()
+        # ── Attribution block — always visible at sidebar bottom ───
+        render_sidebar_attribution()
         st.divider()
     except Exception:
         pass
@@ -1304,3 +1306,82 @@ def reset_paginated_table(page_key: str = "paginated_table_page") -> None:
         page_key: Must match the page_key used when calling render_paginated_table().
     """
     st.session_state[page_key] = 0
+
+
+# ============================================================
+# SECTION: Attribution Components
+# Consistent executive branding blocks for footer, sidebar,
+# and page headers.  All credit the platform architect and
+# lead analyst: Joseph M. Smith.
+# ============================================================
+
+def render_sidebar_attribution() -> None:
+    """Render a compact Joseph M. Smith attribution card in the sidebar.
+
+    Placed at the bottom of render_sidebar_auth() so it appears
+    consistently across every authenticated page without extra
+    per-page wiring.  Uses .spp-sidebar-attr CSS from get_premium_ui_css().
+    """
+    # Inject the premium CSS quietly — harmless duplicate if already injected
+    try:
+        from styles.theme import get_premium_ui_css as _puicss
+        st.markdown(_puicss(), unsafe_allow_html=True)
+    except Exception:
+        pass
+
+    st.markdown("""
+<div class="spp-sidebar-attr">
+  <div class="spp-sidebar-attr-label">Platform Architecture</div>
+  <div class="spp-sidebar-attr-name">Joseph M. Smith</div>
+  <div class="spp-sidebar-attr-role">Lead AI Solutions Architect</div>
+  <div class="spp-sidebar-attr-badge">⚡ Quantum Matrix Engine 5.6</div>
+</div>
+""", unsafe_allow_html=True)
+
+
+def render_attribution_footer() -> None:
+    """Render a full-width executive attribution footer.
+
+    Injects the .spp-footer CSS block and renders a branded footer
+    crediting Joseph M. Smith as the platform architect and analytics
+    lead.  Call this at the end of any page's main content block so
+    it appears consistently across the product.
+
+    Usage::
+
+        from utils.components import render_attribution_footer
+        # ... page content ...
+        render_attribution_footer()
+    """
+    import datetime as _dt
+
+    try:
+        from styles.theme import get_premium_ui_css as _puicss
+        st.markdown(_puicss(), unsafe_allow_html=True)
+    except Exception:
+        pass
+
+    _year = _dt.datetime.now().year
+    st.markdown(f"""
+<div class="spp-footer">
+  <div class="spp-footer-logo">⚡ Smart Pick Pro</div>
+  <div class="spp-footer-rule">
+    <span class="spp-footer-rule-label">Platform Architecture &amp; Analytics</span>
+  </div>
+  <div class="spp-footer-name">Joseph M. Smith</div>
+  <div class="spp-footer-title">
+    Lead AI Solutions Architect &nbsp;·&nbsp; Platform Engineer &nbsp;·&nbsp; Head Analyst
+  </div>
+  <div class="spp-footer-badges">
+    <span class="spp-footer-badge">🏀 NBA Prop Analytics</span>
+    <span class="spp-footer-badge">⚡ Quantum Matrix Engine 5.6</span>
+    <span class="spp-footer-badge">🔬 Monte Carlo Simulation</span>
+    <span class="spp-footer-badge">🛡️ Risk-Adjusted Betting Intelligence</span>
+  </div>
+  <div class="spp-footer-copy">
+    © {_year} Smart Pick Pro · NBA Edition · For entertainment &amp; educational purposes only ·
+    Not financial advice · Bet responsibly · 21+ · 1-800-GAMBLER
+  </div>
+</div>
+""", unsafe_allow_html=True)
+

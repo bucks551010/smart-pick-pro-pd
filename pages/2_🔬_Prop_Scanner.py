@@ -71,12 +71,18 @@ from styles.theme import (
     get_platform_badge_html, get_line_type_badge_html,
     get_value_gauge_html, get_confidence_badge_html,
     get_line_movement_html, get_prop_card_html,
+    get_premium_ui_css,  # premium metric cards, form panels, footer CSS
 )
 st.markdown(get_global_css(), unsafe_allow_html=True)
 st.markdown(get_prop_scanner_css(), unsafe_allow_html=True)
+# Inject premium UI layer (form panel + footer CSS) once, up-front
+st.markdown(get_premium_ui_css(), unsafe_allow_html=True)
 
-# ── Joseph M. Smith Hero Banner & Floating Widget ─────────────
-from utils.components import render_joseph_hero_banner, inject_joseph_floating, render_sidebar_auth
+# ── Joseph M. Smith Hero Banner, Floating Widget & Footer ────
+from utils.components import (
+    render_joseph_hero_banner, inject_joseph_floating,
+    render_sidebar_auth, render_attribution_footer,
+)
 st.session_state["joseph_page_context"] = "page_prop_scanner"
 inject_joseph_floating()
 with st.sidebar:
@@ -441,26 +447,38 @@ with tab_dashboard:
                     unsafe_allow_html=True,
                 )
 
-                # ── Filters ────────────────────────────────────────
-                qa_col1, qa_col2, qa_col3 = st.columns(3)
-                with qa_col1:
-                    qa_sort_by = st.selectbox(
-                        "Sort by",
-                        ["Edge % (Best first)", "Hit Rate (Best first)", "Player Name"],
-                        key="qa_sort_by",
-                    )
-                with qa_col2:
-                    qa_form_filter = st.selectbox(
-                        "Form filter",
-                        ["All", "Hot only 🔥", "Cold only 🧊", "No injury flags"],
-                        key="qa_form_filter",
-                    )
-                with qa_col3:
-                    qa_stat_filter = st.selectbox(
-                        "Stat type",
-                        ["All"] + sorted(set(r.get("stat_type", "") for r in qa_rows)),
-                        key="qa_stat_filter",
-                    )
+                # ── Filters — wrapped in st.form so all three selects commit
+                # together on "Apply Filters", preventing a rerun on every
+                # individual dropdown change (UX: eliminates triple-flash).
+                with st.form("qa_filter_form", border=False):
+                    st.markdown('<div class="spp-form-panel">', unsafe_allow_html=True)
+                    qa_col1, qa_col2, qa_col3, _qa_submit_col = st.columns([3, 3, 3, 1])
+                    with qa_col1:
+                        qa_sort_by = st.selectbox(
+                            "Sort by",
+                            ["Edge % (Best first)", "Hit Rate (Best first)", "Player Name"],
+                            key="qa_sort_by",
+                        )
+                    with qa_col2:
+                        qa_form_filter = st.selectbox(
+                            "Form filter",
+                            ["All", "Hot only 🔥", "Cold only 🧊", "No injury flags"],
+                            key="qa_form_filter",
+                        )
+                    with qa_col3:
+                        qa_stat_filter = st.selectbox(
+                            "Stat type",
+                            ["All"] + sorted(set(r.get("stat_type", "") for r in qa_rows)),
+                            key="qa_stat_filter",
+                        )
+                    with _qa_submit_col:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        st.form_submit_button(
+                            "Apply",
+                            use_container_width=True,
+                            help="Apply the selected filters to the Quick Analysis cards.",
+                        )
+                    st.markdown('</div>', unsafe_allow_html=True)
 
                 # Apply filters
                 filtered_qa = qa_rows[:]
@@ -1401,4 +1419,8 @@ with tab_manual:
                 save_props_to_session(current_props_for_update, st.session_state)
                 st.success(f"✅ Added: {final_player_name} ({auto_team}) | {stat_type_selection} | {prop_line_value} | {platform_selection}")
                 st.rerun()
+
+# ── Attribution footer — Joseph M. Smith ──────────────────────
+render_attribution_footer()
+
 

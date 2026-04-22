@@ -27,11 +27,12 @@ from utils.tier_gate import require_tier
 if not require_tier():
     st.stop()
 
-from styles.theme import get_global_css
+from styles.theme import get_global_css, get_premium_ui_css
 st.markdown(get_global_css(), unsafe_allow_html=True)
+st.markdown(get_premium_ui_css(), unsafe_allow_html=True)
 
 # ── Joseph M. Smith Floating Widget ────────────────────────────
-from utils.components import inject_joseph_floating, render_sidebar_auth
+from utils.components import inject_joseph_floating, render_sidebar_auth, render_attribution_footer
 st.session_state["joseph_page_context"] = "page_proving_grounds"
 inject_joseph_floating()
 with st.sidebar:
@@ -1083,29 +1084,48 @@ def _render_results(result, config_label=""):
             _stats_list.append(_p.get("stat", "").capitalize())
 
         if _PLOTLY_AVAILABLE:
+            # ── Dual-axis P&L chart with rolling win-rate overlay ─
+            # Secondary y-axis (right): 20-pick rolling win rate gives
+            # instant visual signal on whether edge is degrading or
+            # improving over time — critical for model monitoring.
             fig = go.Figure()
 
-            # Determine fill color based on final P&L
-            _fill_color = "rgba(0,230,118,0.12)" if _cumulative >= 0 else "rgba(255,82,82,0.12)"
-            _line_color = "#00D559"
+            _fill_color = "rgba(0,213,89,0.11)" if _cumulative >= 0 else "rgba(242,67,54,0.10)"
+            _line_color = "#00D559" if _cumulative >= 0 else "#F24336"
+            _n = len(_pnl_series)
 
-            # Build hover text
+            # Compute 20-pick rolling win rate for the secondary overlay
+            _win_flags = [1 if _p["correct"] else 0 for _p in pick_log]
+            _window = min(20, _n)
+            _rolling_wr = []
+            for _wi in range(_n):
+                _start = max(0, _wi - _window + 1)
+                _rolling_wr.append(
+                    sum(_win_flags[_start:_wi + 1]) / (_wi - _start + 1) * 100
+                )
+
+            # Rich hover text
             _hover = [
-                f"Pick #{i+1}<br>{_dates_list[i]}<br>"
-                f"{_players_list[i]} — {_stats_list[i]}<br>"
-                f"P&L: {_pnl_series[i]:+.2f}u"
-                for i in range(len(_pnl_series))
+                (
+                    f"<b>Pick #{i+1}</b><br>"
+                    f"{_dates_list[i]}<br>"
+                    f"<b>{_players_list[i]}</b> — {_stats_list[i]}<br>"
+                    f"Result: {'✅ Win' if _win_flags[i] else '❌ Loss'}<br>"
+                    f"Cumulative P&L: <b>{_pnl_series[i]:+.2f}u</b><br>"
+                    f"Rolling Win Rate: <b>{_rolling_wr[i]:.1f}%</b>"
+                )
+                for i in range(_n)
             ]
 
-            # Use spline smoothing only for smaller datasets to avoid overhead
-            _line_shape = "spline" if len(_pnl_series) <= 200 else "linear"
-            _line_smooth = 0.3 if _line_shape == "spline" else None
-            _line_kw = dict(color=_line_color, width=2.5, shape=_line_shape)
-            if _line_smooth is not None:
-                _line_kw["smoothing"] = _line_smooth
+            _x_axis = list(range(1, _n + 1))
+            _line_shape = "spline" if _n <= 200 else "linear"
+            _line_kw: dict = dict(color=_line_color, width=2.5, shape=_line_shape)
+            if _line_shape == "spline":
+                _line_kw["smoothing"] = 0.3
 
+            # Trace 1: Cumulative P&L (primary y-axis)
             fig.add_trace(go.Scatter(
-                x=list(range(1, len(_pnl_series) + 1)),
+                x=_x_axis,
                 y=_pnl_series,
                 mode="lines",
                 name="Cumulative P&L",
@@ -1114,66 +1134,132 @@ def _render_results(result, config_label=""):
                 fillcolor=_fill_color,
                 hovertext=_hover,
                 hoverinfo="text",
+                yaxis="y",
             ))
 
-            # Drawdown shading (peak line)
+            # Trace 2: Peak equity high-water mark (primary y-axis)
             fig.add_trace(go.Scatter(
-                x=list(range(1, len(_peak_series) + 1)),
+                x=_x_axis,
                 y=_peak_series,
                 mode="lines",
                 name="Peak",
-                line=dict(color="rgba(255,215,64,0.25)", width=1, dash="dot"),
+                line=dict(color="rgba(249,198,43,0.22)", width=1, dash="dot"),
                 hoverinfo="skip",
+                yaxis="y",
             ))
 
-            # Final P&L annotation
+            # Trace 3: Rolling win rate (secondary y-axis)
+            # Color transitions through the 50% break-even line: green above, amber below.
+            fig.add_trace(go.Scatter(
+                x=_x_axis,
+                y=_rolling_wr,
+                mode="lines",
+                name=f"{_window}-Pick Win Rate %",
+                line=dict(color="rgba(45,158,255,0.70)", width=1.5, dash="dot"),
+                hoverinfo="skip",
+                yaxis="y2",
+                opacity=0.85,
+            ))
+
+            # 50% win-rate reference line on secondary axis
+            fig.add_hline(
+                y=50,
+                line=dict(color="rgba(45,158,255,0.15)", width=1, dash="dash"),
+                annotation=dict(
+                    text="50% break-even",
+                    font=dict(size=9, color="rgba(45,158,255,0.45)"),
+                    xref="paper",
+                    x=1.01,
+                    xanchor="left",
+                ),
+                yref="y2",
+            )
+
+            # Final P&L callout annotation
             fig.add_annotation(
-                x=len(_pnl_series),
+                x=_n,
                 y=_cumulative,
                 text=f"<b>{_cumulative:+.2f}u</b>",
                 showarrow=True,
                 arrowhead=2,
                 arrowcolor="rgba(0,213,89,0.45)",
-                font=dict(color="#00D559", size=12, family="JetBrains Mono"),
-                bgcolor="rgba(7,10,19,0.85)",
-                bordercolor="rgba(0,213,89,0.3)",
+                font=dict(color=_line_color, size=12, family="JetBrains Mono"),
+                bgcolor="rgba(7,10,19,0.88)",
+                bordercolor=f"{_line_color}55",
                 borderwidth=1,
-                ax=-40,
-                ay=-25,
+                ax=-44,
+                ay=-28,
+                yref="y",
             )
 
             fig.update_layout(
-                template="plotly_dark",
                 paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(7,10,19,0.6)",
-                height=320,
-                margin=dict(l=45, r=25, t=35, b=45),
+                plot_bgcolor="rgba(7,10,19,0.55)",
+                height=350,
+                margin=dict(l=48, r=58, t=42, b=46),
                 xaxis=dict(
-                    title=dict(text="Pick #", font=dict(size=11, color="rgba(255,255,255,0.45)")),
+                    title=dict(
+                        text="Pick #",
+                        font=dict(size=11, color="rgba(255,255,255,0.35)"),
+                    ),
                     gridcolor="rgba(255,255,255,0.04)",
-                    tickfont=dict(size=10, color="rgba(255,255,255,0.40)"),
+                    tickfont=dict(
+                        size=10, color="rgba(255,255,255,0.38)",
+                        family="JetBrains Mono, monospace",
+                    ),
                 ),
+                # Primary y-axis: P&L in units
                 yaxis=dict(
-                    title=dict(text="Units", font=dict(size=11, color="rgba(255,255,255,0.45)")),
+                    title=dict(
+                        text="Units",
+                        font=dict(size=11, color="rgba(255,255,255,0.35)"),
+                    ),
                     gridcolor="rgba(255,255,255,0.04)",
                     zeroline=True,
-                    zerolinecolor="rgba(0,213,89,0.13)",
+                    zerolinecolor=f"rgba(0,213,89,0.15)",
                     zerolinewidth=1.5,
-                    tickfont=dict(size=10, color="rgba(255,255,255,0.40)"),
+                    tickfont=dict(
+                        size=10, color="rgba(255,255,255,0.38)",
+                        family="JetBrains Mono, monospace",
+                    ),
+                ),
+                # Secondary y-axis: rolling win rate (right side)
+                yaxis2=dict(
+                    title=dict(
+                        text="Win Rate %",
+                        font=dict(size=11, color="rgba(45,158,255,0.45)"),
+                    ),
+                    overlaying="y",
+                    side="right",
+                    range=[0, 100],
+                    showgrid=False,
+                    tickfont=dict(
+                        size=10, color="rgba(45,158,255,0.45)",
+                        family="JetBrains Mono, monospace",
+                    ),
+                    ticksuffix="%",
                 ),
                 legend=dict(
-                    orientation="h", yanchor="bottom", y=1.03, xanchor="right", x=1,
-                    font=dict(size=10, color="rgba(255,255,255,0.50)"),
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.04,
+                    xanchor="right",
+                    x=1,
+                    font=dict(size=10, color="rgba(255,255,255,0.48)"),
                     bgcolor="rgba(0,0,0,0)",
                 ),
-                font=dict(color="rgba(255,255,255,0.65)", size=11),
+                font=dict(color="rgba(255,255,255,0.60)", size=11),
                 hoverlabel=dict(
-                    bgcolor="rgba(7,10,19,0.92)",
-                    bordercolor="rgba(0,213,89,0.26)",
+                    bgcolor="rgba(7,10,19,0.94)",
+                    bordercolor="rgba(0,213,89,0.28)",
                     font=dict(color="#e8f0ff", size=12),
                 ),
+                hovermode="x unified",
             )
+            # Frame the chart in the premium container
+            st.markdown('<div class="spp-chart-wrap">', unsafe_allow_html=True)
             st.plotly_chart(fig, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
         else:
             # Fallback to built-in chart if Plotly not installed
             st.line_chart({"Cumulative P&L (units)": _pnl_series}, height=260)
@@ -1411,3 +1497,7 @@ if result_b:
                 """, unsafe_allow_html=True)
 else:
     _render_results(result)
+
+# ── Attribution footer — Joseph M. Smith ──────────────────────
+render_attribution_footer()
+

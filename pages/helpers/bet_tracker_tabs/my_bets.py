@@ -1,6 +1,7 @@
 """My Bets tab for Bet Tracker."""
 import json
 import streamlit as st
+from utils.rbac import has_permission, permission_gate
 from styles.theme import get_summary_cards_html, get_bet_card_html
 from tracking.database import (
     get_bets_summary,
@@ -125,12 +126,16 @@ def render(platform_selections, player_search, date_range, direction_filter):
     _ec, _edc, _dc = st.columns(3)
     with _ec:
         if filtered_bets:
-            st.download_button(
-                "📥 Export Page to CSV",
-                data=export_bets_csv(filtered_bets),
-                file_name=f"smartai_bets_page_{_cur}_{tracker_today_iso()}.csv",
-                mime="text/csv", key="export_my_bets_csv",
-            )
+            if has_permission("export_data"):
+                st.download_button(
+                    "📥 Export Page to CSV",
+                    data=export_bets_csv(filtered_bets),
+                    file_name=f"smartai_bets_page_{_cur}_{tracker_today_iso()}.csv",
+                    mime="text/csv", key="export_my_bets_csv",
+                )
+            else:
+                permission_gate("export_data", show_upgrade_button=False)
+                st.caption("🔒 CSV export requires **Smart Money** or above.")
 
     _labels = {
         b.get("id", b.get("bet_id", idx)): (

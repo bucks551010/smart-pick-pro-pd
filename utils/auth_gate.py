@@ -35,6 +35,12 @@ import streamlit as st
 
 from tracking.database import initialize_database, get_database_connection
 from utils.stripe_manager import is_stripe_configured, create_checkout_session
+from utils.input_sanitizer import (
+    sanitize_email,
+    sanitize_display_name,
+    sanitize_reset_code,
+    validate_password_strength,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -3978,6 +3984,13 @@ def _render_signup_form() -> None:
             su_email = st.text_input("Email Address", placeholder="you@example.com", key="_su_email")
             step1_submit = st.form_submit_button("\u27A1 Continue", use_container_width=True, type="primary")
         if step1_submit:
+            # CWE-20 / CWE-79 / CWE-89: sanitize inputs at form boundary
+            try:
+                su_name  = sanitize_display_name(su_name)
+                su_email = sanitize_email(su_email)
+            except ValueError as _san_err:
+                st.error(str(_san_err))
+                st.stop()
             if not su_name or len(su_name.strip()) < 2:
                 st.error("Please enter your display name (at least 2 characters).")
             elif not su_email or not _valid_email(su_email):
@@ -4011,6 +4024,12 @@ def _render_signup_form() -> None:
                 st.session_state[_SU_STAGE] = 1
                 st.rerun()
         if step2_submit:
+            # CWE-20: enforce password complexity at signup boundary
+            try:
+                validate_password_strength(su_pw)
+            except ValueError as _pw_err:
+                st.error(str(_pw_err))
+                st.stop()
             if pw_err := _valid_password(su_pw):
                 st.error(pw_err)
             elif su_pw != su_pw2:
@@ -4059,6 +4078,12 @@ def _render_login_form() -> None:
         li_submit = st.form_submit_button("\U0001F513 Log In", use_container_width=True, type="primary")
 
     if li_submit:
+        # CWE-20 / CWE-79 / CWE-89: sanitize email at login boundary
+        try:
+            li_email = sanitize_email(li_email)
+        except ValueError as _san_err:
+            st.error(str(_san_err))
+            st.stop()
         if not li_email or not _valid_email(li_email):
             st.error("Please enter a valid email address.")
         elif not li_pw:
@@ -4097,6 +4122,12 @@ def _render_login_form() -> None:
             rst_email = st.text_input("Email Address", placeholder="you@example.com", key="_rst_email")
             rst_send = st.form_submit_button("\U0001F4E8 Send Reset Code", use_container_width=True)
         if rst_send:
+            # CWE-20: sanitize email before password-reset token generation
+            try:
+                rst_email = sanitize_email(rst_email)
+            except ValueError as _san_err:
+                st.error(str(_san_err))
+                st.stop()
             if not rst_email or not _valid_email(rst_email):
                 st.error("Enter a valid email address.")
             else:
@@ -4122,6 +4153,12 @@ def _render_login_form() -> None:
             entered_code = st.text_input("Enter 6-digit code", placeholder="123456", key="_rst_code_input")
             rst_verify = st.form_submit_button("\u2705 Verify Code", use_container_width=True)
         if rst_verify:
+            # CWE-20: validate reset code format before DB lookup
+            try:
+                entered_code = sanitize_reset_code(entered_code)
+            except ValueError as _san_err:
+                st.error(str(_san_err))
+                st.stop()
             if _verify_reset_token(_rst_em, entered_code):
                 st.session_state["_pw_reset_stage"] = "newpw"
                 st.rerun()
@@ -4139,6 +4176,12 @@ def _render_login_form() -> None:
             new_pw2 = st.text_input("Confirm New Password", type="password", placeholder="Re-enter password", key="_rst_new_pw2")
             rst_save = st.form_submit_button("\U0001F4BE Save New Password", use_container_width=True, type="primary")
         if rst_save:
+            # CWE-20: enforce password complexity at reset boundary
+            try:
+                validate_password_strength(new_pw)
+            except ValueError as _pw_err:
+                st.error(str(_pw_err))
+                st.stop()
             if pw_err := _valid_password(new_pw):
                 st.error(pw_err)
             elif new_pw != new_pw2:
@@ -4292,6 +4335,13 @@ def _render_signup_form() -> None:
             su_email = st.text_input("Email Address", placeholder="you@example.com", key="_su_email")
             step1_submit = st.form_submit_button("\u27A1 Continue", use_container_width=True, type="primary")
         if step1_submit:
+            # CWE-20 / CWE-79 / CWE-89: sanitize inputs at form boundary
+            try:
+                su_name  = sanitize_display_name(su_name)
+                su_email = sanitize_email(su_email)
+            except ValueError as _san_err:
+                st.error(str(_san_err))
+                st.stop()
             if not su_name or len(su_name.strip()) < 2:
                 st.error("Please enter your display name (at least 2 characters).")
             elif not su_email or not _valid_email(su_email):
@@ -4325,6 +4375,12 @@ def _render_signup_form() -> None:
                 st.session_state[_SU_STAGE] = 1
                 st.rerun()
         if step2_submit:
+            # CWE-20: enforce password complexity at signup boundary
+            try:
+                validate_password_strength(su_pw)
+            except ValueError as _pw_err:
+                st.error(str(_pw_err))
+                st.stop()
             if pw_err := _valid_password(su_pw):
                 st.error(pw_err)
             elif su_pw != su_pw2:
@@ -4373,6 +4429,12 @@ def _render_login_form() -> None:
         li_submit = st.form_submit_button("\U0001F513 Log In", use_container_width=True, type="primary")
 
     if li_submit:
+        # CWE-20 / CWE-79 / CWE-89: sanitize email at login boundary
+        try:
+            li_email = sanitize_email(li_email)
+        except ValueError as _san_err:
+            st.error(str(_san_err))
+            st.stop()
         if not li_email or not _valid_email(li_email):
             st.error("Please enter a valid email address.")
         elif not li_pw:
@@ -4411,6 +4473,12 @@ def _render_login_form() -> None:
             rst_email = st.text_input("Email Address", placeholder="you@example.com", key="_rst_email")
             rst_send = st.form_submit_button("\U0001F4E8 Send Reset Code", use_container_width=True)
         if rst_send:
+            # CWE-20: sanitize email before password-reset token generation
+            try:
+                rst_email = sanitize_email(rst_email)
+            except ValueError as _san_err:
+                st.error(str(_san_err))
+                st.stop()
             if not rst_email or not _valid_email(rst_email):
                 st.error("Enter a valid email address.")
             else:
@@ -4436,6 +4504,12 @@ def _render_login_form() -> None:
             entered_code = st.text_input("Enter 6-digit code", placeholder="123456", key="_rst_code_input")
             rst_verify = st.form_submit_button("\u2705 Verify Code", use_container_width=True)
         if rst_verify:
+            # CWE-20: validate reset code format before DB lookup
+            try:
+                entered_code = sanitize_reset_code(entered_code)
+            except ValueError as _san_err:
+                st.error(str(_san_err))
+                st.stop()
             if _verify_reset_token(_rst_em, entered_code):
                 st.session_state["_pw_reset_stage"] = "newpw"
                 st.rerun()
@@ -4453,6 +4527,12 @@ def _render_login_form() -> None:
             new_pw2 = st.text_input("Confirm New Password", type="password", placeholder="Re-enter password", key="_rst_new_pw2")
             rst_save = st.form_submit_button("\U0001F4BE Save New Password", use_container_width=True, type="primary")
         if rst_save:
+            # CWE-20: enforce password complexity at reset boundary
+            try:
+                validate_password_strength(new_pw)
+            except ValueError as _pw_err:
+                st.error(str(_pw_err))
+                st.stop()
             if pw_err := _valid_password(new_pw):
                 st.error(pw_err)
             elif new_pw != new_pw2:

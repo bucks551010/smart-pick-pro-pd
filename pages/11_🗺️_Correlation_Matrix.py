@@ -43,7 +43,12 @@ if not require_tier():
 st.markdown(get_global_css(), unsafe_allow_html=True)
 
 # ── Joseph M. Smith Hero Banner & Floating Widget ─────────────
-from utils.components import render_joseph_hero_banner, inject_joseph_floating, render_sidebar_auth
+from utils.components import (
+    render_joseph_hero_banner, inject_joseph_floating,
+    render_sidebar_auth, render_attribution_footer,
+)
+from styles.theme import get_premium_ui_css as _corr_premium_css
+st.markdown(_corr_premium_css(), unsafe_allow_html=True)
 st.session_state["joseph_page_context"] = "page_correlation"
 inject_joseph_floating()
 with st.sidebar:
@@ -167,34 +172,51 @@ if len(_label_map) < 2:
 # SECTION: Game Filter + Prop Selector
 # ============================================================
 
-# Game-level filter
-_game_keys = sorted(_game_groups.keys())
-_game_filter = st.multiselect(
-    "🏀 Filter by Game",
-    options=_game_keys,
-    default=_game_keys,
-    help="Narrow the prop list to specific matchups.",
-)
+# Game-level filter + prop selector — wrapped in st.form so both multiselects
+# commit together when the user clicks "Build Matrix", preventing a partial
+# rerun after each individual selection change (eliminates double-render flash).
+with st.form("corr_filter_form", border=False):
+    st.markdown('<div class="spp-form-panel">', unsafe_allow_html=True)
+    _game_keys = sorted(_game_groups.keys())
+    _game_filter = st.multiselect(
+        "🏀 Filter by Game",
+        options=_game_keys,
+        default=_game_keys,
+        help="Narrow the prop list to specific matchups.",
+    )
+    # Build filtered label list based on current form state
+    _filtered_labels_tmp = []
+    for gk in (_game_filter or _game_keys):
+        _filtered_labels_tmp.extend(_game_groups.get(gk, []))
+    _filtered_labels_tmp = sorted(set(_filtered_labels_tmp))
+    _default_sel = _filtered_labels_tmp[:min(8, len(_filtered_labels_tmp))]
+    _selected = st.multiselect(
+        "Select props to correlate",
+        options=_filtered_labels_tmp,
+        default=_default_sel,
+        help="Choose 2+ props.  Each prop's 1,000-run simulation array is compared pairwise.",
+    )
+    _corr_submitted = st.form_submit_button(
+        "📈 Build Matrix",
+        use_container_width=False,
+        help="Compute the Pearson correlation matrix for the selected props.",
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# Build filtered label list
-_filtered_labels = []
-for gk in (_game_filter or _game_keys):
-    _filtered_labels.extend(_game_groups.get(gk, []))
-_filtered_labels = sorted(set(_filtered_labels))
+# Persist selected to session state so re-renders hold the last config
+if _corr_submitted or _selected:
+    st.session_state["_corr_selected"] = _selected
+    st.session_state["_corr_game_filter"] = _game_filter
+else:
+    _selected = st.session_state.get("_corr_selected", _default_sel)
+    _game_filter = st.session_state.get("_corr_game_filter", _game_keys)
 
+_filtered_labels = _filtered_labels_tmp
 if len(_filtered_labels) < 2:
     st.info("Select games with at least 2 props to build a matrix.")
     st.stop()
-
-_selected = st.multiselect(
-    "Select props to correlate",
-    options=_filtered_labels,
-    default=_filtered_labels[:min(8, len(_filtered_labels))],
-    help="Choose 2+ props.  Each prop's 1,000-run simulation array is compared pairwise.",
-)
-
 if len(_selected) < 2:
-    st.info("Select at least 2 props above to generate the matrix.")
+    st.info("Select at least 2 props above and click **Build Matrix**.")
     st.stop()
 
 # ============================================================
@@ -557,3 +579,7 @@ st.caption(
     f"Based on ${_bankroll:,.0f} bankroll.  "
     f"Adjust bankroll in the ⚙️ Settings popover."
 )
+
+# ── Attribution footer — Joseph M. Smith ──────────────────────
+render_attribution_footer()
+

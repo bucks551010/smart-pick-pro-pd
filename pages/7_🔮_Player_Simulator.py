@@ -71,12 +71,17 @@ from utils.tier_gate import require_tier
 if not require_tier():
     st.stop()
 
-from styles.theme import get_global_css, get_qds_css, get_team_colors
+from styles.theme import get_global_css, get_qds_css, get_team_colors, get_premium_ui_css
 st.markdown(get_global_css(), unsafe_allow_html=True)
 st.markdown(get_qds_css(), unsafe_allow_html=True)
+# Premium UI layer: chart wrap, form panels, metric cards, footer CSS
+st.markdown(get_premium_ui_css(), unsafe_allow_html=True)
 
-# ── Joseph M. Smith Hero Banner & Floating Widget ─────────────
-from utils.components import render_joseph_hero_banner, inject_joseph_floating, render_sidebar_auth
+# ── Joseph M. Smith Hero Banner, Floating Widget & Footer ────
+from utils.components import (
+    render_joseph_hero_banner, inject_joseph_floating,
+    render_sidebar_auth, render_attribution_footer,
+)
 st.session_state["joseph_page_context"] = "page_simulator"
 inject_joseph_floating()
 with st.sidebar:
@@ -908,37 +913,127 @@ def _render_sim_card(sim_result: dict):
                 unsafe_allow_html=True,
             )
 
-    # Enhancement 2: Plotly interactive charts
+    # Enhancement 2: Premium Plotly interactive charts
+    # Bar chart: Projected vs Season Avg — full interactive tooltips,
+    # team-branded colors, and grouped layout for easy comparison.
+    # Distribution histograms: overlaid per-stat simulation outputs with
+    # median/floor/ceiling vlines for deep data inspection.
     if _HAS_PLOTLY:
         try:
-            # Projected vs Season Avg bar chart
+            # ── Projected vs Season Avg bar chart ───────────────────
             _chart_stats = [s for s in _STAT_TYPES if stats.get(s, {}).get("season_avg", 0) > 0.3]
             _chart_labels = [s.title() for s in _chart_stats]
-            _chart_proj = [stats[s]["projected"] for s in _chart_stats]
-            _chart_avg = [stats[s]["season_avg"] for s in _chart_stats]
+            _chart_proj   = [stats[s]["projected"] for s in _chart_stats]
+            _chart_avg    = [stats[s]["season_avg"] for s in _chart_stats]
+            _chart_p90    = [stats[s].get("p90", stats[s]["projected"]) for s in _chart_stats]
+
+            # Rich hover template — shows projected, season avg, ceiling, edge %
+            _bar_hover_proj = [
+                f"<b>{lbl}</b><br>"
+                f"Projected: <b>{_chart_proj[i]}</b><br>"
+                f"Season Avg: {_chart_avg[i]}<br>"
+                f"90th pctile: {_chart_p90[i]}<br>"
+                f"Edge vs avg: <b>{(_chart_proj[i]-_chart_avg[i])/_max(_chart_avg[i],0.1)*100:+.1f}%</b>"
+                for i, lbl in enumerate(_chart_labels)
+            ]
+
+            def _max(a, b): return a if a > b else b  # inline guard
 
             fig_bar = _go.Figure()
             fig_bar.add_trace(_go.Bar(
-                name="Projected", x=_chart_labels, y=_chart_proj,
-                marker_color=_team_primary, text=_chart_proj, textposition="auto",
+                name="Projected",
+                x=_chart_labels,
+                y=_chart_proj,
+                marker=dict(
+                    color=_team_primary,
+                    line=dict(color="rgba(255,255,255,0.10)", width=1),
+                ),
+                text=[f"{v}" for v in _chart_proj],
+                textposition="auto",
+                textfont=dict(
+                    family="JetBrains Mono, monospace",
+                    size=11,
+                    color="#0a0e14",
+                ),
+                hovertext=_bar_hover_proj,
+                hoverinfo="text",
             ))
             fig_bar.add_trace(_go.Bar(
-                name="Season Avg", x=_chart_labels, y=_chart_avg,
-                marker_color="rgba(138,155,184,0.6)", text=_chart_avg, textposition="auto",
+                name="Season Avg",
+                x=_chart_labels,
+                y=_chart_avg,
+                marker=dict(
+                    color="rgba(107,122,154,0.55)",
+                    line=dict(color="rgba(255,255,255,0.07)", width=1),
+                ),
+                text=[f"{v}" for v in _chart_avg],
+                textposition="auto",
+                textfont=dict(
+                    family="JetBrains Mono, monospace",
+                    size=11,
+                    color="#c8d8ee",
+                ),
+                hovertemplate="Season Avg: <b>%{y}</b><extra></extra>",
+            ))
+            # 90th-pctile ceiling markers (scatter on top of bars)
+            fig_bar.add_trace(_go.Scatter(
+                name="90th pctile (ceiling)",
+                x=_chart_labels,
+                y=_chart_p90,
+                mode="markers",
+                marker=dict(
+                    symbol="diamond",
+                    size=9,
+                    color="#00D559",
+                    line=dict(color="rgba(0,213,89,0.6)", width=1),
+                ),
+                hovertemplate="Ceiling (90th): <b>%{y}</b><extra></extra>",
             ))
             fig_bar.update_layout(
                 barmode="group",
-                title=dict(text=f"{safe_name} — Projected vs Season Avg", font=dict(color="#EEF0F6")),
+                title=dict(
+                    text=f"<b>{safe_name}</b> — Projected vs Season Avg",
+                    font=dict(color="#EEF0F6", size=14, family="Inter, sans-serif"),
+                ),
                 paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(20,25,43,0.8)",
-                font=dict(color="#EEF0F6"),
-                legend=dict(font=dict(color="#EEF0F6")),
-                margin=dict(l=40, r=20, t=40, b=30),
-                height=300,
+                plot_bgcolor="rgba(10,14,22,0.65)",
+                font=dict(color="#A0AABE", family="Inter, sans-serif"),
+                legend=dict(
+                    font=dict(color="#A0AABE", size=11),
+                    bgcolor="rgba(0,0,0,0)",
+                    orientation="h",
+                    y=1.06,
+                    x=0,
+                ),
+                margin=dict(l=36, r=16, t=50, b=36),
+                height=310,
+                xaxis=dict(
+                    tickfont=dict(size=11, color="#7A8EAE"),
+                    gridcolor="rgba(255,255,255,0.04)",
+                ),
+                yaxis=dict(
+                    tickfont=dict(
+                        size=11, color="#7A8EAE",
+                        family="JetBrains Mono, monospace",
+                    ),
+                    gridcolor="rgba(255,255,255,0.05)",
+                    zeroline=True,
+                    zerolinecolor="rgba(255,255,255,0.06)",
+                ),
+                hoverlabel=dict(
+                    bgcolor="rgba(7,10,19,0.92)",
+                    bordercolor="rgba(0,213,89,0.30)",
+                    font=dict(color="#e8f0ff", size=12),
+                ),
             )
+            # Framed container — spp-chart-wrap defined in get_premium_ui_css()
+            st.markdown('<div class="spp-chart-wrap">', unsafe_allow_html=True)
             st.plotly_chart(fig_bar, use_container_width=True, key=f"bar_{player_id}_{team}")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-            # Distribution histograms per stat (using raw sim data)
+            # ── Distribution histograms ─────────────────────────────
+            # Each stat's 1,000-run raw sim data overlaid in one chart.
+            # Median and floor/ceiling vlines added for instant readability.
             _hist_stats = [
                 s for s in _chart_stats
                 if stats.get(s, {}).get("sim_raw") and len(stats[s]["sim_raw"]) > 10
@@ -946,26 +1041,78 @@ def _render_sim_card(sim_result: dict):
             if _hist_stats:
                 fig_hist = _go.Figure()
                 for i, stat in enumerate(_hist_stats):
+                    _sdata = stats[stat]
+                    _raw   = _sdata["sim_raw"]
+                    _col   = _CHART_COLORS[i % len(_CHART_COLORS)]
+                    _med   = _sdata.get("p50", _sdata["projected"])
+                    _floor = _sdata.get("p10", 0)
+                    _ceil  = _sdata.get("p90", _sdata["projected"])
+
                     fig_hist.add_trace(_go.Histogram(
-                        x=stats[stat]["sim_raw"],
+                        x=_raw,
                         name=stat.title(),
-                        opacity=0.65,
-                        marker_color=_CHART_COLORS[i % len(_CHART_COLORS)],
-                        nbinsx=25,
+                        opacity=0.60,
+                        marker=dict(
+                            color=_col,
+                            line=dict(color="rgba(255,255,255,0.08)", width=0.5),
+                        ),
+                        nbinsx=30,
+                        hovertemplate=f"<b>{stat.title()}</b><br>Value: %{{x:.1f}}<br>Count: %{{y}}<extra></extra>",
                     ))
+                    # Median vertical line per stat
+                    fig_hist.add_vline(
+                        x=_med,
+                        line=dict(color=_col, width=1.5, dash="dash"),
+                        annotation=dict(
+                            text=f"{stat[:3].upper()} {_med:.0f}",
+                            font=dict(size=9, color=_col),
+                            bordercolor=_col,
+                            borderwidth=1,
+                            bgcolor="rgba(7,10,19,0.75)",
+                        ),
+                        annotation_position="top",
+                    )
+
                 fig_hist.update_layout(
                     barmode="overlay",
-                    title=dict(text=f"{safe_name} — Simulation Distributions", font=dict(color="#EEF0F6")),
+                    title=dict(
+                        text=f"<b>{safe_name}</b> — Simulation Distributions",
+                        font=dict(color="#EEF0F6", size=14, family="Inter, sans-serif"),
+                    ),
                     paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(20,25,43,0.8)",
-                    font=dict(color="#EEF0F6"),
-                    legend=dict(font=dict(color="#EEF0F6")),
-                    margin=dict(l=40, r=20, t=40, b=30),
-                    height=350,
-                    xaxis_title="Stat Value",
-                    yaxis_title="Frequency",
+                    plot_bgcolor="rgba(10,14,22,0.65)",
+                    font=dict(color="#A0AABE", family="Inter, sans-serif"),
+                    legend=dict(
+                        font=dict(color="#A0AABE", size=11),
+                        bgcolor="rgba(0,0,0,0)",
+                        orientation="h",
+                        y=1.06,
+                        x=0,
+                    ),
+                    margin=dict(l=36, r=16, t=50, b=36),
+                    height=360,
+                    xaxis=dict(
+                        title=dict(text="Stat Value", font=dict(size=11, color="#6B7A9A")),
+                        tickfont=dict(
+                            size=10, color="#7A8EAE",
+                            family="JetBrains Mono, monospace",
+                        ),
+                        gridcolor="rgba(255,255,255,0.04)",
+                    ),
+                    yaxis=dict(
+                        title=dict(text="Simulated Frequency", font=dict(size=11, color="#6B7A9A")),
+                        tickfont=dict(size=10, color="#7A8EAE"),
+                        gridcolor="rgba(255,255,255,0.04)",
+                    ),
+                    hoverlabel=dict(
+                        bgcolor="rgba(7,10,19,0.92)",
+                        bordercolor="rgba(0,213,89,0.30)",
+                        font=dict(color="#e8f0ff", size=12),
+                    ),
                 )
+                st.markdown('<div class="spp-chart-wrap">', unsafe_allow_html=True)
                 st.plotly_chart(fig_hist, use_container_width=True, key=f"hist_{player_id}_{team}")
+                st.markdown('</div>', unsafe_allow_html=True)
         except Exception as _plot_err:
             _logger.debug("Plotly chart rendering failed: %s", _plot_err)
 
@@ -1439,3 +1586,7 @@ if run_dark_horse:
                 if s["season_avg"] > 0.5
             )
             _render_betting_recommendations(sim_full, is_dark_horse=_is_dh_full)
+
+# ── Attribution footer — Joseph M. Smith ──────────────────────
+render_attribution_footer()
+

@@ -40,8 +40,9 @@ inject_page_seo("Live Sweat")
 
 # ── Global CSS ────────────────────────────────────────────────
 
-from styles.theme import get_global_css
+from styles.theme import get_global_css, get_premium_ui_css
 st.markdown(get_global_css(), unsafe_allow_html=True)
+st.markdown(get_premium_ui_css(), unsafe_allow_html=True)
 
 # ── Live Sweat CSS (glassmorphic cards + neon progress) ───────
 
@@ -58,7 +59,7 @@ except ImportError:
 # ── Joseph M. Smith Floating Widget ──────────────────────────
 
 try:
-    from utils.components import inject_joseph_floating, render_joseph_hero_banner
+    from utils.components import inject_joseph_floating, render_joseph_hero_banner, render_attribution_footer
     render_joseph_hero_banner()
     st.session_state["joseph_page_context"] = "page_live_sweat"
     inject_joseph_floating()
@@ -1323,3 +1324,10 @@ if vibe_checks:
             except Exception:
                 # Fallback when WebSocket closes mid-stream (e.g. auto-refresh)
                 st.write(reaction)
+
+
+# -- Attribution footer � Joseph M. Smith ----------------------
+try:
+    render_attribution_footer()
+except Exception:
+    pass

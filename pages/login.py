@@ -536,6 +536,220 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# ════════════════════════════════════════════════════════════
+# PHASE 1 — TICKER BAR + NAVBAR
+# ════════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+/* ── Ticker bar ──────────────────────────────────────────────── */
+.lp-ticker {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    height: 34px;
+    background: rgba(2,6,14,0.96);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    display: flex; align-items: center;
+    overflow: hidden;
+}
+.lp-ticker-track {
+    display: flex; align-items: center;
+    gap: 0;
+    animation: tickerScroll 38s linear infinite;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+@keyframes tickerScroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.lp-ticker-item {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 0 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem; font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    border-right: 1px solid rgba(255,255,255,0.06);
+}
+.lp-ticker-item:last-child { border-right: none; }
+.lp-ticker-label { color: rgba(255,255,255,0.22); text-transform: uppercase; letter-spacing: .08em; }
+.lp-ticker-val   { font-weight: 800; letter-spacing: -.02em; }
+.lp-ticker-val.green  { color: #00D559; }
+.lp-ticker-val.gold   { color: #F9C62B; }
+.lp-ticker-val.blue   { color: #2D9EFF; }
+.lp-ticker-val.purple { color: #c084fc; }
+.lp-ticker-live {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(0,213,89,0.1); border: 1px solid rgba(0,213,89,0.25);
+    border-radius: 100px; padding: 2px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.56rem; font-weight: 800;
+    color: #00D559; text-transform: uppercase; letter-spacing: .1em;
+}
+.lp-ticker-live-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: #00D559;
+    box-shadow: 0 0 6px rgba(0,213,89,0.6);
+    animation: agLivePulse 2s ease-in-out infinite;
+}
+
+/* ── Navbar ──────────────────────────────────────────────────── */
+.lp-nav {
+    position: fixed; top: 34px; left: 0; right: 0; z-index: 9998;
+    height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px;
+    background: rgba(2,6,14,0.88);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    transition: background 0.3s;
+}
+.lp-nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+.lp-nav-logo-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: linear-gradient(135deg, #00D559, #2D9EFF);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    box-shadow: 0 0 18px rgba(0,213,89,0.3);
+}
+.lp-nav-logo-text {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.05rem; font-weight: 800;
+    color: #fff; letter-spacing: -.04em;
+}
+.lp-nav-logo-text .em {
+    background: linear-gradient(135deg, #00D559, #2D9EFF);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.lp-nav-links {
+    display: flex; align-items: center; gap: 2px;
+    list-style: none; margin: 0; padding: 0;
+}
+.lp-nav-links a {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem; font-weight: 600;
+    color: rgba(255,255,255,0.4);
+    text-decoration: none;
+    padding: 7px 14px; border-radius: 8px;
+    transition: all 0.2s;
+}
+.lp-nav-links a:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.05);
+}
+.lp-nav-ctas {
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+}
+.lp-nav-login {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem; font-weight: 700;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    padding: 8px 18px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 100px;
+    transition: all 0.2s;
+}
+.lp-nav-login:hover {
+    color: #fff;
+    border-color: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.04);
+}
+.lp-nav-signup {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.8rem; font-weight: 800;
+    color: #020C07;
+    text-decoration: none;
+    padding: 9px 22px;
+    border-radius: 100px;
+    background: linear-gradient(135deg, #00E865, #00D559);
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 0 22px rgba(0,213,89,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+    letter-spacing: .03em;
+    transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+    position: relative; overflow: hidden;
+}
+.lp-nav-signup::after {
+    content: '';
+    position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    animation: agShimmer 3s ease-in-out infinite;
+}
+.lp-nav-signup:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 36px rgba(0,213,89,0.55), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+/* ── Page offset so content clears fixed ticker+nav ─────────── */
+.lp-page-offset {
+    height: 98px; /* 34px ticker + 64px nav */
+}
+
+/* Hide on mobile */
+@media (max-width: 760px) {
+    .lp-nav-links { display: none; }
+    .lp-nav { padding: 0 20px; }
+}
+@media (max-width: 480px) {
+    .lp-nav-login { display: none; }
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Ticker stats row (doubled for seamless loop)
+_TICKER_ITEMS = """
+  <span class="lp-ticker-item"><span class="lp-ticker-label">Props Scanned</span><span class="lp-ticker-val green">347</span></span>
+  <span class="lp-ticker-item"><span class="lp-ticker-label">Models Active</span><span class="lp-ticker-val blue">6/6</span></span>
+  <span class="lp-ticker-item"><span class="lp-ticker-label">SAFE Score Avg</span><span class="lp-ticker-val gold">71.2</span></span>
+  <span class="lp-ticker-item"><span class="lp-ticker-label">Edge Detected</span><span class="lp-ticker-val green">+4.8%</span></span>
+  <span class="lp-ticker-item"><span class="lp-ticker-label">Bankroll ROI</span><span class="lp-ticker-val green">+18.3%</span></span>
+  <span class="lp-ticker-item"><span class="lp-ticker-label">CLV Capture</span><span class="lp-ticker-val purple">92%</span></span>
+  <span class="lp-ticker-item"><span class="lp-ticker-label">Users Online</span><span class="lp-ticker-val blue">1,247</span></span>
+  <span class="lp-ticker-item"><span class="lp-ticker-live"><span class="lp-ticker-live-dot"></span>LIVE</span></span>
+  <span class="lp-ticker-item"><span class="lp-ticker-label">Hit Rate</span><span class="lp-ticker-val green">62.4%</span></span>
+  <span class="lp-ticker-item"><span class="lp-ticker-label">Picks Tonight</span><span class="lp-ticker-val gold">23</span></span>
+  <span class="lp-ticker-item"><span class="lp-ticker-label">Avg Confidence</span><span class="lp-ticker-val blue">78.9</span></span>
+  <span class="lp-ticker-item"><span class="lp-ticker-label">Sharps Following</span><span class="lp-ticker-val purple">2,418</span></span>
+"""
+
+st.markdown(f"""
+<div class="lp-ticker" role="marquee" aria-label="Live platform stats">
+  <div class="lp-ticker-track">
+    {_TICKER_ITEMS}{_TICKER_ITEMS}
+  </div>
+</div>
+
+<nav class="lp-nav" role="navigation" aria-label="Main navigation">
+  <a class="lp-nav-logo" href="#">
+    <div class="lp-nav-logo-icon">⚡</div>
+    <span class="lp-nav-logo-text">Smart<span class="em">Pick</span>Pro</span>
+  </a>
+
+  <ul class="lp-nav-links">
+    <li><a href="#lp-how">How It Works</a></li>
+    <li><a href="#lp-features">Features</a></li>
+    <li><a href="#lp-picks">Picks</a></li>
+    <li><a href="#lp-pricing">Pricing</a></li>
+    <li><a href="#lp-faq">FAQ</a></li>
+  </ul>
+
+  <div class="lp-nav-ctas">
+    <a class="lp-nav-login"  href="?auth=login">🔒 Log In</a>
+    <a class="lp-nav-signup" href="?auth=signup">Sign Up Free</a>
+  </div>
+</nav>
+
+<!-- Push page content below fixed ticker+nav -->
+<div class="lp-page-offset"></div>
+""", unsafe_allow_html=True)
+
 # ── Get logo ──────────────────────────────────────────────────
 _logo_b64 = _get_logo_b64()
 _logo_img_hero = (

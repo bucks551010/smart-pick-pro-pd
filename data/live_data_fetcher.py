@@ -1041,14 +1041,38 @@ def fetch_todays_games():
 
     if layer1_games:
         _logger.info(f"Layer 1 success: {len(layer1_games)} game(s) found.")
-        # Cross-validate against Layer 2 — log a warning if counts disagree
+        # Cross-validate against Layer 2 — if Layer 2 finds MORE games, merge
+        # so that late-added games (e.g. a 3rd game that hadn't appeared in
+        # ScoreboardV3 yet) are included.
         try:
             layer2_games = _fetch_games_layer2_espn(team_records)
             if layer2_games and len(layer2_games) != len(layer1_games):
                 _logger.info(
-                    f"Cross-validation warning: Layer 1 found {len(layer1_games)} game(s), "
-                    f"Layer 2 found {len(layer2_games)} game(s). Using Layer 1 result."
+                    f"Cross-validation: Layer 1 found {len(layer1_games)} game(s), "
+                    f"Layer 2 found {len(layer2_games)} game(s). Merging results."
                 )
+            if layer2_games and len(layer2_games) > len(layer1_games):
+                # Merge: prefer Layer 1 entries (have real game_id), fill in
+                # any extra games from Layer 2 that Layer 1 missed.
+                merged: dict = {}
+                for g in layer1_games:
+                    key = g.get("game_id", f"{g['home_team']}_vs_{g['away_team']}")
+                    merged[key] = g
+                for g in layer2_games:
+                    # Match by team pair regardless of game_id format
+                    pair_key = f"{g['home_team']}_vs_{g['away_team']}"
+                    already_present = any(
+                        existing.get("home_team") == g["home_team"]
+                        and existing.get("away_team") == g["away_team"]
+                        for existing in merged.values()
+                    )
+                    if not already_present:
+                        _logger.info(
+                            "Merge: adding Layer 2 game %s @ %s missing from Layer 1",
+                            g["away_team"], g["home_team"],
+                        )
+                        merged[pair_key] = g
+                return _deduplicate_games(list(merged.values()))
         except Exception as cv_error:
             _logger.warning(f"Cross-validation check failed (non-fatal): {cv_error}")
         return _deduplicate_games(layer1_games)

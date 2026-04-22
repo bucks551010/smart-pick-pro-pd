@@ -814,16 +814,16 @@ for _chip_key in ("chip_platinum", "chip_gold_plus", "chip_high_edge",
                   "chip_hot_form"):
     if _chip_key not in st.session_state:
         st.session_state[_chip_key] = False
-# Hide Avoids defaults to ON — QAM is for best top picks
+# Hide Avoids defaults to OFF — show all picks including avoids by default
 if "chip_hide_avoids" not in st.session_state:
-    st.session_state["chip_hide_avoids"] = True
+    st.session_state["chip_hide_avoids"] = False
 
 # ── Feature 15: Sort selector ───────────────────────────────────
 if "qam_sort_key" not in st.session_state:
     st.session_state["qam_sort_key"] = "Confidence Score ↓"
 
 # Default for the show-all/top radio (rendered inside the results fragment).
-st.session_state.setdefault("qam_show_mode", "Top picks only (edge ≥ threshold)")
+st.session_state.setdefault("qam_show_mode", "All picks")
 
 if run_analysis:
     # Set a flag so that if the user navigates away during analysis
@@ -1535,7 +1535,7 @@ def _render_results_fragment():
         _SHOW_MODE_OPTIONS,
         horizontal=True,
         index=_SHOW_MODE_OPTIONS.index(
-            st.session_state.get("qam_show_mode", "Top picks only (edge ≥ threshold)")
+            st.session_state.get("qam_show_mode", "All picks")
         ),
         key="_qam_show_mode_radio",
     )
@@ -1578,7 +1578,7 @@ def _render_results_fragment():
         )
     with _chip_col5:
         st.session_state["chip_hide_avoids"] = st.toggle(
-            "❌ Hide Avoids", value=st.session_state.get("chip_hide_avoids", True),
+            "❌ Hide Avoids", value=st.session_state.get("chip_hide_avoids", False),
             key="_chip_hide_avoids_toggle",
         )
 

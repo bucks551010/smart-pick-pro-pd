@@ -210,6 +210,9 @@ def _ensure_sessions_table() -> None:
         return
     try:
         with _AuthConn() as db:
+            # Use no DEFAULT clause on timestamp columns so the SQL is valid in
+            # both SQLite and PostgreSQL (PostgreSQL rejects TEXT DEFAULT (NOW())).
+            # Values are always passed explicitly in INSERT statements.
             db.execute("""
                 CREATE TABLE IF NOT EXISTS login_sessions (
                     token        TEXT PRIMARY KEY,
@@ -218,13 +221,13 @@ def _ensure_sessions_table() -> None:
                     display_name TEXT,
                     is_admin     INTEGER DEFAULT 0,
                     expires_at   TEXT NOT NULL,
-                    last_seen    TEXT DEFAULT (datetime('now')),
-                    created_at   TEXT DEFAULT (datetime('now'))
+                    last_seen    TEXT,
+                    created_at   TEXT
                 )
             """)
             # Add last_seen column to existing tables that pre-date this change.
             try:
-                db.execute("ALTER TABLE login_sessions ADD COLUMN last_seen TEXT DEFAULT (datetime('now'))")
+                db.execute("ALTER TABLE login_sessions ADD COLUMN last_seen TEXT")
             except Exception:
                 pass  # Column already exists — safe to ignore.
         _sessions_table_ok = True
@@ -266,10 +269,13 @@ def _load_session_by_token(token: str) -> dict | None:
     _ensure_sessions_table()
     try:
         import datetime as _dt
+        # Compare expires_at using a Python ISO string so the query works in
+        # both SQLite (string comparison) and PostgreSQL (no type mismatch).
+        _now_iso = _dt.datetime.utcnow().isoformat()
         with _AuthConn() as db:
             row = db.fetchone(
-                "SELECT * FROM login_sessions WHERE token = ? AND expires_at > datetime('now')",
-                (token,),
+                "SELECT * FROM login_sessions WHERE token = ? AND expires_at > ?",
+                (token, _now_iso),
             )
         if not row:
             return None
@@ -1441,6 +1447,14 @@ def _set_logged_in(user: dict, _write_storage: bool = True) -> None:
             _tok = secrets.token_urlsafe(32)
             _save_login_session(_tok, user)
             st.session_state["_pending_cookie_token"] = _tok
+            # Belt-and-suspenders: write token to query params so it survives
+            # any environment where cookies/localStorage are blocked.
+            # require_login() will restore the session from ?_st= and then
+            # remove it from the URL immediately after restoration.
+            try:
+                st.query_params["_st"] = _tok
+            except Exception:
+                pass
         except Exception:
             pass
 

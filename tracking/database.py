@@ -1802,7 +1802,7 @@ def load_bets_page(
         SELECT *
         FROM bets
         {where_sql}
-        ORDER BY created_at DESC
+        ORDER BY COALESCE(bet_date, '') DESC, created_at DESC NULLS LAST
         LIMIT ? OFFSET ?
     """
 
@@ -3036,20 +3036,26 @@ def load_analysis_picks_for_date(date_str):
 
 def get_analysis_pick_dates(days=30):
     """
-    Return a sorted list (newest first) of distinct pick_date values in the
-    all_analysis_picks table within the last *days* days.
+    Return a sorted list (newest first) of distinct pick_date values from BOTH
+    the all_analysis_picks table AND the bets table within the last *days* days.
+
+    This ensures dates that only exist in the bets table (e.g. manually-added or
+    SQL-inserted bets) still appear in the date dropdowns on the All Picks and
+    Resolve tabs.
 
     Args:
         days (int): How many days of history to scan. Defaults to 30.
 
     Returns:
-        list[str]: ISO date strings, e.g. ["2026-03-13", "2026-03-12", ...].
+        list[str]: ISO date strings, e.g. ["2026-04-21", "2026-04-20", ...].
     """
     import datetime as _dt
     cutoff = (
         datetime.date.fromisoformat(_nba_today_iso()) - _dt.timedelta(days=days)
     ).isoformat()
-    dates = []
+    dates_set = set()
+
+    # ── Source 1: all_analysis_picks (SQLite local) ──────────────────────────
     try:
         with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
             conn.execute("PRAGMA journal_mode=WAL")
@@ -3057,10 +3063,26 @@ def get_analysis_pick_dates(days=30):
                 "SELECT DISTINCT pick_date FROM all_analysis_picks WHERE pick_date >= ? ORDER BY pick_date DESC",
                 (cutoff,),
             ).fetchall()
-            dates = [r[0] for r in rows]
+            for r in rows:
+                if r[0]:
+                    dates_set.add(r[0])
     except Exception as err:
-        _logger.warning(f"get_analysis_pick_dates error (non-fatal): {err}")
-    return dates
+        _logger.warning(f"get_analysis_pick_dates (SQLite) error: {err}")
+
+    # ── Source 2: bets table (PostgreSQL when available, else SQLite) ─────────
+    try:
+        bets_date_rows = _execute_read(
+            "SELECT DISTINCT bet_date FROM bets WHERE bet_date >= ? AND bet_date IS NOT NULL AND bet_date != ''",
+            (cutoff,),
+        )
+        for r in bets_date_rows:
+            d = r.get("bet_date") or r.get("DISTINCT bet_date", "")
+            if d:
+                dates_set.add(str(d)[:10])  # trim to YYYY-MM-DD if timestamp
+    except Exception as err:
+        _logger.warning(f"get_analysis_pick_dates (bets table) error: {err}")
+
+    return sorted(dates_set, reverse=True)
 
 # ============================================================
 # END SECTION: All Analysis Picks

@@ -87,5 +87,15 @@ if _FASTAPI_AVAILABLE:
     except Exception as exc:
         _logger.warning("notifications router failed to load: %s", exc)
 
+    # ── /healthz — zero-cost liveness probe ──────────────────────
+    # Intentionally inline (not a router) so it is ALWAYS registered
+    # regardless of which optional routers fail to load.
+    # Load balancers, ACA probes, and the Nginx upstream all hit this.
+    # It performs NO database I/O and NO external calls; it must respond
+    # in under 2 s even under full load.
+    @app.get("/healthz", include_in_schema=False)
+    async def healthz():
+        return {"status": "ok"}
+
 else:
     app = None

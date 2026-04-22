@@ -53,5 +53,4 @@ python-dotenv==1.0.1
 thefuzz==0.22.1
 
 # ── Telemetry & Observability ─────────────────────────────────
-opencensus-ext-azure~=1.0    # Azure Application Insights APM (optional — graceful no-op without APPINSIGHTS_CONNECTION_STRING)
 psutil~=5.9                  # System resource metrics (CPU, memory, disk) for admin dashboard

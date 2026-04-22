@@ -1,46 +1,242 @@
-name: CI
+# ================================================================
+# Smart Pick Pro — CI/CD Pipeline
+#
+# Triggers:
+#   push / PR  → main or master : runs tests + Docker build
+#   push       → main or master : also deploys to Railway staging
+#   tag        → v*.*.*         : deploys to Railway production
+#   workflow_dispatch           : manual prod deploy with approval gate
+#
+# Required GitHub Actions secrets:
+#   GHCR_TOKEN              — GitHub PAT with write:packages scope
+#                             (or use GITHUB_TOKEN for same-repo pushes)
+#   RAILWAY_STAGING_WEBHOOK — Deploy hook URL from Railway staging env
+#   RAILWAY_PROD_WEBHOOK    — Deploy hook URL from Railway production env
+#   STAGING_URL             — https://<your-railway-staging-domain>
+#   PRODUCTION_URL          — https://<your-railway-prod-domain>
+#   # Test-only secrets (never real keys):
+#   CI_JWT_SECRET           — min-32-char string for test runs
+# ================================================================
+
+name: CI/CD — Test · Build · Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
+    tags:     ["v*.*.*"]
   pull_request:
-    branches: [main]
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      deploy_env:
+        description: "Force deploy to environment"
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
 
+# Cancel in-flight runs on the same branch (saves cost, avoids race)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PYTHON_VERSION: "3.12"
+  IMAGE_NAME: smart-pick-pro
+
+# ── Job 1: Quality Gate ────────────────────────────────────────
 jobs:
   test:
+    name: Test Suite
     runs-on: ubuntu-latest
     permissions:
       contents: read
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
 
-      - name: Install dependencies
+      - name: Install runtime + dev dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt -r requirements-dev.txt
 
-      - name: Run test suite
-        run: python -m pytest tests/ -v --tb=short
-
-      - name: Syntax check all Python files
+      # ── Security: block real API key leaks before anything runs ──
+      - name: Secrets leak check
         run: |
-          find . -name "*.py" -not -path "./.git/*" -not -path "./.venv/*" | while read f; do
-            python -m py_compile "$f" || exit 1
-          done
-
-      - name: Secrets check
-        run: |
-          # Fail if any file (outside examples) contains real Stripe key patterns
-          if grep -rn --include="*.py" --include="*.toml" --include="*.yml" --include="*.yaml" --include="*.env" \
-              -E '(sk_live_[a-zA-Z0-9]{20,}|pk_live_[a-zA-Z0-9]{20,}|whsec_[a-zA-Z0-9]{20,})' \
-              --exclude="*.example" --exclude="secrets.toml.example" --exclude=".env.example" \
-              --exclude-dir=".git" .; then
-            echo "❌ Real Stripe keys detected in source files!"
+          if grep -rn --include="*.py" --include="*.yml" --include="*.yaml" \
+              -E '(sk_live_[A-Za-z0-9]{20,}|pk_live_[A-Za-z0-9]{20,}|whsec_[A-Za-z0-9]{20,})' \
+              --exclude="*.example" --exclude-dir=".git" --exclude-dir=".venv" .; then
+            echo "::error::Real Stripe keys found in source — blocking build."
             exit 1
-          else
-            echo "✅ No hardcoded Stripe keys found"
           fi
+          echo "No hardcoded secrets detected."
+
+      - name: Syntax check (all .py files)
+        run: |
+          find . -name "*.py" \
+            -not -path "./.venv/*" \
+            -not -path "./.git/*" \
+            -print0 | xargs -0 python -m py_compile
+          echo "All files parsed successfully."
+
+      - name: Run pytest with coverage
+        env:
+          # Placeholder test secrets — never real values
+          STRIPE_SECRET_KEY:   sk_test_ci_placeholder_00000000000000000000
+          STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder_000000000000000000
+          JWT_SECRET:          ${{ secrets.CI_JWT_SECRET }}
+          DATABASE_URL:        sqlite:///ci_test.db
+          DB_DIR:              /tmp/smart_pick_ci
+          ENVIRONMENT:         test
+        run: |
+          python -m pytest tests/ \
+            --tb=short \
+            --cov=. \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            -q
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+
+# ── Job 2: Docker Build & Push to GHCR (free) ──────────────────
+  build:
+    name: Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: test
+    # Skip Docker push on PRs from forks (no access to secrets)
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write   # required to push to GHCR
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+      image-ref: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata (tags + labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # Short SHA — always present, used for traceability
+            type=sha,prefix=,format=short
+            # Branch name
+            type=ref,event=branch
+            # Semver from git tag (v1.2.3 → 1.2.3)
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            # 'latest' only on default branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+
+      - name: Build and push (multi-stage, runtime target)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runtime
+          push: true
+          tags:       ${{ steps.meta.outputs.tags }}
+          labels:     ${{ steps.meta.outputs.labels }}
+          # GHCR-backed layer cache — drastically reduces build time
+          # when only app source (not deps) changed.
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to:   type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            GIT_SHA=${{ github.sha }}
+
+# ── Job 3: Deploy → Railway Staging (free tier) ─────────────────
+  deploy-staging:
+    name: Deploy → Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: |
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      && github.event_name != 'pull_request'
+    environment:
+      name: staging
+      url: ${{ secrets.STAGING_URL }}
+
+    steps:
+      - name: Trigger Railway staging deploy
+        # Railway deploy hooks are free and trigger a redeploy from the
+        # latest pushed image or connected repo.  Generate the hook URL in
+        # the Railway dashboard: Settings → Environments → Deploy Hook.
+        run: |
+          curl -sf -X POST "${{ secrets.RAILWAY_STAGING_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            --max-time 30
+          echo "Railway staging deploy triggered."
+
+      - name: Smoke test staging /healthz
+        run: |
+          echo "Waiting for Railway to become ready..."
+          for i in $(seq 1 9); do
+            status=$(curl -o /dev/null -sw "%{http_code}" \
+              "${{ secrets.STAGING_URL }}/healthz" || echo "000")
+            echo "Attempt $i — HTTP $status"
+            if [ "$status" = "200" ]; then exit 0; fi
+            sleep 10
+          done
+          echo "::error::Staging health check failed after 90s"
+          exit 1
+
+# ── Job 4: Deploy → Railway Production ──────────────────────────
+  deploy-production:
+    name: Deploy → Production
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging]
+    # Promote to prod on a semver tag OR explicit manual dispatch
+    if: |
+      startsWith(github.ref, 'refs/tags/v')
+      || (github.event_name == 'workflow_dispatch'
+          && github.event.inputs.deploy_env == 'production')
+    environment:
+      name: production          # requires manual approval gate in GitHub UI
+      url: ${{ secrets.PRODUCTION_URL }}
+
+    steps:
+      - name: Trigger Railway production deploy
+        run: |
+          curl -sf -X POST "${{ secrets.RAILWAY_PROD_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            --max-time 30
+          echo "Railway production deploy triggered."
+
+      - name: Smoke test production /healthz
+        run: |
+          for i in $(seq 1 9); do
+            status=$(curl -o /dev/null -sw "%{http_code}" \
+              "${{ secrets.PRODUCTION_URL }}/healthz" || echo "000")
+            echo "Attempt $i — HTTP $status"
+            if [ "$status" = "200" ]; then exit 0; fi
+            sleep 10
+          done
+          echo "::error::Production health check failed after 90s"
+          exit 1

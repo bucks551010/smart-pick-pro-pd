@@ -49,72 +49,6 @@ _logger = logging.getLogger("smartai_nba.telemetry")
 _F = TypeVar("_F", bound=Callable[..., Any])
 
 # ═══════════════════════════════════════════════════════════
-# SECTION 1: Azure Application Insights — Optional soft dep
-# ═══════════════════════════════════════════════════════════
-
-_APPINSIGHTS_CONN_STR = os.environ.get("APPINSIGHTS_CONNECTION_STRING", "")
-_ai_handler: Any = None        # AzureLogHandler instance when available
-_ai_logger: logging.Logger | None = None  # Dedicated logger that feeds AppInsights
-
-def _init_appinsights() -> None:
-    """
-    Attempt to initialise the Azure Application Insights log exporter.
-
-    Uses opencensus-ext-azure if installed and APPINSIGHTS_CONNECTION_STRING
-    is set.  Silently no-ops otherwise — the rest of the module still works
-    using SQLite local storage.
-    """
-    global _ai_handler, _ai_logger
-    if _ai_logger is not None:
-        return  # Already initialised
-    if not _APPINSIGHTS_CONN_STR:
-        return  # Env var not configured — local-only mode
-
-    try:
-        from opencensus.ext.azure.log_exporter import AzureLogHandler  # type: ignore
-
-        handler = AzureLogHandler(connection_string=_APPINSIGHTS_CONN_STR)
-        handler.setLevel(logging.WARNING)  # Only WARNING+ to AppInsights (cost control)
-
-        ai_log = logging.getLogger("smartai_nba.appinsights")
-        ai_log.setLevel(logging.DEBUG)
-        ai_log.addHandler(handler)
-        ai_log.propagate = False  # Don't double-emit to root logger
-
-        _ai_handler = handler
-        _ai_logger = ai_log
-        _logger.info("Azure Application Insights initialised (telemetry active)")
-    except ImportError:
-        _logger.debug(
-            "opencensus-ext-azure not installed — App Insights disabled. "
-            "Add 'opencensus-ext-azure~=1.0' to requirements.txt to enable."
-        )
-    except Exception as exc:
-        _logger.debug("App Insights init failed (non-fatal): %s", exc)
-
-
-def _send_to_appinsights(level: int, message: str, extra: dict[str, Any]) -> None:
-    """
-    Forward a structured event to Azure App Insights via the log exporter.
-
-    The `custom_dimensions` key is recognised by opencensus-ext-azure and
-    surfaces as custom properties in the Application Insights portal.
-    """
-    if _ai_logger is None:
-        return
-    try:
-        # Scrub PII before the payload leaves this process
-        safe_extra = {"custom_dimensions": scrub_pii(extra)}
-        _ai_logger.log(level, message, extra=safe_extra)
-    except Exception as exc:
-        _logger.debug("App Insights emit failed: %s", exc)
-
-
-# Initialise at import time (non-blocking — all failures are silent)
-_init_appinsights()
-
-
-# ═══════════════════════════════════════════════════════════
 # SECTION 2: PII Scrubbing
 # ═══════════════════════════════════════════════════════════
 
@@ -355,18 +289,6 @@ def profile_execution(label: str | None = None, *, warn_above_ms: float = 2000.0
                      session, int(success), err_type),
                 )
 
-                # App Insights custom metric
-                _send_to_appinsights(
-                    logging.INFO,
-                    f"perf.{metric_label}",
-                    {
-                        "label": metric_label,
-                        "duration_ms": round(duration_ms, 2),
-                        "success": success,
-                        "error_type": err_type or "",
-                    },
-                )
-
         return wrapper  # type: ignore[return-value]
     return decorator
 
@@ -413,12 +335,6 @@ def track_feature(feature_name: str, metadata: dict[str, Any] | None = None) -> 
         except Exception:
             pass  # GA4 injection fails outside Streamlit context; ignore
 
-        # App Insights custom event
-        _send_to_appinsights(
-            logging.INFO,
-            f"feature.{feature_name}",
-            {"feature": feature_name, "page": page, **safe_meta},
-        )
     except Exception as exc:
         _logger.debug("track_feature failed (non-fatal): %s", exc)
 
@@ -479,18 +395,6 @@ def capture_exception(
              safe_context, page, stack[:4000]),  # cap stack at 4 KB
         )
 
-        # App Insights at ERROR level (includes stack trace as custom dimension)
-        _send_to_appinsights(
-            logging.ERROR,
-            f"error.{error_type}",
-            {
-                "error_type": error_type,
-                "message": safe_message,
-                "context": safe_context,
-                "page": page,
-                "stack_trace": stack[:2000],
-            },
-        )
     except Exception as inner_exc:
         # The error reporter itself failed — log at DEBUG so we don't loop
         _logger.debug("capture_exception internal failure: %s", inner_exc)

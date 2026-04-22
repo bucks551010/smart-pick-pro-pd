@@ -37,6 +37,7 @@ import time       # For delays between API calls (rate limiting)
 import datetime   # For timestamps on fetched props
 import os         # For reading environment variables (API keys)
 import asyncio    # For concurrent fetching across platforms
+import random     # For jitter in exponential backoff (prevents thundering-herd)
 
 # Third-party HTTP library — must be installed (pip install requests)
 # 'requests' is used by roster_engine.py already and listed in requirements.
@@ -267,7 +268,11 @@ def _fetch_with_retry(url, headers=None, params=None, timeout=None):
             # Retry on rate limit or server error
             if response.status_code == 429 or response.status_code >= 500:
                 if attempt < MAX_API_RETRIES:
-                    delay = min(RETRY_BASE_DELAY_SECONDS * (2 ** attempt), 10.0)  # Cap at 10s
+                    # Jitter = base × 2^attempt + uniform(0, 0.5).
+                    # Jitter prevents multiple sessions from retrying in lockstep
+                    # (thundering-herd problem) when a shared rate limit is hit.
+                    # Time complexity: O(1) — pure arithmetic, no I/O.
+                    delay = min(RETRY_BASE_DELAY_SECONDS * (2 ** attempt), 10.0) + random.uniform(0, 0.5)
                     _logger.warning(
                         f"HTTP {response.status_code} on attempt {attempt+1}/{MAX_API_RETRIES+1} "
                         f"for {url} — retrying in {delay:.1f}s"
@@ -281,7 +286,7 @@ def _fetch_with_retry(url, headers=None, params=None, timeout=None):
         except Exception as exc:
             last_exc = exc
             if attempt < MAX_API_RETRIES:
-                delay = min(RETRY_BASE_DELAY_SECONDS * (2 ** attempt), 10.0)  # Cap at 10s
+                delay = min(RETRY_BASE_DELAY_SECONDS * (2 ** attempt), 10.0) + random.uniform(0, 0.5)
                 _logger.warning(
                     f"Request error on attempt {attempt+1}/{MAX_API_RETRIES+1} "
                     f"for {url}: {exc} — retrying in {delay:.1f}s"

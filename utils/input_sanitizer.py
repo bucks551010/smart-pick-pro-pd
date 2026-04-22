@@ -88,7 +88,7 @@ _MIN_PASSWORD_LEN  = 10
 _PASSWORD_UPPER_RE = re.compile(r"[A-Z]")
 _PASSWORD_LOWER_RE = re.compile(r"[a-z]")
 _PASSWORD_DIGIT_RE = re.compile(r"[0-9]")
-_PASSWORD_SPECIAL_RE = re.compile(r"[!@#$%^&*()\-_=+\[\]{};:',.<>?/\\|`~\""]")
+_PASSWORD_SPECIAL_RE = re.compile(r"""[!@#$%^&*()\-_=+\[\]{};:',.<>?/\\|`~"]""")
 
 
 # ---------------------------------------------------------------------------

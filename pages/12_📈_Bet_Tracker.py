@@ -319,11 +319,12 @@ with _filter_col2:
     )
 
 with _filter_col3:
+    _today_dt = tracker_today_date()
     _date_range = st.date_input(
         "📅 Date Range",
-        value=[],
+        value=[_today_dt, _today_dt],
         key="date_range_filter",
-        help="Filter bets by date range. Leave empty for all dates.",
+        help="Filter bets by date range. Defaults to today — clear or widen to see history.",
     )
 
 with _filter_col4:

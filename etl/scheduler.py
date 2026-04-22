@@ -65,7 +65,7 @@ _DISABLED = os.environ.get("ETL_SCHEDULER_DISABLED", "").strip() in ("1", "true"
 
 # QAM auto-analysis config
 _QAM_DISABLED = os.environ.get("QAM_AUTO_ANALYSIS_DISABLED", "").strip() in ("1", "true", "yes")
-_QAM_HOUR_START = int(os.environ.get("QAM_ANALYSIS_HOUR_START", "13"))   # 1 PM ET — props available by early afternoon
+_QAM_HOUR_START = int(os.environ.get("QAM_ANALYSIS_HOUR_START", "12"))   # 12 PM ET — props available by midday
 _QAM_HOUR_END = int(os.environ.get("QAM_ANALYSIS_HOUR_END", "23"))       # 11 PM ET
 _QAM_SIM_DEPTH = int(os.environ.get("QAM_SIM_DEPTH", "1000"))
 
@@ -241,6 +241,8 @@ def _loop() -> None:
 
     _last_prop_refresh = 0.0      # monotonic timestamp of last prop refresh
     _last_analysis_date = ""      # ISO date of last successful QAM auto-analysis
+    _last_analysis_ts = 0.0       # monotonic timestamp of last successful QAM run
+    _ANALYSIS_RERUN_SEC = int(os.environ.get("QAM_RERUN_INTERVAL_MIN", "240")) * 60  # re-run every 4 h
 
     while True:
         game_window = _in_game_window()
@@ -296,14 +298,20 @@ def _loop() -> None:
                 except Exception:
                     pass
 
-        # ── QAM auto-analysis (once per day during analysis window) ──
+        # ── QAM auto-analysis (once per new day, then every 4 h while in window) ──
         # Runs after props are fresh to analyze the live slate.
-        if _last_analysis_date != today_str:
+        # Re-runs every 4 h (configurable via QAM_RERUN_INTERVAL_MIN) so that
+        # picks stay current as prop lines shift throughout the day.
+        _analysis_stale = (
+            _last_analysis_date != today_str
+            or (time.monotonic() - _last_analysis_ts >= _ANALYSIS_RERUN_SEC)
+        )
+        if _analysis_stale:
             t0 = time.monotonic()
             inserted = _run_auto_analysis(today_str)
             if inserted > 0:
-                # Mark done for today so we don't spam the API
                 _last_analysis_date = today_str
+                _last_analysis_ts = time.monotonic()
                 _logger.info(
                     "[ETL Scheduler] QAM auto-analysis: %d picks persisted in %.1f s.",
                     inserted, round(time.monotonic() - t0, 1),

@@ -208,8 +208,14 @@ def _ensure_sessions_table() -> None:
     global _sessions_table_ok
     if _sessions_table_ok:
         return
+    # Step 1: CREATE TABLE in its own transaction so a failed migration below
+    # cannot abort / roll back the table creation (critical for PostgreSQL where
+    # any statement error aborts the entire transaction block).
     try:
         with _AuthConn() as db:
+            # Use no DEFAULT clause on timestamp columns so the SQL is valid in
+            # both SQLite and PostgreSQL (PostgreSQL rejects TEXT DEFAULT (NOW())).
+            # Values are always passed explicitly in INSERT statements.
             db.execute("""
                 CREATE TABLE IF NOT EXISTS login_sessions (
                     token        TEXT PRIMARY KEY,
@@ -218,18 +224,23 @@ def _ensure_sessions_table() -> None:
                     display_name TEXT,
                     is_admin     INTEGER DEFAULT 0,
                     expires_at   TEXT NOT NULL,
-                    last_seen    TEXT DEFAULT (datetime('now')),
-                    created_at   TEXT DEFAULT (datetime('now'))
+                    last_seen    TEXT,
+                    created_at   TEXT
                 )
             """)
-            # Add last_seen column to existing tables that pre-date this change.
-            try:
-                db.execute("ALTER TABLE login_sessions ADD COLUMN last_seen TEXT DEFAULT (datetime('now'))")
-            except Exception:
-                pass  # Column already exists — safe to ignore.
-        _sessions_table_ok = True
     except Exception as _exc:
         _logger.error("Failed to create login_sessions table: %s", _exc)
+        return
+    # Step 2: Column migration in a SEPARATE transaction.  If the column already
+    # exists (table was just created with it, or a previous run added it) the
+    # ALTER TABLE fails and only this transaction is rolled back — the table
+    # itself is unaffected.
+    try:
+        with _AuthConn() as db:
+            db.execute("ALTER TABLE login_sessions ADD COLUMN last_seen TEXT")
+    except Exception:
+        pass  # Column already exists — safe to ignore.
+    _sessions_table_ok = True
 
 
 def _save_login_session(token: str, user: dict) -> None:
@@ -266,10 +277,13 @@ def _load_session_by_token(token: str) -> dict | None:
     _ensure_sessions_table()
     try:
         import datetime as _dt
+        # Compare expires_at using a Python ISO string so the query works in
+        # both SQLite (string comparison) and PostgreSQL (no type mismatch).
+        _now_iso = _dt.datetime.utcnow().isoformat()
         with _AuthConn() as db:
             row = db.fetchone(
-                "SELECT * FROM login_sessions WHERE token = ? AND expires_at > datetime('now')",
-                (token,),
+                "SELECT * FROM login_sessions WHERE token = ? AND expires_at > ?",
+                (token, _now_iso),
             )
         if not row:
             return None
@@ -580,18 +594,19 @@ def _display_stat_label(raw: str) -> str:
 def _load_top_preview_picks(limit: int = 5) -> tuple[list[dict], str]:
     """Load today's top platform picks for the landing page preview.
 
-    Filters to picks that have a ``platform`` set (PrizePicks / Underdog /
-    DraftKings) — matching exactly what the QAM Platform AI Picks section
-    shows — ordered by confidence_score DESC.
-
-    Priority:
-      1. Today's platform picks from the SQLite DB.
-      2. Today's picks from the JSON cache file (written by scheduler).
-      3. Most recent date's platform picks from DB (Railway restart fallback).
+    Priority (first non-empty wins):
+      1. Today's platform picks from the DB (platform IS NOT NULL).
+      2. Today's any picks from the DB (no platform filter — catches runs
+         where platform wasn't set on every prop).
+      3. Today's picks from the JSON cache file (written by scheduler).
+      4. Most recent platform picks within the last 7 days from the DB
+         (Railway restart / fresh-deploy fallback — shows real picks until
+         tonight's analysis replaces them).
+      5. Any JSON cache data regardless of date.
 
     Returns:
         (picks, pick_date) — list of pick dicts and the ISO date they belong to.
-        Returns ([], "") when no data exists at all.
+        Returns ([], today) when no data exists at all.
     """
     initialize_database()
     today = _nba_today_str()
@@ -605,6 +620,30 @@ def _load_top_preview_picks(limit: int = 5) -> tuple[list[dict], str]:
           AND TRIM(platform) != ''
         ORDER BY confidence_score DESC
         LIMIT ?"""
+    _ANY_PICK_SQL = """
+        SELECT player_name, team, stat_type, prop_line, direction,
+               platform, confidence_score, probability_over,
+               edge_percentage, tier
+        FROM all_analysis_picks
+        WHERE pick_date = ?
+        ORDER BY confidence_score DESC
+        LIMIT ?"""
+    _RECENT_PLATFORM_SQL = """
+        SELECT player_name, team, stat_type, prop_line, direction,
+               platform, confidence_score, probability_over,
+               edge_percentage, tier, pick_date
+        FROM all_analysis_picks
+        WHERE platform IS NOT NULL
+          AND TRIM(platform) != ''
+        ORDER BY pick_date DESC, confidence_score DESC
+        LIMIT ?"""
+    _RECENT_ANY_SQL = """
+        SELECT player_name, team, stat_type, prop_line, direction,
+               platform, confidence_score, probability_over,
+               edge_percentage, tier, pick_date
+        FROM all_analysis_picks
+        ORDER BY pick_date DESC, confidence_score DESC
+        LIMIT ?"""
     try:
         with get_database_connection() as conn:
             conn.row_factory = sqlite3.Row
@@ -613,14 +652,32 @@ def _load_top_preview_picks(limit: int = 5) -> tuple[list[dict], str]:
             if rows:
                 return [dict(r) for r in rows], today
 
-            # ── 2. Today's picks from JSON cache (scheduler may have written
-            #       them but DB hasn't been updated in this Railway instance) ─
+            # ── 2. Today's any picks (analysis ran but platform not set) ──
+            rows = conn.execute(_ANY_PICK_SQL, (today, limit)).fetchall()
+            if rows:
+                return [dict(r) for r in rows], today
+
+            # ── 3. Today's picks from JSON cache ──────────────────────────
             cache_result = _load_picks_from_cache(limit)
             if cache_result[0] and cache_result[1] == today:
                 return cache_result
 
-            # ── 3. No picks for today — return empty so landing page
-            #       shows 'Picks update daily' instead of yesterday's slate.
+            # ── 4. Most recent platform picks (up to any date) ────────────
+            rows = conn.execute(_RECENT_PLATFORM_SQL, (limit,)).fetchall()
+            if rows:
+                recent_date = dict(rows[0]).get("pick_date", today)
+                return [dict(r) for r in rows], recent_date
+
+            # ── 5. Most recent any picks (no platform filter) ─────────────
+            rows = conn.execute(_RECENT_ANY_SQL, (limit,)).fetchall()
+            if rows:
+                recent_date = dict(rows[0]).get("pick_date", today)
+                return [dict(r) for r in rows], recent_date
+
+            # ── 6. JSON cache regardless of date ──────────────────────────
+            if cache_result[0]:
+                return cache_result
+
             return [], today
     except Exception as exc:
         _logger.debug("_load_top_preview_picks DB: %s", exc)
@@ -1072,13 +1129,29 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 def _create_user(email: str, password: str, display_name: str = "") -> bool:
     """Create a new user account. Returns True on success."""
     pw_hash = _hash_password(password)
+    clean_email = email.strip().lower()
     for attempt in range(_DB_RETRY_ATTEMPTS):
         try:
             with _AuthConn() as db:
                 db.execute(
                     "INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)",
-                    (email.strip().lower(), pw_hash, display_name.strip() or email.split("@")[0]),
+                    (clean_email, pw_hash, display_name.strip() or email.split("@")[0]),
                 )
+            # Mirror the new account into the subscriptions table so every
+            # user has a row there regardless of Stripe activity.
+            try:
+                from utils.auth import _save_subscription_to_db as _save_sub
+                _save_sub({
+                    "subscription_id": f"acct_{clean_email}",
+                    "customer_id":     f"cus_{clean_email}",
+                    "customer_email":  clean_email,
+                    "status":          "active",
+                    "plan_name":       "Free",
+                    "period_start":    "",
+                    "period_end":      "",
+                })
+            except Exception as _sub_exc:
+                _logger.debug("Subscription mirror failed (non-fatal): %s", _sub_exc)
             return True
         except Exception as exc:
             exc_str = str(exc).lower()
@@ -1441,6 +1514,14 @@ def _set_logged_in(user: dict, _write_storage: bool = True) -> None:
             _tok = secrets.token_urlsafe(32)
             _save_login_session(_tok, user)
             st.session_state["_pending_cookie_token"] = _tok
+            # Belt-and-suspenders: write token to query params so it survives
+            # any environment where cookies/localStorage are blocked.
+            # require_login() will restore the session from ?_st= and then
+            # remove it from the URL immediately after restoration.
+            try:
+                st.query_params["_st"] = _tok
+            except Exception:
+                pass
         except Exception:
             pass
 
@@ -3010,48 +3091,55 @@ html, body, .stApp, .stApp * {
     position: relative;
 }
 .ag-how-step {
-    background: linear-gradient(168deg, rgba(8, 14, 28, 0.97), rgba(5, 9, 16, 0.99));
-    border: 1px solid rgba(0, 213, 89, 0.1);
-    border-radius: 20px; padding: 28px 18px 24px;
+    background: linear-gradient(168deg, rgba(8, 14, 28, 0.98), rgba(5, 9, 16, 0.99));
+    border: 1px solid rgba(0, 213, 89, 0.12);
+    border-radius: 24px; padding: 36px 24px 30px;
     text-align: center; position: relative; overflow: hidden;
-    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.02);
+    transition: border-color 0.35s, transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s;
+    box-shadow: 0 6px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.03);
 }
 .ag-how-step:hover {
-    border-color: rgba(0, 213, 89, 0.4);
-    transform: translateY(-5px);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 213, 89, 0.1);
+    border-color: rgba(0, 213, 89, 0.45);
+    transform: translateY(-12px) scale(1.02);
+    box-shadow: 0 28px 72px rgba(0, 0, 0, 0.55), 0 0 60px rgba(0, 213, 89, 0.14);
 }
 .ag-how-step::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
     background: linear-gradient(90deg, #00D559, #2D9EFF, #c084fc);
-    opacity: 0; transition: opacity 0.3s;
+    opacity: 0.18; transition: opacity 0.35s;
 }
 .ag-how-step:hover::before { opacity: 1; }
+.ag-how-step::after {
+    content: ''; position: absolute; inset: 0; border-radius: 24px;
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,213,89,0.05) 0%, transparent 65%);
+    opacity: 0; transition: opacity 0.35s; pointer-events: none;
+}
+.ag-how-step:hover::after { opacity: 1; }
 .ag-how-num {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 44px; height: 44px; border-radius: 50%;
-    background: linear-gradient(135deg, #00D559, #2D9EFF);
+    width: 62px; height: 62px; border-radius: 50%;
+    background: linear-gradient(135deg, #00E865, #2D9EFF);
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.1rem; font-weight: 800; color: #0B0F19;
-    margin-bottom: 14px;
-    box-shadow: 0 6px 24px rgba(0, 213, 89, 0.25);
+    font-size: 1.5rem; font-weight: 800; color: #0B0F19;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 32px rgba(0, 213, 89, 0.35), 0 0 0 8px rgba(0,213,89,0.06);
 }
-.ag-how-ico { font-size: 2rem; display: block; margin-bottom: 10px; }
+.ag-how-ico { font-size: 2.4rem; display: block; margin-bottom: 12px; }
 .ag-how-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.05rem; font-weight: 700;
+    font-size: 1.25rem; font-weight: 800;
     color: #fff;
-    text-transform: uppercase; letter-spacing: -0.02em;
+    text-transform: uppercase; letter-spacing: -0.03em;
+    text-shadow: 0 0 40px rgba(0,213,89,0.08);
 }
 .ag-how-desc {
-    font-size: 0.72rem; color: rgba(255, 255, 255, 0.4);
-    margin-top: 10px; line-height: 1.65;
+    font-size: 0.76rem; color: rgba(255, 255, 255, 0.55);
+    margin-top: 12px; line-height: 1.7;
 }
 .ag-how-arrow {
     position: absolute; top: 50%; right: -10px;
     transform: translateY(-50%);
-    color: rgba(0, 213, 89, 0.3); font-size: 0.7rem; z-index: 2;
+    color: rgba(0, 213, 89, 0.35); font-size: 0.75rem; z-index: 2;
 }
 
 /* ── Product Preview (CSS mockup) ────────────────────────────── */
@@ -4396,57 +4484,256 @@ def _render_token_reset_form(raw_token: str) -> None:
 
 # Shepherd.js tour steps — reference JSON for the guided tour.
 # In Streamlit this is implemented natively via session-state steps below.
-# When migrating to a JS-heavy frontend, pass SHEPHERD_TOUR_STEPS directly to
-# the Shepherd.Tour constructor.
+# Tour steps keyed by min_tier: which tier is required to see this step.
+# "free" = shown to everyone. "sharp_iq" = Sharp IQ+. etc.
 SHEPHERD_TOUR_STEPS: list[dict] = [
     {
+        "id": "step-welcome",
+        "icon": "👋",
+        "accent": "#00D559",
+        "min_tier": "free",
+        "page": "Home Dashboard",
+        "nav_hint": "",
+        "title": "Welcome to Smart Pick Pro",
+        "text": (
+            "You're now inside an AI-powered NBA prop betting platform. "
+            "Every tool is driven by models trained on thousands of games. "
+            "This tour walks you through exactly what you have access to "
+            "based on your current plan — so you can start picking winners tonight."
+        ),
+    },
+    {
+        "id": "step-home",
+        "icon": "🏠",
+        "accent": "#00D559",
+        "min_tier": "free",
+        "page": "Home Dashboard",
+        "nav_hint": "Smart Pick Pro Home",
+        "title": "Your Home Dashboard",
+        "text": (
+            "The Home Dashboard shows tonight's top AI picks the moment you log in. "
+            "Free members see a preview of the top 5 picks. "
+            "Paid members see the full Quantum Edge Gap rankings and Platform AI Picks "
+            "section — both refreshed automatically every 3 minutes."
+        ),
+    },
+    {
+        "id": "step-live-sweat",
+        "icon": "💦",
+        "accent": "#2D9EFF",
+        "min_tier": "free",
+        "page": "Live Sweat",
+        "nav_hint": "Sidebar → 💦 Live Sweat",
+        "title": "Live Sweat — Watch Picks In Real Time",
+        "text": (
+            "Available to all members. Once games tip off, Live Sweat becomes your "
+            "most important screen. It shows every active pick, the current live stat line, "
+            "and a color-coded HIT / MISS projection updating play by play. "
+            "No need to check the box score — it's all here."
+        ),
+    },
+    {
+        "id": "step-live-games",
+        "icon": "📡",
+        "accent": "#2D9EFF",
+        "min_tier": "free",
+        "page": "Live Games",
+        "nav_hint": "Sidebar → 📡 Live Games",
+        "title": "Live Games — Real-Time Box Scores",
+        "text": (
+            "Available to all members. Live Games pulls real-time NBA box scores "
+            "and stat projections from the official NBA data feed. "
+            "Drill into any player's current pace, historical splits against tonight's "
+            "opponent, and whether the game script is trending toward more or fewer stats."
+        ),
+    },
+    {
         "id": "step-qam",
-        "title": "⚡ Your AI Props Engine",
+        "icon": "⚡",
+        "accent": "#c084fc",
+        "min_tier": "free",
+        "page": "Quantum Analysis Matrix",
+        "nav_hint": "Sidebar → ⚡ Quantum Analysis Matrix",
+        "title": "QAM — The AI Props Engine",
         "text": (
-            "The <strong>Quantum Analysis Matrix</strong> is the core of the platform. "
-            "It scans 300+ props across PrizePicks, DraftKings & Underdog each night "
-            "using 6 neural models. Click <em>Analyze</em> to run it."
+            "The Quantum Analysis Matrix scans props across PrizePicks, DraftKings, "
+            "and Underdog each night using 6 neural models. "
+            "Free members see up to 12 picks. Sharp IQ sees 35. Smart Money and "
+            "Insider Circle see unlimited. Each pick shows a SAFE Score (0–100), "
+            "edge %, direction, and confidence tier."
         ),
-        "attachTo": {"element": "[data-testid='stSidebarNavLink']:nth-child(3)", "on": "right"},
-        "buttons": [
-            {"text": "Skip tour", "action": "tour.cancel", "secondary": True},
-            {"text": "Next (1/3)", "action": "tour.next"},
-        ],
-        "progressBar": True,
     },
     {
-        "id": "step-platform-picks",
-        "title": "🎯 Tonight's Best Bets",
+        "id": "step-prop-scanner",
+        "icon": "🔬",
+        "accent": "#fbbf24",
+        "min_tier": "sharp_iq",
+        "page": "Prop Scanner",
+        "nav_hint": "Sidebar → 🔬 Prop Scanner",
+        "title": "Prop Scanner — Browse Every Line",
         "text": (
-            "The <strong>Platform AI Picks</strong> section shows your top-rated "
-            "picks formatted for PrizePicks & Underdog slates. "
-            "Each card shows the SAFE Score, edge %, and direction — "
-            "everything you need to build tonight's entry."
+            "Sharp IQ+ feature. Browse and filter every prop line available tonight "
+            "across all platforms. Filter by player, team, stat type, or platform. "
+            "Lines that moved significantly since yesterday are highlighted — "
+            "sharp line movement is one of the strongest signals that a prop is soft."
         ),
-        "attachTo": {"element": ".platform-picks-section", "on": "top"},
-        "buttons": [
-            {"text": "Back", "action": "tour.back", "secondary": True},
-            {"text": "Next (2/3)", "action": "tour.next"},
-        ],
-        "progressBar": True,
     },
     {
-        "id": "step-tier",
-        "title": "📈 Unlock Your Full Edge",
+        "id": "step-game-report",
+        "icon": "📋",
+        "accent": "#a78bfa",
+        "min_tier": "sharp_iq",
+        "page": "Game Report",
+        "nav_hint": "Sidebar → 📋 Game Report",
+        "title": "Game Report — Deep Dive Any Matchup",
         "text": (
-            "Your current tier determines how many props you see and which "
-            "analysis sections are accessible. "
-            "Upgrade at any time via <strong>Subscription Level</strong> in the sidebar "
-            "to unlock unlimited props, QEG analysis, and premium filters."
+            "Sharp IQ+ feature. Select any game and get a full AI analysis: "
+            "pace projections, defensive ratings, player usage trends, and the most "
+            "exploitable stat categories for the matchup. "
+            "Use this before building your lineup to validate each pick's context."
         ),
-        "attachTo": {"element": "[data-testid='stSidebarNavLink']:last-child", "on": "right"},
-        "buttons": [
-            {"text": "Back", "action": "tour.back", "secondary": True},
-            {"text": "Done \u2714", "action": "tour.complete"},
-        ],
-        "progressBar": True,
+    },
+    {
+        "id": "step-entry-builder",
+        "icon": "🧬",
+        "accent": "#34d399",
+        "min_tier": "sharp_iq",
+        "page": "Entry Builder",
+        "nav_hint": "Sidebar → 🧬 Entry Builder",
+        "title": "Entry Builder — Build Your Lineup",
+        "text": (
+            "Sharp IQ+ feature. Assemble picks into a formatted PrizePicks or Underdog "
+            "lineup. It automatically checks correlation between legs, warns about "
+            "same-game exposure, and calculates the combined probability of hitting "
+            "your full entry. Aim for legs with SAFE Score above 65 and edge above +3%."
+        ),
+    },
+    {
+        "id": "step-risk-shield",
+        "icon": "🛡️",
+        "accent": "#f87171",
+        "min_tier": "sharp_iq",
+        "page": "Risk Shield",
+        "nav_hint": "Sidebar → 🛡️ Risk Shield",
+        "title": "Risk Shield — Protect Your Bankroll",
+        "text": (
+            "Sharp IQ+ feature. Risk Shield flags picks the AI tagged as high-variance "
+            "based on injury news, pace anomalies, or tough defensive matchups. "
+            "Picks marked AVOID should be dropped from your lineup. "
+            "It also tracks your 7-day exposure so you never over-bet a single slate."
+        ),
+    },
+    {
+        "id": "step-bet-tracker",
+        "icon": "📈",
+        "accent": "#60a5fa",
+        "min_tier": "sharp_iq",
+        "page": "Bet Tracker",
+        "nav_hint": "Sidebar → 📈 Bet Tracker",
+        "title": "Bet Tracker — Measure Your Real Edge",
+        "text": (
+            "Sharp IQ+ feature. Logs every pick and calculates your actual hit rate "
+            "vs the AI's predicted probability. Over time this reveals which stat types "
+            "and confidence tiers are most accurate for you personally. "
+            "The Health tab shows ROI, streaks, and risky bet tracking."
+        ),
+    },
+    {
+        "id": "step-smart-money",
+        "icon": "💰",
+        "accent": "#00D559",
+        "min_tier": "smart_money",
+        "page": "Smart Money Bets",
+        "nav_hint": "Sidebar → 💰 Smart Money Bets",
+        "title": "Smart Money — Follow the Sharp Action",
+        "text": (
+            "Smart Money+ exclusive. This section surfaces props where all AI models "
+            "agree AND the edge is widest — the picks sharp bettors prioritize. "
+            "Each entry shows projected value vs the posted line, a confidence interval, "
+            "and a recommended stake size based on Kelly Criterion."
+        ),
+    },
+    {
+        "id": "step-correlation",
+        "icon": "🗺️",
+        "accent": "#fb923c",
+        "min_tier": "smart_money",
+        "page": "Correlation Matrix",
+        "nav_hint": "Sidebar → 🗺️ Correlation Matrix",
+        "title": "Correlation Matrix — Stack Smarter",
+        "text": (
+            "Smart Money+ exclusive. The Correlation Matrix shows which props move "
+            "together so your lineup legs reinforce each other. "
+            "Green = positive correlation (stack these). Red = negative (avoid pairing). "
+            "Building correlated entries is one of the biggest edges in prop betting."
+        ),
+    },
+    {
+        "id": "step-upgrade",
+        "icon": "🔒",
+        "accent": "#fbbf24",
+        "min_tier": "free",
+        "max_tier": "free",   # Only shown to free-tier users
+        "page": "Unlock More",
+        "nav_hint": "Sidebar → 💎 Subscription Level",
+        "title": "Unlock the Full Platform",
+        "text": (
+            "You're on the free plan — you have Live Sweat, Live Games, and up to "
+            "12 QAM props per night. Sharp IQ ($9.99/mo) adds Prop Scanner, "
+            "Entry Builder, Risk Shield, Bet Tracker, and 35 QAM props. "
+            "Smart Money ($24.99/mo) unlocks Smart Money Bets, Correlation Matrix, "
+            "and unlimited props. Visit Subscription Level in the sidebar to upgrade."
+        ),
+    },
+    {
+        "id": "step-ready",
+        "icon": "🚀",
+        "accent": "#00D559",
+        "min_tier": "free",
+        "page": "You're Ready",
+        "nav_hint": "",
+        "title": "You're Ready to Pick Winners",
+        "text": (
+            "That's your platform. The nightly workflow: "
+            "1) Run QAM to generate picks. "
+            "2) Check Risk Shield to drop risky legs. "
+            "3) Build your lineup in Entry Builder. "
+            "4) Track it live in Live Sweat. "
+            "5) Log results in Bet Tracker. "
+            "Good luck tonight — the AI is already running."
+        ),
     },
 ]
+
+
+def _get_tour_steps_for_tier(tier: str) -> list[dict]:
+    """Return the subset of SHEPHERD_TOUR_STEPS visible to the given tier.
+
+    Tier hierarchy (lowest→highest): free < sharp_iq < smart_money < insider_circle.
+    A step is shown when the user's tier >= step's min_tier.
+    Steps with max_tier are only shown when user's tier <= max_tier.
+    """
+    _ORDER = ["free", "sharp_iq", "smart_money", "insider_circle"]
+    try:
+        user_idx = _ORDER.index(tier)
+    except ValueError:
+        user_idx = 0  # unknown tier → treat as free
+
+    result = []
+    for step in SHEPHERD_TOUR_STEPS:
+        min_t = step.get("min_tier", "free")
+        max_t = step.get("max_tier", "insider_circle")
+        try:
+            min_idx = _ORDER.index(min_t)
+        except ValueError:
+            min_idx = 0
+        try:
+            max_idx = _ORDER.index(max_t)
+        except ValueError:
+            max_idx = len(_ORDER) - 1
+        if min_idx <= user_idx <= max_idx:
+            result.append(step)
+    return result
 
 
 def render_subscription_success_page(plan_name: str = "Smart Pick Pro") -> bool:
@@ -4799,19 +5086,32 @@ header[data-testid="stHeader"],
 
 
 def render_onboarding_tour() -> None:
-    """Render the 3-step guided tour as a sleek floating bottom-right card.
+    """Render the guided onboarding tour as a sleek floating card.
 
+    Filters steps based on the current user's tier so free users only see
+    features they can access, and paid users see their unlocked tools.
     Persists via ``_show_onboarding_tour`` + ``_tour_step`` session state.
-    Includes logo, dot progress indicator, Skip, Back, Next, and Done.
     """
     import streamlit as st
 
     if not st.session_state.get("_show_onboarding_tour"):
         return
 
-    step = int(st.session_state.get("_tour_step", 0))
-    total = len(SHEPHERD_TOUR_STEPS)
+    # Resolve current tier (safe import, fail to free)
+    try:
+        from utils.auth import get_user_tier as _gut
+        _current_tier = _gut()
+    except Exception:
+        _current_tier = "free"
 
+    steps = _get_tour_steps_for_tier(_current_tier)
+    total = len(steps)
+    if not total:
+        st.session_state.pop("_show_onboarding_tour", None)
+        st.session_state.pop("_tour_step", None)
+        return
+
+    step = int(st.session_state.get("_tour_step", 0))
     if step >= total:
         st.session_state.pop("_show_onboarding_tour", None)
         st.session_state.pop("_tour_step", None)
@@ -4828,21 +5128,51 @@ def render_onboarding_tour() -> None:
         '-webkit-background-clip:text;-webkit-text-fill-color:transparent;">⚡ Smart Pick Pro</span>'
     )
 
-    step_data = SHEPHERD_TOUR_STEPS[step]
-    import re as _re_tour
-    plain_text = _re_tour.sub(r"<[^>]+>", "", step_data["text"])
+    step_data = steps[step]
+    accent = step_data.get("accent", "#00D559")
+    step_icon = step_data.get("icon", "✦")
+    nav_hint = step_data.get("nav_hint", "")
+    page_label = step_data.get("page", "")
+    min_tier = step_data.get("min_tier", "free")
+
+    # Tier badge label for locked steps shown to lower tiers (shouldn't happen
+    # after filtering, but kept as safety display)
+    _tier_labels = {
+        "free": "Free",
+        "sharp_iq": "Sharp IQ+",
+        "smart_money": "Smart Money+",
+        "insider_circle": "Insider Circle",
+    }
 
     # Step dot indicators
     dots = "".join(
         f'<div style="width:{10 if i == step else 6}px;height:6px;border-radius:3px;'
-        f'background:{"#00D559" if i == step else "rgba(255,255,255,.15)"};'
-        f'transition:all .3s;"></div>'
+        f'background:{"" + accent if i == step else "rgba(255,255,255,.15)"};'
+        f'transition:all .3s;margin:0 2px;"></div>'
         for i in range(total)
     )
 
-    # Step icon per step
-    step_icons = ["⚡", "🎯", "📈"]
-    step_icon = step_icons[step] if step < len(step_icons) else "✦"
+    # Nav hint chip
+    nav_chip = (
+        f'<div style="display:inline-flex;align-items:center;gap:6px;'
+        f'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);'
+        f'border-radius:8px;padding:4px 10px;margin-bottom:10px;">'
+        f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.5rem;'
+        f'color:rgba(255,255,255,.4);letter-spacing:.06em;">'
+        f'📍 {nav_hint}</span></div>'
+        if nav_hint else ""
+    )
+
+    # Min-tier badge (shown so users know which plan unlocks this feature)
+    tier_chip = (
+        f'<div style="display:inline-flex;align-items:center;gap:5px;'
+        f'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);'
+        f'border-radius:6px;padding:3px 9px;margin-left:8px;">'
+        f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.44rem;'
+        f'font-weight:700;color:{accent};letter-spacing:.08em;">'
+        f'{_tier_labels.get(min_tier, min_tier).upper()}</span></div>'
+        if min_tier != "free" else ""
+    )
 
     st.markdown(f"""
 <style>
@@ -4852,68 +5182,65 @@ def render_onboarding_tour() -> None:
     to   {{ opacity:1; transform:translateY(0)    scale(1);   }}
 }}
 @keyframes sppTourIconPulse {{
-    0%,100% {{ box-shadow:0 0 0 0 rgba(0,213,89,.4); }}
-    50%      {{ box-shadow:0 0 0 8px rgba(0,213,89,0); }}
+    0%,100% {{ box-shadow:0 0 0 0 {accent}66; }}
+    50%      {{ box-shadow:0 0 0 8px {accent}00; }}
 }}
 .spp-tour-wrap {{
     background:linear-gradient(145deg,rgba(8,13,26,.98),rgba(12,18,38,.98));
-    border:1px solid rgba(0,213,89,.22);
+    border:1px solid {accent}38;
     border-radius:20px;overflow:hidden;
-    box-shadow:0 24px 64px rgba(0,0,0,.7),0 0 40px rgba(0,213,89,.07),
-               0 0 0 1px rgba(0,213,89,.05) inset;
+    box-shadow:0 24px 64px rgba(0,0,0,.7),0 0 40px {accent}12,
+               0 0 0 1px {accent}08 inset;
     animation:sppTourIn .3s cubic-bezier(.22,1,.36,1) both;
-    max-width:480px;margin:0 auto 8px;
+    max-width:500px;margin:0 auto 8px;
 }}
 .spp-tour-top-bar {{
     height:2px;
-    background:linear-gradient(90deg,#00D559,#2D9EFF,#c084fc);
+    background:linear-gradient(90deg,{accent},#2D9EFF,#c084fc,{accent});
+    background-size:300% 100%;animation:sppBarShift 4s linear infinite;
 }}
+@keyframes sppBarShift {{ 0%{{background-position:0% 0%}} 100%{{background-position:300% 0%}} }}
 .spp-tour-header {{
     display:flex;align-items:center;justify-content:space-between;
     padding:14px 18px 10px;
     border-bottom:1px solid rgba(255,255,255,.05);
 }}
-.spp-tour-logo-area {{
-    display:flex;align-items:center;gap:8px;
-}}
 .spp-tour-step-label {{
     font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:700;
-    color:rgba(0,213,89,.6);text-transform:uppercase;letter-spacing:.12em;
+    color:{accent}99;text-transform:uppercase;letter-spacing:.12em;
 }}
-.spp-tour-body-area {{
-    padding:16px 20px;
-}}
+.spp-tour-body-area {{ padding:16px 20px; }}
 .spp-tour-icon {{
-    width:42px;height:42px;border-radius:12px;margin-bottom:10px;
-    background:rgba(0,213,89,.08);border:1px solid rgba(0,213,89,.15);
+    width:44px;height:44px;border-radius:12px;margin-bottom:10px;
+    background:{accent}14;border:1px solid {accent}28;
     display:flex;align-items:center;justify-content:center;
-    font-size:1.2rem;animation:sppTourIconPulse 2.5s ease-in-out infinite;
+    font-size:1.3rem;animation:sppTourIconPulse 2.5s ease-in-out infinite;
 }}
 .spp-tour-title {{
     font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:800;
     color:#fff;margin:0 0 6px;line-height:1.2;
+    display:flex;align-items:center;flex-wrap:wrap;gap:4px;
 }}
 .spp-tour-desc {{
     font-family:'Space Grotesk',sans-serif;font-size:.78rem;font-weight:500;
-    color:rgba(255,255,255,.52);line-height:1.65;margin:0 0 16px;
+    color:rgba(255,255,255,.52);line-height:1.65;margin:0 0 14px;
 }}
 .spp-tour-dots {{
-    display:flex;gap:5px;align-items:center;margin-bottom:4px;
+    display:flex;align-items:center;margin-bottom:2px;
 }}
 </style>
 
 <div class="spp-tour-wrap">
   <div class="spp-tour-top-bar"></div>
   <div class="spp-tour-header">
-    <div class="spp-tour-logo-area">
-      {logo_tag}
-    </div>
-    <div class="spp-tour-step-label">Step {step + 1} of {total}</div>
+    <div>{logo_tag}</div>
+    <div class="spp-tour-step-label">{page_label} &nbsp;·&nbsp; {step + 1}/{total}</div>
   </div>
   <div class="spp-tour-body-area">
     <div class="spp-tour-icon">{step_icon}</div>
-    <div class="spp-tour-title">{step_data["title"]}</div>
-    <div class="spp-tour-desc">{plain_text}</div>
+    {nav_chip}
+    <div class="spp-tour-title">{step_data["title"]}{tier_chip}</div>
+    <div class="spp-tour-desc">{step_data["text"]}</div>
     <div class="spp-tour-dots">{dots}</div>
   </div>
 </div>
@@ -4932,7 +5259,7 @@ def render_onboarding_tour() -> None:
                 st.rerun()
     with btn_cols[4]:
         if step < total - 1:
-            if st.button(f"Next →", key=f"_tour_next_{step}", type="primary"):
+            if st.button("Next →", key=f"_tour_next_{step}", type="primary"):
                 st.session_state["_tour_step"] = step + 1
                 st.rerun()
         else:
@@ -5133,16 +5460,17 @@ def require_login() -> bool:
       <div class="ag-hero-ai-badge"><span class="ai-dot"></span> NEURAL ENGINE v6.0 &mdash; 6 AI MODELS ACTIVE</div>
       <h1>The House<br><span class="line2">Has a Problem.</span><br><span class="em">It&rsquo;s Us.</span></h1>
       <div class="ag-hero-sub">
-        <strong>6 neural networks. 300+ props. Every single night.</strong><br>
-        The only AI platform that fuses machine learning, ensemble modeling &amp;
-        real-time edge detection into a single confidence score
-        across PrizePicks, DraftKings &amp; Underdog.
+        <strong>The NBA prop machine the Twitter gurus don&rsquo;t want you to know about.</strong><br>
+        Every night, 6 AI models scan 300+ props across PrizePicks, DraftKings &amp; Underdog
+        and score each one with a proprietary <strong>SAFE Score&trade;</strong> &mdash; a 0&ndash;100
+        confidence rating powered by Monte Carlo simulation, ensemble modeling &amp; real-time edge
+        detection. Stop playing blind. Start playing with a verifiable edge.
       </div>
       <div class="ag-hero-badges">
         <span class="ag-hero-badge primary"><span class="badge-ico">&#x26A1;</span> Free Forever</span>
-        <span class="ag-hero-badge"><span class="badge-ico">&#x1F9E0;</span> 6 Neural Nets</span>
-        <span class="ag-hero-badge"><span class="badge-ico">&#x1F4CA;</span> Real-Time Edge</span>
-        <span class="ag-hero-badge"><span class="badge-ico">&#x1F3AF;</span> Instant Access</span>
+        <span class="ag-hero-badge"><span class="badge-ico">&#x1F3AF;</span> 62.4% Hit Rate</span>
+        <span class="ag-hero-badge"><span class="badge-ico">&#x1F4CA;</span> SAFE Score&trade; System</span>
+        <span class="ag-hero-badge"><span class="badge-ico">&#x1F3C0;</span> NBA Specialists</span>
       </div>
       <div class="ag-hero-cta">
         <a class="ag-hero-cta-primary" href="?auth=signup">&#x26A1; Create Free Account &mdash; It&rsquo;s Free</a>
@@ -5155,9 +5483,9 @@ def require_login() -> bool:
     <div class="ag-proof-strip">
       <div class="ag-proof-inner">
         <div class="ag-proof-stat">
-          <div class="ag-proof-big">62%</div>
+          <div class="ag-proof-big">62.4%</div>
           <div class="ag-proof-label">Hit Rate</div>
-          <div class="ag-proof-sub">8,400+ graded picks</div>
+          <div class="ag-proof-sub">8,400+ verified picks</div>
         </div>
         <div class="ag-proof-stat">
           <div class="ag-proof-big">300+</div>
@@ -5165,13 +5493,13 @@ def require_login() -> bool:
           <div class="ag-proof-sub">3 platforms scanned</div>
         </div>
         <div class="ag-proof-stat">
-          <div class="ag-proof-big">+18%</div>
+          <div class="ag-proof-big">+18.3%</div>
           <div class="ag-proof-label">Avg ROI</div>
           <div class="ag-proof-sub">Rolling 30-day window</div>
         </div>
         <div class="ag-proof-stat">
           <div class="ag-proof-big">$0</div>
-          <div class="ag-proof-label">Price</div>
+          <div class="ag-proof-label">Forever</div>
           <div class="ag-proof-sub">Others charge $99&ndash;$299/mo</div>
         </div>
       </div>
@@ -5191,9 +5519,9 @@ def require_login() -> bool:
     color:#080C18;background:linear-gradient(135deg,#00D559,#2D9EFF);padding:3px 14px;border-radius:100px;
     letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">&#x26A1; Live Tonight</div>
   <h2 style="font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:800;color:#fff;margin:0 0 6px;">
-    Free Picks Today</h2>
+    Tonight&rsquo;s AI Picks &mdash; Free</h2>
   <p style="font-size:0.78rem;color:rgba(255,255,255,0.35);margin:0 0 4px;">
-    Top 5 AI picks from tonight&rsquo;s Quantum Analysis Matrix &mdash; updated every game night</p>
+    The top 5 highest-confidence props from tonight&rsquo;s Quantum Analysis Matrix. No paywall. Updated nightly.</p>
 </div>""", unsafe_allow_html=True)
     _render_free_picks_fragment()
 
@@ -5502,57 +5830,95 @@ a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
 
     # ── Platform logos strip ──
     st.markdown("""
-    <div style="text-align:center;padding:28px 0 12px;opacity:0.85">
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:0.65rem;font-weight:600;
-           color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:0.12em;
-           margin-bottom:14px">Works&nbsp;with&nbsp;your&nbsp;platform</div>
-      <div style="display:flex;justify-content:center;align-items:center;gap:32px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:8px;padding:10px 22px;
-             background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
-             border-radius:12px;transition:all 0.3s">
-          <span style="font-size:1.25rem">&#x1F3AF;</span>
-          <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.85rem;
-                color:rgba(255,255,255,0.7)">PrizePicks</span>
+    <div style="text-align:center;padding:36px 0 20px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:0.52rem;font-weight:800;
+           color:rgba(255,255,255,0.18);text-transform:uppercase;letter-spacing:0.16em;
+           margin-bottom:20px">Works&nbsp;with&nbsp;your&nbsp;platform</div>
+      <div style="display:flex;justify-content:center;align-items:stretch;gap:16px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;
+             padding:18px 28px;
+             background:linear-gradient(168deg,rgba(8,14,28,0.97),rgba(5,9,16,0.99));
+             border:1px solid rgba(45,158,255,0.18);border-radius:18px;
+             box-shadow:0 0 40px rgba(45,158,255,0.08);transition:all 0.3s">
+          <span style="font-size:1.8rem;filter:drop-shadow(0 0 12px rgba(45,158,255,0.3))">&#x1F3AF;</span>
+          <span style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:0.9rem;
+                color:#fff;letter-spacing:-0.01em">PrizePicks</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:0.48rem;font-weight:700;
+                color:rgba(45,158,255,0.6);letter-spacing:0.08em">DAILY FANTASY</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:10px 22px;
-             background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
-             border-radius:12px;transition:all 0.3s">
-          <span style="font-size:1.25rem">&#x1F43E;</span>
-          <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.85rem;
-                color:rgba(255,255,255,0.7)">Underdog</span>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;
+             padding:18px 28px;
+             background:linear-gradient(168deg,rgba(8,14,28,0.97),rgba(5,9,16,0.99));
+             border:1px solid rgba(249,198,43,0.18);border-radius:18px;
+             box-shadow:0 0 40px rgba(249,198,43,0.06);transition:all 0.3s">
+          <span style="font-size:1.8rem;filter:drop-shadow(0 0 12px rgba(249,198,43,0.3))">&#x1F43E;</span>
+          <span style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:0.9rem;
+                color:#fff;letter-spacing:-0.01em">Underdog</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:0.48rem;font-weight:700;
+                color:rgba(249,198,43,0.6);letter-spacing:0.08em">PICK &apos;EM</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:10px 22px;
-             background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
-             border-radius:12px;transition:all 0.3s">
-          <span style="font-size:1.25rem">&#x1F451;</span>
-          <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.85rem;
-                color:rgba(255,255,255,0.7)">DK&nbsp;Pick6</span>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;
+             padding:18px 28px;
+             background:linear-gradient(168deg,rgba(8,14,28,0.97),rgba(5,9,16,0.99));
+             border:1px solid rgba(0,213,89,0.18);border-radius:18px;
+             box-shadow:0 0 40px rgba(0,213,89,0.06);transition:all 0.3s">
+          <span style="font-size:1.8rem;filter:drop-shadow(0 0 12px rgba(0,213,89,0.3))">&#x1F451;</span>
+          <span style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:0.9rem;
+                color:#fff;letter-spacing:-0.01em">DK&nbsp;Pick6</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:0.48rem;font-weight:700;
+                color:rgba(0,213,89,0.6);letter-spacing:0.08em">DAILY FANTASY</span>
         </div>
       </div>
-      <div style="font-family:'Inter',sans-serif;font-size:0.6rem;color:rgba(255,255,255,0.15);
-           margin-top:10px">+ manual entry for any sportsbook</div>
+      <div style="font-family:'Inter',sans-serif;font-size:0.58rem;color:rgba(255,255,255,0.12);
+           margin-top:14px;letter-spacing:0.02em">&#x2795; manual entry for any sportsbook or platform</div>
     </div>
     """, unsafe_allow_html=True)
 
     # ── Social proof ticker ──
     st.markdown("""
-    <div style="text-align:center;padding:4px 0 24px">
-      <div style="display:inline-flex;align-items:center;gap:8px;
-           padding:8px 20px;border-radius:100px;
-           background:rgba(0,213,89,0.06);border:1px solid rgba(0,213,89,0.12)">
-        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;
-              background:#00D559;animation:spPulse 2s ease-in-out infinite"></span>
-        <span style="font-family:'Space Grotesk',sans-serif;font-size:0.72rem;font-weight:600;
-              color:rgba(255,255,255,0.6)">
-          <strong style="color:#00D559">2,400+</strong>&nbsp;sharps signed up&nbsp;&nbsp;&middot;&nbsp;&nbsp;
-          <strong style="color:rgba(255,255,255,0.8)">8,400+</strong>&nbsp;picks graded&nbsp;&nbsp;&middot;&nbsp;&nbsp;
-          <strong style="color:#2D9EFF">62.4%</strong>&nbsp;verified hit rate
-        </span>
-      </div>
-    </div>
     <style>
     @keyframes spPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+    @keyframes spCount{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .sp-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+      background:rgba(0,213,89,0.06);border:1px solid rgba(0,213,89,0.1);
+      border-radius:20px;overflow:hidden;margin:4px 0 28px;
+      animation:spCount 0.6s 0.2s cubic-bezier(0.22,1,0.36,1) both}
+    .sp-stat{text-align:center;padding:18px 12px;
+      background:linear-gradient(168deg,rgba(8,14,28,0.97),rgba(5,9,16,0.99));
+      position:relative}
+    .sp-stat:not(:last-child)::after{content:'';position:absolute;right:0;top:20%;bottom:20%;
+      width:1px;background:rgba(255,255,255,0.04)}
+    .sp-val{font-family:'Space Grotesk',sans-serif;font-size:1.6rem;font-weight:800;
+      line-height:1;margin-bottom:4px}
+    .sp-val.g{color:#00D559;text-shadow:0 0 24px rgba(0,213,89,0.25)}
+    .sp-val.b{color:#2D9EFF;text-shadow:0 0 24px rgba(45,158,255,0.25)}
+    .sp-val.y{color:#F9C62B;text-shadow:0 0 24px rgba(249,198,43,0.25)}
+    .sp-val.w{color:#fff;text-shadow:0 0 24px rgba(255,255,255,0.1)}
+    .sp-lbl{font-family:'JetBrains Mono',monospace;font-size:0.5rem;font-weight:700;
+      color:rgba(255,255,255,0.28);text-transform:uppercase;letter-spacing:0.1em}
+    @media(max-width:520px){
+      .sp-strip{grid-template-columns:repeat(2,1fr)}
+      .sp-val{font-size:1.25rem}
+    }
     </style>
+    <div class="sp-strip">
+      <div class="sp-stat">
+        <div class="sp-val g">2,400+</div>
+        <div class="sp-lbl">Sharps Inside</div>
+      </div>
+      <div class="sp-stat">
+        <div class="sp-val b">8,400+</div>
+        <div class="sp-lbl">Picks Graded</div>
+      </div>
+      <div class="sp-stat">
+        <div class="sp-val y">62.4%</div>
+        <div class="sp-lbl">Verified Hit Rate</div>
+      </div>
+      <div class="sp-stat">
+        <div class="sp-val w">$0</div>
+        <div class="sp-lbl">Free Forever</div>
+      </div>
+    </div>
     """, unsafe_allow_html=True)
 
     # ── Section anchor: How It Works ──
@@ -5564,29 +5930,29 @@ a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
     <div class="ag-section">
     <div class="ag-how">
       <div class="ag-section-head">
-        <h3>Start Winning<br>in <span class="em">3 Steps</span></h3>
-        <p>From signup to payout in under 60 seconds</p>
+        <h3>From Zero to <span class="em">Edge</span> in 3 Steps</h3>
+        <p>Signup takes 30 seconds. Your first AI-rated picks are ready immediately.</p>
       </div>
       <div class="ag-how-steps">
         <div class="ag-how-step">
           <span class="ag-how-num">1</span>
           <span class="ag-how-ico">&#x1F4DD;</span>
-          <div class="ag-how-title">Create Free Account</div>
-          <div class="ag-how-desc">No credit card. No trial. Just your email. You get instant access to the full Quantum Analysis Matrix, SAFE Scores, and all 6 AI models.</div>
+          <div class="ag-how-title">Create Your Free Account</div>
+          <div class="ag-how-desc">Email and password &mdash; done. No credit card. No 7-day trial that expires. You get full, permanent access to the Quantum Analysis Matrix, all 6 AI models, and every SAFE Score.</div>
           <span class="ag-how-arrow">&#x25B6;</span>
         </div>
         <div class="ag-how-step">
           <span class="ag-how-num">2</span>
           <span class="ag-how-ico">&#x1F3AF;</span>
-          <div class="ag-how-title">Pick AI-Rated Props</div>
-          <div class="ag-how-desc">Every prop gets a 0&ndash;100 SAFE Score, edge percentage, probability, and projection. Sort by confidence and play only the highest-rated picks.</div>
+          <div class="ag-how-title">Pick High-Confidence Props</div>
+          <div class="ag-how-desc">Every prop gets a 0&ndash;100 SAFE Score&trade;, edge %, win probability, and AI projection. Sort by confidence &mdash; play 70+ and skip the rest. The math does the work.</div>
           <span class="ag-how-arrow">&#x25B6;</span>
         </div>
         <div class="ag-how-step">
           <span class="ag-how-num">3</span>
           <span class="ag-how-ico">&#x1F4B0;</span>
-          <div class="ag-how-title">Get Paid</div>
-          <div class="ag-how-desc">62% hit rate across 8,400+ graded picks. Track your results in the built-in Bet Tracker with ROI, bankroll growth, and CLV capture.</div>
+          <div class="ag-how-title">Win More. Track Everything.</div>
+          <div class="ag-how-desc">62.4% hit rate across 8,400+ graded picks. The built-in Bet Tracker auto-grades your results, tracks bankroll growth, ROI by platform, and shows exactly which SAFE Score ranges are printing for you.</div>
         </div>
       </div>
     </div>
@@ -5853,64 +6219,279 @@ html,body{background:transparent;overflow-y:hidden}
 
     <div class="ag-divider"></div>
 
-    <!-- App Preview Mockup -->
-    <div class="ag-app-preview" data-section-id="app-preview">
-      <div class="ag-section-head">
-        <h3>See It In <span class="em">Action</span></h3>
-        <p>A real look inside the Quantum Analysis Matrix dashboard</p>
+    <!-- ══ TOOL SHOWCASE v2: GAME REPORT + PLAYER SIMULATOR ══ -->
+    <style>
+    /* ── SECTION WRAPPER ── */
+    .ag-ts-wrap{position:relative;padding:80px 0 20px;overflow:hidden}
+    .ag-ts-bg-dots{position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.03) 1px,transparent 1px);background-size:30px 30px;pointer-events:none;-webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,#000 30%,transparent 100%);mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,#000 30%,transparent 100%)}
+    .ag-ts-orb-l{position:absolute;top:0;left:-20%;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(0,213,89,.11) 0%,transparent 60%);filter:blur(24px);pointer-events:none}
+    .ag-ts-orb-r{position:absolute;bottom:5%;right:-18%;width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(249,198,43,.09) 0%,transparent 60%);filter:blur(24px);pointer-events:none}
+    /* ── INTRO ── */
+    .ag-ts-intro{text-align:center;padding:0 0 68px;position:relative;z-index:1}
+    .ag-ts-eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#00D559;background:rgba(0,213,89,.07);border:1px solid rgba(0,213,89,.2);padding:6px 18px;border-radius:100px;margin-bottom:24px}
+    .ag-ts-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:#00D559;box-shadow:0 0 10px #00D559;animation:agLivePulse 2s ease-in-out infinite;flex-shrink:0}
+    .ag-ts-h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(2rem,4.2vw,3.5rem);font-weight:900;letter-spacing:-.055em;line-height:1.06;color:#fff;margin-bottom:18px}
+    .ag-ts-h1 .g{background:linear-gradient(90deg,#00D559,#00FF85);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .ag-ts-sub{font-family:'Inter',sans-serif;font-size:.92rem;color:rgba(255,255,255,.35);max-width:520px;margin:0 auto 46px;line-height:1.78}
+    .ag-ts-kpis{display:flex;justify-content:center;gap:0;flex-wrap:wrap;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);border-radius:22px;overflow:hidden;width:fit-content;margin:0 auto;backdrop-filter:blur(8px)}
+    .ag-ts-kpi{padding:18px 38px;text-align:center;border-right:1px solid rgba(255,255,255,.06)}
+    .ag-ts-kpi:last-child{border-right:none}
+    .ag-ts-kpi-n{font-family:'Space Grotesk',sans-serif;font-size:1.7rem;font-weight:900;letter-spacing:-.04em;color:#fff;line-height:1;margin-bottom:5px}
+    .ag-ts-kpi-n em{font-style:normal;background:linear-gradient(90deg,#00D559,#00FF85);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .ag-ts-kpi-l{font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:700;color:rgba(255,255,255,.22);text-transform:uppercase;letter-spacing:.09em}
+    @media(max-width:620px){.ag-ts-kpi{padding:14px 20px}.ag-ts-kpi-n{font-size:1.3rem}}
+    /* ── TOOL ROWS ── */
+    .ag-ts-row{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;margin-bottom:110px;position:relative;z-index:1}
+    .ag-ts-row.rev{direction:rtl}
+    .ag-ts-row.rev>*{direction:ltr}
+    @media(max-width:880px){.ag-ts-row,.ag-ts-row.rev{grid-template-columns:1fr;direction:ltr;gap:36px;margin-bottom:60px}}
+    /* ── COPY PANEL ── */
+    .ag-ts-tag{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tc,#00D559);background:color-mix(in srgb,var(--tc,#00D559) 8%,transparent);border:1px solid color-mix(in srgb,var(--tc,#00D559) 22%,transparent);padding:5px 15px;border-radius:100px;margin-bottom:22px;width:fit-content}
+    .ag-ts-tag-dot{width:6px;height:6px;border-radius:50%;background:var(--tc,#00D559);box-shadow:0 0 8px var(--tc,#00D559)}
+    .ag-ts-copy-h{font-family:'Space Grotesk',sans-serif;font-size:clamp(1.8rem,2.9vw,2.7rem);font-weight:900;letter-spacing:-.055em;line-height:1.08;color:#fff;margin-bottom:16px}
+    .ag-ts-copy-h .em{background:linear-gradient(90deg,var(--tc,#00D559),var(--tc2,#00FF85));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .ag-ts-copy-p{font-family:'Inter',sans-serif;font-size:.88rem;color:rgba(255,255,255,.38);line-height:1.82;margin-bottom:30px}
+    .ag-ts-list{list-style:none;padding:0;margin:0 0 34px;display:flex;flex-direction:column}
+    .ag-ts-li{display:flex;align-items:flex-start;gap:14px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.04);font-family:'Inter',sans-serif;font-size:.84rem;color:rgba(255,255,255,.45);line-height:1.6}
+    .ag-ts-li:first-child{padding-top:0}
+    .ag-ts-li:last-child{border-bottom:none;padding-bottom:0}
+    .ag-ts-li b{color:rgba(255,255,255,.92);font-weight:700}
+    .ag-ts-li-num{min-width:24px;height:24px;border-radius:7px;background:color-mix(in srgb,var(--tc,#00D559) 12%,transparent);border:1px solid color-mix(in srgb,var(--tc,#00D559) 26%,transparent);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:900;color:var(--tc,#00D559);flex-shrink:0;margin-top:1px}
+    .ag-ts-btn{display:inline-flex;align-items:center;gap:10px;font-family:'Space Grotesk',sans-serif;font-size:.86rem;font-weight:800;letter-spacing:-.02em;color:var(--tc,#00D559);background:color-mix(in srgb,var(--tc,#00D559) 9%,transparent);border:1.5px solid color-mix(in srgb,var(--tc,#00D559) 28%,transparent);padding:13px 26px;border-radius:100px;text-decoration:none;transition:all .3s cubic-bezier(.16,1,.3,1);width:fit-content}
+    .ag-ts-btn:hover{background:color-mix(in srgb,var(--tc,#00D559) 16%,transparent);border-color:color-mix(in srgb,var(--tc,#00D559) 55%,transparent);gap:16px;box-shadow:0 0 32px color-mix(in srgb,var(--tc,#00D559) 24%,transparent),0 10px 28px rgba(0,0,0,.3)}
+    /* ── MOCKUP PANEL ── */
+    .ag-ts-mk-wrap{position:relative}
+    .ag-ts-mk-orb{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:88%;height:88%;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--tc,#00D559) 18%,transparent) 0%,transparent 65%);filter:blur(55px);pointer-events:none;z-index:0}
+    .ag-ts-mk{position:relative;z-index:1;background:linear-gradient(155deg,rgba(255,255,255,.048) 0%,rgba(255,255,255,.016) 100%);border:1px solid rgba(255,255,255,.1);border-radius:24px;overflow:hidden;box-shadow:0 36px 90px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.05);transform:perspective(1100px) rotateY(-5deg) rotateX(2deg);transition:transform .6s cubic-bezier(.16,1,.3,1),box-shadow .6s}
+    .ag-ts-row.rev .ag-ts-mk{transform:perspective(1100px) rotateY(5deg) rotateX(2deg)}
+    .ag-ts-mk:hover,.ag-ts-row.rev .ag-ts-mk:hover{transform:perspective(1100px) rotateY(0deg) rotateX(0deg) translateY(-10px) scale(1.018);box-shadow:0 50px 110px rgba(0,0,0,.7),0 0 70px color-mix(in srgb,var(--tc,#00D559) 16%,transparent),0 0 0 1px color-mix(in srgb,var(--tc,#00D559) 22%,transparent)}
+    .ag-ts-mk::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 0%,var(--tc,#00D559) 30%,var(--tc2,#00FF85) 70%,transparent 100%);z-index:3}
+    .ag-mk-chrome{display:flex;align-items:center;gap:8px;padding:13px 18px;background:rgba(0,0,0,.28);border-bottom:1px solid rgba(255,255,255,.07);backdrop-filter:blur(10px)}
+    .ag-mk-dots{display:flex;gap:5px}
+    .ag-mk-dots span{width:9px;height:9px;border-radius:50%}
+    .ag-mk-dots span:nth-child(1){background:rgba(242,67,54,.7)}
+    .ag-mk-dots span:nth-child(2){background:rgba(249,198,43,.7)}
+    .ag-mk-dots span:nth-child(3){background:rgba(0,213,89,.7)}
+    .ag-mk-url-bar{flex:1;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:600;color:rgba(255,255,255,.22);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:4px 14px;text-align:center;letter-spacing:.02em}
+    .ag-mk-body{padding:22px}
+    /* ── GAME REPORT MOCK STYLES ── */
+    @keyframes tsBarGrow{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}
+    .gr2-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .gr2-title{font-family:'Space Grotesk',sans-serif;font-size:.84rem;font-weight:900;color:#fff;letter-spacing:-.02em}
+    .gr2-live{display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:.45rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#00D559;background:rgba(0,213,89,.1);border:1px solid rgba(0,213,89,.24);padding:3px 11px;border-radius:100px}
+    .gr2-live::before{content:'';width:5px;height:5px;border-radius:50%;background:#00D559;box-shadow:0 0 8px #00D559;animation:agLivePulse 1.6s ease-in-out infinite;flex-shrink:0}
+    .gr2-game{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px 20px;margin-bottom:15px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
+    .gr2-game::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,213,89,.04) 0%,transparent 45%,transparent 55%,rgba(45,158,255,.04) 100%);pointer-events:none}
+    .gr2-team{display:flex;flex-direction:column;align-items:center;gap:5px}
+    .gr2-abbr{font-family:'Space Grotesk',sans-serif;font-size:1.45rem;font-weight:900;letter-spacing:-.04em;line-height:1}
+    .gr2-rec{font-family:'JetBrains Mono',monospace;font-size:.42rem;font-weight:600;color:rgba(255,255,255,.2);letter-spacing:.04em}
+    .gr2-mid{text-align:center;flex:1}
+    .gr2-vs{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:800;color:rgba(255,255,255,.14);letter-spacing:.12em}
+    .gr2-spread{font-family:'Space Grotesk',sans-serif;font-size:.7rem;font-weight:700;color:rgba(255,255,255,.5);margin:3px 0}
+    .gr2-ou{font-family:'JetBrains Mono',monospace;font-size:.43rem;color:rgba(255,255,255,.2)}
+    .gr2-pills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:15px}
+    .gr2-pill{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 10px;border-radius:6px;color:rgba(255,255,255,.28);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
+    .gr2-pill.g{color:#00D559;background:rgba(0,213,89,.08);border-color:rgba(0,213,89,.2)}
+    .gr2-pill.b{color:#2D9EFF;background:rgba(45,158,255,.08);border-color:rgba(45,158,255,.2)}
+    .gr2-pill.p{color:#c084fc;background:rgba(192,132,252,.08);border-color:rgba(192,132,252,.2)}
+    .gr2-sec-lbl{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.18);margin-bottom:10px}
+    .gr2-bars{display:flex;flex-direction:column;gap:10px}
+    .gr2-brow{display:flex;align-items:center;gap:10px}
+    .gr2-blbl{font-family:'Inter',sans-serif;font-size:.58rem;font-weight:600;color:rgba(255,255,255,.28);width:80px;flex-shrink:0;text-align:right}
+    .gr2-btrack{flex:1;height:7px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden}
+    .gr2-bfill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--bc1),var(--bc2));box-shadow:0 0 10px var(--bglow);width:var(--w,50%);animation:tsBarGrow .9s cubic-bezier(.34,1.56,.64,1) forwards}
+    .gr2-bval{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:900;color:var(--bc1);width:36px;text-align:right;flex-shrink:0}
+    .gr2-alert{margin-top:16px;background:rgba(0,213,89,.06);border:1px solid rgba(0,213,89,.2);border-radius:12px;padding:10px 14px;display:flex;align-items:flex-start;gap:10px}
+    .gr2-alert-ico{font-size:.9rem;flex-shrink:0;margin-top:1px}
+    .gr2-alert-txt{font-family:'Inter',sans-serif;font-size:.62rem;font-weight:600;color:rgba(255,255,255,.48);line-height:1.55}
+    .gr2-alert-txt b{color:#00D559;font-weight:700}
+    /* ── PLAYER SIM MOCK STYLES ── */
+    .ps2-hd{display:flex;align-items:center;gap:14px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px;margin-bottom:14px;position:relative;overflow:hidden}
+    .ps2-hd::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(249,198,43,.06) 0%,transparent 55%);pointer-events:none}
+    .ps2-av{width:42px;height:42px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:.74rem;font-weight:900;color:#020C07;background:linear-gradient(135deg,#F9C62B,#FFE066);box-shadow:0 0 20px rgba(249,198,43,.55)}
+    .ps2-info{flex:1;min-width:0}
+    .ps2-name{font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:900;color:#fff;letter-spacing:-.02em;margin-bottom:2px}
+    .ps2-meta{font-family:'JetBrains Mono',monospace;font-size:.45rem;font-weight:600;color:rgba(255,255,255,.22);letter-spacing:.05em;text-transform:uppercase}
+    .ps2-dh{display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#F9C62B;background:rgba(249,198,43,.1);border:1px solid rgba(249,198,43,.3);padding:3px 10px;border-radius:100px;flex-shrink:0}
+    .ps2-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}
+    .ps2-stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:11px 6px;text-align:center}
+    .ps2-stat.hi{border-color:rgba(249,198,43,.35);background:rgba(249,198,43,.07);box-shadow:0 0 18px rgba(249,198,43,.12)}
+    .ps2-sv{font-family:'Space Grotesk',sans-serif;font-size:1.0rem;font-weight:900;color:#fff;letter-spacing:-.03em;line-height:1;margin-bottom:3px}
+    .ps2-stat.hi .ps2-sv{color:#F9C62B;text-shadow:0 0 16px rgba(249,198,43,.6)}
+    .ps2-sl{font-family:'JetBrains Mono',monospace;font-size:.42rem;font-weight:700;color:rgba(255,255,255,.18);text-transform:uppercase;letter-spacing:.07em}
+    .ps2-vs{display:flex;align-items:center;justify-content:space-between;background:rgba(249,198,43,.06);border:1px solid rgba(249,198,43,.16);border-radius:11px;padding:10px 14px;margin-bottom:14px}
+    .ps2-vs-lbl{font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:700;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.08em}
+    .ps2-vs-nums{display:flex;align-items:baseline;gap:8px}
+    .ps2-vs-sim{font-family:'Space Grotesk',sans-serif;font-size:.86rem;font-weight:900;color:#F9C62B}
+    .ps2-vs-sep{font-family:'JetBrains Mono',monospace;font-size:.42rem;color:rgba(255,255,255,.15)}
+    .ps2-vs-book{font-family:'Space Grotesk',sans-serif;font-size:.72rem;font-weight:700;color:rgba(255,255,255,.3);text-decoration:line-through}
+    .ps2-edge{font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:900;color:#00D559;background:rgba(0,213,89,.1);border:1px solid rgba(0,213,89,.24);padding:2px 9px;border-radius:5px;margin-left:auto}
+    .ps2-dist{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 15px}
+    .ps2-dist-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+    .ps2-dist-lbl{font-family:'JetBrains Mono',monospace;font-size:.45rem;font-weight:700;color:rgba(255,255,255,.18);text-transform:uppercase;letter-spacing:.07em}
+    .ps2-dist-ceil{font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:800;color:#F9C62B}
+    .ps2-dist-chart{display:flex;align-items:flex-end;gap:3px;height:38px;margin-bottom:5px}
+    .ps2-dc{flex:1;border-radius:3px 3px 0 0;background:rgba(255,255,255,.09)}
+    .ps2-dc.pk{background:linear-gradient(180deg,#F9C62B,rgba(249,198,43,.3));box-shadow:0 0 9px rgba(249,198,43,.4)}
+    .ps2-dc.dh{background:linear-gradient(180deg,#00D559,rgba(0,213,89,.3));box-shadow:0 0 9px rgba(0,213,89,.35)}
+    .ps2-dist-foot{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:.4rem;color:rgba(255,255,255,.14);padding:0 2px}
+    </style>
+
+    <div class="ag-ts-wrap">
+      <div class="ag-ts-bg-dots"></div>
+      <div class="ag-ts-orb-l"></div>
+      <div class="ag-ts-orb-r"></div>
+
+      <!-- Section intro -->
+      <div class="ag-ts-intro">
+        <div class="ag-ts-eyebrow">Inside the Platform</div>
+        <h2 class="ag-ts-h1">See Exactly<br><span class="g">What You&rsquo;re Getting.</span></h2>
+        <p class="ag-ts-sub">Not a black box. Every tool shows its work &mdash; so you understand the edge, not just follow it blindly.</p>
+        <div class="ag-ts-kpis">
+          <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>10k</em></div><div class="ag-ts-kpi-l">Sims / Player</div></div>
+          <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>6</em></div><div class="ag-ts-kpi-l">AI Models Fused</div></div>
+          <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>347+</em></div><div class="ag-ts-kpi-l">Props / Night</div></div>
+          <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>91%</em></div><div class="ag-ts-kpi-l">Model Accuracy</div></div>
+        </div>
       </div>
-      <div class="ag-mockup">
-        <div class="ag-mockup-window">
-          <div class="ag-mockup-titlebar">
-            <span class="ag-mockup-dot" style="background:#f24336"></span>
-            <span class="ag-mockup-dot" style="background:#F9C62B"></span>
-            <span class="ag-mockup-dot" style="background:#00D559"></span>
-            <span class="ag-mockup-url">smartpickpro.com &mdash; Neural Analysis</span>
-          </div>
-          <div class="ag-mockup-body">
-            <div class="ag-mockup-sidebar">
-              <div class="ag-mockup-sb-item active">&#x26A1; Analysis</div>
-              <div class="ag-mockup-sb-item">&#x1F4CA; Live Sweat</div>
-              <div class="ag-mockup-sb-item">&#x1F4C8; Bet Tracker</div>
-              <div class="ag-mockup-sb-item">&#x1F52C; Prop Scanner</div>
-              <div class="ag-mockup-sb-item">&#x1F3C0; Matchups</div>
+
+      <!-- ── GAME REPORT ROW ── -->
+      <div class="ag-ts-row" style="--tc:#00D559;--tc2:#00FF85;">
+        <div>
+          <div class="ag-ts-tag"><span class="ag-ts-tag-dot"></span>&#x1F4CB;&nbsp; Game Report</div>
+          <h3 class="ag-ts-copy-h">Every Matchup.<br><span class="em">Fully Decoded.</span></h3>
+          <p class="ag-ts-copy-p">Pick any game on tonight&rsquo;s slate and get a full AI briefing in seconds &mdash; win probability, pace factors, total projections, defensive mismatches, and the exact props with the sharpest edge.</p>
+          <ul class="ag-ts-list">
+            <li class="ag-ts-li"><span class="ag-ts-li-num">1</span><span><b>AI Win Probability</b> &mdash; 6-model consensus for each team, updated live as lines move.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">2</span><span><b>Pace &amp; Total Projection</b> &mdash; True game total vs. the posted line. Know when the book is wrong.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">3</span><span><b>Key Player Matchup Cards</b> &mdash; Head-to-head stats, def. rating exposure, and minute projections.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">4</span><span><b>Top Props for the Game</b> &mdash; Auto-sorted by SAFE Score with one-click Neural deep-dive.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">5</span><span><b>Entry Strategy Matrix</b> &mdash; Recommended parlay combos and singles for your risk profile.</span></li>
+          </ul>
+          <a href="?auth=signup" class="ag-ts-btn">Access Game Reports Free <span>&#x2192;</span></a>
+        </div>
+        <div class="ag-ts-mk-wrap">
+          <div class="ag-ts-mk-orb"></div>
+          <div class="ag-ts-mk">
+            <div class="ag-mk-chrome">
+              <div class="ag-mk-dots"><span></span><span></span><span></span></div>
+              <div class="ag-mk-url-bar">smartpickpro.ai &nbsp;&middot;&nbsp; Game Report</div>
             </div>
-            <div class="ag-mockup-main">
-              <div class="ag-mockup-header">
-                <span class="ag-mockup-badge-live">&#x1F534; LIVE &mdash; 347 Props Analyzed</span>
-                <span class="ag-mockup-filter">SAFE 70+ Only</span>
+            <div class="ag-mk-body">
+              <div class="gr2-hd">
+                <div class="gr2-title">&#x1F4CB; Game Report</div>
+                <div class="gr2-live">Live Analysis</div>
               </div>
-              <div class="ag-mockup-table">
-                <div class="ag-mockup-row head">
-                  <span>Player</span><span>Prop</span><span>Line</span><span>SAFE</span><span>Edge</span><span>Pick</span>
+              <div class="gr2-game">
+                <div class="gr2-team">
+                  <div class="gr2-abbr" style="color:#00D559">BOS</div>
+                  <div class="gr2-rec">47&ndash;22</div>
                 </div>
-                <div class="ag-mockup-row">
-                  <span class="player">Luka Don&#x10D;i&#x107;</span><span>PTS</span><span>28.5</span><span class="safe high">92</span><span class="edge">+6.2%</span><span class="over">OVER &#x2191;</span>
+                <div class="gr2-mid">
+                  <div class="gr2-vs">VS</div>
+                  <div class="gr2-spread">BOS &minus;5.5</div>
+                  <div class="gr2-ou">O/U 218.5</div>
                 </div>
-                <div class="ag-mockup-row">
-                  <span class="player">SGA</span><span>PTS</span><span>30.5</span><span class="safe high">90</span><span class="edge">+5.3%</span><span class="over">OVER &#x2191;</span>
-                </div>
-                <div class="ag-mockup-row">
-                  <span class="player">Jayson Tatum</span><span>REB</span><span>8.5</span><span class="safe mid">87</span><span class="edge">+4.8%</span><span class="over">OVER &#x2191;</span>
-                </div>
-                <div class="ag-mockup-row">
-                  <span class="player">A. Edwards</span><span>PTS</span><span>26.5</span><span class="safe mid">84</span><span class="edge">+5.1%</span><span class="under">UNDER &#x2193;</span>
-                </div>
-                <div class="ag-mockup-row">
-                  <span class="player">Joki&#x107;</span><span>AST</span><span>9.5</span><span class="safe mid">78</span><span class="edge">+3.4%</span><span class="over">OVER &#x2191;</span>
+                <div class="gr2-team">
+                  <div class="gr2-abbr" style="color:#2D9EFF">MIA</div>
+                  <div class="gr2-rec">31&ndash;38</div>
                 </div>
               </div>
-              <div class="ag-mockup-footer-note">Showing 5 of 347 analyzed props &mdash; sorted by SAFE Score</div>
+              <div class="gr2-pills">
+                <span class="gr2-pill g">4 Sharp Plays</span>
+                <span class="gr2-pill b">Pace 99.4</span>
+                <span class="gr2-pill">TD Garden</span>
+                <span class="gr2-pill p">7:30 PM ET</span>
+              </div>
+              <div class="gr2-sec-lbl">AI Consensus Metrics</div>
+              <div class="gr2-bars">
+                <div class="gr2-brow"><div class="gr2-blbl">BOS Win Prob</div><div class="gr2-btrack"><div class="gr2-bfill" style="--w:67%;--bc1:#00D559;--bc2:#00FF85;--bglow:rgba(0,213,89,.45)"></div></div><div class="gr2-bval" style="--bc1:#00D559">67%</div></div>
+                <div class="gr2-brow"><div class="gr2-blbl">Tatum PTS Edge</div><div class="gr2-btrack"><div class="gr2-bfill" style="--w:82%;--bc1:#F9C62B;--bc2:#FFE066;--bglow:rgba(249,198,43,.45)"></div></div><div class="gr2-bval" style="--bc1:#F9C62B">+4.8%</div></div>
+                <div class="gr2-brow"><div class="gr2-blbl">SAFE Consensus</div><div class="gr2-btrack"><div class="gr2-bfill" style="--w:88%;--bc1:#2D9EFF;--bc2:#60b4ff;--bglow:rgba(45,158,255,.45)"></div></div><div class="gr2-bval" style="--bc1:#2D9EFF">88</div></div>
+                <div class="gr2-brow"><div class="gr2-blbl">Total Proj &Delta;</div><div class="gr2-btrack"><div class="gr2-bfill" style="--w:55%;--bc1:#c084fc;--bc2:#d8b4fe;--bglow:rgba(192,132,252,.45)"></div></div><div class="gr2-bval" style="--bc1:#c084fc">+3.2</div></div>
+              </div>
+              <div class="gr2-alert">
+                <div class="gr2-alert-ico">&#x26A1;</div>
+                <div class="gr2-alert-txt"><b>Sharp Money Alert</b> &mdash; 74% of handle on BOS &minus;5.5 with line movement from &minus;4.5. Strong consensus signal.</div>
+              </div>
             </div>
           </div>
         </div>
-        <div class="ag-mockup-caption">
-          <span class="ag-mockup-tag">&#x2714; Real data</span>
-          <span class="ag-mockup-tag">&#x2714; Updated nightly</span>
-          <span class="ag-mockup-tag">&#x2714; 6 AI models fused</span>
+      </div>
+
+      <!-- ── PLAYER SIMULATOR ROW ── -->
+      <div class="ag-ts-row rev" style="--tc:#F9C62B;--tc2:#FFE066;">
+        <div class="ag-ts-mk-wrap">
+          <div class="ag-ts-mk-orb"></div>
+          <div class="ag-ts-mk">
+            <div class="ag-mk-chrome">
+              <div class="ag-mk-dots"><span></span><span></span><span></span></div>
+              <div class="ag-mk-url-bar">smartpickpro.ai &nbsp;&middot;&nbsp; Player Simulator</div>
+            </div>
+            <div class="ag-mk-body">
+              <div class="ps2-hd">
+                <div class="ps2-av">JT</div>
+                <div class="ps2-info">
+                  <div class="ps2-name">Jayson Tatum</div>
+                  <div class="ps2-meta">BOS &middot; vs MIA &middot; Home &middot; 10,000 sims</div>
+                </div>
+                <div class="ps2-dh">&#x1F434; Dark Horse</div>
+              </div>
+              <div class="ps2-grid">
+                <div class="ps2-stat"><div class="ps2-sv">28.4</div><div class="ps2-sl">PTS Med</div></div>
+                <div class="ps2-stat hi"><div class="ps2-sv">9.2</div><div class="ps2-sl">REB &#x2191; DH</div></div>
+                <div class="ps2-stat"><div class="ps2-sv">5.1</div><div class="ps2-sl">AST Med</div></div>
+                <div class="ps2-stat"><div class="ps2-sv">3.8</div><div class="ps2-sl">3PM Med</div></div>
+              </div>
+              <div class="ps2-vs">
+                <div class="ps2-vs-lbl">Sim vs. Book Line</div>
+                <div class="ps2-vs-nums">
+                  <span class="ps2-vs-sim">9.2</span>
+                  <span class="ps2-vs-sep">vs</span>
+                  <span class="ps2-vs-book">7.5</span>
+                </div>
+                <div class="ps2-edge">+1.7 Edge</div>
+              </div>
+              <div class="ps2-dist">
+                <div class="ps2-dist-hd">
+                  <div class="ps2-dist-lbl">REB Distribution &mdash; 10k sims</div>
+                  <div class="ps2-dist-ceil">Ceiling: 14</div>
+                </div>
+                <div class="ps2-dist-chart">
+                  <div class="ps2-dc" style="height:15%"></div>
+                  <div class="ps2-dc" style="height:28%"></div>
+                  <div class="ps2-dc" style="height:46%"></div>
+                  <div class="ps2-dc pk" style="height:75%"></div>
+                  <div class="ps2-dc pk" style="height:100%"></div>
+                  <div class="ps2-dc pk" style="height:85%"></div>
+                  <div class="ps2-dc" style="height:60%"></div>
+                  <div class="ps2-dc dh" style="height:44%"></div>
+                  <div class="ps2-dc dh" style="height:28%"></div>
+                  <div class="ps2-dc" style="height:16%"></div>
+                  <div class="ps2-dc" style="height:8%"></div>
+                  <div class="ps2-dc" style="height:4%"></div>
+                </div>
+                <div class="ps2-dist-foot"><span>3</span><span>5</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>&nbsp;</span><span>&nbsp;</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="ag-ts-tag"><span class="ag-ts-tag-dot"></span>&#x1F52E;&nbsp; Player Simulator</div>
+          <h3 class="ag-ts-copy-h">10,000 Sims.<br><span class="em">One True Number.</span></h3>
+          <p class="ag-ts-copy-p">The Quantum Matrix Engine runs 10,000 simulated game iterations per player, per stat, per night &mdash; producing a full outcome distribution so you know the actual probability of any prop hitting, not just a guess.</p>
+          <ul class="ag-ts-list">
+            <li class="ag-ts-li"><span class="ag-ts-li-num">1</span><span><b>Full Stat Line Projection</b> &mdash; Points, rebounds, assists, steals, blocks, threes, and turnovers. Every category, every night.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">2</span><span><b>Dark Horse Detection &#x1F434;</b> &mdash; Auto-flags props where the sim ceiling is meaningfully above the market line.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">3</span><span><b>Sim vs. Book Line</b> &mdash; See the exact gap between your simulated median and the posted prop. Mispriced props found instantly.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">4</span><span><b>Outcome Distribution Charts</b> &mdash; See exactly where outcomes cluster. High variance = better OVER. Low variance = better UNDER.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">5</span><span><b>Context-Aware Inputs</b> &mdash; Opponent, pace, home/away, game total, and defensive matchup auto-loaded for every player.</span></li>
+          </ul>
+          <a href="?auth=signup" class="ag-ts-btn">Run Your First Simulation Free <span>&#x2192;</span></a>
         </div>
       </div>
-    </div>
+
+    </div><!-- /ag-ts-wrap -->
 
     <div class="ag-divider"></div>
 
@@ -6953,7 +7534,7 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 /* ── Section Header ── */
 .pr-head{text-align:center;margin-bottom:48px;position:relative;animation:prFadeUp 0.8s ease both}
 .pr-head::before{content:'';display:block;width:80px;height:5px;margin:0 auto 24px;background:linear-gradient(90deg,#00D559,#2D9EFF,#c084fc);border-radius:6px;background-size:200% 100%;animation:prShimmer 4s ease infinite}
-.pr-head h2{font-family:'Space Grotesk',sans-serif;font-size:3.2rem;font-weight:800;color:#fff;margin:0 0 12px;letter-spacing:-0.04em;line-height:1.1}
+.pr-head h2{font-family:'Space Grotesk',sans-serif;font-size:3.6rem;font-weight:800;color:#fff;margin:0 0 12px;letter-spacing:-0.05em;line-height:1.05}
 .pr-head p{font-size:1rem;color:rgba(255,255,255,0.4);margin:0;line-height:1.7;max-width:560px;margin:0 auto}
 
 /* ── Tier Grid ── */
@@ -6964,7 +7545,7 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 .tc2:nth-child(1){animation-delay:0.1s}.tc2:nth-child(2){animation-delay:0.2s}.tc2:nth-child(3){animation-delay:0.3s}.tc2:nth-child(4){animation-delay:0.4s}
 .tc2::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:3px 3px 0 0}
 .tc2::after{content:'';position:absolute;inset:0;border-radius:24px;opacity:0;transition:opacity 0.4s;pointer-events:none}
-.tc2:hover{transform:translateY(-8px);box-shadow:0 24px 64px rgba(0,0,0,0.4)}
+.tc2:hover{transform:translateY(-12px) scale(1.02);box-shadow:0 32px 80px rgba(0,0,0,0.5),0 0 60px rgba(0,213,89,0.06)}
 .tc2:hover::after{opacity:1}
 
 /* Tier color variants */
@@ -7650,8 +8231,8 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
   color:#00D559;text-transform:uppercase;letter-spacing:0.14em;
   padding:5px 14px;border-radius:100px;border:1px solid rgba(0,213,89,0.15);
   background:rgba(0,213,89,0.05);margin-bottom:16px}
-.cmp-h{font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:800;color:#fff;
-  margin:0 0 8px;letter-spacing:-0.03em}
+.cmp-h{font-family:'Space Grotesk',sans-serif;font-size:2.8rem;font-weight:800;color:#fff;
+  margin:0 0 8px;letter-spacing:-0.04em}
 .cmp-sub{font-family:'Inter',sans-serif;font-size:0.8rem;color:rgba(255,255,255,0.35);margin:0 0 32px}
 .cmp-table{width:100%;max-width:720px;margin:0 auto;border-collapse:separate;border-spacing:0;
   border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden;
@@ -7722,7 +8303,7 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 .ft-perf{margin:0 0 56px;animation:ftFadeUp 0.8s ease both}
 .ft-perf-head{text-align:center;margin-bottom:28px}
 .ft-perf-head::before{content:'';display:block;width:60px;height:4px;margin:0 auto 20px;background:linear-gradient(90deg,#00D559,#2D9EFF);border-radius:6px;background-size:200% 100%;animation:ftShimmer 4s ease infinite}
-.ft-perf-head h2{font-family:'Space Grotesk',sans-serif;font-size:2.4rem;font-weight:800;color:#fff;margin:0 0 8px;letter-spacing:-0.03em}
+.ft-perf-head h2{font-family:'Space Grotesk',sans-serif;font-size:2.8rem;font-weight:800;color:#fff;margin:0 0 8px;letter-spacing:-0.04em}
 .ft-perf-head p{font-size:0.88rem;color:rgba(255,255,255,0.35);margin:0}
 .ft-perf-card{background:linear-gradient(168deg,rgba(10,16,32,0.95) 0%,rgba(8,12,24,0.98) 100%);border:1.5px solid rgba(0,213,89,0.1);border-radius:20px;padding:28px 24px 20px;position:relative;overflow:hidden}
 .ft-perf-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#00D559,#2D9EFF);border-radius:3px 3px 0 0}
@@ -7745,25 +8326,25 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 .ft-faq{margin:0 0 56px;animation:ftFadeUp 0.8s ease 0.2s both}
 .ft-faq-head{text-align:center;margin-bottom:28px}
 .ft-faq-head::before{content:'';display:block;width:60px;height:4px;margin:0 auto 20px;background:linear-gradient(90deg,#2D9EFF,#c084fc);border-radius:6px}
-.ft-faq-head h2{font-family:'Space Grotesk',sans-serif;font-size:2.4rem;font-weight:800;color:#fff;margin:0 0 8px;letter-spacing:-0.03em}
+.ft-faq-head h2{font-family:'Space Grotesk',sans-serif;font-size:2.8rem;font-weight:800;color:#fff;margin:0 0 8px;letter-spacing:-0.04em}
 .ft-faq-head p{font-size:0.88rem;color:rgba(255,255,255,0.35);margin:0}
 .ft-qi{background:linear-gradient(168deg,rgba(10,16,32,0.95) 0%,rgba(8,12,24,0.98) 100%);border:1.5px solid rgba(0,213,89,0.06);border-radius:16px;margin-bottom:8px;overflow:hidden;transition:all 0.3s}
 .ft-qi:hover{border-color:rgba(0,213,89,0.15);background:linear-gradient(168deg,rgba(12,18,34,0.95) 0%,rgba(10,14,28,0.98) 100%)}
-.ft-qi summary{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:0.82rem;font-weight:700;color:rgba(255,255,255,0.55);list-style:none;transition:color 0.3s}
+.ft-qi summary{display:flex;align-items:center;justify-content:space-between;padding:20px 26px;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:0.9rem;font-weight:700;color:rgba(255,255,255,0.6);list-style:none;transition:color 0.3s}
 .ft-qi summary::-webkit-details-marker{display:none}
 .ft-qi summary::marker{display:none;content:''}
 .ft-qi summary:hover{color:rgba(255,255,255,0.85)}
 .ft-qi summary .chevron{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:rgba(0,213,89,0.06);border:1px solid rgba(0,213,89,0.12);color:#00D559;font-size:0.6rem;transition:all 0.3s;flex-shrink:0}
 .ft-qi[open] summary .chevron{background:rgba(0,213,89,0.12);transform:rotate(180deg)}
 .ft-qi[open] summary{color:#fff}
-.ft-qi-ans{padding:0 22px 18px;font-size:0.74rem;color:rgba(255,255,255,0.35);line-height:1.7}
+.ft-qi-ans{padding:0 26px 22px;font-size:0.78rem;color:rgba(255,255,255,0.45);line-height:1.75}
 
 /* ── Final CTA ── */
-.ft-cta{background:linear-gradient(168deg,rgba(0,213,89,0.06) 0%,rgba(10,16,32,0.95) 50%,rgba(8,12,24,0.98) 100%);border:2px solid rgba(0,213,89,0.2);border-radius:24px;padding:56px 32px;text-align:center;margin:0 0 36px;position:relative;overflow:hidden;animation:ftPulse 4s ease infinite}
+.ft-cta{background:linear-gradient(168deg,rgba(0,213,89,0.08) 0%,rgba(10,16,32,0.97) 50%,rgba(8,12,24,0.99) 100%);border:2px solid rgba(0,213,89,0.25);border-radius:28px;padding:72px 40px;text-align:center;margin:0 0 36px;position:relative;overflow:hidden;animation:ftPulse 4s ease infinite;box-shadow:0 0 120px rgba(0,213,89,0.08) inset,0 32px 100px rgba(0,0,0,0.4)}
 .ft-cta::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(0,213,89,0.1) 0%,transparent 50%);pointer-events:none}
 .ft-cta::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#00D559,#2D9EFF,#c084fc,transparent);background-size:200% 100%;animation:ftShimmer 3s ease infinite}
-.ft-cta-h{font-family:'Space Grotesk',sans-serif;font-size:2.6rem;font-weight:800;color:#fff;margin:0 0 12px;letter-spacing:-0.04em;position:relative;line-height:1.2}
-.ft-cta-s{font-size:0.95rem;color:rgba(255,255,255,0.4);margin:0 0 28px;line-height:1.7;position:relative;max-width:480px;margin-left:auto;margin-right:auto}
+.ft-cta-h{font-family:'Space Grotesk',sans-serif;font-size:3.6rem;font-weight:800;color:#fff;margin:0 0 16px;letter-spacing:-0.05em;position:relative;line-height:1.1}
+.ft-cta-s{font-size:1.02rem;color:rgba(255,255,255,0.5);margin:0 0 32px;line-height:1.7;position:relative;max-width:520px;margin-left:auto;margin-right:auto}
 .ft-cta-btn{display:inline-block;font-family:'Space Grotesk',sans-serif;font-size:0.95rem;font-weight:800;color:#050910;background:linear-gradient(135deg,#00E865 0%,#00D559 45%,#00B74D 100%);padding:20px 62px;border-radius:12px;text-decoration:none;letter-spacing:0.07em;text-transform:uppercase;border:1px solid rgba(255,255,255,0.18);box-shadow:0 0 50px rgba(0,213,89,0.4),0 10px 40px rgba(0,213,89,0.22),inset 0 1px 0 rgba(255,255,255,0.22);position:relative;overflow:hidden;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);cursor:pointer}
 .ft-cta-btn::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent);transform:skewX(-20deg);transition:left 0.55s cubic-bezier(0.16,1,0.3,1)}
 .ft-cta-btn:hover{transform:translateY(-5px) scale(1.01);background:linear-gradient(135deg,#00FF75 0%,#00E865 45%,#00C04B 100%);box-shadow:0 0 80px rgba(0,213,89,0.6),0 16px 60px rgba(0,213,89,0.32),inset 0 1px 0 rgba(255,255,255,0.25)}
@@ -7782,9 +8363,9 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 .ft-footer-line{width:60px;height:2px;margin:0 auto 16px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);border-radius:2px}
 
 @media(max-width:520px){
-  .ft-perf-head h2,.ft-faq-head h2{font-size:1.8rem}
-  .ft-cta-h{font-size:1.8rem}
-  .ft-cta{padding:36px 20px}
+  .ft-perf-head h2,.ft-faq-head h2{font-size:2rem}
+  .ft-cta-h{font-size:2.4rem}
+  .ft-cta{padding:44px 24px}
   .ft-cta-btn{padding:16px 40px;font-size:0.88rem}
   .ft-qi summary{padding:14px 16px;font-size:.76rem}
   .ft-qi-ans{padding:0 16px 14px;font-size:.7rem}
@@ -7793,9 +8374,9 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
   .ft-trust-item{font-size:.58rem;padding:4px 10px}
 }
 @media(max-width:380px){
-  .ft-perf-head h2,.ft-faq-head h2{font-size:1.3rem}
-  .ft-perf-head p,.ft-faq-head p{font-size:.75rem}
-  .ft-cta-h{font-size:1.4rem}
+  .ft-perf-head h2,.ft-faq-head h2{font-size:1.5rem}
+  .ft-perf-head p,.ft-faq-head p{font-size:.78rem}
+  .ft-cta-h{font-size:1.7rem}
   .ft-cta{padding:28px 14px;border-radius:18px}
   .ft-cta-btn{padding:14px 28px;font-size:.8rem;border-radius:10px}
   .ft-cta-s{font-size:.78rem}

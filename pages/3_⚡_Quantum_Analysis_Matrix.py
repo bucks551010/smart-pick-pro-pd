@@ -1046,10 +1046,8 @@ if run_analysis:
             st.stop()
 
         # ── Hard cap: prevent OOM crashes on Railway with very large batches ──
-        # Analyzing 1000+ props with Monte Carlo simulations exhausts memory,
-        # crashes the container, loses session state, and forces a sign-out.
-        # Cap at 800 props (sorted by source order so the most relevant are kept).
-        _PROPS_HARD_CAP = 800
+        # Raised to 2000 to allow full slate analysis without truncation.
+        _PROPS_HARD_CAP = 2000
         if total_props_count > _PROPS_HARD_CAP:
             st.warning(
                 f"⚠️ {total_props_count:,} props loaded — capped at **{_PROPS_HARD_CAP:,}** to "
@@ -1060,11 +1058,14 @@ if run_analysis:
             total_props_count = _PROPS_HARD_CAP
 
         # ── Auto-scale simulation depth for large batches ─────────────────
-        # Full 2000-sim depth is fine for ≤300 props.  For larger batches,
-        # reduce depth to keep peak memory within Railway container limits.
+        # Reduce depth to keep memory within Railway container limits.
         _effective_sim_depth = simulation_depth
-        if total_props_count > 500:
+        if total_props_count > 1500:
+            _effective_sim_depth = min(simulation_depth, 250)
+        elif total_props_count > 800:
             _effective_sim_depth = min(simulation_depth, 500)
+        elif total_props_count > 500:
+            _effective_sim_depth = min(simulation_depth, 750)
         elif total_props_count > 300:
             _effective_sim_depth = min(simulation_depth, 1000)
         if _effective_sim_depth < simulation_depth:
@@ -1653,10 +1654,10 @@ def _render_results_fragment():
         displayed_results = [r for r in displayed_results if r.get("tier") in _na_tier_names]
 
     # ── Quality floor: hide Bronze / Avoid by default & low-confidence picks ──
-    # Unless user explicitly selected Bronze in the tier filter, strip them out.
-    # QAM is for the best top picks — Bronze/Avoid should not appear by default.
+    # Only applies when NOT in "All picks" mode and user hasn't explicitly
+    # selected Bronze in the tier filter.
     _user_wants_bronze = "Bronze 🥉" in (_na_tier_filter or [])
-    if not _user_wants_bronze:
+    if not _user_wants_bronze and _show_mode != "All picks":
         displayed_results = [
             r for r in displayed_results
             if r.get("tier") not in ("Bronze", "Avoid", None)
@@ -1690,10 +1691,8 @@ def _render_results_fragment():
             _deduped.append(_r)
     displayed_results = _deduped
 
-    # ── Per-player cap: keep only the top 2 props per player ──────
-    # QAM is for the best top picks — showing 5 props per player dilutes
-    # signal with low-value lines.  Keep the top 2 by confidence score.
-    _MAX_PROPS_PER_PLAYER = 2
+    # ── Per-player cap: keep only the top 5 props per player ──────
+    _MAX_PROPS_PER_PLAYER = 5
     _player_prop_counts: dict = {}
     _capped_results: list = []
     for _r in displayed_results:

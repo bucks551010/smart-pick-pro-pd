@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # FILE: pages/helpers/game_report_helpers.py
 # PURPOSE: HTML rendering helpers for the Game Report page.
 #          Provides QDS-styled matchup cards, summary dashboards,

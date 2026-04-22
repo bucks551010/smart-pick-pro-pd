@@ -1091,6 +1091,10 @@ def analyze_single_prop(
         full_result["standard_line"] = _standard_line
         full_result["risk_flags"] = _bet_classification.get("risk_flags", [])
         full_result["is_uncertain"] = _bet_classification.get("is_uncertain", False)
+        # Override bet_type to "risky" for avoid picks so they always
+        # surface in the Bet Tracker health tab regardless of is_risky column.
+        if full_result.get("should_avoid"):
+            full_result["bet_type"] = "risky"
     except Exception:
         full_result["bet_type"] = "standard"
         full_result["bet_type_emoji"] = ""
@@ -1299,10 +1303,8 @@ def analyze_props_batch(
             _capped.append(r)
     active_results = _capped
 
-    # Cap output to the 500 best active picks.  The engine analyzes every
-    # fetched prop for accuracy, but only the top 500 are surfaced to the
-    # UI, auto-logged, and stored as analysis picks.
-    MAX_OUTPUT_PICKS = 500
+    # Cap output to the 1000 best active picks.
+    MAX_OUTPUT_PICKS = 1000
     active_results = active_results[:MAX_OUTPUT_PICKS]
 
     return active_results + out_results

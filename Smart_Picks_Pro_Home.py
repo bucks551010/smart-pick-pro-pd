@@ -776,47 +776,188 @@ st.markdown("""
     border-radius: 100px; margin: 4px 0;
 }
 
-/* ── Navigation Cards ─────────────────────────────────────── */
-.nav-card {
-    background: linear-gradient(160deg, #161B27 0%, #1A2030 100%);
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 18px; padding: 24px 20px; text-align: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.40);
-    transition: border-color 0.24s ease, transform 0.24s ease, box-shadow 0.24s ease;
-    cursor: pointer; display: block; height: 100%;
-    position: relative; overflow: hidden;
+/* ═══════════════════════════════════════════════════════════
+   NAVIGATION CARDS — Ultra-Premium 2026 Redesign
+   ═══════════════════════════════════════════════════════════ */
+@keyframes navCardShimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
 }
+@keyframes navIconFloat {
+    0%, 100% { transform: translateY(0)   scale(1); }
+    50%       { transform: translateY(-4px) scale(1.08); }
+}
+@keyframes navCardGlowPulse {
+    0%, 100% { box-shadow: var(--nc-shadow-base); }
+    50%       { box-shadow: var(--nc-shadow-pulse); }
+}
+
+.nav-card {
+    --nc-shadow-base:  0 4px 24px rgba(0,0,0,0.55);
+    --nc-shadow-pulse: 0 4px 24px rgba(0,0,0,0.55);
+    background: linear-gradient(160deg,
+        rgba(18,24,40,0.95) 0%,
+        rgba(14,19,32,0.98) 100%);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 20px;
+    padding: 28px 20px 22px;
+    text-align: center;
+    box-shadow: var(--nc-shadow-base);
+    transition:
+        border-color 0.22s ease,
+        transform    0.22s cubic-bezier(0.22,1,0.36,1),
+        box-shadow   0.22s ease;
+    cursor: pointer;
+    display: block;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* Glass inner shine */
+.nav-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 40%;
+    background: linear-gradient(180deg,
+        rgba(255,255,255,0.03) 0%,
+        transparent 100%);
+    pointer-events: none;
+    border-radius: 20px 20px 0 0;
+}
+
+/* Animated top accent bar (hidden by default) */
 .nav-card::before {
     content: '';
-    position: absolute; top:0; left:0; right:0; height:2px;
-    background: linear-gradient(90deg, #00D559, #2D9EFF);
-    opacity: 0; transition: opacity 0.24s ease;
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background-size: 200% 100%;
+    opacity: 0;
+    transition: opacity 0.22s ease;
+    border-radius: 20px 20px 0 0;
 }
+.nav-card.cat-workflow::before { background: linear-gradient(90deg, #00D559, #2D9EFF, #00D559); }
+.nav-card.cat-analysis::before { background: linear-gradient(90deg, #2D9EFF, #c084fc, #2D9EFF); }
+.nav-card.cat-manage::before   { background: linear-gradient(90deg, #F9C62B, #ff8c00, #F9C62B); }
+
+/* Hover state */
 .nav-card:hover::before { opacity: 1; }
 .nav-card:hover {
-    border-color: rgba(0,213,89,0.45);
-    transform: translateY(-6px);
-    box-shadow: 0 10px 36px rgba(0,213,89,0.16), 0 16px 50px rgba(0,0,0,0.55);
+    transform: translateY(-10px) scale(1.02);
+    border-color: rgba(255,255,255,0.14);
 }
-.nav-card.cat-workflow:hover { border-color:rgba(0,213,89,0.50);   box-shadow:0 10px 36px rgba(0,213,89,0.18),   0 16px 50px rgba(0,0,0,0.55); }
-.nav-card.cat-analysis:hover { border-color:rgba(45,158,255,0.50); box-shadow:0 10px 36px rgba(45,158,255,0.16), 0 16px 50px rgba(0,0,0,0.55); }
-.nav-card.cat-manage:hover   { border-color:rgba(249,198,43,0.45); box-shadow:0 10px 36px rgba(249,198,43,0.14), 0 16px 50px rgba(0,0,0,0.55); }
-.nav-card-icon  { font-size:2rem; margin-bottom:12px; display:block; filter:drop-shadow(0 0 10px rgba(0,213,89,0.35)); }
-.nav-card-title { font-size:0.98rem; font-weight:800; color:#FFFFFF; font-family:'Inter',sans-serif; }
-.nav-card-desc  { font-size:0.79rem; color:#6B7A9A; margin-top:6px; line-height:1.48; }
+.nav-card.cat-workflow:hover {
+    --nc-shadow-base: 0 16px 48px rgba(0,213,89,0.18), 0 24px 60px rgba(0,0,0,0.60);
+    border-color: rgba(0,213,89,0.35);
+    box-shadow: var(--nc-shadow-base);
+}
+.nav-card.cat-analysis:hover {
+    --nc-shadow-base: 0 16px 48px rgba(45,158,255,0.18), 0 24px 60px rgba(0,0,0,0.60);
+    border-color: rgba(45,158,255,0.35);
+    box-shadow: var(--nc-shadow-base);
+}
+.nav-card.cat-manage:hover {
+    --nc-shadow-base: 0 16px 48px rgba(249,198,43,0.16), 0 24px 60px rgba(0,0,0,0.60);
+    border-color: rgba(249,198,43,0.32);
+    box-shadow: var(--nc-shadow-base);
+}
 
-/* ── Nav Row Labels ───────────────────────────────────────── */
-.nav-row-label {
-    font-size: 0.82rem !important; font-weight: 800 !important;
-    font-family: 'Inter', sans-serif !important;
-    text-transform: uppercase !important; letter-spacing: 0.12em !important;
-    padding: 6px 18px !important; border-radius: 100px !important;
-    display: inline-flex !important; align-items: center !important;
-    gap: 6px !important; margin: 26px 0 16px !important;
+/* Icon */
+.nav-card-icon {
+    font-size: 2.2rem;
+    margin-bottom: 14px;
+    display: block;
+    transition: transform 0.22s cubic-bezier(0.22,1,0.36,1);
+    line-height: 1;
 }
-.nav-row-label.workflow { background:rgba(0,213,89,0.10) !important; color:#00D559 !important; border:1px solid rgba(0,213,89,0.30) !important; box-shadow:0 0 16px rgba(0,213,89,0.10) !important; }
-.nav-row-label.analysis { background:rgba(45,158,255,0.10) !important; color:#2D9EFF !important; border:1px solid rgba(45,158,255,0.30) !important; }
-.nav-row-label.manage   { background:rgba(249,198,43,0.10) !important; color:#F9C62B !important; border:1px solid rgba(249,198,43,0.28) !important; }
+.nav-card.cat-workflow .nav-card-icon { filter: drop-shadow(0 0 12px rgba(0,213,89,0.50)); }
+.nav-card.cat-analysis .nav-card-icon { filter: drop-shadow(0 0 12px rgba(45,158,255,0.50)); }
+.nav-card.cat-manage   .nav-card-icon { filter: drop-shadow(0 0 12px rgba(249,198,43,0.45)); }
+.nav-card:hover .nav-card-icon { animation: navIconFloat 1.8s ease-in-out infinite; }
+
+/* Title */
+.nav-card-title {
+    font-size: 0.96rem;
+    font-weight: 800;
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+}
+
+/* Description */
+.nav-card-desc {
+    font-size: 0.76rem;
+    color: rgba(160,170,190,0.65);
+    margin-top: 6px;
+    line-height: 1.5;
+    transition: color 0.18s ease;
+}
+.nav-card:hover .nav-card-desc { color: rgba(200,210,230,0.80); }
+
+/* Open arrow — appears on hover */
+.nav-card-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 14px;
+    font-size: 0.70rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.nav-card.cat-workflow .nav-card-cta { color: #00D559; }
+.nav-card.cat-analysis .nav-card-cta { color: #2D9EFF; }
+.nav-card.cat-manage   .nav-card-cta { color: #F9C62B; }
+.nav-card:hover .nav-card-cta { opacity: 1; transform: translateY(0); }
+
+/* ── Nav Row Labels — Premium category pills ──────────────── */
+.nav-row-label {
+    font-size: 0.72rem !important;
+    font-weight: 900 !important;
+    font-family: 'Inter', sans-serif !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.16em !important;
+    padding: 7px 20px !important;
+    border-radius: 100px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 30px 0 18px !important;
+    position: relative !important;
+}
+/* Shimmer scan line */
+.nav-row-label::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -60%; width: 40%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+    border-radius: 100px;
+    animation: navCardShimmer 3s ease infinite;
+    pointer-events: none;
+}
+.nav-row-label.workflow {
+    background: linear-gradient(135deg, rgba(0,213,89,0.12), rgba(0,213,89,0.06)) !important;
+    color: #00D559 !important;
+    border: 1px solid rgba(0,213,89,0.30) !important;
+    box-shadow: 0 0 20px rgba(0,213,89,0.10), inset 0 1px 0 rgba(0,213,89,0.08) !important;
+}
+.nav-row-label.analysis {
+    background: linear-gradient(135deg, rgba(45,158,255,0.12), rgba(45,158,255,0.06)) !important;
+    color: #2D9EFF !important;
+    border: 1px solid rgba(45,158,255,0.30) !important;
+    box-shadow: 0 0 20px rgba(45,158,255,0.10), inset 0 1px 0 rgba(45,158,255,0.08) !important;
+}
+.nav-row-label.manage {
+    background: linear-gradient(135deg, rgba(249,198,43,0.12), rgba(249,198,43,0.06)) !important;
+    color: #F9C62B !important;
+    border: 1px solid rgba(249,198,43,0.28) !important;
+    box-shadow: 0 0 20px rgba(249,198,43,0.10), inset 0 1px 0 rgba(249,198,43,0.08) !important;
+}
 
 /* ── Matchup Chips ────────────────────────────────────────── */
 .matchup-chip {
@@ -2052,8 +2193,8 @@ st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 
 st.markdown("""
 <div class="section-eyebrow lp-anim lp-anim-d1">Navigate the Platform</div>
-<div class="section-header-xl lp-anim lp-anim-d2">16 Pages of <span class="xl-accent">NBA Intelligence</span></div>
-<div class="section-subheader-center lp-anim lp-anim-d3">Every tool you need to go from raw prop lines to confident, data-backed entries. No spreadsheets. No gut feels.</div>
+<div class="section-header-xl lp-anim lp-anim-d2">Your <span class="xl-accent">Command Center</span></div>
+<div class="section-subheader-center lp-anim lp-anim-d3">Every tool built to take you from raw lines to confident, edge-verified entries — all in one place.</div>
 """, unsafe_allow_html=True)
 
 # Row 1 — Tonight's Workflow
@@ -2072,6 +2213,7 @@ for i, (icon, name, desc, page) in enumerate(_nav_row1):
           <div class="nav-card-icon">{icon}</div>
           <div class="nav-card-title">{name}</div>
           <div class="nav-card-desc">{desc}</div>
+          <div class="nav-card-cta">Open →</div>
         </div>
         """, unsafe_allow_html=True)
         st.page_link(page, label=f"Open {name}", icon=icon)
@@ -2093,6 +2235,7 @@ for i, (icon, name, desc, page) in enumerate(_nav_row2):
           <div class="nav-card-icon">{icon}</div>
           <div class="nav-card-title">{name}</div>
           <div class="nav-card-desc">{desc}</div>
+          <div class="nav-card-cta">Open →</div>
         </div>
         """, unsafe_allow_html=True)
         st.page_link(page, label=f"Open {name}", icon=icon)
@@ -2115,6 +2258,7 @@ for i, (icon, name, desc, page) in enumerate(_nav_row3):
           <div class="nav-card-icon">{icon}</div>
           <div class="nav-card-title">{name}</div>
           <div class="nav-card-desc">{desc}</div>
+          <div class="nav-card-cta">Open →</div>
         </div>
         """, unsafe_allow_html=True)
         st.page_link(page, label=f"Open {name}", icon=icon)

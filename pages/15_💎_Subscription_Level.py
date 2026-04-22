@@ -1234,223 +1234,580 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ── PRICING SECTION HEADER ───────────────────────────────────
+# ── PRICING SECTION HEADER + BILLING TOGGLE ─────────────────
 st.markdown("""
-<div class="section-header">
-  <p class="section-title">Choose Your Edge</p>
+<style>
+/* ── Billing Toggle ─────────────────────────────────────── */
+.billing-toggle-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 40px 0 0;
+}
+.billing-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: rgba(255,255,255,.45);
+    letter-spacing: .02em;
+    transition: color .2s;
+}
+.billing-label.active { color: #fff; }
+.billing-save-badge {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, #00D559, #00a847);
+    color: #000;
+    font-size: .58rem;
+    font-weight: 900;
+    letter-spacing: .1em;
+    padding: 3px 10px;
+    border-radius: 100px;
+    margin-left: 6px;
+    text-transform: uppercase;
+}
+
+/* ── Pricing cards — premium 2026 redesign ─────────────── */
+.pricing-grid-v2 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin: 32px 0 12px;
+    align-items: stretch;
+}
+@media (max-width: 1100px) { .pricing-grid-v2 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .pricing-grid-v2 { grid-template-columns: 1fr; } }
+
+.pc2 {
+    background: rgba(10,16,32,.92);
+    border-radius: 22px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s;
+    border: 1.5px solid rgba(255,255,255,.07);
+}
+.pc2:hover { transform: translateY(-8px); }
+.pc2-top-bar { height: 3px; width: 100%; }
+.pc2.rookie  .pc2-top-bar { background: linear-gradient(90deg,#708090,#A0AABE); }
+.pc2.sharp   .pc2-top-bar { background: linear-gradient(90deg,#F9C62B,#ff8c00); }
+.pc2.smart   .pc2-top-bar { background: linear-gradient(90deg,#00D559,#2D9EFF); }
+.pc2.insider .pc2-top-bar { background: linear-gradient(90deg,#c084fc,#9333ea); }
+
+.pc2.sharp:hover   { border-color:rgba(249,198,43,.4);  box-shadow: 0 20px 60px rgba(249,198,43,.14); }
+.pc2.smart:hover   { border-color:rgba(0,213,89,.45);   box-shadow: 0 20px 60px rgba(0,213,89,.16); }
+.pc2.insider:hover { border-color:rgba(192,132,252,.45);box-shadow: 0 20px 60px rgba(192,132,252,.15); }
+
+/* Popular badge */
+.pc2-badge {
+    position: absolute;
+    top: 16px; right: -28px;
+    font-size: .52rem;
+    font-weight: 900;
+    letter-spacing: .12em;
+    padding: 5px 36px;
+    transform: rotate(42deg);
+    text-transform: uppercase;
+    color: #fff;
+    z-index: 4;
+}
+.pc2.smart   .pc2-badge { background: linear-gradient(135deg,#00D559,#00a847); }
+.pc2.insider .pc2-badge { background: linear-gradient(135deg,#c084fc,#7c3aed); }
+
+.pc2-body { padding: 28px 24px 24px; flex: 1; display: flex; flex-direction: column; }
+
+.pc2-icon { font-size: 2.4rem; margin-bottom: 8px; display: block; }
+.pc2-tier {
+    font-family: 'Inter', sans-serif;
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .2em;
+    margin: 0 0 2px;
+}
+.pc2.rookie  .pc2-tier { color: #A0AABE; }
+.pc2.sharp   .pc2-tier { color: #F9C62B; }
+.pc2.smart   .pc2-tier { color: #00D559; }
+.pc2.insider .pc2-tier { color: #c084fc; }
+
+.pc2-tagline {
+    font-size: .72rem;
+    color: rgba(255,255,255,.28);
+    font-style: italic;
+    margin: 0 0 22px;
+}
+
+/* Price display */
+.pc2-price-row { margin: 0 0 4px; line-height: 1; display: flex; align-items: flex-start; gap: 2px; }
+.pc2-curr { font-size: 1rem; font-weight: 700; padding-top: 6px; }
+.pc2-amt  { font-family: 'Inter', monospace; font-size: 2.8rem; font-weight: 900; line-height: 1; }
+.pc2-cents{ font-size: 1rem; font-weight: 700; padding-top: 6px; }
+.pc2.rookie  .pc2-curr, .pc2.rookie  .pc2-amt, .pc2.rookie  .pc2-cents { color: #A0AABE; }
+.pc2.sharp   .pc2-curr, .pc2.sharp   .pc2-amt, .pc2.sharp   .pc2-cents { color: #F9C62B; }
+.pc2.smart   .pc2-curr, .pc2.smart   .pc2-amt, .pc2.smart   .pc2-cents { color: #00D559; text-shadow: 0 0 24px rgba(0,213,89,.3); }
+.pc2.insider .pc2-curr, .pc2.insider .pc2-amt, .pc2.insider .pc2-cents { color: #c084fc; text-shadow: 0 0 24px rgba(192,132,252,.3); }
+
+.pc2-period { color: rgba(255,255,255,.3); font-size: .72rem; margin: 2px 0 6px; }
+.pc2-savings {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: linear-gradient(135deg, rgba(0,213,89,.14), rgba(45,158,255,.08));
+    border: 1px solid rgba(0,213,89,.35);
+    color: #00D559; font-size: .63rem; font-weight: 800;
+    padding: 6px 14px; border-radius: 100px; margin-bottom: 16px;
+    letter-spacing: .06em;
+    box-shadow: 0 4px 16px rgba(0,213,89,.15);
+    position: relative; overflow: hidden;
+}
+.pc2-savings::after {
+    content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
+    animation: savingsShimmer 3s ease-in-out infinite;
+}
+@keyframes savingsShimmer { 0%{left:-100%} 100%{left:200%} }
+.pc2.sharp .pc2-savings {
+    background: linear-gradient(135deg, rgba(249,198,43,.14), rgba(255,140,0,.08));
+    border-color: rgba(249,198,43,.35); color: #F9C62B;
+    box-shadow: 0 4px 16px rgba(249,198,43,.15);
+}
+.pc2.insider .pc2-savings {
+    background: linear-gradient(135deg, rgba(192,132,252,.14), rgba(147,51,234,.08));
+    border-color: rgba(192,132,252,.35); color: #c084fc;
+    box-shadow: 0 4px 16px rgba(192,132,252,.15);
+}
+
+.pc2-divider { height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent); margin: 0 0 16px; }
+
+/* Feature list */
+.pc2-features { list-style:none; padding:0; margin:0 0 20px; flex:1; }
+.pc2-features li {
+    font-size: .78rem; color: rgba(255,255,255,.6);
+    padding: 6px 0 6px 22px; position: relative;
+    border-bottom: 1px solid rgba(255,255,255,.03);
+    line-height: 1.45;
+}
+.pc2-features li:last-child { border-bottom:none; }
+.pc2-features li::before { content:'✓'; position:absolute; left:0; font-weight:800; font-size:.8rem; }
+.pc2.rookie  .pc2-features li::before { color:#A0AABE; }
+.pc2.sharp   .pc2-features li::before { color:#F9C62B; }
+.pc2.smart   .pc2-features li::before { color:#00D559; }
+.pc2.insider .pc2-features li::before { color:#c084fc; }
+.pc2-features li.note { color:rgba(255,255,255,.28); font-style:italic; padding-left:0; font-size:.7rem; }
+.pc2-features li.note::before { content:''; }
+
+/* CTA area */
+.pc2-cta { padding: 0 24px 24px; margin-top: auto; }
+.pc2-security { text-align:center; font-size:.62rem; color:rgba(255,255,255,.22); margin-top:8px; }
+</style>
+
+<div class="section-header" style="margin-top:24px;">
+  <p class="section-title" style="font-size:2.2rem;letter-spacing:-.5px;">Choose Your Edge</p>
   <p class="section-subtitle">
-    Every plan includes our core analytics engine. Upgrade to unlock
-    the full arsenal of AI prop tools.
+    Start free. Scale up when you're ready. Every paid plan is backed by our
+    no-questions-asked cancellation guarantee.
   </p>
 </div>
 """, unsafe_allow_html=True)
 
-# ── 4-TIER PRICING CARDS ─────────────────────────────────────
+# ── Premium billing frequency selector ───────────────────────
 st.markdown("""
-<div class="pricing-grid">
-  <!-- Smart Rookie -->
-  <div class="p-card rookie">
-    <span class="p-card-icon">⭐</span>
-    <p class="p-card-name">Smart Rookie</p>
-    <p class="p-card-tagline">"Welcome to the smart side."</p>
-    <div class="p-card-price-wrap">
-      <span class="p-card-currency" style="color:#A0AABE;">$</span><span class="p-card-amount" style="color:#A0AABE;">0</span>
+<style>
+/* ── Billing frequency pill selector ────────────────────────── */
+.billing-selector-wrap {
+    max-width: 540px;
+    margin: 0 auto 36px;
+}
+.billing-selector-label {
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-size: .72rem; font-weight: 700;
+    color: rgba(255,255,255,.3);
+    text-transform: uppercase; letter-spacing: .1em;
+    margin-bottom: 14px;
+}
+.billing-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background: rgba(255,255,255,.025);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 16px;
+    padding: 6px;
+}
+.billing-option {
+    border-radius: 12px;
+    padding: 16px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .3s cubic-bezier(.16,1,.3,1);
+    position: relative; overflow: hidden;
+}
+.billing-option.monthly {
+    background: rgba(255,255,255,.02);
+    border: 1px solid rgba(255,255,255,.06);
+}
+.billing-option.annual {
+    background: linear-gradient(135deg, rgba(0,213,89,.12), rgba(45,158,255,.08));
+    border: 1px solid rgba(0,213,89,.35);
+    box-shadow: 0 0 30px rgba(0,213,89,.1), inset 0 1px 0 rgba(0,213,89,.1);
+}
+.billing-option.annual::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, #00D559, #2D9EFF);
+}
+.billing-option-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: .95rem; font-weight: 800;
+    letter-spacing: -.02em;
+    margin-bottom: 4px;
+}
+.billing-option.monthly .billing-option-label { color: rgba(255,255,255,.55); }
+.billing-option.annual  .billing-option-label { color: #fff; }
+.billing-option-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: .68rem;
+    line-height: 1.4;
+}
+.billing-option.monthly .billing-option-sub { color: rgba(255,255,255,.25); }
+.billing-option.annual  .billing-option-sub { color: rgba(255,255,255,.6); }
+.billing-badge-save {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .56rem; font-weight: 800;
+    color: #020C07;
+    background: linear-gradient(135deg, #00D559, #2D9EFF);
+    padding: 3px 12px; border-radius: 100px;
+    text-transform: uppercase; letter-spacing: .08em;
+    margin-top: 8px;
+    box-shadow: 0 4px 14px rgba(0,213,89,.3);
+    animation: billingPulse 2.5s ease-in-out infinite;
+}
+@keyframes billingPulse {
+    0%,100% { box-shadow: 0 4px 14px rgba(0,213,89,.3); }
+    50%      { box-shadow: 0 4px 28px rgba(0,213,89,.55); }
+}
+.billing-checkmark {
+    position: absolute; top: 10px; right: 12px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #00D559;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .7rem; color: #020C07; font-weight: 900;
+    box-shadow: 0 0 10px rgba(0,213,89,.4);
+}
+/* Streamlit toggle override: hide but keep functional */
+.billing-toggle-wrapper [data-testid="stToggle"] {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+}
+/* Annual banner */
+.annual-active-banner {
+    background: linear-gradient(135deg, rgba(0,213,89,.08), rgba(45,158,255,.06));
+    border: 1px solid rgba(0,213,89,.2);
+    border-radius: 14px;
+    padding: 14px 24px;
+    text-align: center;
+    margin: 0 auto 8px;
+    max-width: 680px;
+    position: relative; overflow: hidden;
+}
+.annual-active-banner::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #00D559, #2D9EFF, transparent);
+}
+.annual-banner-text {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: .88rem; font-weight: 800;
+    color: #00D559; margin: 0 0 2px;
+}
+.annual-banner-sub {
+    font-size: .68rem;
+    color: rgba(255,255,255,.4);
+    margin: 0;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Hidden functional toggle — the visual selector below links to it
+_billing_col1, _billing_col2, _billing_col3 = st.columns([1, 2, 1])
+with _billing_col2:
+    st.markdown('<div class="billing-toggle-wrapper">', unsafe_allow_html=True)
+    _annual = st.toggle(
+        "Annual billing",
+        key="_annual_billing",
+        value=True,   # default to annual (best value)
+        help="Switch between monthly and annual billing",
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# Premium visual billing selector (purely decorative — actual state from toggle above)
+_m_style = "" if _annual else "annual"  # swap styles: annual = highlighted by default
+_a_style = "annual" if _annual else ""
+_m_label_style = "monthly" if not _annual else ""
+
+st.markdown(f"""
+<div class="billing-selector-wrap">
+  <p class="billing-selector-label">Billing Frequency</p>
+  <div class="billing-selector">
+
+    <div class="billing-option {'monthly' if not _annual else ''}">
+      <div class="billing-option-label">Monthly</div>
+      <div class="billing-option-sub">Flexible, cancel anytime</div>
     </div>
-    <p class="p-card-period">free forever</p>
-    <div style="height:28px;"></div>
-    <div class="p-card-divider"></div>
-    <ul class="p-card-features">
-      <li>10 QAM Props per session</li>
-      <li>💦 Live Sweat — real-time tracking</li>
-      <li>📡 Live Games feed</li>
-      <li>📡 Smart NBA Data access</li>
-      <li>⚙️ Settings & preferences</li>
-      <li>🔬 Prop Scanner — up to 5 manual props</li>
-    </ul>
-    <p class="p-card-payment"><span class="secure-icon">🔓</span> No credit card required</p>
+
+    <div class="billing-option {'annual' if _annual else 'monthly'}">
+      {'<div class="billing-checkmark">✓</div>' if _annual else ''}
+      <div class="billing-option-label">Annual</div>
+      <div class="billing-option-sub">Billed once per year</div>
+      <div class="billing-badge-save">✦ Save 10%</div>
+    </div>
+
+  </div>
+</div>
+
+{'<div class="annual-active-banner"><p class="annual-banner-text">🎉 Annual Billing Active — You\'re Saving Up to $29.99/yr</p><p class="annual-banner-sub">Sharp IQ saves $11.99/yr &nbsp;·&nbsp; Smart Money saves $29.99/yr &nbsp;·&nbsp; Best value for serious sharps</p></div>' if _annual else ''}
+""", unsafe_allow_html=True)
+
+# ── Build pricing data for selected billing cycle ────────────
+if _annual:
+    _sharp_price   = "8.99"
+    _sharp_period  = "per month, billed $107.89/yr"
+    _sharp_savings = "✦ YOU SAVE $11.99/yr vs monthly"
+    _sharp_lookup  = "sharp_iq_annual"
+    _smart_price   = "22.49"
+    _smart_period  = "per month, billed $269.89/yr"
+    _smart_savings = "✦ YOU SAVE $29.99/yr vs monthly"
+    _smart_lookup  = "smart_money_annual"
+else:
+    _sharp_price   = "9.99"
+    _sharp_period  = "per month"
+    _sharp_savings = "💡 Switch to Annual — save $11.99/yr"
+    _sharp_lookup  = "sharp_iq"
+    _smart_price   = "24.99"
+    _smart_period  = "per month"
+    _smart_savings = "💡 Switch to Annual — save $29.99/yr"
+    _smart_lookup  = "smart_money"
+
+_sharp_dollars, _sharp_cents = _sharp_price.split(".")
+_smart_dollars, _smart_cents = _smart_price.split(".")
+
+st.markdown(f"""
+<div class="pricing-grid-v2">
+
+  <!-- ── Smart Rookie ── -->
+  <div class="pc2 rookie">
+    <div class="pc2-top-bar"></div>
+    <div class="pc2-body">
+      <span class="pc2-icon">⭐</span>
+      <p class="pc2-tier">Smart Rookie</p>
+      <p class="pc2-tagline">"Welcome to the smart side."</p>
+      <div class="pc2-price-row">
+        <span class="pc2-curr">$</span>
+        <span class="pc2-amt">0</span>
+      </div>
+      <p class="pc2-period">free forever</p>
+      <div style="height:30px;"></div>
+      <div class="pc2-divider"></div>
+      <ul class="pc2-features">
+        <li>12 QAM Props per session</li>
+        <li>💦 Live Sweat — real-time</li>
+        <li>📡 Live Games feed</li>
+        <li>📡 Smart NBA Data</li>
+        <li>⚙️ Settings & preferences</li>
+        <li>🔬 Prop Scanner — 5 manual props</li>
+      </ul>
+    </div>
+    <div class="pc2-cta">
+      <p class="pc2-security">🔓 No credit card required</p>
+    </div>
   </div>
 
-  <!-- Sharp IQ -->
-  <div class="p-card sharp">
-    <span class="p-card-icon">🔥</span>
-    <p class="p-card-name">Sharp IQ</p>
-    <p class="p-card-tagline">"Your IQ just passed the books."</p>
-    <div class="p-card-price-wrap">
-      <span class="p-card-currency">$</span><span class="p-card-amount">9</span><span class="p-card-cents">.99</span>
+  <!-- ── Sharp IQ ── -->
+  <div class="pc2 sharp">
+    <div class="pc2-top-bar"></div>
+    <div class="pc2-body">
+      <span class="pc2-icon">🔥</span>
+      <p class="pc2-tier">Sharp IQ</p>
+      <p class="pc2-tagline">"Your IQ just passed the books."</p>
+      <div class="pc2-price-row">
+        <span class="pc2-curr">$</span>
+        <span class="pc2-amt">{_sharp_dollars}</span>
+        <span class="pc2-cents">.{_sharp_cents}</span>
+      </div>
+      <p class="pc2-period">{_sharp_period}</p>
+      <span class="pc2-savings">{_sharp_savings}</span>
+      <div class="pc2-divider"></div>
+      <ul class="pc2-features">
+        <li>35 QAM Props per session</li>
+        <li>🔬 Unlimited Prop Scanner</li>
+        <li>📄 CSV Upload & Live Retrieval</li>
+        <li>🧬 Entry Builder</li>
+        <li>🛡️ Risk Shield</li>
+        <li>📋 Game Report</li>
+        <li>🔮 Player Simulator</li>
+        <li>📈 Bet Tracker</li>
+      </ul>
     </div>
-    <p class="p-card-period">per month</p>
-    <span class="p-card-annual-note">💰 $107.89/yr — SAVE 10%</span>
-    <div class="p-card-divider"></div>
-    <ul class="p-card-features">
-      <li>25 QAM Props per session</li>
-      <li>🔬 Unlimited Prop Scanner</li>
-      <li>📄 CSV Upload & Live Platform Retrieval</li>
-      <li>🧬 Entry Builder</li>
-      <li>🛡️ Risk Shield</li>
-      <li>📋 Game Report</li>
-      <li>🔮 Player Simulator</li>
-      <li>📈 Bet Tracker</li>
-    </ul>
-    <p class="p-card-payment"><span class="secure-icon">🔒</span> Stripe · Cancel anytime</p>
+    <div class="pc2-cta" id="cta-sharp"></div>
+    <p class="pc2-security" style="padding:0 24px 20px;text-align:center;font-size:.62rem;color:rgba(255,255,255,.22);">🔒 Stripe · Cancel anytime</p>
   </div>
 
-  <!-- Smart Money -->
-  <div class="p-card smart">
-    <span class="p-card-ribbon">MOST POPULAR</span>
-    <span class="p-card-icon">💎</span>
-    <p class="p-card-name">Smart Money</p>
-    <p class="p-card-tagline">"You are the smart money."</p>
-    <div class="p-card-price-wrap">
-      <span class="p-card-currency">$</span><span class="p-card-amount">24</span><span class="p-card-cents">.99</span>
+  <!-- ── Smart Money ── -->
+  <div class="pc2 smart">
+    <div class="pc2-top-bar"></div>
+    <span class="pc2-badge">MOST POPULAR</span>
+    <div class="pc2-body">
+      <span class="pc2-icon">💎</span>
+      <p class="pc2-tier">Smart Money</p>
+      <p class="pc2-tagline">"You are the smart money."</p>
+      <div class="pc2-price-row">
+        <span class="pc2-curr">$</span>
+        <span class="pc2-amt">{_smart_dollars}</span>
+        <span class="pc2-cents">.{_smart_cents}</span>
+      </div>
+      <p class="pc2-period">{_smart_period}</p>
+      <span class="pc2-savings">{_smart_savings}</span>
+      <div class="pc2-divider"></div>
+      <ul class="pc2-features">
+        <li class="note">Everything in Sharp IQ, plus:</li>
+        <li>All 300+ QAM Props — unlimited</li>
+        <li>💰 Smart Money Bets</li>
+        <li>🗺️ Correlation Matrix</li>
+        <li>📊 Proving Grounds</li>
+        <li>🎙️ The Studio</li>
+        <li>Priority analysis queue</li>
+      </ul>
     </div>
-    <p class="p-card-period">per month</p>
-    <span class="p-card-annual-note">💰 $269.89/yr — SAVE 10%</span>
-    <div class="p-card-divider"></div>
-    <ul class="p-card-features">
-      <li class="included-note">Everything in Sharp IQ, plus:</li>
-      <li>✅ All 300+ QAM Props — full access</li>
-      <li>💰 Smart Money Bets</li>
-      <li>🗺️ Correlation Matrix</li>
-      <li>📊 Proving Grounds</li>
-      <li>🎙️ The Studio</li>
-      <li>Priority analysis queue</li>
-    </ul>
-    <p class="p-card-payment"><span class="secure-icon">🔒</span> Stripe · Cancel anytime</p>
+    <div class="pc2-cta" id="cta-smart"></div>
+    <p class="pc2-security" style="padding:0 24px 20px;text-align:center;font-size:.62rem;color:rgba(255,255,255,.22);">🔒 Stripe · Cancel anytime</p>
   </div>
 
-  <!-- Insider Circle -->
-  <div class="p-card insider">
-    <span class="p-card-ribbon">75 SEATS ONLY</span>
-    <span class="p-card-icon">👑</span>
-    <p class="p-card-name">Insider Circle</p>
-    <p class="p-card-tagline">"You knew before everyone."</p>
-    <div class="p-card-price-wrap">
-      <span class="p-card-currency">$</span><span class="p-card-amount">499</span><span class="p-card-cents">.99</span>
+  <!-- ── Insider Circle ── -->
+  <div class="pc2 insider">
+    <div class="pc2-top-bar"></div>
+    <span class="pc2-badge">75 SEATS</span>
+    <div class="pc2-body">
+      <span class="pc2-icon">👑</span>
+      <p class="pc2-tier">Insider Circle</p>
+      <p class="pc2-tagline">"You knew before everyone."</p>
+      <div class="pc2-price-row">
+        <span class="pc2-curr">$</span>
+        <span class="pc2-amt">499</span>
+        <span class="pc2-cents">.99</span>
+      </div>
+      <p class="pc2-period">one-time · lifetime access</p>
+      <span class="pc2-savings">🔥 Limited to 75 founding members</span>
+      <div class="pc2-divider"></div>
+      <ul class="pc2-features">
+        <li class="note">Everything in Smart Money, plus:</li>
+        <li>👑 Insider Circle exclusive features</li>
+        <li>All 300+ QAM Props + 👑 badge</li>
+        <li>Lifetime access — pay once, forever</li>
+        <li>Early access to every new tool</li>
+        <li>Founding member status</li>
+      </ul>
     </div>
-    <p class="p-card-period">one-time · lifetime access</p>
-    <span class="p-card-annual-note">🔥 Limited to 75 members</span>
-    <div class="p-card-divider"></div>
-    <ul class="p-card-features">
-      <li class="included-note">Everything in Smart Money, plus:</li>
-      <li>👑 Insider Circle exclusive features</li>
-      <li>All 300+ QAM Props + 👑 badge</li>
-      <li>Lifetime access — never pay again</li>
-      <li>Early access to new tools</li>
-      <li>Founding member status</li>
-    </ul>
-    <p class="p-card-payment"><span class="secure-icon">🔒</span> One-time payment · Lifetime</p>
+    <div class="pc2-cta" id="cta-insider"></div>
+    <p class="pc2-security" style="padding:0 24px 20px;text-align:center;font-size:.62rem;color:rgba(255,255,255,.22);">🔒 One-time payment · Lifetime access</p>
   </div>
+
 </div>
 """, unsafe_allow_html=True)
 
-# ── SUBSCRIBE BUTTONS ─────────────────────────────────────────
-sub_cols = st.columns(4)
-with sub_cols[0]:
-    st.markdown("##### ⭐ Smart Rookie")
-    st.success("**Free** — you're already here!")
+# ── SUBSCRIBE BUTTONS (below the visual cards) ───────────────
+st.markdown("""
+<style>
+.sub-btn-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin: 0 0 12px;
+}
+@media (max-width: 1100px) { .sub-btn-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .sub-btn-grid { grid-template-columns: 1fr; } }
+</style>
+<div class="sub-btn-grid">
+""", unsafe_allow_html=True)
 
-with sub_cols[1]:
-    st.markdown("##### 🔥 Sharp IQ")
+_btn_cols = st.columns(4)
+
+with _btn_cols[0]:
+    st.success("✅ You're on Free — no upgrade needed to start")
+
+with _btn_cols[1]:
     if is_stripe_configured():
-        with st.form("checkout_sharp_iq"):
-            email_sharp = st.text_input(
-                "Email",
-                placeholder="you@example.com",
-                key="_email_sharp",
-                help="We'll send your receipt here",
-            )
-            if st.form_submit_button(
-                "🚀 Subscribe — $9.99/mo",
-                type="primary",
-                use_container_width=True,
-            ):
+        with st.form("checkout_sharp_v2"):
+            _email_s = st.text_input("Email", placeholder="you@example.com", key="_email_sharp2", label_visibility="collapsed")
+            _lbl_s = f"🔥 Get Sharp IQ Annual — ${_sharp_price}/mo" if _annual else f"🔥 Get Sharp IQ — ${_sharp_price}/mo"
+            _help_s = "Billed $107.89/year · Cancel anytime" if _annual else "Billed monthly · Cancel anytime"
+            if st.form_submit_button(_lbl_s, type="primary", use_container_width=True, help=_help_s):
                 with st.spinner("Creating secure checkout…"):
-                    result = create_checkout_session(
-                        customer_email=email_sharp.strip() if email_sharp else "",
-                        price_lookup="sharp_iq",
-                    )
+                    result = create_checkout_session(customer_email=_email_s.strip() if _email_s else "", price_lookup=_sharp_lookup)
                 if result["success"]:
-                    st.markdown(
-                        f'<meta http-equiv="refresh" content="0; url={result["url"]}">',
-                        unsafe_allow_html=True,
-                    )
+                    st.markdown(f'<meta http-equiv="refresh" content="0; url={result["url"]}">', unsafe_allow_html=True)
                     st.info(f"Redirecting… [Click here]({result['url']})")
                 else:
                     st.error(f"Checkout error: {result['error']}")
     else:
-        st.info("Stripe not configured yet — coming soon!")
+        st.info("Stripe not configured — coming soon!")
 
-with sub_cols[2]:
-    st.markdown("##### 💎 Smart Money")
+with _btn_cols[2]:
     if is_stripe_configured():
-        with st.form("checkout_smart_money"):
-            email_smart = st.text_input(
-                "Email",
-                placeholder="you@example.com",
-                key="_email_smart",
-                help="We'll send your receipt here",
-            )
-            if st.form_submit_button(
-                "🚀 Subscribe — $24.99/mo",
-                type="primary",
-                use_container_width=True,
-            ):
+        with st.form("checkout_smart_v2"):
+            _email_m = st.text_input("Email", placeholder="you@example.com", key="_email_smart2", label_visibility="collapsed")
+            _lbl_m = f"💎 Get Smart Money Annual — ${_smart_price}/mo" if _annual else f"💎 Get Smart Money — ${_smart_price}/mo"
+            _help_m = "Billed $269.89/year · Cancel anytime" if _annual else "Billed monthly · Cancel anytime"
+            if st.form_submit_button(_lbl_m, type="primary", use_container_width=True, help=_help_m):
                 with st.spinner("Creating secure checkout…"):
-                    result = create_checkout_session(
-                        customer_email=email_smart.strip() if email_smart else "",
-                        price_lookup="smart_money",
-                    )
+                    result = create_checkout_session(customer_email=_email_m.strip() if _email_m else "", price_lookup=_smart_lookup)
                 if result["success"]:
-                    st.markdown(
-                        f'<meta http-equiv="refresh" content="0; url={result["url"]}">',
-                        unsafe_allow_html=True,
-                    )
+                    st.markdown(f'<meta http-equiv="refresh" content="0; url={result["url"]}">', unsafe_allow_html=True)
                     st.info(f"Redirecting… [Click here]({result['url']})")
                 else:
                     st.error(f"Checkout error: {result['error']}")
     else:
-        st.info("Stripe not configured yet — coming soon!")
+        st.info("Stripe not configured — coming soon!")
 
-with sub_cols[3]:
-    st.markdown("##### 👑 Insider Circle")
+with _btn_cols[3]:
     if is_stripe_configured():
-        with st.form("checkout_insider"):
-            email_insider = st.text_input(
-                "Email",
-                placeholder="you@example.com",
-                key="_email_insider",
-                help="We'll send your receipt here",
-            )
-            if st.form_submit_button(
-                "👑 Get Lifetime — $499.99",
-                type="primary",
-                use_container_width=True,
-            ):
+        with st.form("checkout_insider_v2"):
+            _email_i = st.text_input("Email", placeholder="you@example.com", key="_email_insider2", label_visibility="collapsed")
+            if st.form_submit_button("👑 Get Lifetime Access — $499.99", type="primary", use_container_width=True):
                 with st.spinner("Creating secure checkout…"):
-                    result = create_checkout_session(
-                        customer_email=email_insider.strip() if email_insider else "",
-                        price_lookup="insider_circle",
-                    )
+                    result = create_checkout_session(customer_email=_email_i.strip() if _email_i else "", price_lookup="insider_circle")
                 if result["success"]:
-                    st.markdown(
-                        f'<meta http-equiv="refresh" content="0; url={result["url"]}">',
-                        unsafe_allow_html=True,
-                    )
+                    st.markdown(f'<meta http-equiv="refresh" content="0; url={result["url"]}">', unsafe_allow_html=True)
                     st.info(f"Redirecting… [Click here]({result['url']})")
                 else:
                     st.error(f"Checkout error: {result['error']}")
     else:
-        st.info("Stripe not configured yet — coming soon!")
+        st.info("Stripe not configured — coming soon!")
+
+st.markdown("</div>", unsafe_allow_html=True)
 
 # ── MONEY-BACK GUARANTEE ─────────────────────────────────────
 st.markdown("""
-<div class="guarantee-badge">
-  <span class="guarantee-icon">🛡️</span>
-  <p class="guarantee-text">
-    <strong>Risk-Free Guarantee</strong> — Cancel your monthly or annual subscription anytime
-    with no questions asked. Insider Circle members get lifetime access from day one.
-    Your payment is processed securely through <strong>Stripe</strong>.
-  </p>
+<div style="display:flex;align-items:center;justify-content:center;gap:14px;
+  background:linear-gradient(135deg,rgba(0,213,89,.04),rgba(45,158,255,.04));
+  border:1px solid rgba(0,213,89,.15);border-radius:16px;
+  padding:20px 32px;margin:16px auto 40px;max-width:640px;text-align:center;">
+  <span style="font-size:2.2rem;">🛡️</span>
+  <div>
+    <p style="margin:0 0 4px;font-family:'Inter',sans-serif;font-weight:800;color:#fff;font-size:.9rem;">
+      Risk-Free Guarantee
+    </p>
+    <p style="margin:0;color:rgba(255,255,255,.45);font-size:.78rem;line-height:1.6;">
+      Cancel any monthly or annual subscription anytime — no questions asked.
+      Insider Circle is a one-time lifetime payment.
+      All payments processed securely through <strong style="color:rgba(255,255,255,.7);">Stripe</strong>.
+    </p>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 

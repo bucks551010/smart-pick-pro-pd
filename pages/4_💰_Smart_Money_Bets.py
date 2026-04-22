@@ -38,6 +38,27 @@ if not require_tier():
 from styles.theme import get_global_css
 st.markdown(get_global_css(), unsafe_allow_html=True)
 
+# ─── Easy Money page: disable AI grid background, use gold/green vibe ──
+st.markdown("""<style>
+.stApp {
+  background-color: #07090F !important;
+  background-image:
+    radial-gradient(ellipse 60% 45% at  5% 10%, rgba(249,198,43,0.09)  0%, transparent 55%),
+    radial-gradient(ellipse 50% 55% at 95% 90%, rgba(0,213,89,0.07)    0%, transparent 50%),
+    radial-gradient(ellipse 40% 35% at 90%  5%, rgba(249,198,43,0.05)  0%, transparent 45%),
+    radial-gradient(ellipse 35% 30% at 10% 95%, rgba(0,213,89,0.04)    0%, transparent 40%) !important;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100% !important;
+}
+.stApp::before { content: none !important; animation: none !important; }
+[data-testid="stAppViewContainer"] {
+  background:
+    radial-gradient(ellipse 55% 42% at  8%  8%, rgba(249,198,43,0.08)  0%, transparent 52%),
+    radial-gradient(ellipse 45% 50% at 92% 92%, rgba(0,213,89,0.07)    0%, transparent 48%),
+    #07090F !important;
+}
+html, body, [class*="css"] { background-color: #07090F !important; }
+</style>""", unsafe_allow_html=True)
+
 # ─── Joseph floating widget ──────────────────────────────────
 from utils.components import inject_joseph_floating, render_sidebar_auth
 st.session_state["joseph_page_context"] = "page_goblin_demon"

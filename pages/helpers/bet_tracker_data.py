@@ -212,7 +212,7 @@ def normalized_bet_type(row: dict) -> str:
         return "demon"
     if "smart money goblin" in _notes:
         return "goblin"
-    if _raw in {"goblin", "demon", "50_50", "standard", "normal", "fantasy", "joseph_pick"}:
+    if _raw in {"goblin", "demon", "50_50", "standard", "normal", "fantasy", "joseph_pick", "risky"}:
         return _raw
     if _line_category in {"goblin", "demon", "50_50"}:
         return _line_category
@@ -223,13 +223,13 @@ def normalized_bet_type(row: dict) -> str:
 
 def bet_type_display_name(bet_type: str) -> str:
     _bt = str(bet_type or "standard").strip().lower()
-    return {"50_50": "50/50", "joseph_pick": "Joseph Pick"}.get(_bt, _bt.title())
+    return {"50_50": "50/50", "joseph_pick": "Joseph Pick", "risky": "⚠️ Risky (Avoid)"}.get(_bt, _bt.title())
 
 
 def bet_type_sort_key(bet_type: str):
     _order = {
         "goblin": 0, "demon": 1, "50_50": 2, "standard": 3,
-        "normal": 4, "fantasy": 5, "joseph_pick": 6,
+        "normal": 4, "fantasy": 5, "joseph_pick": 6, "risky": 7,
     }
     _bt = str(bet_type or "standard").strip().lower()
     return (_order.get(_bt, 99), _bt)

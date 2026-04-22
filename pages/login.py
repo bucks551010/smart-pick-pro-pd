@@ -761,6 +761,355 @@ _logo_img_form = (
     if _logo_b64 else '<span style="font-size:2.6rem">⚡</span>'
 )
 
+# ════════════════════════════════════════════════════════════
+# PHASE 2 — FULL-SCREEN CINEMATIC HERO
+# ════════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+/* ── Hero section ────────────────────────────────────────────── */
+.lp-hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 24px 100px;
+    overflow: hidden;
+}
+
+/* Animated grid mesh background */
+.lp-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(rgba(0,213,89,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,213,89,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%,
+        black 0%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%,
+        black 0%, transparent 100%);
+    animation: heroGridPulse 8s ease-in-out infinite;
+}
+@keyframes heroGridPulse {
+    0%,100% { opacity: 0.6; }
+    50%      { opacity: 1.0; }
+}
+
+/* Radial green glow centre */
+.lp-hero::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 50% 45%,
+        rgba(0,213,89,0.09) 0%,
+        rgba(45,158,255,0.05) 35%,
+        transparent 70%);
+    pointer-events: none;
+}
+
+/* Floating orbs behind hero */
+.lp-hero-orb {
+    position: absolute; border-radius: 50%;
+    filter: blur(80px); pointer-events: none;
+}
+.lp-hero-orb-1 {
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(0,213,89,0.12), transparent 70%);
+    top: -120px; left: 50%;
+    transform: translateX(-50%);
+    animation: heroOrbFloat1 14s ease-in-out infinite;
+}
+.lp-hero-orb-2 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(45,158,255,0.1), transparent 70%);
+    bottom: -80px; right: 5%;
+    animation: heroOrbFloat2 18s ease-in-out infinite;
+}
+.lp-hero-orb-3 {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(192,132,252,0.07), transparent 70%);
+    top: 30%; left: -60px;
+    animation: heroOrbFloat1 22s ease-in-out infinite reverse;
+}
+@keyframes heroOrbFloat1 {
+    0%,100% { transform: translateX(-50%) translateY(0px); }
+    50%      { transform: translateX(-50%) translateY(-30px); }
+}
+@keyframes heroOrbFloat2 {
+    0%,100% { transform: translateY(0px); }
+    50%      { transform: translateY(-20px); }
+}
+
+/* Logo badge above headline */
+.lp-hero-logo-wrap {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center;
+    margin-bottom: 36px;
+    animation: heroFadeUp 0.8s cubic-bezier(0.16,1,0.3,1) both;
+}
+.lp-hero-logo-img {
+    width: 110px; height: 110px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 32px rgba(0,213,89,0.5))
+            drop-shadow(0 0 60px rgba(45,158,255,0.2));
+    animation: heroLogoPulse 4s ease-in-out infinite;
+}
+@keyframes heroLogoPulse {
+    0%,100% { filter: drop-shadow(0 0 28px rgba(0,213,89,0.4)) drop-shadow(0 0 50px rgba(45,158,255,0.15)); }
+    50%      { filter: drop-shadow(0 0 48px rgba(0,213,89,0.7)) drop-shadow(0 0 80px rgba(45,158,255,0.3)); }
+}
+
+/* Neural Engine badge */
+.lp-hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem; font-weight: 800;
+    color: #00D559;
+    background: rgba(0,213,89,0.06);
+    border: 1px solid rgba(0,213,89,0.22);
+    padding: 8px 20px; border-radius: 100px;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    margin-bottom: 24px;
+    position: relative; overflow: hidden;
+    z-index: 2;
+    animation: heroFadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s both;
+}
+.lp-hero-badge::after {
+    content: '';
+    position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0,213,89,0.14), transparent);
+    animation: agShimmer 3s ease-in-out infinite;
+}
+.lp-hero-badge-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #00D559;
+    box-shadow: 0 0 10px rgba(0,213,89,0.7);
+    animation: agLivePulse 2s ease-in-out infinite;
+}
+
+/* Main headline */
+.lp-hero-h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(3.2rem, 8vw, 7.5rem);
+    font-weight: 900;
+    line-height: 0.92;
+    letter-spacing: -0.06em;
+    color: #fff;
+    text-transform: uppercase;
+    margin: 0 0 0;
+    position: relative; z-index: 2;
+    animation: heroFadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.2s both;
+}
+.lp-hero-h1 .line-problem {
+    display: block;
+    background: linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.75) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.lp-hero-h1 .line-us {
+    display: block;
+    background: linear-gradient(135deg, #00FF85 0%, #00D559 30%, #2D9EFF 60%, #c084fc 90%);
+    background-size: 300% 200%;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: agGradientShift 5s ease infinite;
+    padding-bottom: 6px;
+}
+
+/* Sub-copy */
+.lp-hero-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(0.95rem, 2vw, 1.15rem);
+    color: rgba(255,255,255,0.42);
+    line-height: 1.75;
+    max-width: 560px;
+    margin: 28px auto 44px;
+    position: relative; z-index: 2;
+    animation: heroFadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.35s both;
+}
+.lp-hero-sub strong { color: rgba(255,255,255,0.8); font-weight: 700; }
+
+/* CTA buttons */
+.lp-hero-ctas {
+    display: flex; align-items: center; justify-content: center;
+    gap: 14px; flex-wrap: wrap;
+    position: relative; z-index: 2;
+    animation: heroFadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.45s both;
+}
+.lp-cta-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem; font-weight: 800;
+    color: #020C07;
+    text-decoration: none;
+    padding: 16px 36px; border-radius: 100px;
+    background: linear-gradient(135deg, #00FF85 0%, #00D559 50%, #00B74D 100%);
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow:
+        0 0 40px rgba(0,213,89,0.5),
+        0 8px 32px rgba(0,213,89,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.25);
+    letter-spacing: 0.02em;
+    transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+    position: relative; overflow: hidden;
+}
+.lp-cta-primary::after {
+    content: '';
+    position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: agShimmer 3s ease-in-out infinite;
+}
+.lp-cta-primary:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow:
+        0 0 60px rgba(0,213,89,0.7),
+        0 12px 48px rgba(0,213,89,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.lp-cta-secondary {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.95rem; font-weight: 700;
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    padding: 15px 32px; border-radius: 100px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    letter-spacing: 0.02em;
+    transition: all 0.25s;
+}
+.lp-cta-secondary:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.22);
+    transform: translateY(-2px);
+}
+
+/* Scroll indicator */
+.lp-hero-scroll {
+    position: absolute; bottom: 32px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    z-index: 2;
+    animation: heroFadeUp 1s cubic-bezier(0.16,1,0.3,1) 0.7s both;
+}
+.lp-hero-scroll-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.52rem; font-weight: 700;
+    color: rgba(255,255,255,0.18);
+    text-transform: uppercase; letter-spacing: 0.12em;
+}
+.lp-hero-scroll-line {
+    width: 1px; height: 40px;
+    background: linear-gradient(180deg, rgba(0,213,89,0.5), transparent);
+    animation: scrollLinePulse 2s ease-in-out infinite;
+}
+@keyframes scrollLinePulse {
+    0%,100% { opacity: 0.4; transform: scaleY(1); }
+    50%      { opacity: 1;   transform: scaleY(1.1); }
+}
+
+/* Entry animation */
+@keyframes heroFadeUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Platform logos strip */
+.lp-hero-platforms {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; flex-wrap: wrap;
+    margin-top: 44px;
+    position: relative; z-index: 2;
+    animation: heroFadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.55s both;
+}
+.lp-hero-platform-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.58rem; font-weight: 700;
+    color: rgba(255,255,255,0.2);
+    text-transform: uppercase; letter-spacing: .1em;
+    margin-right: 6px;
+}
+.lp-hero-platform-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem; font-weight: 800;
+    padding: 5px 14px; border-radius: 100px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+.lp-hp-pp   { color: #00D559; background: rgba(0,213,89,0.08);   border: 1px solid rgba(0,213,89,0.2);   }
+.lp-hp-dk   { color: #2D9EFF; background: rgba(45,158,255,0.08); border: 1px solid rgba(45,158,255,0.2); }
+.lp-hp-ud   { color: #F9C62B; background: rgba(249,198,43,0.08); border: 1px solid rgba(249,198,43,0.2); }
+.lp-hp-pa   { color: #c084fc; background: rgba(192,132,252,0.08);border: 1px solid rgba(192,132,252,0.2);}
+</style>
+""", unsafe_allow_html=True)
+
+_logo_hero_big = (
+    f'<img class="lp-hero-logo-img" src="data:image/png;base64,{_logo_b64}" alt="Smart Pick Pro">'
+    if _logo_b64 else '<span style="font-size:5rem;line-height:1;">⚡</span>'
+)
+
+st.markdown(f"""
+<section class="lp-hero" id="lp-hero">
+  <!-- Floating orbs -->
+  <div class="lp-hero-orb lp-hero-orb-1"></div>
+  <div class="lp-hero-orb lp-hero-orb-2"></div>
+  <div class="lp-hero-orb lp-hero-orb-3"></div>
+
+  <!-- Logo -->
+  <div class="lp-hero-logo-wrap">
+    {_logo_hero_big}
+  </div>
+
+  <!-- Badge -->
+  <div class="lp-hero-badge">
+    <span class="lp-hero-badge-dot"></span>
+    Neural Engine v6.0 &mdash; 6 AI Models Active
+  </div>
+
+  <!-- Main headline -->
+  <h1 class="lp-hero-h1">
+    <span class="line-problem">The House<br>Has a Problem.</span>
+    <span class="line-us">It&rsquo;s&nbsp;Us.</span>
+  </h1>
+
+  <!-- Sub-copy -->
+  <p class="lp-hero-sub">
+    <strong>6 AI models. 300+ nightly props. One SAFE Score&trade;.</strong><br>
+    Every night our Neural Engine scans PrizePicks, DraftKings &amp; Underdog
+    and delivers the highest-edge plays — ranked, explained, and ready to deploy.
+    Stop guessing. Start winning with a <strong>verifiable edge</strong>.
+  </p>
+
+  <!-- CTAs -->
+  <div class="lp-hero-ctas">
+    <a class="lp-cta-primary" href="?auth=signup">
+      ⚡ Start Free — No Card Needed
+    </a>
+    <a class="lp-cta-secondary" href="?auth=login">
+      🔒 Sign In
+    </a>
+  </div>
+
+  <!-- Platform coverage -->
+  <div class="lp-hero-platforms">
+    <span class="lp-hero-platform-label">Covers</span>
+    <span class="lp-hero-platform-pill lp-hp-pp">PrizePicks</span>
+    <span class="lp-hero-platform-pill lp-hp-dk">DraftKings</span>
+    <span class="lp-hero-platform-pill lp-hp-ud">Underdog</span>
+    <span class="lp-hero-platform-pill lp-hp-pa">Parlayapp</span>
+  </div>
+
+  <!-- Scroll indicator -->
+  <div class="lp-hero-scroll" aria-hidden="true">
+    <span class="lp-hero-scroll-text">Scroll</span>
+    <div class="lp-hero-scroll-line"></div>
+  </div>
+</section>
+""", unsafe_allow_html=True)
+
 # ── Split-panel outer wrapper: hero LEFT, form RIGHT ──────────
 st.markdown(f"""
 <div class="spp-portal">

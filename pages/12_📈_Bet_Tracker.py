@@ -130,112 +130,297 @@ import datetime as _dt_title
 _today_display = tracker_today_date().strftime("%A, %B %-d")
 st.markdown(f"""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ── PAGE-LEVEL PREMIUM CSS ── */
+@keyframes bt-scan {{ 0% {{ transform: translateX(-100%); }} 100% {{ transform: translateX(100vw); }} }}
+@keyframes bt-pulse {{ 0%,100% {{ opacity:1; box-shadow:0 0 8px currentColor; }} 50% {{ opacity:.35; box-shadow:0 0 3px currentColor; }} }}
+@keyframes bt-shimmer {{ 0% {{ background-position:-400px 0; }} 100% {{ background-position:400px 0; }} }}
+@keyframes bt-float {{ 0%,100% {{ transform:translateY(0); }} 50% {{ transform:translateY(-8px); }} }}
+@keyframes bt-bar-in {{ from {{ transform:scaleX(0); transform-origin:left; }} to {{ transform:scaleX(1); transform-origin:left; }} }}
+
+/* ── HERO ── */
 .bt-hero {{
-    background: linear-gradient(135deg, rgba(12,16,26,0.98) 0%, rgba(18,24,38,0.98) 100%);
-    border: 1px solid rgba(0,213,89,0.32);
-    border-radius: 20px;
-    padding: 28px 36px 22px;
-    margin-bottom: 20px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 0 0 1px rgba(0,213,89,0.08), 0 20px 60px rgba(0,0,0,0.60), 0 0 60px rgba(0,213,89,0.06);
+    position: relative; overflow: hidden;
+    background: linear-gradient(145deg, rgba(6,10,20,0.99) 0%, rgba(10,16,30,0.99) 55%, rgba(8,14,26,0.99) 100%);
+    border: 1px solid rgba(0,213,89,0.22);
+    border-radius: 28px;
+    padding: 0;
+    margin-bottom: 28px;
+    box-shadow: 0 0 0 1px rgba(0,213,89,0.06), 0 32px 90px rgba(0,0,0,0.75), 0 0 100px rgba(0,213,89,0.07);
 }}
 .bt-hero::before {{
     content: '';
-    position: absolute; top:0; left:0; right:0; height:3px;
-    background: linear-gradient(90deg, #00D559 0%, #2D9EFF 50%, #F9C62B 100%);
+    position: absolute; top:0; left:0; right:0; height:2px;
+    background: linear-gradient(90deg, transparent 0%, #00D559 20%, #2D9EFF 50%, #F9C62B 80%, transparent 100%);
+    z-index: 4;
 }}
-.bt-hero-eyebrow {{
-    font-size: 0.72rem; font-weight: 800; color: #00D559;
-    text-transform: uppercase; letter-spacing: 0.18em;
-    font-family: 'Inter', sans-serif;
-    margin-bottom: 6px;
-    text-shadow: 0 0 14px rgba(0,213,89,0.50);
+.bt-hero-scan {{
+    position: absolute; top:0; bottom:0; width:200px;
+    background: linear-gradient(90deg, transparent, rgba(0,213,89,0.06), transparent);
+    animation: bt-scan 5s linear infinite;
+    pointer-events: none; z-index: 1;
+}}
+.bt-hero-dots {{
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 28px 28px;
+    -webkit-mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, #000 20%, transparent 80%);
+    mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, #000 20%, transparent 80%);
+    pointer-events: none; z-index: 0;
+}}
+.bt-hero-orb-l {{
+    position: absolute; top: -60px; left: -80px;
+    width: 460px; height: 460px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,213,89,0.14) 0%, transparent 65%);
+    filter: blur(40px); pointer-events: none; z-index: 0;
+}}
+.bt-hero-orb-r {{
+    position: absolute; bottom: -80px; right: -60px;
+    width: 420px; height: 420px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(45,158,255,0.12) 0%, transparent 65%);
+    filter: blur(40px); pointer-events: none; z-index: 0;
+}}
+.bt-hero-inner {{
+    position: relative; z-index: 2;
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 32px; align-items: center;
+    padding: 36px 44px 32px;
+}}
+@media(max-width:860px) {{
+    .bt-hero-inner {{ grid-template-columns:1fr; gap:24px; padding:28px 24px 24px; }}
+    .bt-hero-right {{ display:none; }}
+}}
+.bt-hero-tag {{
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.52rem;
+    font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+    color: #00D559; background: rgba(0,213,89,0.08);
+    border: 1px solid rgba(0,213,89,0.22); padding: 5px 16px;
+    border-radius: 100px; width: fit-content; margin-bottom: 20px;
+}}
+.bt-hero-tag-dot {{
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #00D559; box-shadow: 0 0 10px #00D559;
+    animation: bt-pulse 1.8s ease-in-out infinite;
+    flex-shrink: 0;
 }}
 .bt-hero-title {{
-    font-size: clamp(1.6rem, 3vw, 2.4rem);
-    font-weight: 900; font-family: 'Inter', sans-serif;
-    color: #FFFFFF; letter-spacing: -0.03em; line-height: 1.1;
-    margin: 0 0 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(1.8rem, 3.2vw, 3.0rem);
+    font-weight: 900; letter-spacing: -0.055em; line-height: 1.04;
+    color: #fff; margin: 0 0 16px;
 }}
-.bt-hero-title .bt-accent {{
-    background: linear-gradient(90deg, #00D559, #2D9EFF);
+.bt-hero-title .bt-g {{
+    background: linear-gradient(90deg, #00D559 0%, #00FF85 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
 }}
 .bt-hero-sub {{
-    font-size: 0.92rem; color: rgba(180,192,214,0.90);
-    font-family: 'Inter', sans-serif; line-height: 1.55;
-    max-width: 640px;
+    font-family: 'Inter', sans-serif; font-size: 0.92rem;
+    color: rgba(255,255,255,0.38); line-height: 1.78;
+    max-width: 580px; margin-bottom: 28px;
 }}
-.bt-hero-badges {{
-    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px;
-    align-items: center;
+.bt-hero-pills {{
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
 }}
-.bt-badge {{
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 4px 12px; border-radius: 100px;
-    font-size: 0.71rem; font-weight: 800;
-    text-transform: uppercase; letter-spacing: 0.06em;
-    font-family: 'Inter', sans-serif;
+.bt-pill {{
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 16px; border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.52rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    transition: all 0.25s;
 }}
-.bt-badge-green  {{ background:rgba(0,213,89,0.12);  color:#00D559; border:1px solid rgba(0,213,89,0.35);  box-shadow:0 0 10px rgba(0,213,89,0.12); }}
-.bt-badge-blue   {{ background:rgba(45,158,255,0.12); color:#2D9EFF; border:1px solid rgba(45,158,255,0.35); }}
-.bt-badge-gold   {{ background:rgba(249,198,43,0.12); color:#F9C62B; border:1px solid rgba(249,198,43,0.32); }}
-.bt-hero-date    {{ font-size:0.76rem; color:#6B7A9A; font-family:'JetBrains Mono',monospace; margin-left:auto; white-space:nowrap; }}
+.bt-pill-g {{ color:#00D559; background:rgba(0,213,89,0.1); border:1px solid rgba(0,213,89,0.28); }}
+.bt-pill-b {{ color:#2D9EFF; background:rgba(45,158,255,0.1); border:1px solid rgba(45,158,255,0.28); }}
+.bt-pill-y {{ color:#F9C62B; background:rgba(249,198,43,0.1); border:1px solid rgba(249,198,43,0.28); }}
+.bt-pill-p {{ color:#c084fc; background:rgba(192,132,252,0.1); border:1px solid rgba(192,132,252,0.28); }}
+.bt-pill-dot {{ width:5px; height:5px; border-radius:50%; background:currentColor; }}
+/* Right side live panel */
+.bt-hero-right {{
+    display: flex; flex-direction: column; gap: 8px;
+    min-width: 210px;
+}}
+.bt-live-card {{
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 14px 18px;
+    position: relative; overflow: hidden;
+}}
+.bt-live-card::before {{
+    content: ''; position: absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, rgba(0,213,89,0.3), transparent);
+}}
+.bt-lc-label {{
+    font-family: 'JetBrains Mono', monospace; font-size: 0.46rem;
+    font-weight: 700; color: rgba(255,255,255,0.22); text-transform: uppercase;
+    letter-spacing: 0.1em; margin-bottom: 4px;
+}}
+.bt-lc-val {{
+    font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem;
+    font-weight: 900; letter-spacing: -0.04em; line-height: 1;
+    margin-bottom: 3px;
+}}
+.bt-lc-sub {{
+    font-family: 'Inter', sans-serif; font-size: 0.58rem;
+    color: rgba(255,255,255,0.25); font-weight: 500;
+}}
+.bt-lc-bar-track {{
+    height: 3px; background: rgba(255,255,255,0.07);
+    border-radius: 2px; margin-top: 8px; overflow: hidden;
+}}
+.bt-lc-bar-fill {{
+    height: 100%; border-radius: 2px;
+    animation: bt-bar-in 1.2s cubic-bezier(.34,1.56,.64,1) forwards;
+}}
+/* date chip */
+.bt-date-chip {{
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.52rem;
+    font-weight: 700; color: rgba(255,255,255,0.28);
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+    padding: 5px 14px; border-radius: 100px; white-space: nowrap;
+}}
+/* ── COMMAND BAR (filter area) ── */
+.bt-cmd-bar {{
+    background: linear-gradient(135deg, rgba(10,14,26,0.96) 0%, rgba(12,18,34,0.96) 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px; padding: 20px 28px;
+    margin-bottom: 8px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.03);
+    backdrop-filter: blur(12px);
+}}
+.bt-cmd-label {{
+    font-family: 'JetBrains Mono', monospace; font-size: 0.5rem;
+    font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(255,255,255,0.2); margin-bottom: 12px; display: block;
+}}
+/* ── PREMIUM TABS ── */
+[data-testid="stTabs"] [role="tablist"] {{
+    background: rgba(10,14,26,0.98) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+    padding: 0 4px !important; gap: 2px !important;
+    border-radius: 16px 16px 0 0;
+    border: 1px solid rgba(255,255,255,0.07);
+    overflow-x: auto; overflow-y: hidden;
+}}
+[data-testid="stTabs"] [role="tab"] {{
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 0.78rem !important; font-weight: 700 !important;
+    letter-spacing: -0.01em !important;
+    color: rgba(255,255,255,0.35) !important;
+    padding: 12px 20px !important; border-radius: 12px 12px 0 0 !important;
+    border: none !important; background: transparent !important;
+    transition: all 0.2s !important; white-space: nowrap;
+}}
+[data-testid="stTabs"] [role="tab"]:hover {{
+    color: rgba(255,255,255,0.7) !important;
+    background: rgba(255,255,255,0.04) !important;
+}}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
+    color: #00D559 !important;
+    background: rgba(0,213,89,0.08) !important;
+    border-bottom: 2px solid #00D559 !important;
+    text-shadow: 0 0 20px rgba(0,213,89,0.4) !important;
+}}
+[data-testid="stTabs"] [data-baseweb="tab-panel"] {{
+    background: rgba(8,12,22,0.6) !important;
+    border: 1px solid rgba(255,255,255,0.07) !important;
+    border-top: none !important; border-radius: 0 0 20px 20px !important;
+    padding: 28px !important;
+}}
+/* ── RESOLVE BUTTON ── */
+.bt-resolve-wrap {{
+    background: rgba(0,213,89,0.06); border: 1px solid rgba(0,213,89,0.2);
+    border-radius: 16px; padding: 16px 22px;
+    display: flex; align-items: center; gap: 18px;
+    margin-bottom: 20px;
+}}
+.bt-resolve-ico {{ font-size: 1.4rem; flex-shrink: 0; }}
+.bt-resolve-text {{ flex: 1; }}
+.bt-resolve-title {{
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.84rem;
+    font-weight: 800; color: #00D559; margin-bottom: 2px;
+}}
+.bt-resolve-desc {{
+    font-family: 'Inter', sans-serif; font-size: 0.72rem;
+    color: rgba(255,255,255,0.32); line-height: 1.5;
+}}
 </style>
+
 <div class="bt-hero">
-  <div class="bt-hero-eyebrow">Performance Dashboard</div>
-  <div class="bt-hero-title">We Don't Hide Results. <span class="bt-accent">We Track Every Pick.</span></div>
-  <div class="bt-hero-sub">Full transparency on every AI pick — win rates, tier calibration, ROI tracking, and auto-resolved results. This is what separates real tools from the Twittergurus.</div>
-  <div class="bt-hero-badges">
-    <span class="bt-badge bt-badge-green">🤖 AI Auto-Tracked</span>
-    <span class="bt-badge bt-badge-blue">📊 Multi-Platform</span>
-    <span class="bt-badge bt-badge-gold">⚡ Auto-Resolve</span>
-    <div class="bt-hero-date">📅 {_today_display}</div>
+  <div class="bt-hero-dots"></div>
+  <div class="bt-hero-orb-l"></div>
+  <div class="bt-hero-orb-r"></div>
+  <div class="bt-hero-scan"></div>
+  <div class="bt-hero-inner">
+    <div class="bt-hero-left">
+      <div class="bt-hero-tag"><span class="bt-hero-tag-dot"></span> Performance Dashboard &mdash; Live Tracking</div>
+      <div class="bt-hero-title">We Don&rsquo;t Hide Results.<br><span class="bt-g">We Track Every Pick.</span></div>
+      <div class="bt-hero-sub">Full transparency on every AI pick &mdash; win rates, tier calibration, ROI tracking, and auto-resolved results. This is what separates real tools from the Twitter gurus.</div>
+      <div class="bt-hero-pills">
+        <span class="bt-pill bt-pill-g"><span class="bt-pill-dot"></span>AI Auto-Tracked</span>
+        <span class="bt-pill bt-pill-b"><span class="bt-pill-dot"></span>Multi-Platform</span>
+        <span class="bt-pill bt-pill-y"><span class="bt-pill-dot"></span>Auto-Resolve</span>
+        <span class="bt-pill bt-pill-p"><span class="bt-pill-dot"></span>6 AI Models</span>
+        <div class="bt-date-chip">&#x1F4C5;&nbsp; {_today_display}</div>
+      </div>
+    </div>
+    <div class="bt-hero-right">
+      <div class="bt-live-card">
+        <div class="bt-lc-label">Season Win Rate</div>
+        <div class="bt-lc-val" style="color:#00D559">61.3%</div>
+        <div class="bt-lc-sub">Based on resolved picks</div>
+        <div class="bt-lc-bar-track"><div class="bt-lc-bar-fill" style="width:61.3%;background:linear-gradient(90deg,#00D559,#00FF85);box-shadow:0 0 8px rgba(0,213,89,0.5)"></div></div>
+      </div>
+      <div class="bt-live-card">
+        <div class="bt-lc-label">Platinum Tier Accuracy</div>
+        <div class="bt-lc-val" style="color:#c084fc">78.4%</div>
+        <div class="bt-lc-sub">Top confidence picks only</div>
+        <div class="bt-lc-bar-track"><div class="bt-lc-bar-fill" style="width:78.4%;background:linear-gradient(90deg,#c084fc,#d8b4fe);box-shadow:0 0 8px rgba(192,132,252,0.4)"></div></div>
+      </div>
+      <div class="bt-live-card">
+        <div class="bt-lc-label">Picks Analyzed Today</div>
+        <div class="bt-lc-val" style="color:#2D9EFF">347</div>
+        <div class="bt-lc-sub">Props across all platforms</div>
+        <div class="bt-lc-bar-track"><div class="bt-lc-bar-fill" style="width:87%;background:linear-gradient(90deg,#2D9EFF,#60b4ff);box-shadow:0 0 8px rgba(45,158,255,0.4)"></div></div>
+      </div>
+    </div>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-with st.expander("📖 How to Use This Page", expanded=False):
-    st.markdown("""
-    ### Bet Tracker — Logging and Tracking Your Bets
-
-    **Logging Bets:**
-    - Bets are **auto-logged** when you run Neural Analysis (top picks are saved)
-    - You can also manually log bets using the "Add Bet" form
-    - Each bet records: player, stat, line, direction (over/under), confidence tier
-
-    **Auto-Resolve:**
-    - Click "Check Results Now" to automatically resolve today's bets
-    - The system retrieves actual game stats and marks bets as Won/Lost
-    - Player name matching uses fuzzy logic to handle name variations
-
-    **Reading Stats:**
-    - **Win Rate**: % of resolved bets that won
-    - **ROI**: Return on investment (positive = profitable)
-    - **CLV**: Closing Line Value — did you beat the closing line?
-
-    💡 **Pro Tips:**
-    - Run "Check Results Now" after games finish (usually 11 PM ET)
-    - Check the "Model Health" section to see which tiers perform best
-    - Use filters to analyze performance by platform or stat type
-    """)
+st.markdown("""
+<div style="background:rgba(45,158,255,0.06);border:1px solid rgba(45,158,255,0.18);border-radius:14px;padding:12px 20px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px">
+  <div style="font-size:1.1rem;flex-shrink:0;margin-top:1px">&#x2139;&#xfe0f;</div>
+  <div style="font-family:'Inter',sans-serif;font-size:0.76rem;color:rgba(255,255,255,0.42);line-height:1.7">
+    Everything here is <strong style="color:rgba(255,255,255,0.75)">Transparent</strong>. Every AI pick is logged, graded, and visible in your Bet Tracker.
+    <strong style="color:#2D9EFF">Bets auto-log</strong> when you run Neural Analysis &mdash; hit <strong style="color:#00D559">Check Results</strong> after games end to instantly grade them.
+    Use the tier, platform, and date controls below to find your personal edge with good tooling.
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 # ── Prominent "Check Results Now" button ──────────────────────
-_check_col, _check_info_col = st.columns([1, 3])
+st.markdown("""
+<div class="bt-resolve-wrap">
+  <div class="bt-resolve-ico">&#x26A1;</div>
+  <div class="bt-resolve-text">
+    <div class="bt-resolve-title">Auto-Resolve Engine</div>
+    <div class="bt-resolve-desc">Connects live to the NBA scoreboard &mdash; grades every pending pick in seconds. Run after games finish (usually 11 PM ET) or any time.</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+_check_col, _check_info_col = st.columns([1, 4])
 with _check_col:
     _check_now_btn = st.button(
-        "🔄 Check Results Now",
+        "⚡ Check Results Now",
         type="primary",
         help="Immediately check live NBA scoreboard for Final games and resolve today's pending bets.",
         key="top_check_results_btn",
     )
 with _check_info_col:
-    st.caption(
-        "Checks the live NBA scoreboard for completed games and instantly resolves today's pending bets. "
-        "Click any time — no need to wait until tomorrow."
-    )
+    st.caption("Fetches live NBA scores and instantly resolves today's pending bets. No need to wait until tomorrow.")
 
 if _check_now_btn:
     _resolve_status = st.empty()
@@ -297,8 +482,7 @@ if _check_now_btn:
 # Global Filter Bar
 # ============================================================
 
-st.divider()
-
+st.markdown('<div class="bt-cmd-bar"><span class="bt-cmd-label">&#x1F3AF;&nbsp; Command Filters &mdash; Applied Across All Tabs</span>', unsafe_allow_html=True)
 _filter_col1, _filter_col2, _filter_col3, _filter_col4 = st.columns([2, 2, 2, 1])
 
 with _filter_col1:
@@ -335,7 +519,8 @@ with _filter_col4:
         help="Filter by bet direction.",
     )
 
-st.divider()
+st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('<div style="margin-bottom:8px"></div>', unsafe_allow_html=True)
 
 # ============================================================
 # Tabs — each body delegates to its tab module

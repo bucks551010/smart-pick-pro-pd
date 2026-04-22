@@ -822,7 +822,7 @@ _SIDEBAR_NAV_DESCRIPTIONS = {
 
 
 def inject_sidebar_nav_tooltips() -> None:
-    """Inject CSS-based tooltips on sidebar nav items via JavaScript."""
+    """Inject elite nav CSS + tooltips on sidebar nav items via JavaScript."""
     if st.session_state.get("_nav_tooltips_injected"):
         return
     st.session_state["_nav_tooltips_injected"] = True
@@ -830,26 +830,119 @@ def inject_sidebar_nav_tooltips() -> None:
     # Build JS map of page name → tooltip
     import json as _json_mod
     _map_js = _json_mod.dumps(_SIDEBAR_NAV_DESCRIPTIONS)
+
+    # Section groupings — emoji prefix → label shown above that group
+    _SECTION_LABELS = {
+        "0_": ("", None),              # Live Sweat — top of list, no label
+        "1_": ("ANALYSIS", "#3A4A6A"),  # Live Games starts analysis block
+        "4_": ("PICKS", "#3A4A6A"),     # Smart Money starts picks block
+        "8_": ("TOOLS", "#3A4A6A"),     # Entry Builder starts tools block
+        "10_": ("DATA & RESEARCH", "#3A4A6A"),
+        "12_": ("PERFORMANCE", "#3A4A6A"),
+        "14_": ("ACCOUNT", "#3A4A6A"),
+    }
+
+    # Inject late-binding CSS that runs after Streamlit renders nav
+    _elite_nav_css = """
+<style>
+/* ── Elite nav overrides (late-inject to beat Streamlit specificity) ── */
+[data-testid="stSidebarNavItems"] li {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+/* Ensure nav text inherits proper color and doesn't get overridden */
+[data-testid="stSidebarNavLink"] p,
+[data-testid="stSidebarNavLink"] span,
+[data-testid="stSidebarNavItems"] a p,
+[data-testid="stSidebarNavItems"] a span {
+  color: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  letter-spacing: inherit !important;
+}
+/* Pill highlight glow on active */
+[data-testid="stSidebar"] [data-testid="stSidebarNavLink"][aria-current="page"] {
+  text-shadow: 0 0 20px rgba(0,213,89,0.45) !important;
+}
+/* Section header labels injected by JS */
+.spp-nav-section-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.60rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #3A4A6A !important;
+  padding: 14px 20px 4px 22px;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+/* Thin divider above section labels (except first) */
+.spp-nav-section-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.05);
+  margin: 4px 14px 0;
+}
+</style>
+"""
+    st.markdown(_elite_nav_css, unsafe_allow_html=True)
+
+    _section_labels_js = _json_mod.dumps(_SECTION_LABELS)
     _tooltip_script = (
         '<script>\n'
         '(function() {\n'
         '    if (window.__sppNavTooltips) return;\n'
         '    window.__sppNavTooltips = true;\n'
-        '    var map = ' + _map_js + ';\n'
+        '    var tipMap = ' + _map_js + ';\n'
+        '    var sectionMap = ' + _section_labels_js + ';\n'
+        '\n'
         '    function addTooltips() {\n'
-        '        var links = document.querySelectorAll(\'[data-testid="stSidebarNav"] a span\');\n'
-        '        links.forEach(function(span) {\n'
-        '            var text = (span.textContent || "").trim();\n'
+        '        var links = document.querySelectorAll(\'[data-testid="stSidebarNav"] a, [data-testid="stSidebarNavItems"] a\');\n'
+        '        links.forEach(function(a) {\n'
+        '            var spans = a.querySelectorAll("span");\n'
+        '            var text = "";\n'
+        '            spans.forEach(function(s) { text += s.textContent; });\n'
+        '            text = text.trim();\n'
         '            var clean = text.replace(/^\\S+\\s*/, "").trim();\n'
         '            if (!clean) clean = text;\n'
-        '            var tip = map[clean];\n'
-        '            if (tip && !span.parentElement.getAttribute("title")) {\n'
-        '                span.parentElement.setAttribute("title", tip);\n'
+        '            var tip = tipMap[clean];\n'
+        '            if (tip && !a.getAttribute("title")) {\n'
+        '                a.setAttribute("title", tip);\n'
         '            }\n'
         '        });\n'
         '    }\n'
-        '    setTimeout(addTooltips, 1500);\n'
-        '    var obs = new MutationObserver(function() { setTimeout(addTooltips, 300); });\n'
+        '\n'
+        '    function addSectionLabels() {\n'
+        '        var items = document.querySelectorAll(\'[data-testid="stSidebarNavItems"] li\');\n'
+        '        items.forEach(function(li) {\n'
+        '            if (li.dataset.sppLabeled) return;\n'
+        '            var a = li.querySelector("a");\n'
+        '            if (!a) return;\n'
+        '            var href = a.getAttribute("href") || "";\n'
+        '            var slug = href.replace(/^.*\\//, "").replace(/%[0-9A-Fa-f]{2}/g, "_");\n'
+        '            var label = null;\n'
+        '            Object.keys(sectionMap).forEach(function(prefix) {\n'
+        '                if (slug.startsWith(prefix) && sectionMap[prefix][0]) {\n'
+        '                    label = sectionMap[prefix][0];\n'
+        '                }\n'
+        '            });\n'
+        '            if (label) {\n'
+        '                var divider = document.createElement("div");\n'
+        '                divider.className = "spp-nav-section-divider";\n'
+        '                var labelEl = document.createElement("span");\n'
+        '                labelEl.className = "spp-nav-section-label";\n'
+        '                labelEl.textContent = label;\n'
+        '                li.parentNode.insertBefore(divider, li);\n'
+        '                li.parentNode.insertBefore(labelEl, li);\n'
+        '            }\n'
+        '            li.dataset.sppLabeled = "1";\n'
+        '        });\n'
+        '    }\n'
+        '\n'
+        '    function init() { addTooltips(); addSectionLabels(); }\n'
+        '    setTimeout(init, 1200);\n'
+        '    var obs = new MutationObserver(function() { setTimeout(init, 300); });\n'
         '    var sidebar = document.querySelector(\'[data-testid="stSidebar"]\');\n'
         '    if (sidebar) obs.observe(sidebar, { childList: true, subtree: true });\n'
         '})();\n'

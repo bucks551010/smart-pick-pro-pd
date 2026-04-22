@@ -465,38 +465,48 @@ h1, h2, h3, h4, h5, h6 {
 ::-moz-selection{ background: rgba(0,213,89,0.25); color: #fff; }
 
 /* ═══════════════════════════════════════════════════════════
-   SIDEBAR — Ultra-Premium Navigation
+   SIDEBAR — Elite Black-Book Navigation
    ═══════════════════════════════════════════════════════════ */
 
 /* ── Sidebar shell ──────────────────────────────────────── */
 [data-testid="stSidebar"] {
   background: linear-gradient(180deg,
-    #080C18 0%,
-    #090D1A 40%,
-    #070A14 100%) !important;
-  border-right: 1px solid rgba(0,213,89,0.10) !important;
-  box-shadow: 4px 0 32px rgba(0,0,0,0.70),
-              inset -1px 0 0 rgba(0,213,89,0.04) !important;
-  min-width: 270px !important;
+    #05080F 0%,
+    #070B15 45%,
+    #060910 100%) !important;
+  border-right: 1px solid rgba(0,213,89,0.08) !important;
+  box-shadow:
+    6px 0 40px rgba(0,0,0,0.80),
+    inset -1px 0 0 rgba(0,213,89,0.05),
+    inset 1px 0 40px rgba(0,0,0,0.30) !important;
+  min-width: 272px !important;
   position: relative !important;
 }
 
-/* Animated top accent line */
+/* ── Animated rainbow top accent ───────────────────────── */
 [data-testid="stSidebar"]::before {
   content: '';
   position: fixed;
   top: 0; left: 0;
-  width: 270px; height: 3px;
+  width: 272px; height: 3px;
   background: linear-gradient(90deg,
-    #00D559 0%, #2D9EFF 35%, #c084fc 65%, #00D559 100%);
-  background-size: 300% 100%;
-  animation: sidebarAccentFlow 6s linear infinite;
+    #00D559 0%, #2D9EFF 25%, #a855f7 50%, #f59e0b 75%, #00D559 100%);
+  background-size: 400% 100%;
+  animation: eliteAccentFlow 5s linear infinite;
   z-index: 9999;
   pointer-events: none;
+  border-radius: 0 0 3px 0;
 }
-@keyframes sidebarAccentFlow {
-  0%   { background-position: 0%   50%; }
-  100% { background-position: 300% 50%; }
+@keyframes eliteAccentFlow {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 400% 50%; }
+}
+
+/* ── Section divider label ──────────────────────────────── */
+[data-testid="stSidebar"] hr {
+  border: none !important;
+  border-top: 1px solid rgba(255,255,255,0.06) !important;
+  margin: 6px 14px !important;
 }
 
 /* ── All text inside sidebar ──────────────────────────── */
@@ -504,78 +514,135 @@ h1, h2, h3, h4, h5, h6 {
 [data-testid="stSidebar"] span,
 [data-testid="stSidebar"] div,
 [data-testid="stSidebar"] label {
-  color: #8B9DC3 !important;
+  color: #7A8EAE !important;
+}
+
+/* ── Nav container spacing ──────────────────────────────── */
+[data-testid="stSidebarNavItems"],
+[data-testid="stSidebarNavItems"] ul {
+  padding: 6px 0 !important;
+  gap: 2px !important;
 }
 
 /* ── Nav link base ─────────────────────────────────────── */
 [data-testid="stSidebar"] .stPageLink a,
 [data-testid="stSidebar"] [data-testid="stSidebarNavLink"],
 [data-testid="stSidebar"] [data-testid="stSidebarNavItems"] a {
-  font-size: 0.875rem !important;
+  font-size: 0.84rem !important;
   font-weight: 600 !important;
   font-family: 'Inter', sans-serif !important;
-  color: #8B9DC3 !important;
-  padding: 10px 20px 10px 22px !important;
-  border-radius: 10px !important;
-  margin: 1px 10px !important;
+  color: #7A8EAE !important;
+  padding: 11px 18px 11px 20px !important;
+  border-radius: 12px !important;
+  margin: 2px 10px !important;
   display: flex !important;
   align-items: center !important;
   gap: 10px !important;
   transition:
-    color      0.18s ease,
-    background 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform  0.18s ease !important;
+    color        0.20s cubic-bezier(0.22,1,0.36,1),
+    background   0.20s cubic-bezier(0.22,1,0.36,1),
+    border-color 0.20s cubic-bezier(0.22,1,0.36,1),
+    box-shadow   0.20s cubic-bezier(0.22,1,0.36,1),
+    transform    0.20s cubic-bezier(0.22,1,0.36,1) !important;
   text-decoration: none !important;
   white-space: nowrap !important;
-  overflow: visible !important;
+  overflow: hidden !important;
   border-left: 2px solid transparent !important;
+  background: transparent !important;
+  letter-spacing: 0.015em !important;
   position: relative !important;
+}
+
+/* emoji icon sizing */
+[data-testid="stSidebar"] [data-testid="stSidebarNavLink"] span:first-child,
+[data-testid="stSidebar"] [data-testid="stSidebarNavItems"] a span:first-child {
+  font-size: 1.0rem !important;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+  filter: saturate(0.75) !important;
+  transition: filter 0.20s ease !important;
 }
 
 /* ── Nav link hover ────────────────────────────────────── */
 [data-testid="stSidebar"] .stPageLink a:hover,
 [data-testid="stSidebar"] [data-testid="stSidebarNavLink"]:hover,
 [data-testid="stSidebar"] [data-testid="stSidebarNavItems"] a:hover {
-  color: #FFFFFF !important;
-  background: rgba(255,255,255,0.05) !important;
-  border-left-color: rgba(0,213,89,0.40) !important;
-  transform: translateX(4px) !important;
-  box-shadow: inset 0 0 24px rgba(0,213,89,0.04),
-              -2px 0 12px rgba(0,213,89,0.08) !important;
+  color: #E8F0FF !important;
+  background: linear-gradient(90deg,
+    rgba(0,213,89,0.09) 0%,
+    rgba(45,158,255,0.04) 60%,
+    transparent 100%) !important;
+  border-left-color: rgba(0,213,89,0.55) !important;
+  transform: translateX(5px) !important;
+  box-shadow:
+    inset 0 0 20px rgba(0,213,89,0.04),
+    0 4px 18px rgba(0,0,0,0.35),
+    -3px 0 14px rgba(0,213,89,0.10) !important;
+  overflow: visible !important;
+}
+
+/* emoji saturates on hover */
+[data-testid="stSidebar"] [data-testid="stSidebarNavLink"]:hover span:first-child,
+[data-testid="stSidebar"] [data-testid="stSidebarNavItems"] a:hover span:first-child {
+  filter: saturate(1.4) brightness(1.1) !important;
 }
 
 /* ── Nav link — active page ────────────────────────────── */
 [data-testid="stSidebar"] [data-testid="stSidebarNavLink"][aria-current="page"],
 [data-testid="stSidebar"] [data-testid="stSidebarNavItems"] a[aria-current="page"] {
   background: linear-gradient(90deg,
-    rgba(0,213,89,0.12) 0%,
-    rgba(0,213,89,0.04) 100%) !important;
-  border-left: 2px solid #00D559 !important;
-  color: #00D559 !important;
+    rgba(0,213,89,0.15) 0%,
+    rgba(0,213,89,0.07) 50%,
+    rgba(0,213,89,0.02) 100%) !important;
+  border-left: 2.5px solid #00D559 !important;
+  color: #00F066 !important;
   font-weight: 800 !important;
-  box-shadow: inset 0 0 30px rgba(0,213,89,0.06),
-              0 0 12px rgba(0,213,89,0.08) !important;
+  letter-spacing: 0.02em !important;
+  box-shadow:
+    inset 0 0 40px rgba(0,213,89,0.07),
+    0 0 16px rgba(0,213,89,0.10),
+    -4px 0 20px rgba(0,213,89,0.12) !important;
   transform: none !important;
 }
 
-/* Active page pulsing dot */
+/* active emoji — full color */
+[data-testid="stSidebar"] [data-testid="stSidebarNavLink"][aria-current="page"] span:first-child,
+[data-testid="stSidebar"] [data-testid="stSidebarNavItems"] a[aria-current="page"] span:first-child {
+  filter: saturate(1.6) brightness(1.2) !important;
+}
+
+/* ── Active page — pulsing live dot ────────────────────── */
 [data-testid="stSidebar"] [data-testid="stSidebarNavLink"][aria-current="page"]::after,
 [data-testid="stSidebar"] [data-testid="stSidebarNavItems"] a[aria-current="page"]::after {
   content: '';
   position: absolute;
-  right: 14px; top: 50%;
+  right: 16px; top: 50%;
   transform: translateY(-50%);
-  width: 6px; height: 6px;
+  width: 7px; height: 7px;
   border-radius: 50%;
   background: #00D559;
-  box-shadow: 0 0 8px rgba(0,213,89,0.8);
-  animation: navDotPulse 2s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(0,213,89,0.90), 0 0 20px rgba(0,213,89,0.40);
+  animation: eliteNavDot 2.2s ease-in-out infinite;
 }
-@keyframes navDotPulse {
-  0%,100% { opacity: 0.7; transform: translateY(-50%) scale(1); }
-  50%     { opacity: 1;   transform: translateY(-50%) scale(1.4); }
+@keyframes eliteNavDot {
+  0%,100% { opacity: 0.65; transform: translateY(-50%) scale(1);   box-shadow: 0 0 8px rgba(0,213,89,0.70); }
+  50%     { opacity: 1;    transform: translateY(-50%) scale(1.5); box-shadow: 0 0 16px rgba(0,213,89,1.0); }
+}
+
+/* ── Subtle scan-line texture on sidebar ───────────────── */
+[data-testid="stSidebar"] > div:first-child::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(255,255,255,0.008) 3px,
+    rgba(255,255,255,0.008) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* ── Hide /home marketing page ─────────────────────────── */
@@ -585,19 +652,19 @@ h1, h2, h3, h4, h5, h6 {
   display: none !important;
 }
 
-/* ── Footer badge ──────────────────────────────────────── */
+/* ── Footer wordmark ────────────────────────────────────── */
 [data-testid="stSidebar"]::after {
-  content: "Smart Pick Pro  ·  AI Engine";
+  content: "⚡ SMART PICK PRO  ·  AI ENGINE";
   display: block;
   position: fixed;
-  bottom: 16px; left: 0;
-  width: 270px;
+  bottom: 14px; left: 0;
+  width: 272px;
   text-align: center;
-  font-size: 0.60rem;
+  font-size: 0.57rem;
   font-family: 'Inter', sans-serif;
-  font-weight: 700;
-  color: rgba(0,213,89,0.35) !important;
-  letter-spacing: 0.12em;
+  font-weight: 800;
+  color: rgba(0,213,89,0.28) !important;
+  letter-spacing: 0.16em;
   pointer-events: none;
   text-transform: uppercase;
 }

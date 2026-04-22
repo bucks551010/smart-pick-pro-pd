@@ -1051,12 +1051,218 @@ _logo_hero_big = (
     if _logo_b64 else '<span style="font-size:5rem;line-height:1;">⚡</span>'
 )
 
+# ── Phase 1 v2: Aurora Hero Enhancement ─────────────────────
+st.markdown("""
+<style>
+/* ── Enhanced orbs: bigger, more vivid ─────────────────────── */
+.lp-hero-orb-1 {
+    background: radial-gradient(circle,
+        rgba(0,255,133,0.22) 0%,
+        rgba(0,213,89,0.10) 30%,
+        transparent 65%) !important;
+    width: 900px !important; height: 900px !important;
+    filter: blur(52px) !important;
+}
+.lp-hero-orb-2 {
+    background: radial-gradient(circle,
+        rgba(45,158,255,0.2) 0%,
+        rgba(0,80,255,0.07) 30%,
+        transparent 65%) !important;
+    width: 720px !important; height: 720px !important;
+    filter: blur(62px) !important;
+}
+.lp-hero-orb-3 {
+    background: radial-gradient(circle,
+        rgba(192,132,252,0.18) 0%,
+        transparent 65%) !important;
+    width: 560px !important; height: 560px !important;
+    filter: blur(55px) !important;
+}
+
+/* ── Scan line ──────────────────────────────────────────────── */
+.lp-hero-scan {
+    position: absolute;
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(0,213,89,0.5) 25%,
+        rgba(45,158,255,0.4) 50%,
+        rgba(0,213,89,0.5) 75%,
+        transparent 100%);
+    top: 0; left: 0;
+    animation: heroScanMove 14s linear infinite;
+    z-index: 1; pointer-events: none;
+    filter: blur(1px);
+}
+@keyframes heroScanMove {
+    0%   { top: 0%;   opacity: 0; }
+    4%   { opacity: 1; }
+    96%  { opacity: 0.5; }
+    100% { top: 100%; opacity: 0; }
+}
+
+/* ── Corner bracket decorations ────────────────────────────── */
+.lp-hero-corner {
+    position: absolute;
+    width: 52px; height: 52px;
+    border-color: rgba(0,213,89,0.22);
+    border-style: solid;
+    z-index: 2; pointer-events: none;
+}
+.lp-hero-corner-tl { top: 28px; left: 28px;  border-width: 1px 0 0 1px; }
+.lp-hero-corner-tr { top: 28px; right: 28px; border-width: 1px 1px 0 0; }
+.lp-hero-corner-bl { bottom: 28px; left: 28px;  border-width: 0 0 1px 1px; }
+.lp-hero-corner-br { bottom: 28px; right: 28px; border-width: 0 1px 1px 0; }
+
+/* ── Floating glass stat cards ──────────────────────────────── */
+.lp-hero-stat {
+    position: absolute;
+    background: rgba(8,18,12,0.72);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 14px 20px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 3;
+    min-width: 122px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.lp-hero-stat-row {
+    display: flex; align-items: center; gap: 7px;
+    margin-bottom: 7px;
+}
+.lp-hero-stat-live {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor; flex-shrink: 0;
+    animation: agLivePulse 2s ease-in-out infinite;
+}
+.lp-hero-stat-lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.5rem; font-weight: 800;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase; letter-spacing: .11em;
+}
+.lp-hero-stat-val {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.55rem; font-weight: 900;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    color: currentColor;
+    text-shadow: 0 0 30px currentColor;
+}
+/* Card 1 — green (Hit Rate) — top-left */
+.lp-hs-1 {
+    top: 22%; left: 3%;
+    color: #00D559;
+    border-color: rgba(0,213,89,0.22);
+    box-shadow: 0 0 40px rgba(0,213,89,0.08), 0 8px 32px rgba(0,0,0,0.4);
+    animation: heroFadeUp 0.9s 0.6s both, lp-float-a 7s ease-in-out infinite;
+}
+/* Card 2 — blue (ROI) — top-right */
+.lp-hs-2 {
+    top: 22%; right: 3%;
+    color: #2D9EFF;
+    border-color: rgba(45,158,255,0.22);
+    box-shadow: 0 0 40px rgba(45,158,255,0.08), 0 8px 32px rgba(0,0,0,0.4);
+    animation: heroFadeUp 0.9s 0.7s both, lp-float-b 8s ease-in-out infinite;
+}
+/* Card 3 — gold (Props) — bottom-left */
+.lp-hs-3 {
+    bottom: 28%; left: 3%;
+    color: #F9C62B;
+    border-color: rgba(249,198,43,0.22);
+    box-shadow: 0 0 40px rgba(249,198,43,0.08), 0 8px 32px rgba(0,0,0,0.4);
+    animation: heroFadeUp 0.9s 0.8s both, lp-float-a 9s ease-in-out infinite reverse;
+}
+/* Card 4 — purple (Members) — bottom-right */
+.lp-hs-4 {
+    bottom: 28%; right: 3%;
+    color: #c084fc;
+    border-color: rgba(192,132,252,0.22);
+    box-shadow: 0 0 40px rgba(192,132,252,0.08), 0 8px 32px rgba(0,0,0,0.4);
+    animation: heroFadeUp 0.9s 0.9s both, lp-float-b 10s ease-in-out infinite reverse;
+}
+@keyframes lp-float-a {
+    0%, 100% { transform: translateY(0px) rotate(-0.5deg); }
+    50%       { transform: translateY(-14px) rotate(0.5deg); }
+}
+@keyframes lp-float-b {
+    0%, 100% { transform: translateY(0px) rotate(0.5deg); }
+    50%       { transform: translateY(-10px) rotate(-0.5deg); }
+}
+/* Hide stat cards on narrow screens */
+@media (max-width: 1080px) {
+    .lp-hero-stat { display: none !important; }
+}
+
+/* ── Enhanced grid mesh ─────────────────────────────────────── */
+.lp-hero::before {
+    background-image:
+        linear-gradient(rgba(0,213,89,0.065) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,213,89,0.065) 1px, transparent 1px) !important;
+    background-size: 48px 48px !important;
+}
+
+/* ── "IT'S US." headline glow enhancement ───────────────────── */
+.lp-hero-h1 .line-us {
+    filter: drop-shadow(0 0 50px rgba(0,213,89,0.35)) !important;
+}
+
+/* ── Badge boost ────────────────────────────────────────────── */
+.lp-hero-badge {
+    font-size: 0.65rem !important;
+    padding: 10px 26px !important;
+    box-shadow: 0 0 30px rgba(0,213,89,0.14), inset 0 1px 0 rgba(255,255,255,0.07) !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.markdown(f"""
 <section class="lp-hero" id="lp-hero">
+
+  <!-- Scan line sweep -->
+  <div class="lp-hero-scan"></div>
+
   <!-- Floating orbs -->
   <div class="lp-hero-orb lp-hero-orb-1"></div>
   <div class="lp-hero-orb lp-hero-orb-2"></div>
   <div class="lp-hero-orb lp-hero-orb-3"></div>
+
+  <!-- Corner brackets -->
+  <div class="lp-hero-corner lp-hero-corner-tl"></div>
+  <div class="lp-hero-corner lp-hero-corner-tr"></div>
+  <div class="lp-hero-corner lp-hero-corner-bl"></div>
+  <div class="lp-hero-corner lp-hero-corner-br"></div>
+
+  <!-- Floating stat cards -->
+  <div class="lp-hero-stat lp-hs-1">
+    <div class="lp-hero-stat-row">
+      <span class="lp-hero-stat-live"></span>
+      <span class="lp-hero-stat-lbl">Hit Rate</span>
+    </div>
+    <div class="lp-hero-stat-val">62.4%</div>
+  </div>
+  <div class="lp-hero-stat lp-hs-2">
+    <div class="lp-hero-stat-row">
+      <span class="lp-hero-stat-live"></span>
+      <span class="lp-hero-stat-lbl">Avg ROI</span>
+    </div>
+    <div class="lp-hero-stat-val">+18.3%</div>
+  </div>
+  <div class="lp-hero-stat lp-hs-3">
+    <div class="lp-hero-stat-row">
+      <span class="lp-hero-stat-live"></span>
+      <span class="lp-hero-stat-lbl">Props / Night</span>
+    </div>
+    <div class="lp-hero-stat-val">300+</div>
+  </div>
+  <div class="lp-hero-stat lp-hs-4">
+    <div class="lp-hero-stat-row">
+      <span class="lp-hero-stat-live"></span>
+      <span class="lp-hero-stat-lbl">Members</span>
+    </div>
+    <div class="lp-hero-stat-val">2,400+</div>
+  </div>
 
   <!-- Logo -->
   <div class="lp-hero-logo-wrap">

@@ -61,18 +61,24 @@ def render(platform_selections, player_search, date_range, direction_filter):
         [p for p in _health_universe["combined"] if platform_filter_fn(p, platform_selections)],
         player_search, None, direction_filter,
     )
-    resolved_health = [b for b in filtered_health if b.get("result") in ("WIN", "LOSS", "EVEN")]
+    # Exclude avoided/risky picks from main win-rate so they don't skew results.
+    # They are tracked separately in the Risky/Avoid section below.
+    filtered_main = [
+        b for b in filtered_health
+        if normalized_bet_type(b) != "risky" and int(b.get("is_risky", 0) or 0) != 1
+    ]
+    resolved_health = [b for b in filtered_main if b.get("result") in ("WIN", "LOSS", "EVEN")]
     wins_h = sum(1 for b in resolved_health if b.get("result") == "WIN")
     losses_h = sum(1 for b in resolved_health if b.get("result") == "LOSS")
     evens_h = sum(1 for b in resolved_health if b.get("result") == "EVEN")
     total_h = len(resolved_health)
     win_rate_h = round(wins_h / max(wins_h + losses_h, 1) * 100, 1)
-    pending_h = sum(1 for b in filtered_health if not b.get("result"))
+    pending_h = sum(1 for b in filtered_main if not b.get("result"))
 
-    # Streak
+    # Streak (main bets only, avoids excluded)
     streak_val = 0
     _sorted_res = sorted(
-        [b for b in filtered_health if b.get("result") in ("WIN", "LOSS")],
+        [b for b in filtered_main if b.get("result") in ("WIN", "LOSS")],
         key=lambda b: canonical_pick_date(b), reverse=True,
     )
     if _sorted_res:
@@ -105,10 +111,10 @@ def render(platform_selections, player_search, date_range, direction_filter):
 
     st.markdown(
         get_summary_cards_html(
-            total=len(filtered_health), wins=wins_h, losses=losses_h,
+            total=len(filtered_main), wins=wins_h, losses=losses_h,
             evens=evens_h, pending=pending_h, win_rate=win_rate_h,
             streak=streak_val, best_platform=best_platform,
-            total_label="Total Picks",
+            total_label="Total Picks (excl. Avoided)",
         ),
         unsafe_allow_html=True,
     )
@@ -119,7 +125,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
         f"= {_health_universe.get('combined_pre_dedup_count', len(_health_universe['combined']))} pre-dedup rows "
         f"(-{_health_universe.get('dedup_removed', 0)} duplicates) "
         f"= {len(_health_universe['combined'])} merged picks; "
-        f"{len(filtered_health)} currently shown."
+        f"{len(filtered_main)} shown (excluding avoided picks from win rate)."
     )
 
     # ── Risky/Avoid Bets — always visible, independent of resolved count ───────
@@ -314,6 +320,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
                 "QEG Picks": {"wins": 0, "losses": 0, "total": 0},
                 "Joseph M Smith": {"wins": 0, "losses": 0, "total": 0},
                 "Goblins": {"wins": 0, "losses": 0, "total": 0},
+                "Avoided Picks": {"wins": 0, "losses": 0, "total": 0},
                 "Smart Money": {"wins": 0, "losses": 0, "total": 0},
                 "Smart Pick Pro Platform Picks": {"wins": 0, "losses": 0, "total": 0},
             }
@@ -324,6 +331,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
                 _pb_bt = (_pb.get("bet_type") or "").lower()
                 _pb_is_joseph = _pb_plat in ("joseph m. smith", "joseph") or "joseph" in _pb_notes
                 _pb_is_goblin = _pb_bt == "goblin"
+                _pb_is_avoid = _pb_bt == "risky" or int(_pb.get("is_risky", 0) or 0) == 1
                 _pb_is_smart_money = "smart money" in _pb_plat
                 _pb_result = _pb.get("result", "")
 
@@ -335,12 +343,14 @@ def render(platform_selections, player_search, date_range, direction_filter):
                         bucket["losses"] += 1
                         bucket["total"] += 1
 
-                if _pb_auto and not _pb_is_joseph and not _pb_is_smart_money:
+                if _pb_auto and not _pb_is_joseph and not _pb_is_smart_money and not _pb_is_avoid:
                     _incr(_ps_sources["QEG Picks"])
                 if _pb_is_joseph:
                     _incr(_ps_sources["Joseph M Smith"])
                 if _pb_is_goblin:
                     _incr(_ps_sources["Goblins"])
+                if _pb_is_avoid:
+                    _incr(_ps_sources["Avoided Picks"])
                 if _pb_is_smart_money:
                     _incr(_ps_sources["Smart Money"])
                 if _pb_auto:
@@ -358,7 +368,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
                     ]
                     st.markdown(get_styled_stats_table_html(_ps_rows, ["Source", "Total", "Wins", "Losses", "Win Rate"]), unsafe_allow_html=True)
                     _ps_icons = {"QEG Picks": "⚛️", "Joseph M Smith": "🎙️", "Goblins": "👺",
-                                 "Smart Money": "💰", "Smart Pick Pro Platform Picks": "🤖"}
+                                 "Avoided Picks": "⚠️", "Smart Money": "💰", "Smart Pick Pro Platform Picks": "🤖"}
                     _ps_cols = st.columns(len(_ps_sources))
                     for _pi, (src, d) in enumerate(_ps_sources.items()):
                         _ps_cols[_pi].metric(

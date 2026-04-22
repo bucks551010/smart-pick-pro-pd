@@ -1927,6 +1927,7 @@ def get_performance_summary():
     FROM bets
     WHERE result IS NOT NULL AND result != ''
       AND entry_id IS NULL
+      AND (LOWER(COALESCE(bet_type, '')) != 'risky')
     """
 
     try:

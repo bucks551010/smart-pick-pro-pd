@@ -200,10 +200,10 @@ def render(platform_selections, player_search, date_range, direction_filter):
     with _fc1:
         _tier_filter = st.multiselect("Filter by Tier", ["Platinum 💎", "Gold 🥇", "Silver 🥈", "Bronze 🥉"], default=[], key="ap_tier_filter")
     with _fc2:
-        _bt_filter = st.multiselect("Bet Classification", ["Goblin", "Demon", "50/50", "Standard", "Normal", "Fantasy", "Joseph Pick"], default=[], key="ap_bet_type_filter")
+        _bt_filter = st.multiselect("Bet Classification", ["Goblin", "Demon", "50/50", "Standard", "Normal", "Fantasy", "Joseph Pick", "Avoid"], default=[], key="ap_bet_type_filter")
 
     _bt_values = {
-        "50_50" if bt == "50/50" else "joseph_pick" if bt == "Joseph Pick" else bt.lower()
+        "50_50" if bt == "50/50" else "joseph_pick" if bt == "Joseph Pick" else "risky" if bt == "Avoid" else bt.lower()
         for bt in _bt_filter
     }
 
@@ -242,9 +242,11 @@ def render(platform_selections, player_search, date_range, direction_filter):
 
     # ── Summary stats ─────────────────────────────────────────
     _total = len(all_picks_data)
-    _wins = sum(1 for p in all_picks_data if p.get("result") == "WIN")
-    _losses = sum(1 for p in all_picks_data if p.get("result") == "LOSS")
-    _evens = sum(1 for p in all_picks_data if p.get("result") == "EVEN")
+    # Exclude avoided/risky picks from the main win rate calculation
+    _main_picks = [p for p in all_picks_data if normalized_bet_type(p) != "risky" and int(p.get("is_risky", 0) or 0) != 1]
+    _wins = sum(1 for p in _main_picks if p.get("result") == "WIN")
+    _losses = sum(1 for p in _main_picks if p.get("result") == "LOSS")
+    _evens = sum(1 for p in _main_picks if p.get("result") == "EVEN")
     _pending = sum(1 for p in all_picks_data if not p.get("result"))
     _resolved = _wins + _losses
     _wr = round(_wins / max(_resolved, 1) * 100, 1) if _resolved > 0 else 0.0
@@ -258,10 +260,10 @@ def render(platform_selections, player_search, date_range, direction_filter):
         _c3.metric("Pipeline Added", len(_pipeline))
         _c4.metric("Final All Picks", _total)
 
-    # Streak
+    # Streak (main bets only, avoids excluded)
     _streak = 0
     _sorted_res = sorted(
-        [p for p in all_picks_data if p.get("result") in ("WIN", "LOSS")],
+        [p for p in _main_picks if p.get("result") in ("WIN", "LOSS")],
         key=lambda p: p.get("pick_date", ""), reverse=True,
     )
     if _sorted_res:

@@ -1110,6 +1110,653 @@ st.markdown(f"""
 </section>
 """, unsafe_allow_html=True)
 
+# ════════════════════════════════════════════════════════════
+# PHASE 3 — SOCIAL PROOF BAR + HOW IT WORKS + FEATURES GRID
+# ════════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+/* ── Shared section scaffolding ─────────────────────────────── */
+.lp-section {
+    position: relative;
+    padding: 100px 24px;
+    max-width: 1180px;
+    margin: 0 auto;
+}
+.lp-section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem; font-weight: 800;
+    color: #00D559;
+    text-transform: uppercase; letter-spacing: .14em;
+    display: flex; align-items: center; gap: 10px;
+    justify-content: center;
+    margin-bottom: 18px;
+}
+.lp-section-label::before,
+.lp-section-label::after {
+    content: '';
+    height: 1px; width: 44px;
+    background: linear-gradient(90deg, transparent, rgba(0,213,89,0.35));
+}
+.lp-section-label::after {
+    background: linear-gradient(270deg, transparent, rgba(0,213,89,0.35));
+}
+.lp-section-h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 900; text-align: center;
+    color: #fff; letter-spacing: -0.04em;
+    margin: 0 0 16px;
+}
+.lp-section-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem; color: rgba(255,255,255,0.38);
+    text-align: center; max-width: 520px;
+    margin: 0 auto 64px; line-height: 1.75;
+}
+
+/* ── Trust / Stats bar ──────────────────────────────────────── */
+.lp-trust-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 20px;
+    padding: 32px 40px;
+    margin: 0 auto 20px;
+    max-width: 1000px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+.lp-trust-stat {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 6px;
+    padding: 0 40px;
+    flex: 1; min-width: 140px;
+}
+.lp-trust-stat + .lp-trust-stat {
+    border-left: 1px solid rgba(255,255,255,0.07);
+}
+.lp-trust-big {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1;
+}
+.lp-trust-big.c-green  { color: #00D559; text-shadow: 0 0 28px rgba(0,213,89,0.45); }
+.lp-trust-big.c-blue   { color: #2D9EFF; text-shadow: 0 0 28px rgba(45,158,255,0.4); }
+.lp-trust-big.c-gold   { color: #F9C62B; text-shadow: 0 0 28px rgba(249,198,43,0.35); }
+.lp-trust-big.c-purple { color: #c084fc; text-shadow: 0 0 28px rgba(192,132,252,0.35); }
+.lp-trust-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem; font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase; letter-spacing: .07em;
+    text-align: center;
+}
+
+/* ── How It Works ───────────────────────────────────────────── */
+.lp-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    margin: 0 auto;
+}
+.lp-step {
+    position: relative;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 20px;
+    padding: 36px 28px;
+    text-align: center;
+    transition: border-color 0.3s, transform 0.3s;
+}
+.lp-step:hover {
+    border-color: rgba(0,213,89,0.2);
+    transform: translateY(-4px);
+}
+.lp-step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 3rem; font-weight: 900;
+    line-height: 1;
+    -webkit-text-stroke: 1px rgba(0,213,89,0.4);
+    color: transparent;
+    margin-bottom: 16px;
+    display: block;
+}
+.lp-step-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.05rem; font-weight: 800;
+    color: #fff; margin-bottom: 10px;
+}
+.lp-step-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem; color: rgba(255,255,255,0.35);
+    line-height: 1.7;
+}
+
+/* ── Features Grid ──────────────────────────────────────────── */
+.lp-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin: 0 auto;
+}
+.lp-feat-card {
+    position: relative;
+    background: rgba(255,255,255,0.022);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 20px;
+    padding: 32px 28px;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s, background 0.3s;
+}
+/* Top gradient accent bar */
+.lp-feat-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent-grad);
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+.lp-feat-card:hover {
+    transform: translateY(-4px);
+    background: rgba(255,255,255,0.038);
+}
+.lp-feat-card:hover::before { opacity: 1; }
+.lp-feat-icon {
+    font-size: 2rem; line-height: 1;
+    margin-bottom: 18px; display: block;
+    filter: drop-shadow(0 0 12px var(--accent-glow));
+}
+.lp-feat-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem; font-weight: 800;
+    color: #fff; margin-bottom: 10px;
+    letter-spacing: -0.02em;
+}
+.lp-feat-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.5rem; font-weight: 800;
+    color: var(--accent-color);
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+    padding: 3px 10px; border-radius: 100px;
+    text-transform: uppercase; letter-spacing: .1em;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+.lp-feat-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem; color: rgba(255,255,255,0.32);
+    line-height: 1.7;
+}
+/* Accent color variables per card */
+.lf-green  { --accent-grad: linear-gradient(90deg,#00FF85,#00D559); --accent-glow: rgba(0,213,89,0.4);   --accent-color:#00D559; --accent-bg:rgba(0,213,89,0.06);   --accent-border:rgba(0,213,89,0.2); }
+.lf-blue   { --accent-grad: linear-gradient(90deg,#60b4ff,#2D9EFF); --accent-glow: rgba(45,158,255,0.4); --accent-color:#2D9EFF; --accent-bg:rgba(45,158,255,0.06); --accent-border:rgba(45,158,255,0.2); }
+.lf-purple { --accent-grad: linear-gradient(90deg,#d8b4fe,#c084fc); --accent-glow: rgba(192,132,252,0.4);--accent-color:#c084fc; --accent-bg:rgba(192,132,252,0.06);--accent-border:rgba(192,132,252,0.2); }
+.lf-gold   { --accent-grad: linear-gradient(90deg,#fde68a,#F9C62B); --accent-glow: rgba(249,198,43,0.4); --accent-color:#F9C62B; --accent-bg:rgba(249,198,43,0.06); --accent-border:rgba(249,198,43,0.2); }
+</style>
+
+<!-- ══ STATS TRUST BAR ═══════════════════════════════════════ -->
+<div style="padding: 80px 24px 0; background: transparent;">
+  <div class="lp-trust-bar">
+    <div class="lp-trust-stat">
+      <span class="lp-trust-big c-green">62.4%</span>
+      <span class="lp-trust-label">Overall Hit Rate</span>
+    </div>
+    <div class="lp-trust-stat">
+      <span class="lp-trust-big c-blue">+18.3%</span>
+      <span class="lp-trust-label">Average ROI</span>
+    </div>
+    <div class="lp-trust-stat">
+      <span class="lp-trust-big c-gold">300+</span>
+      <span class="lp-trust-label">Props / Night</span>
+    </div>
+    <div class="lp-trust-stat">
+      <span class="lp-trust-big c-purple">6</span>
+      <span class="lp-trust-label">AI Models Active</span>
+    </div>
+    <div class="lp-trust-stat">
+      <span class="lp-trust-big c-green">2,400+</span>
+      <span class="lp-trust-label">Active Members</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOW IT WORKS ══════════════════════════════════════════ -->
+<div id="lp-how" style="padding: 100px 24px 0;">
+  <div class="lp-section" style="padding: 0;">
+    <div class="lp-section-label">How It Works</div>
+    <h2 class="lp-section-h2">Three Steps.<br>One Edge.</h2>
+    <p class="lp-section-sub">Our Neural Engine does the heavy lifting — you just pick your plays.</p>
+    <div class="lp-steps">
+      <div class="lp-step">
+        <span class="lp-step-num">01</span>
+        <div class="lp-step-title">Load Tonight's Slate</div>
+        <p class="lp-step-desc">One click pulls live props from PrizePicks, DraftKings &amp; Underdog. Lines, totals, and injury data refreshed in real-time.</p>
+      </div>
+      <div class="lp-step">
+        <span class="lp-step-num">02</span>
+        <div class="lp-step-title">AI Scores Every Prop</div>
+        <p class="lp-step-desc">6 AI models — ensemble, Bayesian, Monte Carlo, regression, CLV tracker &amp; line movement mirror — converge on a single SAFE Score™.</p>
+      </div>
+      <div class="lp-step">
+        <span class="lp-step-num">03</span>
+        <div class="lp-step-title">Pick Your Plays</div>
+        <p class="lp-step-desc">Ranked by edge, filtered by your bankroll strategy. Green lights only. Track results live in your Bet Tracker dashboard.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FEATURES GRID ════════════════════════════════════════ -->
+<div id="lp-features" style="padding: 100px 24px 0;">
+  <div class="lp-section" style="padding: 0;">
+    <div class="lp-section-label">Platform Features</div>
+    <h2 class="lp-section-h2">Built Different.<br>By Design.</h2>
+    <p class="lp-section-sub">Every tool inside Smart Pick Pro exists for one reason — to give you a mathematical edge over the house.</p>
+    <div class="lp-features">
+
+      <div class="lp-feat-card lf-green">
+        <span class="lp-feat-icon">🛡️</span>
+        <div class="lp-feat-title">SAFE Score™ <span class="lp-feat-badge">Core</span></div>
+        <p class="lp-feat-desc">Our proprietary 0–100 confidence rating. Aggregates all 6 AI model outputs, line sharpness, and historical hit rate into a single go/no-go number.</p>
+      </div>
+
+      <div class="lp-feat-card lf-blue">
+        <span class="lp-feat-icon">🧠</span>
+        <div class="lp-feat-title">Neural Engine v6.0 <span class="lp-feat-badge">AI</span></div>
+        <p class="lp-feat-desc">Six parallel models run on every prop: Ensemble, Bayesian, Monte Carlo, Linear Regression, Neural Net, and Game Script. Zero human bias.</p>
+      </div>
+
+      <div class="lp-feat-card lf-purple">
+        <span class="lp-feat-icon">📈</span>
+        <div class="lp-feat-title">Line Movement Mirror <span class="lp-feat-badge">Sharp</span></div>
+        <p class="lp-feat-desc">Tracks where sharp money is moving minutes before lock. When the line moves in your direction after our pick — that's CLV. We track it automatically.</p>
+      </div>
+
+      <div class="lp-feat-card lf-gold">
+        <span class="lp-feat-icon">⚡</span>
+        <div class="lp-feat-title">Live Props Engine <span class="lp-feat-badge">Live</span></div>
+        <p class="lp-feat-desc">Real-time prop ingestion from all major platforms. Lines update as books adjust. Injury alerts auto-invalidate affected picks before you lock.</p>
+      </div>
+
+      <div class="lp-feat-card lf-green">
+        <span class="lp-feat-icon">💰</span>
+        <div class="lp-feat-title">Bankroll Optimizer <span class="lp-feat-badge">Pro</span></div>
+        <p class="lp-feat-desc">Kelly Criterion sizing + custom risk profiles. Flat bet, fractional Kelly, or aggressive — the optimizer sets stake size based on your edge and bankroll.</p>
+      </div>
+
+      <div class="lp-feat-card lf-blue">
+        <span class="lp-feat-icon">📊</span>
+        <div class="lp-feat-title">Bet Tracker Dashboard <span class="lp-feat-badge">Pro</span></div>
+        <p class="lp-feat-desc">Full P&amp;L history, ROI by platform, hit rate by prop type, and CLV tracking. Your personal analytics suite to prove your edge over time.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════
+# PHASE 4 — PRICING TEASER + TESTIMONIALS
+# ════════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+/* ── Pricing Section ─────────────────────────────────────── */
+.lp-pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+.lp-price-card {
+    position: relative;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 24px;
+    padding: 36px 28px 32px;
+    display: flex; flex-direction: column;
+    transition: transform 0.3s, border-color 0.3s, background 0.3s;
+    overflow: hidden;
+}
+.lp-price-card:hover {
+    transform: translateY(-6px);
+}
+.lp-price-card.popular {
+    border-color: rgba(0,213,89,0.25);
+    background: rgba(0,213,89,0.04);
+    box-shadow: 0 0 50px rgba(0,213,89,0.1), inset 0 1px 0 rgba(0,213,89,0.1);
+}
+/* Top gradient bar */
+.lp-price-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--pc-grad);
+}
+.lp-price-popular-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem; font-weight: 800;
+    color: #020C07;
+    background: linear-gradient(135deg, #00FF85, #00D559);
+    padding: 5px 14px; border-radius: 100px;
+    text-transform: uppercase; letter-spacing: .1em;
+    margin-bottom: 20px;
+    align-self: flex-start;
+    box-shadow: 0 0 20px rgba(0,213,89,0.4);
+    position: relative; overflow: hidden;
+}
+.lp-price-popular-badge::after {
+    content: '';
+    position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    animation: agShimmer 2.5s ease-in-out infinite;
+}
+.lp-price-tier {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem; font-weight: 800;
+    color: var(--pc-color);
+    text-transform: uppercase; letter-spacing: .12em;
+    margin-bottom: 16px;
+}
+.lp-price-amount {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 3rem; font-weight: 900;
+    color: #fff; letter-spacing: -0.06em;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+.lp-price-amount span {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0;
+}
+.lp-price-period {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem; color: rgba(255,255,255,0.28);
+    margin-bottom: 28px;
+}
+.lp-price-features {
+    list-style: none; padding: 0; margin: 0 0 32px;
+    display: flex; flex-direction: column; gap: 12px;
+    flex: 1;
+}
+.lp-price-features li {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem; color: rgba(255,255,255,0.5);
+    display: flex; align-items: flex-start; gap: 10px;
+    line-height: 1.5;
+}
+.lp-price-features li .chk {
+    color: var(--pc-color);
+    font-size: 0.75rem; margin-top: 2px; flex-shrink: 0;
+}
+.lp-price-features li.dim .chk { color: rgba(255,255,255,0.15); }
+.lp-price-features li.dim { color: rgba(255,255,255,0.2); }
+.lp-price-cta {
+    display: block; width: 100%;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.88rem; font-weight: 800;
+    text-align: center; text-decoration: none;
+    padding: 14px 24px; border-radius: 100px;
+    letter-spacing: .02em;
+    background: var(--pc-cta-bg);
+    color: var(--pc-cta-color);
+    border: 1px solid var(--pc-cta-border);
+    transition: all 0.25s;
+}
+.lp-price-cta:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.15);
+}
+/* Card themes */
+.lp-pc-free    { --pc-grad: linear-gradient(90deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04)); --pc-color: rgba(255,255,255,0.4); --pc-cta-bg: rgba(255,255,255,0.05); --pc-cta-color: rgba(255,255,255,0.5); --pc-cta-border: rgba(255,255,255,0.1); }
+.lp-pc-sharp   { --pc-grad: linear-gradient(90deg,#60b4ff,#2D9EFF); --pc-color: #2D9EFF; --pc-cta-bg: rgba(45,158,255,0.1); --pc-cta-color: #2D9EFF; --pc-cta-border: rgba(45,158,255,0.25); }
+.lp-pc-smart   { --pc-grad: linear-gradient(90deg,#00FF85,#00D559); --pc-color: #00D559; --pc-cta-bg: linear-gradient(135deg,#00FF85,#00D559); --pc-cta-color: #020C07; --pc-cta-border: transparent; }
+
+/* ── Testimonials ─────────────────────────────────────────── */
+.lp-testimonials {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+.lp-testi-card {
+    background: rgba(255,255,255,0.022);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 20px;
+    padding: 28px 24px;
+    transition: transform 0.3s, border-color 0.3s;
+}
+.lp-testi-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(0,213,89,0.15);
+}
+.lp-testi-stars {
+    color: #F9C62B;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+}
+.lp-testi-quote {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem; line-height: 1.75;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 20px;
+    font-style: italic;
+}
+.lp-testi-quote::before { content: '\\201C'; color: #00D559; font-style: normal; font-size: 1.2rem; }
+.lp-testi-quote::after  { content: '\\201D'; color: #00D559; font-style: normal; font-size: 1.2rem; }
+.lp-testi-author {
+    display: flex; align-items: center; gap: 12px;
+}
+.lp-testi-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.75rem; font-weight: 800;
+    color: #020C07;
+    background: linear-gradient(135deg, #00FF85, #00D559);
+    flex-shrink: 0;
+}
+.lp-testi-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.82rem; font-weight: 700;
+    color: #fff;
+}
+.lp-testi-handle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem; color: rgba(255,255,255,0.25);
+    letter-spacing: .04em;
+}
+</style>
+
+<!-- ══ PRICING ══════════════════════════════════════════════ -->
+<div id="lp-pricing" style="padding: 100px 24px 0;">
+  <div class="lp-section" style="padding: 0;">
+    <div class="lp-section-label">Pricing</div>
+    <h2 class="lp-section-h2">Start Free.<br>Scale Your Edge.</h2>
+    <p class="lp-section-sub">No credit card to start. Upgrade when you're ready to unlock the full Neural Engine.</p>
+
+    <div class="lp-pricing-grid">
+
+      <!-- FREE -->
+      <div class="lp-price-card lp-pc-free">
+        <div class="lp-price-tier">Free Rookie</div>
+        <div class="lp-price-amount">$0<span></span></div>
+        <div class="lp-price-period">forever free</div>
+        <ul class="lp-price-features">
+          <li><span class="chk">✓</span> Daily top 3 picks preview</li>
+          <li><span class="chk">✓</span> SAFE Score™ visible</li>
+          <li><span class="chk">✓</span> Basic prop analysis</li>
+          <li class="dim"><span class="chk">✗</span> Full 300+ prop slate</li>
+          <li class="dim"><span class="chk">✗</span> Line movement alerts</li>
+          <li class="dim"><span class="chk">✗</span> Bet Tracker dashboard</li>
+        </ul>
+        <a class="lp-price-cta" href="?auth=signup">Get Started Free</a>
+      </div>
+
+      <!-- SHARP IQ -->
+      <div class="lp-price-card lp-pc-sharp">
+        <div class="lp-price-tier">Sharp IQ</div>
+        <div class="lp-price-amount">$9<span>.99 / mo</span></div>
+        <div class="lp-price-period">billed monthly</div>
+        <ul class="lp-price-features">
+          <li><span class="chk">✓</span> Full nightly prop slate</li>
+          <li><span class="chk">✓</span> All 6 AI model scores</li>
+          <li><span class="chk">✓</span> Line movement tracker</li>
+          <li><span class="chk">✓</span> Bankroll optimizer</li>
+          <li><span class="chk">✓</span> Bet Tracker dashboard</li>
+          <li class="dim"><span class="chk">✗</span> Custom AI thresholds</li>
+        </ul>
+        <a class="lp-price-cta" href="?auth=signup">Start Sharp IQ</a>
+      </div>
+
+      <!-- SMART MONEY -->
+      <div class="lp-price-card lp-pc-smart popular">
+        <div class="lp-price-popular-badge">⚡ Most Popular</div>
+        <div class="lp-price-tier">Smart Money</div>
+        <div class="lp-price-amount">$24<span>.99 / mo</span></div>
+        <div class="lp-price-period">billed monthly · save 20% annual</div>
+        <ul class="lp-price-features">
+          <li><span class="chk">✓</span> Everything in Sharp IQ</li>
+          <li><span class="chk">✓</span> Custom AI thresholds</li>
+          <li><span class="chk">✓</span> Arbitrage scanner</li>
+          <li><span class="chk">✓</span> Tournament optimizer</li>
+          <li><span class="chk">✓</span> Priority prop alerts</li>
+          <li><span class="chk">✓</span> Discord VIP access</li>
+        </ul>
+        <a class="lp-price-cta" href="?auth=signup">Unlock Smart Money</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ TESTIMONIALS ═════════════════════════════════════════ -->
+<div id="lp-testimonials" style="padding: 80px 24px 0;">
+  <div class="lp-section" style="padding: 0;">
+    <div class="lp-section-label">Member Results</div>
+    <h2 class="lp-section-h2">The Numbers<br>Don't Lie.</h2>
+    <p class="lp-section-sub">Real members. Real results. No cherry-picked picks — full P&amp;L tracked in the dashboard.</p>
+
+    <div class="lp-testimonials">
+
+      <div class="lp-testi-card">
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">Hit 8 of my last 10 PrizePicks entries using the SAFE Score filter. ROI is sitting at +23% for the month. Nothing else comes close.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar">MR</div>
+          <div>
+            <div class="lp-testi-name">Marcus R.</div>
+            <div class="lp-testi-handle">Smart Money · 4 months</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lp-testi-card">
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">The line movement alerts alone paid for 6 months. Caught a huge CLV swing on Tatum points last week. This tool is ridiculous.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar">JT</div>
+          <div>
+            <div class="lp-testi-name">Jake T.</div>
+            <div class="lp-testi-handle">Sharp IQ · 7 months</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lp-testi-card">
+        <div class="lp-testi-stars">★★★★★</div>
+        <p class="lp-testi-quote">I was skeptical — now I don't touch a prop without running it through the Neural Engine first. 64% hit rate over 200+ tracked picks.</p>
+        <div class="lp-testi-author">
+          <div class="lp-testi-avatar">AL</div>
+          <div>
+            <div class="lp-testi-name">Alex L.</div>
+            <div class="lp-testi-handle">Smart Money · 2 months</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════
+# PHASE 5 — INLINE AUTH SECTION (centered premium card)
+# ════════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+/* ── Section header above the form ─────────────────────────── */
+#lp-auth {
+    padding: 100px 24px 0;
+    text-align: center;
+}
+/* Hide the old split-panel LEFT hero — we have the hero above */
+.spp-hero { display: none !important; }
+/* Remove the fixed-height portal grid */
+.spp-portal {
+    display: block !important;
+    background: transparent !important;
+    min-height: unset !important;
+    padding: 0 !important;
+    max-width: 540px;
+    margin: 0 auto;
+}
+.spp-form-panel#spp-form-panel-bg { display: none !important; }
+
+/* Centre the form — override old right-align trick */
+.stApp > [data-testid="stAppViewContainer"] > section.main .block-container > div {
+    align-items: center !important;
+}
+/* Premium centered form card */
+.spp-form-wrapper {
+    width: 100% !important;
+    max-width: 500px !important;
+    min-height: unset !important;
+    background: rgba(255,255,255,0.028) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 24px !important;
+    box-shadow:
+        0 0 60px rgba(0,213,89,0.06),
+        0 24px 80px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.06) !important;
+    padding: 40px 36px 36px !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    position: relative !important;
+    overflow: hidden;
+}
+/* Green glow top bar on form card */
+.spp-form-wrapper::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #00D559, #2D9EFF, transparent);
+    opacity: 0.6;
+}
+</style>
+
+<!-- Section anchor + label -->
+<div id="lp-auth">
+  <div class="lp-section-label">Get Access</div>
+  <h2 class="lp-section-h2">Join 2,400+<br>Winning Sharps.</h2>
+  <p class="lp-section-sub" style="margin-bottom: 48px;">
+    Free forever. No credit card required.<br>
+    Start picking smarter tonight.
+  </p>
+</div>
+""", unsafe_allow_html=True)
+
 # ── Split-panel outer wrapper: hero LEFT, form RIGHT ──────────
 st.markdown(f"""
 <div class="spp-portal">
@@ -1490,6 +2137,166 @@ st.markdown("""
   <span class="spp-trust-item">🚫 No Credit Card</span>
   <span class="spp-trust-item">❌ Cancel Nothing</span>
 </div>
+""", unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════
+# PHASE 6 — FOOTER
+# ════════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+/* ── Footer ─────────────────────────────────────────────────── */
+.lp-footer {
+    margin-top: 100px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 64px 40px 48px;
+    max-width: 1180px;
+    margin-left: auto; margin-right: auto;
+}
+.lp-footer-top {
+    display: grid;
+    grid-template-columns: 1.8fr repeat(3, 1fr);
+    gap: 48px;
+    margin-bottom: 56px;
+}
+@media (max-width: 760px) {
+    .lp-footer-top { grid-template-columns: 1fr 1fr; gap: 32px; }
+}
+@media (max-width: 480px) {
+    .lp-footer-top { grid-template-columns: 1fr; }
+}
+.lp-footer-brand-tagline {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem; color: rgba(255,255,255,0.28);
+    line-height: 1.7;
+    margin: 12px 0 24px;
+    max-width: 220px;
+}
+.lp-footer-wordmark {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.1rem; font-weight: 900;
+    color: #fff; letter-spacing: -0.04em;
+}
+.lp-footer-wordmark em { color: #00D559; font-style: normal; }
+.lp-footer-social {
+    display: flex; gap: 10px;
+}
+.lp-footer-social a {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.35);
+    font-size: 0.85rem; text-decoration: none;
+    transition: all 0.2s;
+}
+.lp-footer-social a:hover {
+    background: rgba(0,213,89,0.08);
+    border-color: rgba(0,213,89,0.2);
+    color: #00D559;
+    transform: translateY(-2px);
+}
+.lp-footer-col-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem; font-weight: 800;
+    color: rgba(255,255,255,0.25);
+    text-transform: uppercase; letter-spacing: .14em;
+    margin-bottom: 18px;
+}
+.lp-footer-links {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column; gap: 12px;
+}
+.lp-footer-links li a {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem; color: rgba(255,255,255,0.32);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.lp-footer-links li a:hover { color: #fff; }
+.lp-footer-bottom {
+    display: flex;
+    align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding-top: 28px;
+}
+.lp-footer-copy {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem; color: rgba(255,255,255,0.18);
+}
+.lp-footer-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.52rem; font-weight: 800;
+    color: #00D559;
+    background: rgba(0,213,89,0.06);
+    border: 1px solid rgba(0,213,89,0.18);
+    padding: 4px 12px; border-radius: 100px;
+    text-transform: uppercase; letter-spacing: .1em;
+}
+</style>
+
+<footer>
+<div class="lp-footer">
+  <div class="lp-footer-top">
+
+    <!-- Brand -->
+    <div>
+      <div class="lp-footer-wordmark">Smart<em>Pick</em>Pro</div>
+      <p class="lp-footer-brand-tagline">
+        AI-powered prop picks built for serious players.
+        6 models. One edge. Zero guesswork.
+      </p>
+      <div class="lp-footer-social">
+        <a href="#" aria-label="Twitter / X">𝕏</a>
+        <a href="#" aria-label="Discord">⚡</a>
+        <a href="#" aria-label="Telegram">✈</a>
+      </div>
+    </div>
+
+    <!-- Product -->
+    <div>
+      <div class="lp-footer-col-label">Product</div>
+      <ul class="lp-footer-links">
+        <li><a href="#lp-features">Features</a></li>
+        <li><a href="#lp-pricing">Pricing</a></li>
+        <li><a href="#lp-how">How It Works</a></li>
+        <li><a href="?auth=signup">Start Free</a></li>
+      </ul>
+    </div>
+
+    <!-- Support -->
+    <div>
+      <div class="lp-footer-col-label">Support</div>
+      <ul class="lp-footer-links">
+        <li><a href="#">FAQ</a></li>
+        <li><a href="#">Contact Us</a></li>
+        <li><a href="#">Discord Community</a></li>
+        <li><a href="#">Responsible Play</a></li>
+      </ul>
+    </div>
+
+    <!-- Legal -->
+    <div>
+      <div class="lp-footer-col-label">Legal</div>
+      <ul class="lp-footer-links">
+        <li><a href="#">Terms of Service</a></li>
+        <li><a href="#">Privacy Policy</a></li>
+        <li><a href="#">Disclaimer</a></li>
+        <li><a href="#">Cookie Policy</a></li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="lp-footer-bottom">
+    <span class="lp-footer-copy">
+      &copy; 2026 Smart Pick Pro. All rights reserved. For entertainment purposes only.
+      Not affiliated with DraftKings, PrizePicks, or Underdog Fantasy.
+    </span>
+    <span class="lp-footer-badge">Neural Engine v6.0</span>
+  </div>
+</div>
+</footer>
 """, unsafe_allow_html=True)
 
 # Also handle cookie-based session restore silently at the bottom

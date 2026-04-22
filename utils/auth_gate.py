@@ -6148,62 +6148,180 @@ html,body{background:transparent;overflow-y:hidden}
 
     <div class="ag-divider"></div>
 
-    <!-- App Preview Mockup -->
-    <div class="ag-app-preview" data-section-id="app-preview">
-      <div class="ag-section-head">
-        <h3>See It In <span class="em">Action</span></h3>
-        <p>A real look inside the Quantum Analysis Matrix dashboard</p>
+    <!-- ══ TOOL SHOWCASE: GAME REPORT + PLAYER SIMULATOR ══ -->
+    <style>
+    .ag-tool-split{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center;margin-bottom:72px}
+    .ag-tool-split.rev{direction:rtl}
+    .ag-tool-split.rev>*{direction:ltr}
+    @media(max-width:820px){.ag-tool-split,.ag-tool-split.rev{grid-template-columns:1fr;direction:ltr;gap:28px;margin-bottom:48px}}
+    .ag-tool-eyebrow{display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:var(--tc,#00D559);background:color-mix(in srgb,var(--tc,#00D559) 10%,transparent);border:1px solid color-mix(in srgb,var(--tc,#00D559) 22%,transparent);padding:4px 13px;border-radius:100px;width:fit-content;margin-bottom:18px}
+    .ag-tool-h{font-family:'Space Grotesk',sans-serif;font-size:clamp(1.4rem,2.4vw,2.1rem);font-weight:900;letter-spacing:-.04em;line-height:1.2;color:#fff;margin-bottom:14px}
+    .ag-tool-h .em{background:linear-gradient(90deg,var(--tc,#00D559),var(--tc2,#00FF85));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .ag-tool-p{font-family:'Inter',sans-serif;font-size:.85rem;color:rgba(255,255,255,.38);line-height:1.75;margin-bottom:22px}
+    .ag-tool-bullets{list-style:none;padding:0;margin:0 0 26px;display:flex;flex-direction:column;gap:10px}
+    .ag-tool-bullets li{display:flex;align-items:flex-start;gap:10px;font-family:'Inter',sans-serif;font-size:.82rem;color:rgba(255,255,255,.55);line-height:1.6}
+    .ag-tool-bullets li b{color:#fff;font-weight:700}
+    .ag-tool-bullets li::before{content:'';width:16px;height:16px;border-radius:5px;flex-shrink:0;margin-top:2px;background:color-mix(in srgb,var(--tc,#00D559) 12%,transparent);border:1px solid color-mix(in srgb,var(--tc,#00D559) 30%,transparent);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 10 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 4l2.5 2.5L9 1' stroke='%2300D559' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center;background-size:9px}
+    .ag-tool-cta{display:inline-flex;align-items:center;gap:7px;font-family:'Space Grotesk',sans-serif;font-size:.8rem;font-weight:800;letter-spacing:-.01em;color:var(--tc,#00D559);border-bottom:1px solid color-mix(in srgb,var(--tc,#00D559) 30%,transparent);padding-bottom:2px;text-decoration:none;transition:gap .25s,border-color .25s;width:fit-content}
+    .ag-tool-cta:hover{gap:13px;border-color:var(--tc,#00D559)}
+    /* mockup shell */
+    .ag-tool-mockup{position:relative;background:rgba(255,255,255,0.022);border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;box-shadow:0 20px 70px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,0.04);transition:transform .4s cubic-bezier(.16,1,.3,1),box-shadow .4s}
+    .ag-tool-mockup:hover{transform:translateY(-7px) scale(1.012);box-shadow:0 36px 90px rgba(0,0,0,.6),0 0 55px color-mix(in srgb,var(--tc,#00D559) 13%,transparent),0 0 0 1px color-mix(in srgb,var(--tc,#00D559) 17%,transparent)}
+    .ag-tool-mockup::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--tc,#00D559),var(--tc2,#00FF85),transparent);z-index:2}
+    .ag-mock-chrome{display:flex;align-items:center;gap:7px;padding:10px 14px;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.05)}
+    .ag-mock-dots{display:flex;gap:4px}
+    .ag-mock-dots span{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.12)}
+    .ag-mock-url{flex:1;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:600;color:rgba(255,255,255,.18);background:rgba(255,255,255,.04);border-radius:5px;padding:3px 10px;text-align:center}
+    .ag-mock-body{padding:16px}
+    /* Game Report mock */
+    .gr-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+    .gr-title{font-family:'Space Grotesk',sans-serif;font-size:.78rem;font-weight:900;color:#fff;letter-spacing:-.02em}
+    .gr-live{display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#00D559;background:rgba(0,213,89,.1);border:1px solid rgba(0,213,89,.22);padding:3px 9px;border-radius:100px}
+    .gr-live::before{content:'';width:5px;height:5px;border-radius:50%;background:#00D559;box-shadow:0 0 6px #00D559;animation:agLivePulse 1.8s ease-in-out infinite;flex-shrink:0}
+    .gr-matchup{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 16px;margin-bottom:11px}
+    .gr-team{display:flex;flex-direction:column;align-items:center;gap:3px;font-family:'Space Grotesk',sans-serif}
+    .gr-abbrev{font-size:1rem;font-weight:900;letter-spacing:-.03em}
+    .gr-name{font-size:.48rem;color:rgba(255,255,255,.28);letter-spacing:.04em}
+    .gr-vs{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:800;color:rgba(255,255,255,.18);letter-spacing:.1em;text-align:center}
+    .gr-ou{font-size:.46rem;color:rgba(255,255,255,.15);font-family:'JetBrains Mono',monospace;margin-top:3px}
+    .gr-pills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:11px}
+    .gr-pill{font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 9px;border-radius:5px;color:rgba(255,255,255,.35);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
+    .gr-pill.g{color:#00D559;background:rgba(0,213,89,.08);border-color:rgba(0,213,89,.18)}
+    .gr-pill.b{color:#2D9EFF;background:rgba(45,158,255,.08);border-color:rgba(45,158,255,.18)}
+    .gr-bars{display:flex;flex-direction:column;gap:7px}
+    .gr-bar-row{display:flex;align-items:center;gap:8px}
+    .gr-bar-lbl{font-family:'Inter',sans-serif;font-size:.56rem;font-weight:600;color:rgba(255,255,255,.28);width:76px;flex-shrink:0;text-align:right}
+    .gr-bar-track{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+    .gr-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--bc1),var(--bc2));box-shadow:0 0 5px var(--bglow)}
+    .gr-bar-val{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:800;color:var(--bc1);width:30px;text-align:right;flex-shrink:0}
+    /* Player Sim mock */
+    .ps-pr{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 14px;margin-bottom:11px}
+    .ps-av{width:36px;height:36px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:.65rem;font-weight:900;color:#020C07;background:var(--av-bg,linear-gradient(135deg,#F9C62B,#FFE066));box-shadow:0 0 12px var(--av-glow,rgba(249,198,43,.4))}
+    .ps-pname{font-family:'Space Grotesk',sans-serif;font-size:.8rem;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:2px}
+    .ps-pdet{font-family:'JetBrains Mono',monospace;font-size:.47rem;font-weight:600;color:rgba(255,255,255,.25);letter-spacing:.04em;text-transform:uppercase}
+    .ps-dh-badge{display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#F9C62B;background:rgba(249,198,43,.1);border:1px solid rgba(249,198,43,.25);padding:2px 8px;border-radius:100px;flex-shrink:0;margin-left:auto}
+    .ps-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:11px}
+    .ps-stat-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:9px 6px;text-align:center}
+    .ps-stat-box.dh{border-color:rgba(249,198,43,.3);background:rgba(249,198,43,.06);box-shadow:0 0 12px rgba(249,198,43,.1)}
+    .ps-stat-val{font-family:'Space Grotesk',sans-serif;font-size:.88rem;font-weight:900;color:#fff;letter-spacing:-.03em;line-height:1;margin-bottom:2px}
+    .ps-stat-box.dh .ps-stat-val{color:#F9C62B;text-shadow:0 0 10px rgba(249,198,43,.5)}
+    .ps-stat-lbl{font-family:'JetBrains Mono',monospace;font-size:.43rem;font-weight:700;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.06em}
+    .ps-dist-wrap{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:10px 12px}
+    .ps-dist-top{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:.47rem;font-weight:700;color:rgba(255,255,255,.18);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
+    .ps-dist-top span{color:#F9C62B;font-size:.56rem}
+    .ps-dist-bar{display:flex;align-items:flex-end;gap:2px;height:28px}
+    .ps-dist-col{flex:1;border-radius:2px 2px 0 0;background:rgba(255,255,255,.1)}
+    .ps-dist-col.pk{background:linear-gradient(180deg,#F9C62B,rgba(249,198,43,.4));box-shadow:0 0 6px rgba(249,198,43,.3)}
+    .ps-dist-col.dh-col{background:linear-gradient(180deg,#00D559,rgba(0,213,89,.4));box-shadow:0 0 6px rgba(0,213,89,.3)}
+    </style>
+
+    <div class="ag-section-head" style="text-align:center;padding:40px 0 16px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(0,213,89,0.55);margin-bottom:10px">Inside the Platform</div>
+      <h3 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(1.4rem,2.8vw,2rem);font-weight:900;letter-spacing:-.04em;color:#fff;margin-bottom:8px">See Exactly <span class="em">What You Get.</span></h3>
+      <p style="font-family:'Inter',sans-serif;font-size:.8rem;color:rgba(255,255,255,.35);max-width:500px;margin:0 auto 40px">Not a black box. Every tool shows its work &mdash; so you understand the edge, not just follow it blindly.</p>
+    </div>
+
+    <!-- ── Game Report ── -->
+    <div class="ag-tool-split" style="--tc:#00D559;--tc2:#00FF85;">
+      <div>
+        <div class="ag-tool-eyebrow">&#x1F4CB; Game Report</div>
+        <h3 class="ag-tool-h">Every Matchup.<br><span class="em">Fully Decoded.</span></h3>
+        <p class="ag-tool-p">Pick any matchup on tonight&rsquo;s slate and get a full AI briefing in seconds &mdash; win probability, pace factors, total projections, key player mismatches, and the exact props with the most edge.</p>
+        <ul class="ag-tool-bullets">
+          <li><b>AI Win Probability</b> &mdash; 6-model consensus for each team, updated as lines move.</li>
+          <li><b>Pace &amp; Total Projection</b> &mdash; True game total vs. the posted line. Know when the book has it wrong.</li>
+          <li><b>Key Player Matchup Cards</b> &mdash; Head-to-head stats, defensive rating exposure, and minute projections.</li>
+          <li><b>Top Props for the Game</b> &mdash; Auto-sorted by SAFE Score. One click to run full Neural analysis on any prop.</li>
+          <li><b>Entry Strategy Matrix</b> &mdash; Recommended parlay combos and singles based on your risk profile.</li>
+        </ul>
+        <a href="?auth=signup" class="ag-tool-cta">Access Game Reports Free &rarr;</a>
       </div>
-      <div class="ag-mockup">
-        <div class="ag-mockup-window">
-          <div class="ag-mockup-titlebar">
-            <span class="ag-mockup-dot" style="background:#f24336"></span>
-            <span class="ag-mockup-dot" style="background:#F9C62B"></span>
-            <span class="ag-mockup-dot" style="background:#00D559"></span>
-            <span class="ag-mockup-url">smartpickpro.com &mdash; Neural Analysis</span>
+      <div class="ag-tool-mockup" style="--tc:#00D559;--tc2:#00FF85;">
+        <div class="ag-mock-chrome">
+          <div class="ag-mock-dots"><span></span><span></span><span></span></div>
+          <div class="ag-mock-url">smartpickpro.ai &middot; Game Report</div>
+        </div>
+        <div class="ag-mock-body">
+          <div class="gr-hd">
+            <div class="gr-title">&#x1F4CB; Game Report</div>
+            <div class="gr-live">Live Analysis</div>
           </div>
-          <div class="ag-mockup-body">
-            <div class="ag-mockup-sidebar">
-              <div class="ag-mockup-sb-item active">&#x26A1; Analysis</div>
-              <div class="ag-mockup-sb-item">&#x1F4CA; Live Sweat</div>
-              <div class="ag-mockup-sb-item">&#x1F4C8; Bet Tracker</div>
-              <div class="ag-mockup-sb-item">&#x1F52C; Prop Scanner</div>
-              <div class="ag-mockup-sb-item">&#x1F3C0; Matchups</div>
+          <div class="gr-matchup">
+            <div class="gr-team"><div class="gr-abbrev" style="color:#00D559">BOS</div><div class="gr-name">Celtics</div></div>
+            <div style="text-align:center"><div class="gr-vs">VS</div><div class="gr-ou">O/U 218.5</div></div>
+            <div class="gr-team"><div class="gr-abbrev" style="color:#2D9EFF">MIA</div><div class="gr-name">Heat</div></div>
+          </div>
+          <div class="gr-pills">
+            <span class="gr-pill g">BOS &minus;5.5</span>
+            <span class="gr-pill b">Pace 99.4</span>
+            <span class="gr-pill">TD Garden</span>
+            <span class="gr-pill g">4 Sharp Plays</span>
+          </div>
+          <div class="gr-bars">
+            <div class="gr-bar-row"><div class="gr-bar-lbl">BOS Win Prob</div><div class="gr-bar-track"><div class="gr-bar-fill" style="width:67%;--bc1:#00D559;--bc2:#00FF85;--bglow:rgba(0,213,89,.4)"></div></div><div class="gr-bar-val" style="--bc1:#00D559">67%</div></div>
+            <div class="gr-bar-row"><div class="gr-bar-lbl">Tatum PTS Edge</div><div class="gr-bar-track"><div class="gr-bar-fill" style="width:82%;--bc1:#F9C62B;--bc2:#FFE066;--bglow:rgba(249,198,43,.4)"></div></div><div class="gr-bar-val" style="--bc1:#F9C62B">+4.8%</div></div>
+            <div class="gr-bar-row"><div class="gr-bar-lbl">SAFE Consensus</div><div class="gr-bar-track"><div class="gr-bar-fill" style="width:88%;--bc1:#2D9EFF;--bc2:#60b4ff;--bglow:rgba(45,158,255,.4)"></div></div><div class="gr-bar-val" style="--bc1:#2D9EFF">88</div></div>
+            <div class="gr-bar-row"><div class="gr-bar-lbl">Total Proj &Delta;</div><div class="gr-bar-track"><div class="gr-bar-fill" style="width:55%;--bc1:#c084fc;--bc2:#d8b4fe;--bglow:rgba(192,132,252,.4)"></div></div><div class="gr-bar-val" style="--bc1:#c084fc">+3.2</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ag-divider"></div>
+
+    <!-- ── Player Simulator + Dark Horse ── -->
+    <div class="ag-tool-split rev" style="--tc:#F9C62B;--tc2:#FFE066;">
+      <div class="ag-tool-mockup" style="--tc:#F9C62B;--tc2:#FFE066;">
+        <div class="ag-mock-chrome">
+          <div class="ag-mock-dots"><span></span><span></span><span></span></div>
+          <div class="ag-mock-url">smartpickpro.ai &middot; Player Simulator</div>
+        </div>
+        <div class="ag-mock-body">
+          <div class="ps-pr">
+            <div class="ps-av" style="--av-bg:linear-gradient(135deg,#F9C62B,#FFE066);--av-glow:rgba(249,198,43,.45)">JT</div>
+            <div style="flex:1;min-width:0">
+              <div class="ps-pname">Jayson Tatum</div>
+              <div class="ps-pdet">BOS &middot; vs MIA &middot; Home &middot; 10k sims</div>
             </div>
-            <div class="ag-mockup-main">
-              <div class="ag-mockup-header">
-                <span class="ag-mockup-badge-live">&#x1F534; LIVE &mdash; 347 Props Analyzed</span>
-                <span class="ag-mockup-filter">SAFE 70+ Only</span>
-              </div>
-              <div class="ag-mockup-table">
-                <div class="ag-mockup-row head">
-                  <span>Player</span><span>Prop</span><span>Line</span><span>SAFE</span><span>Edge</span><span>Pick</span>
-                </div>
-                <div class="ag-mockup-row">
-                  <span class="player">Luka Don&#x10D;i&#x107;</span><span>PTS</span><span>28.5</span><span class="safe high">92</span><span class="edge">+6.2%</span><span class="over">OVER &#x2191;</span>
-                </div>
-                <div class="ag-mockup-row">
-                  <span class="player">SGA</span><span>PTS</span><span>30.5</span><span class="safe high">90</span><span class="edge">+5.3%</span><span class="over">OVER &#x2191;</span>
-                </div>
-                <div class="ag-mockup-row">
-                  <span class="player">Jayson Tatum</span><span>REB</span><span>8.5</span><span class="safe mid">87</span><span class="edge">+4.8%</span><span class="over">OVER &#x2191;</span>
-                </div>
-                <div class="ag-mockup-row">
-                  <span class="player">A. Edwards</span><span>PTS</span><span>26.5</span><span class="safe mid">84</span><span class="edge">+5.1%</span><span class="under">UNDER &#x2193;</span>
-                </div>
-                <div class="ag-mockup-row">
-                  <span class="player">Joki&#x107;</span><span>AST</span><span>9.5</span><span class="safe mid">78</span><span class="edge">+3.4%</span><span class="over">OVER &#x2191;</span>
-                </div>
-              </div>
-              <div class="ag-mockup-footer-note">Showing 5 of 347 analyzed props &mdash; sorted by SAFE Score</div>
+            <div class="ps-dh-badge">&#x1F434; Dark Horse</div>
+          </div>
+          <div class="ps-stat-grid">
+            <div class="ps-stat-box"><div class="ps-stat-val">28.4</div><div class="ps-stat-lbl">PTS Med</div></div>
+            <div class="ps-stat-box dh"><div class="ps-stat-val">9.2</div><div class="ps-stat-lbl">REB &#x2191; DH</div></div>
+            <div class="ps-stat-box"><div class="ps-stat-val">5.1</div><div class="ps-stat-lbl">AST Med</div></div>
+            <div class="ps-stat-box"><div class="ps-stat-val">3.8</div><div class="ps-stat-lbl">3PM Med</div></div>
+          </div>
+          <div class="ps-dist-wrap">
+            <div class="ps-dist-top"><span>REB Distribution &mdash; 10k sims</span><span>Ceiling: 14</span></div>
+            <div class="ps-dist-bar">
+              <div class="ps-dist-col" style="height:18%"></div>
+              <div class="ps-dist-col" style="height:34%"></div>
+              <div class="ps-dist-col" style="height:54%"></div>
+              <div class="ps-dist-col pk" style="height:90%"></div>
+              <div class="ps-dist-col pk" style="height:100%"></div>
+              <div class="ps-dist-col pk" style="height:82%"></div>
+              <div class="ps-dist-col" style="height:60%"></div>
+              <div class="ps-dist-col dh-col" style="height:44%"></div>
+              <div class="ps-dist-col dh-col" style="height:30%"></div>
+              <div class="ps-dist-col" style="height:18%"></div>
+              <div class="ps-dist-col" style="height:10%"></div>
+              <div class="ps-dist-col" style="height:5%"></div>
             </div>
           </div>
         </div>
-        <div class="ag-mockup-caption">
-          <span class="ag-mockup-tag">&#x2714; Real data</span>
-          <span class="ag-mockup-tag">&#x2714; Updated nightly</span>
-          <span class="ag-mockup-tag">&#x2714; 6 AI models fused</span>
-        </div>
+      </div>
+      <div>
+        <div class="ag-tool-eyebrow" style="--tc:#F9C62B">&#x1F52E; Player Simulator</div>
+        <h3 class="ag-tool-h" style="--tc:#F9C62B;--tc2:#FFE066">10,000 Sims.<br><span class="em">One True Number.</span></h3>
+        <p class="ag-tool-p">The Quantum Matrix Engine 5.6 runs 10,000 simulated game iterations per player, per stat, per night &mdash; producing a full outcome distribution so you know the actual probability of any prop hitting, not just a guess.</p>
+        <ul class="ag-tool-bullets" style="--tc:#F9C62B">
+          <li><b>Full Stat Line Projection</b> &mdash; Points, rebounds, assists, steals, blocks, threes, and turnovers. Every category, every night.</li>
+          <li><b>Dark Horse Detection &#x1F434;</b> &mdash; Auto-flags props where a player&rsquo;s simulated ceiling is meaningfully above the market line. Hidden upside, found for you.</li>
+          <li><b>Context-Aware Inputs</b> &mdash; Opponent, pace, home/away status, game total, and defensive matchup auto-loaded for every player.</li>
+          <li><b>Outcome Distribution Charts</b> &mdash; See exactly where outcomes cluster. High variance = better OVER. Low variance = better UNDER.</li>
+          <li><b>Syncs with Prop Scanner</b> &mdash; Gap between simulator median and posted line visible instantly. Spot mispriced props in seconds.</li>
+        </ul>
+        <a href="?auth=signup" class="ag-tool-cta" style="--tc:#F9C62B">Run Your First Simulation Free &rarr;</a>
       </div>
     </div>
 

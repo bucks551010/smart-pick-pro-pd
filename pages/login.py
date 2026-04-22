@@ -1407,41 +1407,89 @@ st.markdown("""
 /* ── How It Works ───────────────────────────────────────────── */
 .lp-steps {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 28px;
     margin: 0 auto;
+    position: relative;
+}
+/* Connector line between steps on desktop */
+.lp-steps::before {
+    content: '';
+    position: absolute;
+    top: 52px; left: calc(33% - 14px); right: calc(33% - 14px);
+    height: 1px;
+    background: linear-gradient(90deg,
+        rgba(0,213,89,0.3), rgba(45,158,255,0.3), rgba(192,132,252,0.3));
+    pointer-events: none;
+    display: none; /* enabled via JS media query */
+}
+@media (min-width: 780px) {
+    .lp-steps::before { display: block; }
 }
 .lp-step {
     position: relative;
     background: rgba(255,255,255,0.025);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 20px;
-    padding: 36px 28px;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 24px;
+    padding: 40px 28px 36px;
     text-align: center;
-    transition: border-color 0.3s, transform 0.3s;
+    transition: border-color 0.35s, transform 0.35s, box-shadow 0.35s, background 0.35s;
+    overflow: hidden;
+}
+/* Accent top bar per step */
+.lp-step:nth-child(1) { --step-color: #00D559; --step-glow: rgba(0,213,89,0.35); }
+.lp-step:nth-child(2) { --step-color: #2D9EFF; --step-glow: rgba(45,158,255,0.35); }
+.lp-step:nth-child(3) { --step-color: #c084fc; --step-glow: rgba(192,132,252,0.35); }
+.lp-step::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--step-color), transparent);
+    opacity: 0.5;
+    transition: opacity 0.3s, height 0.3s;
 }
 .lp-step:hover {
-    border-color: rgba(0,213,89,0.2);
-    transform: translateY(-4px);
+    border-color: var(--step-color, rgba(0,213,89,0.2));
+    border-color: color-mix(in srgb, var(--step-color) 30%, transparent);
+    transform: translateY(-6px);
+    background: rgba(255,255,255,0.04);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 40px var(--step-glow, rgba(0,213,89,0.1));
+}
+.lp-step:hover::before { opacity: 1; height: 3px; }
+/* Step number — glowing filled circle */
+.lp-step-num-wrap {
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 22px;
+    width: 64px; height: 64px;
+    border-radius: 18px;
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--step-color) 16%, transparent),
+        color-mix(in srgb, var(--step-color) 6%, transparent));
+    border: 1px solid color-mix(in srgb, var(--step-color) 30%, transparent);
+    box-shadow: 0 0 24px color-mix(in srgb, var(--step-color) 20%, transparent);
+    transition: box-shadow 0.35s, transform 0.35s;
+}
+.lp-step:hover .lp-step-num-wrap {
+    transform: scale(1.08);
+    box-shadow: 0 0 44px color-mix(in srgb, var(--step-color) 40%, transparent);
 }
 .lp-step-num {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 3rem; font-weight: 900;
+    font-size: 1.5rem; font-weight: 900;
     line-height: 1;
-    -webkit-text-stroke: 1px rgba(0,213,89,0.4);
-    color: transparent;
-    margin-bottom: 16px;
+    color: var(--step-color);
     display: block;
+    text-shadow: 0 0 20px var(--step-glow);
 }
 .lp-step-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.05rem; font-weight: 800;
-    color: #fff; margin-bottom: 10px;
+    font-size: 1.08rem; font-weight: 800;
+    color: #fff; margin-bottom: 12px;
+    letter-spacing: -0.02em;
 }
 .lp-step-desc {
     font-family: 'Inter', sans-serif;
-    font-size: 0.82rem; color: rgba(255,255,255,0.35);
-    line-height: 1.7;
+    font-size: 0.83rem; color: rgba(255,255,255,0.38);
+    line-height: 1.72;
 }
 
 /* ── Features Grid ──────────────────────────────────────────── */
@@ -1552,6 +1600,9 @@ st.markdown("""
 .lf-gold   { --accent-grad: linear-gradient(90deg,#fde68a,#F9C62B); --accent-glow: rgba(249,198,43,0.4); --accent-color:#F9C62B; --accent-bg:rgba(249,198,43,0.06); --accent-border:rgba(249,198,43,0.2); }
 </style>
 
+<!-- section divider -->
+<div style="padding:0 24px;"><div class="lp-divider"></div></div>
+
 <!-- ══ STATS TRUST BAR ═══════════════════════════════════════ -->
 <div style="padding: 80px 24px 0; background: transparent;">
   <div class="lp-trust-bar">
@@ -1578,6 +1629,9 @@ st.markdown("""
   </div>
 </div>
 
+<!-- section divider -->
+<div style="padding:0 24px;"><div class="lp-divider"></div></div>
+
 <!-- ══ HOW IT WORKS ══════════════════════════════════════════ -->
 <div id="lp-how" style="padding: 100px 24px 0;">
   <div class="lp-section" style="padding: 0;">
@@ -1586,23 +1640,26 @@ st.markdown("""
     <p class="lp-section-sub">Our Neural Engine does the heavy lifting — you just pick your plays.</p>
     <div class="lp-steps">
       <div class="lp-step">
-        <span class="lp-step-num">01</span>
+        <div class="lp-step-num-wrap"><span class="lp-step-num">01</span></div>
         <div class="lp-step-title">Load Tonight's Slate</div>
         <p class="lp-step-desc">One click pulls live props from PrizePicks, DraftKings &amp; Underdog. Lines, totals, and injury data refreshed in real-time.</p>
       </div>
       <div class="lp-step">
-        <span class="lp-step-num">02</span>
+        <div class="lp-step-num-wrap"><span class="lp-step-num">02</span></div>
         <div class="lp-step-title">AI Scores Every Prop</div>
         <p class="lp-step-desc">6 AI models — ensemble, Bayesian, Monte Carlo, regression, CLV tracker &amp; line movement mirror — converge on a single SAFE Score™.</p>
       </div>
       <div class="lp-step">
-        <span class="lp-step-num">03</span>
+        <div class="lp-step-num-wrap"><span class="lp-step-num">03</span></div>
         <div class="lp-step-title">Pick Your Plays</div>
         <p class="lp-step-desc">Ranked by edge, filtered by your bankroll strategy. Green lights only. Track results live in your Bet Tracker dashboard.</p>
       </div>
     </div>
   </div>
 </div>
+
+<!-- section divider -->
+<div style="padding:0 24px;"><div class="lp-divider"></div></div>
 
 <!-- ══ FEATURES GRID ════════════════════════════════════════ -->
 <div id="lp-features" style="padding: 100px 24px 0;">
@@ -1681,6 +1738,313 @@ st.markdown("""
   setTimeout(tryReveal, 1800);
 })();
 </script>
+""", unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════
+# LIVE PICKS PREVIEW SECTION  (#lp-picks)
+# ════════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+/* ── Live Picks Preview ─────────────────────────────────── */
+.lp-picks-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 820px;
+    margin: 0 auto;
+}
+.lp-pick-row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto auto 110px;
+    align-items: center;
+    gap: 20px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 18px;
+    padding: 18px 22px;
+    transition: border-color 0.3s, transform 0.3s, background 0.3s, box-shadow 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+.lp-pick-row::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--pick-color, #00D559);
+    border-radius: 18px 0 0 18px;
+    box-shadow: 0 0 14px var(--pick-glow, rgba(0,213,89,0.5));
+}
+.lp-pick-row:hover {
+    border-color: rgba(255,255,255,0.12);
+    transform: translateX(4px);
+    background: rgba(255,255,255,0.04);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 30px var(--pick-glow, rgba(0,213,89,0.08));
+}
+/* Rank badge */
+.lp-pick-rank {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; font-weight: 900;
+    color: var(--pick-color, #00D559);
+    background: color-mix(in srgb, var(--pick-color, #00D559) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--pick-color, #00D559) 25%, transparent);
+    flex-shrink: 0;
+}
+/* Player info */
+.lp-pick-info { min-width: 0; }
+.lp-pick-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.95rem; font-weight: 800;
+    color: #fff; margin-bottom: 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lp-pick-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.58rem; font-weight: 600;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase; letter-spacing: .08em;
+    display: flex; align-items: center; gap: 8px;
+}
+.lp-pick-meta-sep { color: rgba(255,255,255,0.12); }
+/* Prop */
+.lp-pick-prop {
+    text-align: right;
+}
+.lp-pick-prop-val {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.05rem; font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.03em;
+}
+.lp-pick-prop-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem; font-weight: 700;
+    color: rgba(255,255,255,0.25);
+    text-transform: uppercase; letter-spacing: .08em;
+    margin-top: 3px;
+}
+/* Direction badge */
+.lp-pick-dir {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.75rem; font-weight: 800;
+    padding: 6px 14px; border-radius: 100px;
+    letter-spacing: .04em; text-transform: uppercase;
+    flex-shrink: 0;
+}
+.lp-pick-dir.over  { color:#00D559; background:rgba(0,213,89,0.1);  border:1px solid rgba(0,213,89,0.25);  }
+.lp-pick-dir.under { color:#2D9EFF; background:rgba(45,158,255,0.1);border:1px solid rgba(45,158,255,0.25);}
+/* SAFE Score meter */
+.lp-pick-safe {
+    text-align: right;
+}
+.lp-pick-safe-score {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.25rem; font-weight: 900;
+    letter-spacing: -0.04em;
+    color: var(--pick-color, #00D559);
+    text-shadow: 0 0 16px var(--pick-glow, rgba(0,213,89,0.5));
+    line-height: 1;
+}
+.lp-pick-safe-bar-wrap {
+    width: 80px; height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    margin: 6px 0 0 auto;
+    overflow: hidden;
+}
+.lp-pick-safe-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--pick-color), var(--pick-color-2, var(--pick-color)));
+    border-radius: 2px;
+    box-shadow: 0 0 8px var(--pick-glow);
+    transition: width 1.2s cubic-bezier(0.16,1,0.3,1);
+}
+.lp-pick-safe-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.48rem; font-weight: 700;
+    color: rgba(255,255,255,0.22);
+    text-transform: uppercase; letter-spacing: .09em;
+    text-align: right; margin-top: 4px;
+}
+/* Platform pill inside meta */
+.lp-pick-plat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.52rem; font-weight: 800;
+    padding: 2px 8px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: .06em;
+}
+.lp-plat-pp   { color: #00D559; background: rgba(0,213,89,0.08);  }
+.lp-plat-dk   { color: #2D9EFF; background: rgba(45,158,255,0.08);}
+.lp-plat-ud   { color: #F9C62B; background: rgba(249,198,43,0.08);}
+/* Blurred locked rows */
+.lp-pick-row.locked {
+    filter: blur(3px);
+    opacity: 0.45;
+    pointer-events: none;
+}
+.lp-picks-lock-overlay {
+    text-align: center;
+    padding: 36px 24px 28px;
+    background: rgba(3,6,14,0.7);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 20px;
+    backdrop-filter: blur(12px);
+    max-width: 420px;
+    margin: 8px auto 0;
+}
+.lp-picks-lock-icon {
+    font-size: 2rem; margin-bottom: 14px;
+}
+.lp-picks-lock-headline {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.05rem; font-weight: 800;
+    color: #fff; margin-bottom: 8px;
+}
+.lp-picks-lock-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem; color: rgba(255,255,255,0.35);
+    line-height: 1.6; margin-bottom: 20px;
+}
+/* Responsive: collapse prop + dir on small screens */
+@media (max-width: 680px) {
+    .lp-pick-row {
+        grid-template-columns: 36px 1fr auto 88px;
+    }
+    .lp-pick-dir { display: none; }
+}
+@media (max-width: 480px) {
+    .lp-pick-row { grid-template-columns: 1fr auto; padding: 14px 16px; }
+    .lp-pick-rank { display: none; }
+    .lp-pick-safe-bar-wrap { width: 56px; }
+}
+</style>
+
+<!-- section divider -->
+<div style="padding:0 24px;"><div class="lp-divider"></div></div>
+
+<!-- ══ LIVE PICKS PREVIEW ════════════════════════════════════ -->
+<div id="lp-picks" style="padding: 100px 24px 0;">
+  <div class="lp-section" style="padding:0;">
+    <div class="lp-section-label">Sample Picks</div>
+    <h2 class="lp-section-h2">Tonight's<br>Top Plays.</h2>
+    <p class="lp-section-sub">A live snapshot of what members see every night — scored, ranked, and ready to deploy.</p>
+
+    <div class="lp-picks-grid">
+
+      <!-- Pick 1 — green, top SAFE -->
+      <div class="lp-pick-row" style="--pick-color:#00D559;--pick-glow:rgba(0,213,89,0.3);--pick-color-2:#00FF85;">
+        <div class="lp-pick-rank">#1</div>
+        <div class="lp-pick-info">
+          <div class="lp-pick-name">Jayson Tatum — Points</div>
+          <div class="lp-pick-meta">
+            <span class="lp-pick-plat lp-plat-pp">PP</span>
+            <span class="lp-pick-meta-sep">|</span>
+            <span>BOS vs MIA · Game 3</span>
+            <span class="lp-pick-meta-sep">|</span>
+            <span>+4.8% CLV edge</span>
+          </div>
+        </div>
+        <div class="lp-pick-prop">
+          <div class="lp-pick-prop-val">27.5</div>
+          <div class="lp-pick-prop-label">Line</div>
+        </div>
+        <span class="lp-pick-dir over">▲ Over</span>
+        <div class="lp-pick-safe">
+          <div class="lp-pick-safe-score">91</div>
+          <div class="lp-pick-safe-bar-wrap"><div class="lp-pick-safe-bar" style="width:91%;"></div></div>
+          <div class="lp-pick-safe-label">SAFE Score™</div>
+        </div>
+      </div>
+
+      <!-- Pick 2 — gold -->
+      <div class="lp-pick-row" style="--pick-color:#F9C62B;--pick-glow:rgba(249,198,43,0.3);--pick-color-2:#FFE066;">
+        <div class="lp-pick-rank">#2</div>
+        <div class="lp-pick-info">
+          <div class="lp-pick-name">Nikola Jokic — Rebounds</div>
+          <div class="lp-pick-meta">
+            <span class="lp-pick-plat lp-plat-dk">DK</span>
+            <span class="lp-pick-meta-sep">|</span>
+            <span>DEN vs MIN · Reg Season</span>
+            <span class="lp-pick-meta-sep">|</span>
+            <span>Sharp line movement</span>
+          </div>
+        </div>
+        <div class="lp-pick-prop">
+          <div class="lp-pick-prop-val">12.5</div>
+          <div class="lp-pick-prop-label">Line</div>
+        </div>
+        <span class="lp-pick-dir over">▲ Over</span>
+        <div class="lp-pick-safe">
+          <div class="lp-pick-safe-score">87</div>
+          <div class="lp-pick-safe-bar-wrap"><div class="lp-pick-safe-bar" style="width:87%;"></div></div>
+          <div class="lp-pick-safe-label">SAFE Score™</div>
+        </div>
+      </div>
+
+      <!-- Pick 3 — blue -->
+      <div class="lp-pick-row" style="--pick-color:#2D9EFF;--pick-glow:rgba(45,158,255,0.3);--pick-color-2:#60b4ff;">
+        <div class="lp-pick-rank">#3</div>
+        <div class="lp-pick-info">
+          <div class="lp-pick-name">Stephen Curry — 3-Pointers Made</div>
+          <div class="lp-pick-meta">
+            <span class="lp-pick-plat lp-plat-ud">UD</span>
+            <span class="lp-pick-meta-sep">|</span>
+            <span>GSW vs LAL · Playoffs</span>
+            <span class="lp-pick-meta-sep">|</span>
+            <span>6-model consensus</span>
+          </div>
+        </div>
+        <div class="lp-pick-prop">
+          <div class="lp-pick-prop-val">3.5</div>
+          <div class="lp-pick-prop-label">Line</div>
+        </div>
+        <span class="lp-pick-dir under">▼ Under</span>
+        <div class="lp-pick-safe">
+          <div class="lp-pick-safe-score">84</div>
+          <div class="lp-pick-safe-bar-wrap"><div class="lp-pick-safe-bar" style="width:84%;"></div></div>
+          <div class="lp-pick-safe-label">SAFE Score™</div>
+        </div>
+      </div>
+
+      <!-- Locked rows -->
+      <div class="lp-pick-row locked" style="--pick-color:#c084fc;--pick-glow:rgba(192,132,252,0.3);">
+        <div class="lp-pick-rank">#4</div>
+        <div class="lp-pick-info">
+          <div class="lp-pick-name">Luka Doncic — Assists</div>
+          <div class="lp-pick-meta"><span class="lp-pick-plat lp-plat-pp">PP</span><span class="lp-pick-meta-sep">|</span><span>DAL vs OKC</span></div>
+        </div>
+        <div class="lp-pick-prop"><div class="lp-pick-prop-val">8.5</div></div>
+        <span class="lp-pick-dir over">▲ Over</span>
+        <div class="lp-pick-safe"><div class="lp-pick-safe-score">81</div></div>
+      </div>
+      <div class="lp-pick-row locked" style="--pick-color:#00D559;--pick-glow:rgba(0,213,89,0.2);">
+        <div class="lp-pick-rank">#5</div>
+        <div class="lp-pick-info">
+          <div class="lp-pick-name">Anthony Edwards — Points + Rebounds</div>
+          <div class="lp-pick-meta"><span class="lp-pick-plat lp-plat-dk">DK</span><span class="lp-pick-meta-sep">|</span><span>MIN vs DEN</span></div>
+        </div>
+        <div class="lp-pick-prop"><div class="lp-pick-prop-val">34.5</div></div>
+        <span class="lp-pick-dir over">▲ Over</span>
+        <div class="lp-pick-safe"><div class="lp-pick-safe-score">79</div></div>
+      </div>
+
+    </div><!-- /lp-picks-grid -->
+
+    <!-- Unlock CTA -->
+    <div class="lp-picks-lock-overlay">
+      <div class="lp-picks-lock-icon">🔒</div>
+      <div class="lp-picks-lock-headline">+297 More Props Waiting</div>
+      <p class="lp-picks-lock-sub">
+        Free members see the top 3. Sign up free — no card required —
+        and unlock tonight's full 300+ prop Neural Engine scan.
+      </p>
+      <a class="lp-cta-primary" href="?auth=signup" style="display:inline-flex;font-size:.88rem;padding:13px 32px;">
+        ⚡ Unlock All Picks Free
+      </a>
+    </div>
+
+  </div>
+</div>
 """, unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
@@ -1900,6 +2264,9 @@ st.markdown("""
 }
 </style>
 
+<!-- section divider -->
+<div style="padding:0 24px;"><div class="lp-divider"></div></div>
+
 <!-- ══ PRICING ══════════════════════════════════════════════ -->
 <div id="lp-pricing" style="padding: 100px 24px 0;">
   <div class="lp-section" style="padding: 0;">
@@ -1962,6 +2329,9 @@ st.markdown("""
   </div>
 </div>
 
+<!-- section divider -->
+<div style="padding:0 24px;"><div class="lp-divider"></div></div>
+
 <!-- ══ TESTIMONIALS ═════════════════════════════════════════ -->
 <div id="lp-testimonials" style="padding: 80px 24px 0;">
   <div class="lp-section" style="padding: 0;">
@@ -2010,6 +2380,184 @@ st.markdown("""
     </div>
   </div>
 </div>
+""", unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════
+# FAQ SECTION (#lp-faq)
+# ════════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+/* ── FAQ Accordion ──────────────────────────────────────── */
+.lp-faq-list {
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.lp-faq-item {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 18px;
+    overflow: hidden;
+    transition: border-color 0.3s, background 0.3s;
+}
+.lp-faq-item.open {
+    border-color: rgba(0,213,89,0.2);
+    background: rgba(0,213,89,0.02);
+}
+.lp-faq-q {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 26px;
+    cursor: pointer;
+    user-select: none;
+    gap: 16px;
+}
+.lp-faq-q-text {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.97rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.4;
+    flex: 1;
+}
+.lp-faq-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: rgba(0,213,89,0.08);
+    border: 1px solid rgba(0,213,89,0.18);
+    color: #00D559;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; font-weight: 900;
+    flex-shrink: 0;
+    transition: transform 0.3s, background 0.3s;
+    line-height: 1;
+}
+.lp-faq-item.open .lp-faq-icon {
+    transform: rotate(45deg);
+    background: rgba(0,213,89,0.14);
+}
+.lp-faq-a {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.16,1,0.3,1), padding 0.3s;
+    padding: 0 26px;
+}
+.lp-faq-a-inner {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.8;
+    padding-bottom: 22px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding-top: 16px;
+}
+.lp-faq-a-inner strong { color: rgba(255,255,255,0.75); font-weight: 700; }
+.lp-faq-a-inner a { color: #00D559; text-decoration: none; }
+.lp-faq-item.open .lp-faq-a {
+    max-height: 400px;
+}
+</style>
+
+<!-- section divider -->
+<div style="padding:0 24px;"><div class="lp-divider"></div></div>
+
+<!-- ══ FAQ ════════════════════════════════════════════════ -->
+<div id="lp-faq" style="padding: 100px 24px 0;">
+  <div class="lp-section" style="padding:0;">
+    <div class="lp-section-label">FAQ</div>
+    <h2 class="lp-section-h2">Got Questions?<br>We've Got Answers.</h2>
+    <p class="lp-section-sub">Everything you need to know about Smart Pick Pro and the Neural Engine.</p>
+
+    <div class="lp-faq-list">
+
+      <div class="lp-faq-item open">
+        <div class="lp-faq-q" onclick="lpToggleFaq(this)">
+          <span class="lp-faq-q-text">What is the SAFE Score™ and how is it calculated?</span>
+          <span class="lp-faq-icon">+</span>
+        </div>
+        <div class="lp-faq-a">
+          <div class="lp-faq-a-inner">
+            The <strong>SAFE Score™</strong> is our proprietary 0–100 confidence rating for every prop. It aggregates outputs from 6 AI models — Ensemble Neural Network, Bayesian Inference, Monte Carlo Simulation, Linear Regression, CLV Tracker, and Line Movement Mirror — weighted by each model's recent accuracy. A score above <strong>70 is a strong signal</strong>; above 85 is our highest-confidence tier.
+          </div>
+        </div>
+      </div>
+
+      <div class="lp-faq-item">
+        <div class="lp-faq-q" onclick="lpToggleFaq(this)">
+          <span class="lp-faq-q-text">Is Smart Pick Pro actually free to start?</span>
+          <span class="lp-faq-icon">+</span>
+        </div>
+        <div class="lp-faq-a">
+          <div class="lp-faq-a-inner">
+            Yes — <strong>completely free, no credit card required</strong>. Free accounts get the top 3 daily picks with SAFE Scores visible. Upgrade to Sharp IQ or Smart Money to unlock the full 300+ prop nightly slate, line movement alerts, and the Bet Tracker dashboard.
+          </div>
+        </div>
+      </div>
+
+      <div class="lp-faq-item">
+        <div class="lp-faq-q" onclick="lpToggleFaq(this)">
+          <span class="lp-faq-q-text">Which platforms does the Neural Engine cover?</span>
+          <span class="lp-faq-icon">+</span>
+        </div>
+        <div class="lp-faq-a">
+          <div class="lp-faq-a-inner">
+            Smart Pick Pro ingests live lines from <strong>PrizePicks, DraftKings, Underdog Fantasy, and ParlayApp</strong>. Props are pulled, normalized, and scored across all platforms simultaneously — so you always see the best available line for each play.
+          </div>
+        </div>
+      </div>
+
+      <div class="lp-faq-item">
+        <div class="lp-faq-q" onclick="lpToggleFaq(this)">
+          <span class="lp-faq-q-text">How is the 62.4% hit rate verified?</span>
+          <span class="lp-faq-icon">+</span>
+        </div>
+        <div class="lp-faq-a">
+          <div class="lp-faq-a-inner">
+            Our hit rate is calculated from <strong>4,200+ tracked picks</strong> stored in the Bet Tracker database, logged with the line at time of pick, the final result, and the SAFE Score threshold used. Members can filter by model, tier, prop type, and date range inside their dashboard to verify independently. We don't cherry-pick — every scored pick above threshold is logged.
+          </div>
+        </div>
+      </div>
+
+      <div class="lp-faq-item">
+        <div class="lp-faq-q" onclick="lpToggleFaq(this)">
+          <span class="lp-faq-q-text">Can I cancel or change my plan at any time?</span>
+          <span class="lp-faq-icon">+</span>
+        </div>
+        <div class="lp-faq-a">
+          <div class="lp-faq-a-inner">
+            Yes. You can <strong>upgrade, downgrade, or cancel at any time</strong> from your account settings — no penalties, no fees, no tricks. Your access continues until the end of your current billing period. Downgrading to Free keeps your account and pick history intact forever.
+          </div>
+        </div>
+      </div>
+
+      <div class="lp-faq-item">
+        <div class="lp-faq-q" onclick="lpToggleFaq(this)">
+          <span class="lp-faq-q-text">Does this work for casual bettors or only pros?</span>
+          <span class="lp-faq-icon">+</span>
+        </div>
+        <div class="lp-faq-a">
+          <div class="lp-faq-a-inner">
+            Both. <strong>The Neural Engine does all the heavy lifting</strong> — you don't need to understand the math. Casual members use the top-ranked green picks and the Bankroll Optimizer to manage stake sizes safely. Advanced users can drill into individual model breakdowns, set custom SAFE Score thresholds, and configure their own filter presets.
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /lp-faq-list -->
+  </div>
+</div>
+
+<script>
+function lpToggleFaq(el) {
+  var item = el.closest('.lp-faq-item');
+  var isOpen = item.classList.contains('open');
+  /* Close all others */
+  document.querySelectorAll('.lp-faq-item.open').forEach(function(x) { x.classList.remove('open'); });
+  try { window.parent.document.querySelectorAll('.lp-faq-item.open').forEach(function(x){x.classList.remove('open');}); } catch(e){}
+  if (!isOpen) { item.classList.add('open'); }
+}
+</script>
 """, unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
@@ -2433,12 +2981,40 @@ st.markdown("""
 
 <!-- Section anchor + label -->
 <div id="lp-auth">
-  <div class="lp-section-label">Get Access</div>
-  <h2 class="lp-section-h2">Join 2,400+<br>Winning Sharps.</h2>
-  <p class="lp-section-sub" style="margin-bottom: 48px;">
-    Free forever. No credit card required.<br>
-    Start picking smarter tonight.
-  </p>
+  <!-- divider above auth -->
+  <div style="padding:0 24px 0;"><div class="lp-divider"></div></div>
+  <div style="padding: 100px 24px 0; text-align:center; position:relative; overflow:hidden;">
+    <!-- Subtle glow orb behind auth section -->
+    <div style="position:absolute;top:-80px;left:50%;transform:translateX(-50%);
+                width:600px;height:400px;border-radius:50%;
+                background:radial-gradient(ellipse,rgba(0,213,89,0.07) 0%,transparent 70%);
+                pointer-events:none;"></div>
+    <div class="lp-section-label">Get Access</div>
+    <h2 class="lp-section-h2" style="font-size:clamp(2.4rem,5vw,4rem);">Join 2,400+<br>Winning Sharps.</h2>
+    <p class="lp-section-sub" style="margin-bottom: 48px; font-size:1.05rem;">
+      Free forever. No credit card required.<br>
+      <strong style="color:rgba(255,255,255,0.7);">Start picking smarter tonight.</strong>
+    </p>
+    <!-- Mini trust badges -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:0;">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;
+                   color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:.08em;
+                   display:flex;align-items:center;gap:6px;">
+        <span style="color:#00D559;">✓</span> 256-bit Encryption</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;
+                   color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:.08em;
+                   display:flex;align-items:center;gap:6px;">
+        <span style="color:#00D559;">✓</span> No Credit Card</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;
+                   color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:.08em;
+                   display:flex;align-items:center;gap:6px;">
+        <span style="color:#00D559;">✓</span> Cancel Anytime</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;
+                   color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:.08em;
+                   display:flex;align-items:center;gap:6px;">
+        <span style="color:#00D559;">✓</span> Free Forever</span>
+    </div>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 

@@ -15,6 +15,9 @@ font = "sans serif"
 headless = true
 maxMessageSize = 1000
 enableWebsocketCompression = true
+# Mobile connections on LTE/3G can be slow; 60s default is too short
+# when the DB + JS bridge session restore happen on the same first run.
+scriptRunTimeoutSecs = 120
 
 [browser]
 gatherUsageStats = false

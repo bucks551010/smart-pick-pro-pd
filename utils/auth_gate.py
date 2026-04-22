@@ -90,7 +90,7 @@ def _ensure_pg_users_table() -> None:
     if _pg_users_initialized:
         return
     try:
-        conn = psycopg2.connect(_DATABASE_URL)
+        conn = psycopg2.connect(_DATABASE_URL, connect_timeout=5)
         try:
             with conn.cursor() as cur:
                 cur.execute(_PG_USERS_TABLE_SQL)
@@ -133,6 +133,7 @@ class _AuthConn:
             self._conn = psycopg2.connect(
                 _DATABASE_URL,
                 cursor_factory=psycopg2.extras.RealDictCursor,
+                connect_timeout=5,
             )
         else:
             initialize_database()
@@ -729,10 +730,12 @@ def _build_preview_section_html(picks: list[dict], pick_date: str = "") -> str:
     pick_date: ISO date string (YYYY-MM-DD) the picks belong to.
     """
     # ── CSS (self-contained inside the st.html iframe) ──
+    # NOTE: No @import for Google Fonts — cross-origin font fetches inside
+    # a sandboxed iframe are blocking on mobile and add 500ms-2s per render.
+    # System-UI fonts render instantly and look identical on iOS/Android.
     css = """<style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,255,255,.7);overflow-y:hidden}
+html,body{background:transparent;font-family:'Inter','Space Grotesk',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:rgba(255,255,255,.7);overflow-y:hidden}
 /* Frame — DraftKings-style dark glass */
 .pv-frame{background:linear-gradient(168deg,rgba(10,14,28,.98),rgba(8,12,24,.95));border:1px solid rgba(0,213,89,.12);border-radius:20px;overflow:hidden;box-shadow:0 0 60px rgba(0,213,89,.06),0 24px 80px rgba(0,0,0,.6)}
 .pv-titlebar{display:flex;align-items:center;gap:6px;padding:10px 14px;background:linear-gradient(90deg,rgba(0,213,89,.04),rgba(45,158,255,.03),rgba(192,132,252,.02));border-bottom:1px solid rgba(0,213,89,.1)}

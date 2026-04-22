@@ -1240,28 +1240,28 @@ st.markdown(f"""
       <span class="lp-hero-stat-live"></span>
       <span class="lp-hero-stat-lbl">Hit Rate</span>
     </div>
-    <div class="lp-hero-stat-val">62.4%</div>
+    <div class="lp-hero-stat-val" data-countup data-target="62.4" data-suffix="%" data-decimals="1">62.4%</div>
   </div>
   <div class="lp-hero-stat lp-hs-2">
     <div class="lp-hero-stat-row">
       <span class="lp-hero-stat-live"></span>
       <span class="lp-hero-stat-lbl">Avg ROI</span>
     </div>
-    <div class="lp-hero-stat-val">+18.3%</div>
+    <div class="lp-hero-stat-val" data-countup data-target="18.3" data-prefix="+" data-suffix="%" data-decimals="1">+18.3%</div>
   </div>
   <div class="lp-hero-stat lp-hs-3">
     <div class="lp-hero-stat-row">
       <span class="lp-hero-stat-live"></span>
       <span class="lp-hero-stat-lbl">Props / Night</span>
     </div>
-    <div class="lp-hero-stat-val">300+</div>
+    <div class="lp-hero-stat-val" data-countup data-target="300" data-suffix="+">300+</div>
   </div>
   <div class="lp-hero-stat lp-hs-4">
     <div class="lp-hero-stat-row">
       <span class="lp-hero-stat-live"></span>
       <span class="lp-hero-stat-lbl">Members</span>
     </div>
-    <div class="lp-hero-stat-val">2,400+</div>
+    <div class="lp-hero-stat-val" data-countup data-target="2400" data-suffix="+" data-comma>2,400+</div>
   </div>
 
   <!-- Logo -->
@@ -1459,6 +1459,43 @@ st.markdown("""
     padding: 32px 28px;
     overflow: hidden;
     transition: border-color 0.3s, transform 0.3s, background 0.3s;
+    /* Staggered entrance */
+    opacity: 0;
+    transform: translateY(32px);
+}
+.lp-feat-card.lp-revealed {
+    animation: lp-card-in 0.7s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes lp-card-in {
+    from { opacity: 0; transform: translateY(32px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+/* Animated rotating perimeter border via conic-gradient pseudo */
+.lp-feat-card::after {
+    content: '';
+    position: absolute; inset: -1px;
+    border-radius: 21px;
+    background: conic-gradient(
+        from var(--lp-rot, 0deg),
+        transparent 0deg,
+        var(--accent-color, #00D559) 20deg,
+        transparent 40deg
+    );
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.4s;
+}
+.lp-feat-card:hover::after {
+    opacity: 0.45;
+    animation: lpRotateBorder 4s linear infinite;
+}
+@property --lp-rot {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+@keyframes lpRotateBorder {
+    to { --lp-rot: 360deg; }
 }
 /* Top gradient accent bar */
 .lp-feat-card::before {
@@ -1470,14 +1507,21 @@ st.markdown("""
     transition: opacity 0.3s;
 }
 .lp-feat-card:hover {
-    transform: translateY(-4px);
-    background: rgba(255,255,255,0.038);
+    transform: translateY(-6px) scale(1.01);
+    background: rgba(255,255,255,0.044);
+    border-color: rgba(255,255,255,0.0);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px var(--accent-glow, rgba(0,213,89,0.12));
 }
-.lp-feat-card:hover::before { opacity: 1; }
+.lp-feat-card:hover::before { opacity: 1; height: 3px; }
 .lp-feat-icon {
-    font-size: 2rem; line-height: 1;
+    font-size: 2.2rem; line-height: 1;
     margin-bottom: 18px; display: block;
-    filter: drop-shadow(0 0 12px var(--accent-glow));
+    filter: drop-shadow(0 0 16px var(--accent-glow));
+    transition: filter 0.3s, transform 0.3s;
+}
+.lp-feat-card:hover .lp-feat-icon {
+    filter: drop-shadow(0 0 28px var(--accent-glow));
+    transform: scale(1.12);
 }
 .lp-feat-title {
     font-family: 'Space Grotesk', sans-serif;
@@ -1512,23 +1556,23 @@ st.markdown("""
 <div style="padding: 80px 24px 0; background: transparent;">
   <div class="lp-trust-bar">
     <div class="lp-trust-stat">
-      <span class="lp-trust-big c-green">62.4%</span>
+      <span class="lp-trust-big c-green" data-countup data-target="62.4" data-suffix="%" data-decimals="1">62.4%</span>
       <span class="lp-trust-label">Overall Hit Rate</span>
     </div>
     <div class="lp-trust-stat">
-      <span class="lp-trust-big c-blue">+18.3%</span>
+      <span class="lp-trust-big c-blue" data-countup data-target="18.3" data-prefix="+" data-suffix="%" data-decimals="1">+18.3%</span>
       <span class="lp-trust-label">Average ROI</span>
     </div>
     <div class="lp-trust-stat">
-      <span class="lp-trust-big c-gold">300+</span>
+      <span class="lp-trust-big c-gold" data-countup data-target="300" data-suffix="+">300+</span>
       <span class="lp-trust-label">Props / Night</span>
     </div>
     <div class="lp-trust-stat">
-      <span class="lp-trust-big c-purple">6</span>
+      <span class="lp-trust-big c-purple" data-countup data-target="6">6</span>
       <span class="lp-trust-label">AI Models Active</span>
     </div>
     <div class="lp-trust-stat">
-      <span class="lp-trust-big c-green">2,400+</span>
+      <span class="lp-trust-big c-green" data-countup data-target="2400" data-suffix="+" data-comma>2,400+</span>
       <span class="lp-trust-label">Active Members</span>
     </div>
   </div>
@@ -1607,6 +1651,36 @@ st.markdown("""
     </div>
   </div>
 </div>
+<script>
+/* Phase 3 – staggered feature card reveal */
+(function() {
+  function revealCards(doc) {
+    var cards = doc.querySelectorAll('.lp-feat-card:not(.lp-revealed)');
+    if (!cards.length) return;
+    var io = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e, i) {
+        if (e.isIntersecting) {
+          var delay = (Array.prototype.indexOf.call(cards, e.target) % 3) * 90;
+          setTimeout(function() {
+            e.target.classList.add('lp-revealed');
+            e.target.style.animationDelay = delay + 'ms';
+          }, delay);
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    cards.forEach(function(c) { io.observe(c); });
+  }
+  function tryReveal() {
+    revealCards(document);
+    try { revealCards(window.parent.document); } catch(e) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryReveal);
+  else tryReveal();
+  setTimeout(tryReveal, 600);
+  setTimeout(tryReveal, 1800);
+})();
+</script>
 """, unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
@@ -1635,10 +1709,50 @@ st.markdown("""
 .lp-price-card:hover {
     transform: translateY(-6px);
 }
+/* ── Popular card: elevated 3D treatment ─────────────────── */
 .lp-price-card.popular {
-    border-color: rgba(0,213,89,0.25);
-    background: rgba(0,213,89,0.04);
-    box-shadow: 0 0 50px rgba(0,213,89,0.1), inset 0 1px 0 rgba(0,213,89,0.1);
+    border-color: transparent;
+    background: rgba(0,213,89,0.045);
+    box-shadow:
+        0 0 0 1px rgba(0,213,89,0.18),
+        0 0 80px rgba(0,213,89,0.14),
+        0 32px 80px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(0,213,89,0.12);
+    transform: scale(1.025);
+    z-index: 1;
+}
+.lp-price-card.popular:hover {
+    transform: scale(1.025) translateY(-8px);
+    box-shadow:
+        0 0 0 1px rgba(0,213,89,0.3),
+        0 0 120px rgba(0,213,89,0.22),
+        0 40px 100px rgba(0,0,0,0.55),
+        inset 0 1px 0 rgba(0,213,89,0.18);
+}
+/* Moving perimeter glow border on popular card */
+.lp-price-card.popular::after {
+    content: '';
+    position: absolute; inset: -1px;
+    border-radius: 25px;
+    background: conic-gradient(
+        from var(--pc-rot, 0deg),
+        transparent 0deg,
+        #00FF85 20deg,
+        #2D9EFF 50deg,
+        #00D559 80deg,
+        transparent 100deg
+    );
+    z-index: -1;
+    opacity: 0.5;
+    animation: pcRotateBorder 6s linear infinite;
+}
+@property --pc-rot {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+@keyframes pcRotateBorder {
+    to { --pc-rot: 360deg; }
 }
 /* Top gradient bar */
 .lp-price-card::before {
@@ -1656,7 +1770,7 @@ st.markdown("""
     text-transform: uppercase; letter-spacing: .1em;
     margin-bottom: 20px;
     align-self: flex-start;
-    box-shadow: 0 0 20px rgba(0,213,89,0.4);
+    box-shadow: 0 0 28px rgba(0,213,89,0.55);
     position: relative; overflow: hidden;
 }
 .lp-price-popular-badge::after {
@@ -1899,6 +2013,270 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════
+# PHASE 2 — JS COUNTUP ANIMATIONS (IntersectionObserver)
+# ════════════════════════════════════════════════════════════
+st.markdown("""
+<script>
+(function() {
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function animateCount(el) {
+    if (el.dataset.animated) return;
+    el.dataset.animated = '1';
+
+    var target   = parseFloat(el.dataset.target)  || 0;
+    var prefix   = el.dataset.prefix  || '';
+    var suffix   = el.dataset.suffix  || '';
+    var decimals = parseInt(el.dataset.decimals)   || 0;
+    var useComma = el.hasAttribute('data-comma');
+    var duration = 1800;
+    var start    = null;
+    var startVal = 0;
+
+    function fmt(v) {
+      var s = v.toFixed(decimals);
+      if (useComma) s = parseFloat(s).toLocaleString('en-US', {maximumFractionDigits: decimals});
+      return prefix + s + suffix;
+    }
+
+    function step(ts) {
+      if (!start) start = ts;
+      var elapsed = ts - start;
+      var progress = Math.min(elapsed / duration, 1);
+      // ease-out-expo
+      var ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      var current = startVal + (target - startVal) * ease;
+      el.textContent = fmt(current);
+      if (progress < 1) requestAnimationFrame(step);
+      else el.textContent = fmt(target);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function initObserver(doc) {
+    var els = doc.querySelectorAll('[data-countup]');
+    if (!els.length) return;
+
+    var io = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          animateCount(e.target);
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.25 });
+
+    els.forEach(function(el) { io.observe(el); });
+  }
+
+  // Streamlit wraps pages in an iframe — run in both contexts
+  function tryInit() {
+    initObserver(document);
+    try { initObserver(window.parent.document); } catch(e) {}
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryInit);
+  } else {
+    tryInit();
+  }
+
+  // Re-run after a short delay to catch Streamlit's late-render pass
+  setTimeout(tryInit, 800);
+  setTimeout(tryInit, 2200);
+})();
+</script>
+""", unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════
+# PHASE 6 — SCROLL REVEAL + GLOBAL POLISH
+# ════════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+/* ── Scroll reveal base state ──────────────────────────────── */
+.lp-reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.75s cubic-bezier(0.16,1,0.3,1),
+                transform 0.75s cubic-bezier(0.16,1,0.3,1);
+}
+.lp-reveal.lp-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.lp-reveal-delay-1 { transition-delay: 0.1s; }
+.lp-reveal-delay-2 { transition-delay: 0.2s; }
+.lp-reveal-delay-3 { transition-delay: 0.3s; }
+.lp-reveal-delay-4 { transition-delay: 0.4s; }
+.lp-reveal-delay-5 { transition-delay: 0.5s; }
+
+/* ── Section dividers ──────────────────────────────────────── */
+.lp-divider {
+    width: 100%; max-width: 900px; margin: 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(0,213,89,0.12) 20%,
+        rgba(45,158,255,0.1) 50%,
+        rgba(0,213,89,0.12) 80%,
+        transparent);
+}
+
+/* ── Section heading glow on scroll in ──────────────────────── */
+.lp-section-h2 {
+    transition: text-shadow 0.8s ease;
+}
+.lp-visible .lp-section-h2,
+.lp-visible.lp-section-h2 {
+    text-shadow: 0 0 60px rgba(0,213,89,0.15);
+}
+
+/* ── Trust bar reveal ──────────────────────────────────────── */
+.lp-trust-bar {
+    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16,1,0.3,1),
+                box-shadow 0.6s ease !important;
+}
+.lp-trust-bar.lp-visible {
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,0.06),
+        0 0 60px rgba(0,213,89,0.06),
+        0 24px 60px rgba(0,0,0,0.3) !important;
+}
+
+/* ── Testimonial card hover polish ──────────────────────────── */
+.lp-testi-card {
+    transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s !important;
+}
+.lp-testi-card:hover {
+    transform: translateY(-5px) !important;
+    border-color: rgba(0,213,89,0.2) !important;
+    box-shadow: 0 0 40px rgba(0,213,89,0.07), 0 16px 40px rgba(0,0,0,0.4) !important;
+}
+
+/* ── Step cards hover ──────────────────────────────────────── */
+.lp-step {
+    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s !important;
+}
+.lp-step:hover {
+    box-shadow: 0 0 40px rgba(0,213,89,0.07), 0 16px 40px rgba(0,0,0,0.4) !important;
+}
+.lp-step-num {
+    transition: -webkit-text-stroke 0.3s !important;
+}
+.lp-step:hover .lp-step-num {
+    -webkit-text-stroke: 1px rgba(0,213,89,0.7) !important;
+}
+
+/* ── Footer polish ─────────────────────────────────────────── */
+.lp-footer {
+    padding-bottom: 72px !important;
+}
+.lp-footer-bottom {
+    position: relative;
+}
+.lp-footer-bottom::before {
+    content: '';
+    position: absolute; top: -1px; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,213,89,0.15), rgba(45,158,255,0.1), transparent);
+}
+
+/* ── Scroll-to-top button ──────────────────────────────────── */
+#lp-back-top {
+    position: fixed;
+    bottom: 32px; right: 32px;
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: rgba(0,213,89,0.12);
+    border: 1px solid rgba(0,213,89,0.25);
+    color: #00D559;
+    font-size: 1.1rem;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; text-decoration: none;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s, background 0.3s;
+    z-index: 9000;
+    backdrop-filter: blur(12px);
+}
+#lp-back-top.visible {
+    opacity: 1; pointer-events: auto;
+}
+#lp-back-top:hover {
+    background: rgba(0,213,89,0.2);
+    transform: translateY(-3px);
+}
+</style>
+
+<a id="lp-back-top" href="#lp-hero" aria-label="Back to top">↑</a>
+
+<script>
+/* Phase 6 — scroll reveal + back-to-top */
+(function() {
+  function addRevealClasses(doc) {
+    /* Mark trust bar, step cards, testi cards, section wrappers */
+    var selectors = [
+      '.lp-trust-bar',
+      '.lp-step',
+      '.lp-testi-card',
+      '.lp-section-label',
+      '.lp-section-h2',
+      '.lp-section-sub',
+      '.lp-price-card',
+      '.lp-footer-col-label'
+    ];
+    selectors.forEach(function(sel) {
+      doc.querySelectorAll(sel + ':not(.lp-reveal)').forEach(function(el) {
+        el.classList.add('lp-reveal');
+      });
+    });
+
+    /* Apply staggered delays inside grids */
+    doc.querySelectorAll('.lp-step, .lp-testi-card, .lp-price-card').forEach(function(el, i) {
+      el.classList.add('lp-reveal-delay-' + ((i % 5) + 1));
+    });
+  }
+
+  function initReveal(doc) {
+    addRevealClasses(doc);
+    var io = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('lp-visible');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    doc.querySelectorAll('.lp-reveal').forEach(function(el) { io.observe(el); });
+  }
+
+  /* Back-to-top visibility */
+  function initBackTop(doc) {
+    var btn = doc.getElementById('lp-back-top');
+    if (!btn) return;
+    (doc.scrollingElement || doc.documentElement).addEventListener
+      ? null : null; // no-op guard
+    var scrollEl = doc.scrollingElement || doc.documentElement;
+    doc.addEventListener('scroll', function() {
+      btn.classList.toggle('visible', scrollEl.scrollTop > 600);
+    });
+  }
+
+  function tryAll() {
+    try { initReveal(document); } catch(e) {}
+    try { initReveal(window.parent.document); } catch(e) {}
+    try { initBackTop(document); } catch(e) {}
+    try { initBackTop(window.parent.document); } catch(e) {}
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryAll);
+  else tryAll();
+  setTimeout(tryAll, 700);
+  setTimeout(tryAll, 2000);
+})();
+</script>
+""", unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════
 # PHASE 5 — INLINE AUTH SECTION (centered premium card)
 # ════════════════════════════════════════════════════════════
 st.markdown("""
@@ -1930,25 +2308,126 @@ st.markdown("""
     width: 100% !important;
     max-width: 500px !important;
     min-height: unset !important;
-    background: rgba(255,255,255,0.028) !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
-    border-radius: 24px !important;
+    background: rgba(6,14,10,0.82) !important;
+    border: 1px solid rgba(255,255,255,0.09) !important;
+    border-radius: 28px !important;
     box-shadow:
-        0 0 60px rgba(0,213,89,0.06),
-        0 24px 80px rgba(0,0,0,0.4),
+        0 0 0 1px rgba(0,213,89,0.07),
+        0 0 80px rgba(0,213,89,0.08),
+        0 32px 100px rgba(0,0,0,0.55),
         inset 0 1px 0 rgba(255,255,255,0.06) !important;
-    padding: 40px 36px 36px !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
+    padding: 44px 40px 40px !important;
+    backdrop-filter: blur(32px) !important;
+    -webkit-backdrop-filter: blur(32px) !important;
     position: relative !important;
     overflow: hidden;
 }
-/* Green glow top bar on form card */
+/* Animated top bar on form card */
 .spp-form-wrapper::before {
     content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, transparent, #00D559, #2D9EFF, transparent);
-    opacity: 0.6;
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, #00D559, #2D9EFF, #c084fc, #00D559);
+    background-size: 300% 100%;
+    animation: agGradientShift 6s ease infinite;
+    opacity: 0.85;
+}
+/* Subtle inner glow at top */
+.spp-form-wrapper::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 120px;
+    background: linear-gradient(180deg, rgba(0,213,89,0.04), transparent);
+    pointer-events: none;
+}
+
+/* Enhanced Streamlit text input styling */
+.spp-form-wrapper .stTextInput > label {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    color: rgba(255,255,255,0.45) !important;
+    text-transform: uppercase !important;
+    letter-spacing: .08em !important;
+    margin-bottom: 6px !important;
+}
+.spp-form-wrapper .stTextInput > div > div > input {
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-radius: 12px !important;
+    color: #fff !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.95rem !important;
+    padding: 14px 16px !important;
+    transition: border-color 0.25s, box-shadow 0.25s, background 0.25s !important;
+}
+.spp-form-wrapper .stTextInput > div > div > input:focus {
+    border-color: rgba(0,213,89,0.5) !important;
+    background: rgba(0,213,89,0.04) !important;
+    box-shadow: 0 0 0 3px rgba(0,213,89,0.1), 0 0 20px rgba(0,213,89,0.12) !important;
+}
+.spp-form-wrapper .stTextInput > div > div > input::placeholder {
+    color: rgba(255,255,255,0.2) !important;
+}
+/* Submit button enhancement */
+.spp-form-wrapper .stFormSubmitButton > button[kind="primary"],
+.spp-form-wrapper .stFormSubmitButton > button[data-testid="baseButton-primary"] {
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-weight: 800 !important;
+    font-size: 0.95rem !important;
+    letter-spacing: 0.04em !important;
+    border-radius: 14px !important;
+    padding: 14px 28px !important;
+    background: linear-gradient(135deg, #00FF85 0%, #00D559 50%, #00B74D 100%) !important;
+    color: #020C07 !important;
+    border: none !important;
+    box-shadow: 0 0 40px rgba(0,213,89,0.4), 0 8px 24px rgba(0,213,89,0.2) !important;
+    transition: all 0.3s cubic-bezier(0.16,1,0.3,1) !important;
+    position: relative; overflow: hidden;
+}
+.spp-form-wrapper .stFormSubmitButton > button[kind="primary"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 0 60px rgba(0,213,89,0.6), 0 12px 36px rgba(0,213,89,0.3) !important;
+}
+/* Forgot password / secondary buttons */
+.spp-form-wrapper .stButton > button {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.8rem !important;
+    color: rgba(255,255,255,0.35) !important;
+    background: transparent !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 10px !important;
+    transition: all 0.2s !important;
+}
+.spp-form-wrapper .stButton > button:hover {
+    color: #fff !important;
+    border-color: rgba(255,255,255,0.2) !important;
+    background: rgba(255,255,255,0.04) !important;
+}
+/* Mode tabs upgrade */
+.spp-mode-tabs {
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid rgba(255,255,255,0.07) !important;
+    border-radius: 14px !important;
+    padding: 4px !important;
+    gap: 4px !important;
+}
+.spp-mode-tab {
+    border-radius: 10px !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em !important;
+    transition: all 0.25s !important;
+}
+.spp-mode-tab.active {
+    background: linear-gradient(135deg, #00FF85, #00D559) !important;
+    color: #020C07 !important;
+    box-shadow: 0 0 24px rgba(0,213,89,0.4) !important;
+}
+/* Error / success message styling */
+.spp-form-wrapper .stAlert {
+    border-radius: 12px !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.82rem !important;
 }
 </style>
 

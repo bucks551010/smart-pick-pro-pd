@@ -4411,57 +4411,256 @@ def _render_token_reset_form(raw_token: str) -> None:
 
 # Shepherd.js tour steps — reference JSON for the guided tour.
 # In Streamlit this is implemented natively via session-state steps below.
-# When migrating to a JS-heavy frontend, pass SHEPHERD_TOUR_STEPS directly to
-# the Shepherd.Tour constructor.
+# Tour steps keyed by min_tier: which tier is required to see this step.
+# "free" = shown to everyone. "sharp_iq" = Sharp IQ+. etc.
 SHEPHERD_TOUR_STEPS: list[dict] = [
     {
+        "id": "step-welcome",
+        "icon": "👋",
+        "accent": "#00D559",
+        "min_tier": "free",
+        "page": "Home Dashboard",
+        "nav_hint": "",
+        "title": "Welcome to Smart Pick Pro",
+        "text": (
+            "You're now inside an AI-powered NBA prop betting platform. "
+            "Every tool is driven by models trained on thousands of games. "
+            "This tour walks you through exactly what you have access to "
+            "based on your current plan — so you can start picking winners tonight."
+        ),
+    },
+    {
+        "id": "step-home",
+        "icon": "🏠",
+        "accent": "#00D559",
+        "min_tier": "free",
+        "page": "Home Dashboard",
+        "nav_hint": "Smart Pick Pro Home",
+        "title": "Your Home Dashboard",
+        "text": (
+            "The Home Dashboard shows tonight's top AI picks the moment you log in. "
+            "Free members see a preview of the top 5 picks. "
+            "Paid members see the full Quantum Edge Gap rankings and Platform AI Picks "
+            "section — both refreshed automatically every 3 minutes."
+        ),
+    },
+    {
+        "id": "step-live-sweat",
+        "icon": "💦",
+        "accent": "#2D9EFF",
+        "min_tier": "free",
+        "page": "Live Sweat",
+        "nav_hint": "Sidebar → 💦 Live Sweat",
+        "title": "Live Sweat — Watch Picks In Real Time",
+        "text": (
+            "Available to all members. Once games tip off, Live Sweat becomes your "
+            "most important screen. It shows every active pick, the current live stat line, "
+            "and a color-coded HIT / MISS projection updating play by play. "
+            "No need to check the box score — it's all here."
+        ),
+    },
+    {
+        "id": "step-live-games",
+        "icon": "📡",
+        "accent": "#2D9EFF",
+        "min_tier": "free",
+        "page": "Live Games",
+        "nav_hint": "Sidebar → 📡 Live Games",
+        "title": "Live Games — Real-Time Box Scores",
+        "text": (
+            "Available to all members. Live Games pulls real-time NBA box scores "
+            "and stat projections from the official NBA data feed. "
+            "Drill into any player's current pace, historical splits against tonight's "
+            "opponent, and whether the game script is trending toward more or fewer stats."
+        ),
+    },
+    {
         "id": "step-qam",
-        "title": "⚡ Your AI Props Engine",
+        "icon": "⚡",
+        "accent": "#c084fc",
+        "min_tier": "free",
+        "page": "Quantum Analysis Matrix",
+        "nav_hint": "Sidebar → ⚡ Quantum Analysis Matrix",
+        "title": "QAM — The AI Props Engine",
         "text": (
-            "The <strong>Quantum Analysis Matrix</strong> is the core of the platform. "
-            "It scans 300+ props across PrizePicks, DraftKings & Underdog each night "
-            "using 6 neural models. Click <em>Analyze</em> to run it."
+            "The Quantum Analysis Matrix scans props across PrizePicks, DraftKings, "
+            "and Underdog each night using 6 neural models. "
+            "Free members see up to 12 picks. Sharp IQ sees 35. Smart Money and "
+            "Insider Circle see unlimited. Each pick shows a SAFE Score (0–100), "
+            "edge %, direction, and confidence tier."
         ),
-        "attachTo": {"element": "[data-testid='stSidebarNavLink']:nth-child(3)", "on": "right"},
-        "buttons": [
-            {"text": "Skip tour", "action": "tour.cancel", "secondary": True},
-            {"text": "Next (1/3)", "action": "tour.next"},
-        ],
-        "progressBar": True,
     },
     {
-        "id": "step-platform-picks",
-        "title": "🎯 Tonight's Best Bets",
+        "id": "step-prop-scanner",
+        "icon": "🔬",
+        "accent": "#fbbf24",
+        "min_tier": "sharp_iq",
+        "page": "Prop Scanner",
+        "nav_hint": "Sidebar → 🔬 Prop Scanner",
+        "title": "Prop Scanner — Browse Every Line",
         "text": (
-            "The <strong>Platform AI Picks</strong> section shows your top-rated "
-            "picks formatted for PrizePicks & Underdog slates. "
-            "Each card shows the SAFE Score, edge %, and direction — "
-            "everything you need to build tonight's entry."
+            "Sharp IQ+ feature. Browse and filter every prop line available tonight "
+            "across all platforms. Filter by player, team, stat type, or platform. "
+            "Lines that moved significantly since yesterday are highlighted — "
+            "sharp line movement is one of the strongest signals that a prop is soft."
         ),
-        "attachTo": {"element": ".platform-picks-section", "on": "top"},
-        "buttons": [
-            {"text": "Back", "action": "tour.back", "secondary": True},
-            {"text": "Next (2/3)", "action": "tour.next"},
-        ],
-        "progressBar": True,
     },
     {
-        "id": "step-tier",
-        "title": "📈 Unlock Your Full Edge",
+        "id": "step-game-report",
+        "icon": "📋",
+        "accent": "#a78bfa",
+        "min_tier": "sharp_iq",
+        "page": "Game Report",
+        "nav_hint": "Sidebar → 📋 Game Report",
+        "title": "Game Report — Deep Dive Any Matchup",
         "text": (
-            "Your current tier determines how many props you see and which "
-            "analysis sections are accessible. "
-            "Upgrade at any time via <strong>Subscription Level</strong> in the sidebar "
-            "to unlock unlimited props, QEG analysis, and premium filters."
+            "Sharp IQ+ feature. Select any game and get a full AI analysis: "
+            "pace projections, defensive ratings, player usage trends, and the most "
+            "exploitable stat categories for the matchup. "
+            "Use this before building your lineup to validate each pick's context."
         ),
-        "attachTo": {"element": "[data-testid='stSidebarNavLink']:last-child", "on": "right"},
-        "buttons": [
-            {"text": "Back", "action": "tour.back", "secondary": True},
-            {"text": "Done \u2714", "action": "tour.complete"},
-        ],
-        "progressBar": True,
+    },
+    {
+        "id": "step-entry-builder",
+        "icon": "🧬",
+        "accent": "#34d399",
+        "min_tier": "sharp_iq",
+        "page": "Entry Builder",
+        "nav_hint": "Sidebar → 🧬 Entry Builder",
+        "title": "Entry Builder — Build Your Lineup",
+        "text": (
+            "Sharp IQ+ feature. Assemble picks into a formatted PrizePicks or Underdog "
+            "lineup. It automatically checks correlation between legs, warns about "
+            "same-game exposure, and calculates the combined probability of hitting "
+            "your full entry. Aim for legs with SAFE Score above 65 and edge above +3%."
+        ),
+    },
+    {
+        "id": "step-risk-shield",
+        "icon": "🛡️",
+        "accent": "#f87171",
+        "min_tier": "sharp_iq",
+        "page": "Risk Shield",
+        "nav_hint": "Sidebar → 🛡️ Risk Shield",
+        "title": "Risk Shield — Protect Your Bankroll",
+        "text": (
+            "Sharp IQ+ feature. Risk Shield flags picks the AI tagged as high-variance "
+            "based on injury news, pace anomalies, or tough defensive matchups. "
+            "Picks marked AVOID should be dropped from your lineup. "
+            "It also tracks your 7-day exposure so you never over-bet a single slate."
+        ),
+    },
+    {
+        "id": "step-bet-tracker",
+        "icon": "📈",
+        "accent": "#60a5fa",
+        "min_tier": "sharp_iq",
+        "page": "Bet Tracker",
+        "nav_hint": "Sidebar → 📈 Bet Tracker",
+        "title": "Bet Tracker — Measure Your Real Edge",
+        "text": (
+            "Sharp IQ+ feature. Logs every pick and calculates your actual hit rate "
+            "vs the AI's predicted probability. Over time this reveals which stat types "
+            "and confidence tiers are most accurate for you personally. "
+            "The Health tab shows ROI, streaks, and risky bet tracking."
+        ),
+    },
+    {
+        "id": "step-smart-money",
+        "icon": "💰",
+        "accent": "#00D559",
+        "min_tier": "smart_money",
+        "page": "Smart Money Bets",
+        "nav_hint": "Sidebar → 💰 Smart Money Bets",
+        "title": "Smart Money — Follow the Sharp Action",
+        "text": (
+            "Smart Money+ exclusive. This section surfaces props where all AI models "
+            "agree AND the edge is widest — the picks sharp bettors prioritize. "
+            "Each entry shows projected value vs the posted line, a confidence interval, "
+            "and a recommended stake size based on Kelly Criterion."
+        ),
+    },
+    {
+        "id": "step-correlation",
+        "icon": "🗺️",
+        "accent": "#fb923c",
+        "min_tier": "smart_money",
+        "page": "Correlation Matrix",
+        "nav_hint": "Sidebar → 🗺️ Correlation Matrix",
+        "title": "Correlation Matrix — Stack Smarter",
+        "text": (
+            "Smart Money+ exclusive. The Correlation Matrix shows which props move "
+            "together so your lineup legs reinforce each other. "
+            "Green = positive correlation (stack these). Red = negative (avoid pairing). "
+            "Building correlated entries is one of the biggest edges in prop betting."
+        ),
+    },
+    {
+        "id": "step-upgrade",
+        "icon": "🔒",
+        "accent": "#fbbf24",
+        "min_tier": "free",
+        "max_tier": "free",   # Only shown to free-tier users
+        "page": "Unlock More",
+        "nav_hint": "Sidebar → 💎 Subscription Level",
+        "title": "Unlock the Full Platform",
+        "text": (
+            "You're on the free plan — you have Live Sweat, Live Games, and up to "
+            "12 QAM props per night. Sharp IQ ($9.99/mo) adds Prop Scanner, "
+            "Entry Builder, Risk Shield, Bet Tracker, and 35 QAM props. "
+            "Smart Money ($24.99/mo) unlocks Smart Money Bets, Correlation Matrix, "
+            "and unlimited props. Visit Subscription Level in the sidebar to upgrade."
+        ),
+    },
+    {
+        "id": "step-ready",
+        "icon": "🚀",
+        "accent": "#00D559",
+        "min_tier": "free",
+        "page": "You're Ready",
+        "nav_hint": "",
+        "title": "You're Ready to Pick Winners",
+        "text": (
+            "That's your platform. The nightly workflow: "
+            "1) Run QAM to generate picks. "
+            "2) Check Risk Shield to drop risky legs. "
+            "3) Build your lineup in Entry Builder. "
+            "4) Track it live in Live Sweat. "
+            "5) Log results in Bet Tracker. "
+            "Good luck tonight — the AI is already running."
+        ),
     },
 ]
+
+
+def _get_tour_steps_for_tier(tier: str) -> list[dict]:
+    """Return the subset of SHEPHERD_TOUR_STEPS visible to the given tier.
+
+    Tier hierarchy (lowest→highest): free < sharp_iq < smart_money < insider_circle.
+    A step is shown when the user's tier >= step's min_tier.
+    Steps with max_tier are only shown when user's tier <= max_tier.
+    """
+    _ORDER = ["free", "sharp_iq", "smart_money", "insider_circle"]
+    try:
+        user_idx = _ORDER.index(tier)
+    except ValueError:
+        user_idx = 0  # unknown tier → treat as free
+
+    result = []
+    for step in SHEPHERD_TOUR_STEPS:
+        min_t = step.get("min_tier", "free")
+        max_t = step.get("max_tier", "insider_circle")
+        try:
+            min_idx = _ORDER.index(min_t)
+        except ValueError:
+            min_idx = 0
+        try:
+            max_idx = _ORDER.index(max_t)
+        except ValueError:
+            max_idx = len(_ORDER) - 1
+        if min_idx <= user_idx <= max_idx:
+            result.append(step)
+    return result
 
 
 def render_subscription_success_page(plan_name: str = "Smart Pick Pro") -> bool:
@@ -4814,19 +5013,32 @@ header[data-testid="stHeader"],
 
 
 def render_onboarding_tour() -> None:
-    """Render the 3-step guided tour as a sleek floating bottom-right card.
+    """Render the guided onboarding tour as a sleek floating card.
 
+    Filters steps based on the current user's tier so free users only see
+    features they can access, and paid users see their unlocked tools.
     Persists via ``_show_onboarding_tour`` + ``_tour_step`` session state.
-    Includes logo, dot progress indicator, Skip, Back, Next, and Done.
     """
     import streamlit as st
 
     if not st.session_state.get("_show_onboarding_tour"):
         return
 
-    step = int(st.session_state.get("_tour_step", 0))
-    total = len(SHEPHERD_TOUR_STEPS)
+    # Resolve current tier (safe import, fail to free)
+    try:
+        from utils.auth import get_user_tier as _gut
+        _current_tier = _gut()
+    except Exception:
+        _current_tier = "free"
 
+    steps = _get_tour_steps_for_tier(_current_tier)
+    total = len(steps)
+    if not total:
+        st.session_state.pop("_show_onboarding_tour", None)
+        st.session_state.pop("_tour_step", None)
+        return
+
+    step = int(st.session_state.get("_tour_step", 0))
     if step >= total:
         st.session_state.pop("_show_onboarding_tour", None)
         st.session_state.pop("_tour_step", None)
@@ -4843,21 +5055,51 @@ def render_onboarding_tour() -> None:
         '-webkit-background-clip:text;-webkit-text-fill-color:transparent;">⚡ Smart Pick Pro</span>'
     )
 
-    step_data = SHEPHERD_TOUR_STEPS[step]
-    import re as _re_tour
-    plain_text = _re_tour.sub(r"<[^>]+>", "", step_data["text"])
+    step_data = steps[step]
+    accent = step_data.get("accent", "#00D559")
+    step_icon = step_data.get("icon", "✦")
+    nav_hint = step_data.get("nav_hint", "")
+    page_label = step_data.get("page", "")
+    min_tier = step_data.get("min_tier", "free")
+
+    # Tier badge label for locked steps shown to lower tiers (shouldn't happen
+    # after filtering, but kept as safety display)
+    _tier_labels = {
+        "free": "Free",
+        "sharp_iq": "Sharp IQ+",
+        "smart_money": "Smart Money+",
+        "insider_circle": "Insider Circle",
+    }
 
     # Step dot indicators
     dots = "".join(
         f'<div style="width:{10 if i == step else 6}px;height:6px;border-radius:3px;'
-        f'background:{"#00D559" if i == step else "rgba(255,255,255,.15)"};'
-        f'transition:all .3s;"></div>'
+        f'background:{"" + accent if i == step else "rgba(255,255,255,.15)"};'
+        f'transition:all .3s;margin:0 2px;"></div>'
         for i in range(total)
     )
 
-    # Step icon per step
-    step_icons = ["⚡", "🎯", "📈"]
-    step_icon = step_icons[step] if step < len(step_icons) else "✦"
+    # Nav hint chip
+    nav_chip = (
+        f'<div style="display:inline-flex;align-items:center;gap:6px;'
+        f'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);'
+        f'border-radius:8px;padding:4px 10px;margin-bottom:10px;">'
+        f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.5rem;'
+        f'color:rgba(255,255,255,.4);letter-spacing:.06em;">'
+        f'📍 {nav_hint}</span></div>'
+        if nav_hint else ""
+    )
+
+    # Min-tier badge (shown so users know which plan unlocks this feature)
+    tier_chip = (
+        f'<div style="display:inline-flex;align-items:center;gap:5px;'
+        f'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);'
+        f'border-radius:6px;padding:3px 9px;margin-left:8px;">'
+        f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.44rem;'
+        f'font-weight:700;color:{accent};letter-spacing:.08em;">'
+        f'{_tier_labels.get(min_tier, min_tier).upper()}</span></div>'
+        if min_tier != "free" else ""
+    )
 
     st.markdown(f"""
 <style>
@@ -4867,68 +5109,65 @@ def render_onboarding_tour() -> None:
     to   {{ opacity:1; transform:translateY(0)    scale(1);   }}
 }}
 @keyframes sppTourIconPulse {{
-    0%,100% {{ box-shadow:0 0 0 0 rgba(0,213,89,.4); }}
-    50%      {{ box-shadow:0 0 0 8px rgba(0,213,89,0); }}
+    0%,100% {{ box-shadow:0 0 0 0 {accent}66; }}
+    50%      {{ box-shadow:0 0 0 8px {accent}00; }}
 }}
 .spp-tour-wrap {{
     background:linear-gradient(145deg,rgba(8,13,26,.98),rgba(12,18,38,.98));
-    border:1px solid rgba(0,213,89,.22);
+    border:1px solid {accent}38;
     border-radius:20px;overflow:hidden;
-    box-shadow:0 24px 64px rgba(0,0,0,.7),0 0 40px rgba(0,213,89,.07),
-               0 0 0 1px rgba(0,213,89,.05) inset;
+    box-shadow:0 24px 64px rgba(0,0,0,.7),0 0 40px {accent}12,
+               0 0 0 1px {accent}08 inset;
     animation:sppTourIn .3s cubic-bezier(.22,1,.36,1) both;
-    max-width:480px;margin:0 auto 8px;
+    max-width:500px;margin:0 auto 8px;
 }}
 .spp-tour-top-bar {{
     height:2px;
-    background:linear-gradient(90deg,#00D559,#2D9EFF,#c084fc);
+    background:linear-gradient(90deg,{accent},#2D9EFF,#c084fc,{accent});
+    background-size:300% 100%;animation:sppBarShift 4s linear infinite;
 }}
+@keyframes sppBarShift {{ 0%{{background-position:0% 0%}} 100%{{background-position:300% 0%}} }}
 .spp-tour-header {{
     display:flex;align-items:center;justify-content:space-between;
     padding:14px 18px 10px;
     border-bottom:1px solid rgba(255,255,255,.05);
 }}
-.spp-tour-logo-area {{
-    display:flex;align-items:center;gap:8px;
-}}
 .spp-tour-step-label {{
     font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:700;
-    color:rgba(0,213,89,.6);text-transform:uppercase;letter-spacing:.12em;
+    color:{accent}99;text-transform:uppercase;letter-spacing:.12em;
 }}
-.spp-tour-body-area {{
-    padding:16px 20px;
-}}
+.spp-tour-body-area {{ padding:16px 20px; }}
 .spp-tour-icon {{
-    width:42px;height:42px;border-radius:12px;margin-bottom:10px;
-    background:rgba(0,213,89,.08);border:1px solid rgba(0,213,89,.15);
+    width:44px;height:44px;border-radius:12px;margin-bottom:10px;
+    background:{accent}14;border:1px solid {accent}28;
     display:flex;align-items:center;justify-content:center;
-    font-size:1.2rem;animation:sppTourIconPulse 2.5s ease-in-out infinite;
+    font-size:1.3rem;animation:sppTourIconPulse 2.5s ease-in-out infinite;
 }}
 .spp-tour-title {{
     font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:800;
     color:#fff;margin:0 0 6px;line-height:1.2;
+    display:flex;align-items:center;flex-wrap:wrap;gap:4px;
 }}
 .spp-tour-desc {{
     font-family:'Space Grotesk',sans-serif;font-size:.78rem;font-weight:500;
-    color:rgba(255,255,255,.52);line-height:1.65;margin:0 0 16px;
+    color:rgba(255,255,255,.52);line-height:1.65;margin:0 0 14px;
 }}
 .spp-tour-dots {{
-    display:flex;gap:5px;align-items:center;margin-bottom:4px;
+    display:flex;align-items:center;margin-bottom:2px;
 }}
 </style>
 
 <div class="spp-tour-wrap">
   <div class="spp-tour-top-bar"></div>
   <div class="spp-tour-header">
-    <div class="spp-tour-logo-area">
-      {logo_tag}
-    </div>
-    <div class="spp-tour-step-label">Step {step + 1} of {total}</div>
+    <div>{logo_tag}</div>
+    <div class="spp-tour-step-label">{page_label} &nbsp;·&nbsp; {step + 1}/{total}</div>
   </div>
   <div class="spp-tour-body-area">
     <div class="spp-tour-icon">{step_icon}</div>
-    <div class="spp-tour-title">{step_data["title"]}</div>
-    <div class="spp-tour-desc">{plain_text}</div>
+    {nav_chip}
+    <div class="spp-tour-title">{step_data["title"]}{tier_chip}</div>
+    <div class="spp-tour-desc">{step_data["text"]}</div>
     <div class="spp-tour-dots">{dots}</div>
   </div>
 </div>
@@ -4947,7 +5186,7 @@ def render_onboarding_tour() -> None:
                 st.rerun()
     with btn_cols[4]:
         if step < total - 1:
-            if st.button(f"Next →", key=f"_tour_next_{step}", type="primary"):
+            if st.button("Next →", key=f"_tour_next_{step}", type="primary"):
                 st.session_state["_tour_step"] = step + 1
                 st.rerun()
         else:

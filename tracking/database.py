@@ -524,6 +524,22 @@ def initialize_database():
                     "ALTER TABLE bets ADD COLUMN std_devs_from_line REAL DEFAULT 0.0"
                 )
             except sqlite3.OperationalError:
+                pass  # Column already exists
+
+            # Add is_risky flag to all_analysis_picks (1 = avoid/risky pick)
+            try:
+                cursor.execute(
+                    "ALTER TABLE all_analysis_picks ADD COLUMN is_risky INTEGER DEFAULT 0"
+                )
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+
+            # Add is_risky flag to all_analysis_picks (1 = avoid/risky pick)
+            try:
+                cursor.execute(
+                    "ALTER TABLE all_analysis_picks ADD COLUMN is_risky INTEGER DEFAULT 0"
+                )
+            except sqlite3.OperationalError:
                 pass  # Column already exists â€” safe to ignore
 
             # Add bet_type to all_analysis_picks table
@@ -2361,7 +2377,7 @@ def insert_analysis_picks(analysis_results):
                                SET prop_line = ?, confidence_score = ?,
                                    probability_over = ?, edge_percentage = ?,
                                    tier = ?, notes = ?, bet_type = ?, platform = ?,
-                                   std_devs_from_line = ?
+                                   std_devs_from_line = ?, is_risky = ?
                                WHERE pick_id = ?""",
                             (
                                 _line,
@@ -2373,6 +2389,7 @@ def insert_analysis_picks(analysis_results):
                                 r.get("bet_type", "normal"),
                                 r.get("platform", ""),
                                 float(r.get("std_devs_from_line", 0.0)),
+                                1 if r.get("should_avoid", False) else 0,
                                 existing[key],
                             ),
                         )
@@ -2383,8 +2400,8 @@ def insert_analysis_picks(analysis_results):
                             (pick_date, player_name, team, stat_type, prop_line,
                              direction, platform, confidence_score, probability_over,
                              edge_percentage, tier, result, actual_value, notes,
-                             bet_type, std_devs_from_line)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?)
+                             bet_type, std_devs_from_line, is_risky)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?)
                         """,
                         (
                             today_str,
@@ -2401,6 +2418,7 @@ def insert_analysis_picks(analysis_results):
                             f"Auto-stored by Smart Pick Pro. SAFE Score: {r.get('confidence_score', 0):.0f}",
                             r.get("bet_type", "normal"),
                             float(r.get("std_devs_from_line", 0.0)),
+                            1 if r.get("should_avoid", False) else 0,
                         ),
                     )
                     if _cursor.rowcount > 0:

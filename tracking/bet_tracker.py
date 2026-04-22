@@ -1454,6 +1454,45 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15):
             existing_keys.add(dedup_key)
             logged += 1
 
+    # ── Log all avoid/risky picks regardless of tier/edge thresholds ──────────
+    for res in sorted_results:
+        if not res.get("should_avoid", False):
+            continue
+        if res.get("player_is_out", False):
+            continue
+        dedup_key = (
+            res.get("player_name", "").lower(),
+            res.get("stat_type", ""),
+            float(res.get("line", 0) or 0),
+            res.get("direction", "OVER"),
+        )
+        if dedup_key in existing_keys:
+            continue
+        avoid_reasons = res.get("avoid_reasons") or []
+        ok, _msg = log_new_bet(
+            player_name=res.get("player_name", ""),
+            stat_type=res.get("stat_type", "points"),
+            prop_line=float(res.get("line", 0) or 0),
+            direction=res.get("direction", "OVER"),
+            platform=res.get("platform") or "SmartAI-Auto",
+            confidence_score=float(res.get("confidence_score", 0) or 0),
+            probability_over=float(res.get("probability_over", 0.5) or 0.5),
+            edge_percentage=float(res.get("edge_percentage", 0) or 0),
+            tier=res.get("tier", "Bronze"),
+            team=res.get("player_team", res.get("team", "")),
+            notes=(
+                "⚠️ RISKY/AVOID pick — Auto-logged for tracking. "
+                + (" | ".join(avoid_reasons[:3]) if avoid_reasons else "")
+            ),
+            auto_logged=1,
+            bet_type="risky",
+            std_devs_from_line=float(res.get("std_devs_from_line", 0.0)),
+            source="qeg_auto",
+        )
+        if ok:
+            existing_keys.add(dedup_key)
+            logged += 1
+
     return logged
 
 # ============================================================

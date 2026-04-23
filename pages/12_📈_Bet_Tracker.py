@@ -407,21 +407,6 @@ st.markdown(f"""
   </div>
 </div>
 """, unsafe_allow_html=True)
-        <div class="bt-lc-label">Platinum Tier Accuracy</div>
-        <div class="bt-lc-val" style="color:#c084fc">78.4%</div>
-        <div class="bt-lc-sub">Top confidence picks only</div>
-        <div class="bt-lc-bar-track"><div class="bt-lc-bar-fill" style="width:78.4%;background:linear-gradient(90deg,#c084fc,#d8b4fe);box-shadow:0 0 8px rgba(192,132,252,0.4)"></div></div>
-      </div>
-      <div class="bt-live-card">
-        <div class="bt-lc-label">Picks Analyzed Today</div>
-        <div class="bt-lc-val" style="color:#2D9EFF">347</div>
-        <div class="bt-lc-sub">Props across all platforms</div>
-        <div class="bt-lc-bar-track"><div class="bt-lc-bar-fill" style="width:87%;background:linear-gradient(90deg,#2D9EFF,#60b4ff);box-shadow:0 0 8px rgba(45,158,255,0.4)"></div></div>
-      </div>
-    </div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
 
 st.markdown("""
 <div style="background:rgba(45,158,255,0.06);border:1px solid rgba(45,158,255,0.18);border-radius:14px;padding:12px 20px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px">

@@ -8231,209 +8231,247 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 
     _stripe_ready = is_stripe_configured()
 
-    # Inject premium checkout card + column override styles
+    # ── Yearly billing toggle ──────────────────────────────────────────────
     st.markdown("""<style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,700;1,800;1,900&family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
-/* Override Streamlit column gaps */
-[data-testid="stHorizontalBlock"]:has(.sub-card) {
-    gap: 12px !important;
-    padding: 0 4px;
-}
-[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"] {
-    background: linear-gradient(168deg, rgba(10,16,32,0.98) 0%, rgba(6,10,20,0.98) 100%);
-    border: 1.5px solid rgba(0,213,89,0.06);
-    border-radius: 20px;
-    padding: 0 0 16px;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:hover {
-    border-color: rgba(0,213,89,0.15);
-    transform: translateY(-4px);
-    box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,213,89,0.04) inset;
-}
-/* Smart Money column glow */
-[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(3) {
-    border-color: rgba(0, 213, 89, 0.2);
-    box-shadow: 0 0 30px rgba(0, 213, 89, 0.06), 0 0 0 1px rgba(0, 213, 89, 0.05) inset;
-}
-[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(3):hover {
-    border-color: rgba(0, 213, 89, 0.35);
-    box-shadow: 0 16px 48px rgba(0, 213, 89, 0.12), 0 0 40px rgba(0, 213, 89, 0.08);
-}
-/* Insider column glow */
-[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(4) {
-    border-color: rgba(192, 132, 252, 0.15);
-}
-[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(4):hover {
-    border-color: rgba(192, 132, 252, 0.3);
-    box-shadow: 0 16px 48px rgba(192, 132, 252, 0.1);
-}
+/* ── Yearly toggle row ── */
+.sub-toggle-row{display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 0 22px}
+.sub-toggle-label{font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,0.35)}
+.sub-toggle-label.active{color:#00D559;text-shadow:0 0 16px rgba(0,213,89,0.35)}
+.sub-save-badge{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:800;color:#00D559;background:rgba(0,213,89,0.1);border:1px solid rgba(0,213,89,0.25);padding:3px 12px;border-radius:100px;letter-spacing:.05em;text-transform:uppercase;animation:scPulse 2.5s ease-in-out infinite}
+@keyframes scPulse{0%,100%{box-shadow:0 0 8px rgba(0,213,89,0.2)}50%{box-shadow:0 0 18px rgba(0,213,89,0.45)}}
 
-/* Card header styling */
-.sub-card {
-    text-align: center;
-    padding: 24px 16px 16px;
-    position: relative;
+/* ── Column overrides ── */
+[data-testid="stHorizontalBlock"]:has(.sub-card){gap:14px !important;padding:0 2px}
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]{
+    background:linear-gradient(168deg,rgba(8,13,26,0.99) 0%,rgba(5,9,18,0.99) 100%);
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:24px;padding:0 0 18px;position:relative;overflow:hidden;
+    transition:all .35s cubic-bezier(.4,0,.2,1);
+    box-shadow:0 20px 60px rgba(0,0,0,0.6)
 }
-.sub-card::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; height: 3px;
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:hover{
+    transform:translateY(-6px);
+    box-shadow:0 28px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.06) inset
 }
-.sub-card.free::after { background: linear-gradient(90deg, #6B7280, #A0AABE, #6B7280); }
-.sub-card.sharp::after { background: linear-gradient(90deg, #f59e0b, #F9C62B, #f59e0b); }
-.sub-card.smart::after { background: linear-gradient(90deg, #10b981, #00D559, #10b981); }
-.sub-card.insider::after { background: linear-gradient(90deg, #8b5cf6, #c084fc, #8b5cf6); }
+/* col 1: gray/free */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(1):hover{border-color:rgba(160,170,190,0.25)}
+/* col 2: amber/sharp */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(2){border-color:rgba(249,198,43,0.08)}
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(2):hover{border-color:rgba(249,198,43,0.28);box-shadow:0 28px 80px rgba(0,0,0,0.7),0 0 40px rgba(249,198,43,0.08)}
+/* col 3: green/smart — featured */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(3){
+    border-color:rgba(0,213,89,0.22);
+    box-shadow:0 0 40px rgba(0,213,89,0.08),0 20px 60px rgba(0,0,0,0.6),0 0 0 1px rgba(0,213,89,0.06) inset
+}
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(3):hover{
+    border-color:rgba(0,213,89,0.4);
+    box-shadow:0 28px 80px rgba(0,213,89,0.15),0 0 60px rgba(0,213,89,0.1)
+}
+/* col 4: purple/insider */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(4){border-color:rgba(192,132,252,0.12)}
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(4):hover{border-color:rgba(192,132,252,0.32);box-shadow:0 28px 80px rgba(192,132,252,0.1)}
 
-.sub-card .sc-ico {
-    font-size: 2.4rem; display: block; margin: 0 0 8px;
-    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
-}
-.sub-card .sc-name {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.72rem; font-weight: 800;
-    text-transform: uppercase; letter-spacing: 0.08em;
-    margin: 0 0 8px;
-}
-.sub-card .sc-price {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 2.2rem; font-weight: 900;
-    line-height: 1; margin: 0 0 4px;
-}
-.sub-card .sc-price .cents {
-    font-size: 1rem; font-weight: 700;
-    vertical-align: super; margin-left: -2px;
-}
-.sub-card .sc-period {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.58rem; color: rgba(255,255,255,0.25);
-    letter-spacing: 0.04em;
-}
-.sub-card .sc-yearly {
-    font-size: 0.5rem; color: rgba(255,255,255,0.15);
-    margin-top: 4px; display: block;
-}
-.sub-card .sc-divider {
-    width: 40px; height: 1px; margin: 12px auto 10px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-}
-.sub-card .sc-features {
-    list-style: none; padding: 0; margin: 0;
-    text-align: left;
-}
-.sub-card .sc-features li {
-    font-size: 0.58rem; color: rgba(255,255,255,0.4);
-    padding: 3px 0; display: flex; align-items: center; gap: 6px;
-    font-family: 'Inter', sans-serif;
-}
-.sub-card .sc-features li .ck { color: #00D559; font-size: 0.55rem; flex-shrink: 0; }
-.sub-card .sc-features li .lm { color: #F9C62B; font-size: 0.55rem; flex-shrink: 0; }
-.sub-card .sc-features li .nx { color: rgba(255,255,255,0.12); font-size: 0.55rem; flex-shrink: 0; }
+/* ── Card header ── */
+.sub-card{text-align:center;padding:28px 18px 16px;position:relative}
+.sub-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background-size:200% 100%;animation:scShimmer 4s ease infinite}
+@keyframes scShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.sub-card.free::before{background-image:linear-gradient(90deg,transparent,#A0AABE,rgba(160,170,190,0.6),#A0AABE,transparent)}
+.sub-card.sharp::before{background-image:linear-gradient(90deg,transparent,#F9C62B,rgba(249,198,43,0.7),#F9C62B,transparent)}
+.sub-card.smart::before{background-image:linear-gradient(90deg,transparent,#00D559,rgba(0,213,89,0.7),#00D559,transparent)}
+.sub-card.insider::before{background-image:linear-gradient(90deg,transparent,#c084fc,rgba(192,132,252,0.7),#c084fc,transparent)}
 
+.sub-card .sc-ico{font-size:2.8rem;display:block;margin:0 0 10px;filter:drop-shadow(0 6px 18px rgba(0,0,0,0.5))}
+.sub-card .sc-name{
+    font-family:'Barlow Condensed',sans-serif;font-size:1.05rem;font-weight:900;
+    font-style:italic;text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px
+}
+.sub-card .sc-price{
+    font-family:'Barlow Condensed',sans-serif;font-size:3.0rem;font-weight:900;
+    font-style:italic;line-height:1;margin:0 0 5px;letter-spacing:-.02em
+}
+.sub-card .sc-price .cents{font-size:1.4rem;font-weight:700;vertical-align:super;margin-left:-2px;font-style:normal}
+.sub-card .sc-period{font-family:'JetBrains Mono',monospace;font-size:.54rem;color:rgba(255,255,255,0.22);letter-spacing:.05em}
+.sub-card .sc-yearly{
+    display:inline-block;margin-top:7px;
+    font-family:'JetBrains Mono',monospace;font-size:.48rem;font-weight:700;
+    color:#00D559;background:rgba(0,213,89,0.07);border:1px solid rgba(0,213,89,0.18);
+    padding:3px 12px;border-radius:100px;letter-spacing:.04em
+}
+.sub-card .sc-save{
+    display:inline-block;margin-top:6px;
+    font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:800;
+    color:#0B0F19;background:#00D559;padding:2px 10px;border-radius:100px;
+    letter-spacing:.05em;text-transform:uppercase;
+    box-shadow:0 0 12px rgba(0,213,89,0.4)
+}
+.sub-card .sc-divider{
+    width:48px;height:1px;margin:14px auto 12px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent)
+}
+.sub-card .sc-features{list-style:none;padding:0;margin:0;text-align:left}
+.sub-card .sc-features li{
+    font-family:'Inter',sans-serif;font-size:.66rem;color:rgba(255,255,255,0.45);
+    padding:4px 0;display:flex;align-items:center;gap:8px;line-height:1.4
+}
+.sub-card .sc-features li .ck{
+    color:#00D559;font-size:.62rem;flex-shrink:0;
+    width:16px;height:16px;background:rgba(0,213,89,0.1);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-weight:800
+}
+.sub-card .sc-features li .nx{
+    color:rgba(255,255,255,0.12);font-size:.62rem;flex-shrink:0;
+    width:16px;height:16px;background:rgba(255,255,255,0.03);border-radius:50%;
+    display:flex;align-items:center;justify-content:center
+}
 /* Popular badge */
-.sub-card .sc-pop {
-    position: absolute; top: 12px; right: 12px;
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.42rem; font-weight: 800;
-    color: #0B0F19; background: #00D559;
-    padding: 3px 10px; border-radius: 100px;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    box-shadow: 0 2px 12px rgba(0, 213, 89, 0.3);
+.sub-card .sc-pop{
+    position:absolute;top:14px;right:14px;
+    font-family:'Barlow Condensed',sans-serif;font-size:.56rem;font-weight:900;
+    font-style:italic;text-transform:uppercase;letter-spacing:.06em;
+    color:#050910;background:linear-gradient(135deg,#00E865,#00D559);
+    padding:4px 13px;border-radius:100px;
+    box-shadow:0 0 20px rgba(0,213,89,0.5),0 2px 8px rgba(0,0,0,0.3)
 }
 
 /* Color assignments */
-.sub-card.free .sc-name { color: #A0AABE; }
-.sub-card.free .sc-price { color: #A0AABE; }
-.sub-card.sharp .sc-name { color: #F9C62B; }
-.sub-card.sharp .sc-price { color: #F9C62B; }
-.sub-card.smart .sc-name { color: #00D559; }
-.sub-card.smart .sc-price { color: #00D559; }
-.sub-card.insider .sc-name { color: #c084fc; }
-.sub-card.insider .sc-price { color: #c084fc; }
+.sub-card.free .sc-name{color:#A0AABE}.sub-card.free .sc-price{color:#A0AABE}
+.sub-card.sharp .sc-name{color:#F9C62B}.sub-card.sharp .sc-price{color:#F9C62B}
+.sub-card.smart .sc-name{color:#00D559}.sub-card.smart .sc-price{color:#00D559}
+.sub-card.insider .sc-name{color:#c084fc}.sub-card.insider .sc-price{color:#c084fc}
 
-/* Style the Streamlit form inputs inside checkout cols */
-[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stTextInput"] label {
-    font-family: 'Space Grotesk', sans-serif !important;
-    font-size: 0.6rem !important;
-    font-weight: 700 !important;
-    color: rgba(255,255,255,0.3) !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.08em !important;
+/* ── Streamlit input labels ── */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stTextInput"] label{
+    font-family:'JetBrains Mono',monospace !important;
+    font-size:.54rem !important;font-weight:700 !important;
+    color:rgba(255,255,255,0.25) !important;
+    text-transform:uppercase !important;letter-spacing:.08em !important
 }
-[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stTextInput"] input {
-    background: rgba(255,255,255,0.03) !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
-    border-radius: 12px !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.7rem !important;
-    color: rgba(255,255,255,0.7) !important;
-    padding: 10px 14px !important;
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stTextInput"] input{
+    background:rgba(255,255,255,0.03) !important;
+    border:1px solid rgba(255,255,255,0.08) !important;
+    border-radius:14px !important;
+    font-family:'JetBrains Mono',monospace !important;
+    font-size:.68rem !important;color:rgba(255,255,255,0.65) !important;
+    padding:11px 16px !important
 }
-[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stTextInput"] input:focus {
-    border-color: rgba(0, 213, 89, 0.3) !important;
-    box-shadow: 0 0 16px rgba(0, 213, 89, 0.08) !important;
-}
-/* Style form submit buttons — premium shimmer */
-[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stFormSubmitButton"] button {
-    font-family: 'Space Grotesk', sans-serif !important;
-    font-weight: 800 !important;
-    font-size: 0.75rem !important;
-    letter-spacing: 0.06em !important;
-    text-transform: uppercase !important;
-    border-radius: 10px !important;
-    padding: 12px 20px !important;
-    border: 1px solid rgba(255,255,255,0.15) !important;
-    background: linear-gradient(135deg, #00E865 0%, #00D559 45%, #00B74D 100%) !important;
-    color: #050910 !important;
-    box-shadow: 0 0 24px rgba(0,213,89,0.3), 0 4px 16px rgba(0,213,89,0.15), inset 0 1px 0 rgba(255,255,255,0.18) !important;
-    transition: all 0.25s cubic-bezier(0.16,1,0.3,1) !important;
-    position: relative !important; overflow: hidden !important;
-}
-[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stFormSubmitButton"] button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 0 36px rgba(0,213,89,0.45), 0 8px 24px rgba(0,213,89,0.22), inset 0 1px 0 rgba(255,255,255,0.18) !important;
-    background: linear-gradient(135deg, #00FF75 0%, #00E865 45%, #00C04B 100%) !important;
-}
-/* Style success/info alerts inside cols */
-[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stAlert"] {
-    border-radius: 12px !important;
-    font-size: 0.7rem !important;
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stTextInput"] input:focus{
+    border-color:rgba(0,213,89,0.3) !important;
+    box-shadow:0 0 20px rgba(0,213,89,0.08) !important
 }
 
-/* Checkout footer */
-.sub-footer {
-    text-align: center; margin: 16px 0 4px;
-    padding: 14px 0;
-    border-top: 1px solid rgba(255,255,255,0.04);
+/* ── Per-tier submit buttons ── */
+/* ALL buttons: base reset */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stFormSubmitButton"] button{
+    font-family:'Barlow Condensed',sans-serif !important;
+    font-weight:900 !important;font-style:italic !important;
+    font-size:.88rem !important;letter-spacing:.05em !important;
+    text-transform:uppercase !important;
+    border-radius:14px !important;padding:14px 20px !important;
+    transition:all .25s cubic-bezier(.16,1,.3,1) !important;
+    position:relative !important;overflow:hidden !important;width:100% !important
 }
-.sub-footer-inner {
-    display: inline-flex; align-items: center; gap: 16px; flex-wrap: wrap;
-    justify-content: center;
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stFormSubmitButton"] button:hover{
+    transform:translateY(-3px) !important
 }
-.sub-footer-inner span {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.58rem; font-weight: 600;
-    color: rgba(255,255,255,0.18);
-    display: flex; align-items: center; gap: 4px;
+/* col 2 = sharp: amber button */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(2) [data-testid="stFormSubmitButton"] button{
+    background:linear-gradient(135deg,#FFD447 0%,#F9C62B 50%,#E8B020 100%) !important;
+    color:#0B0F19 !important;
+    border:1px solid rgba(249,198,43,0.4) !important;
+    box-shadow:0 0 28px rgba(249,198,43,0.35),0 4px 16px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.25) !important
 }
-.sub-footer-stripe {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.62rem; font-weight: 700;
-    color: rgba(255,255,255,0.3);
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.06);
-    padding: 5px 14px; border-radius: 100px;
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(2) [data-testid="stFormSubmitButton"] button:hover{
+    box-shadow:0 0 42px rgba(249,198,43,0.55),0 10px 28px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.25) !important;
+    background:linear-gradient(135deg,#FFE066 0%,#FFD447 50%,#F9C62B 100%) !important
+}
+/* col 3 = smart: green button */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(3) [data-testid="stFormSubmitButton"] button{
+    background:linear-gradient(135deg,#00FF85 0%,#00E865 40%,#00D559 100%) !important;
+    color:#050910 !important;
+    border:1px solid rgba(0,213,89,0.5) !important;
+    box-shadow:0 0 32px rgba(0,213,89,0.4),0 4px 20px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.25) !important
+}
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(3) [data-testid="stFormSubmitButton"] button:hover{
+    box-shadow:0 0 50px rgba(0,213,89,0.6),0 12px 32px rgba(0,213,89,0.2),inset 0 1px 0 rgba(255,255,255,0.25) !important;
+    background:linear-gradient(135deg,#00FFA0 0%,#00FF85 40%,#00E865 100%) !important
+}
+/* col 4 = insider: purple button */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(4) [data-testid="stFormSubmitButton"] button{
+    background:linear-gradient(135deg,#d8b4fe 0%,#c084fc 50%,#a855f7 100%) !important;
+    color:#0B0F19 !important;
+    border:1px solid rgba(192,132,252,0.5) !important;
+    box-shadow:0 0 28px rgba(192,132,252,0.4),0 4px 16px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.2) !important
+}
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stColumn"]:nth-child(4) [data-testid="stFormSubmitButton"] button:hover{
+    box-shadow:0 0 44px rgba(192,132,252,0.6),0 10px 28px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.2) !important;
+    background:linear-gradient(135deg,#e9d5ff 0%,#d8b4fe 50%,#c084fc 100%) !important
+}
+
+/* ── Alert tweaks ── */
+[data-testid="stHorizontalBlock"]:has(.sub-card) [data-testid="stAlert"]{
+    border-radius:14px !important;font-size:.68rem !important
+}
+
+/* ── Footer ── */
+.sub-footer{text-align:center;margin:20px 0 4px;padding:16px 0;border-top:1px solid rgba(255,255,255,0.05)}
+.sub-footer-inner{display:inline-flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center}
+.sub-footer-inner span{
+    font-family:'JetBrains Mono',monospace;font-size:.54rem;font-weight:700;
+    color:rgba(255,255,255,0.16);display:flex;align-items:center;gap:5px;letter-spacing:.04em
+}
+.sub-footer-stripe{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;
+    color:rgba(255,255,255,0.28);
+    background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+    padding:6px 16px;border-radius:100px
 }
 </style>""", unsafe_allow_html=True)
+
+    # ── Yearly billing toggle ──────────────────────────────────────────────
+    _t_col1, _t_col2, _t_col3 = st.columns([1, 2, 1])
+    with _t_col2:
+        st.markdown("""<div style="text-align:center;padding:4px 0 6px">
+<span style="font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:900;font-style:italic;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,0.28)">
+&#x1F4C5; Billing Cycle
+</span></div>""", unsafe_allow_html=True)
+        _yearly = st.toggle("Annual billing — save 10%", value=False, key="_pricing_toggle")
+        if _yearly:
+            st.markdown("""<div style="text-align:center;margin-top:-8px">
+<span style="font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:800;color:#00D559;background:rgba(0,213,89,0.1);border:1px solid rgba(0,213,89,0.25);padding:3px 14px;border-radius:100px;letter-spacing:.05em">
+&#x2728; SAVE 10% — BILLED ANNUALLY
+</span></div>""", unsafe_allow_html=True)
+
+    # ── Pricing values (monthly vs yearly) ────────────────────────────────
+    if _yearly:
+        _sharp_price = "$8<span class='cents'>.99</span>"
+        _sharp_period = "per month, billed annually"
+        _sharp_yearly = "~$107.88/yr &middot; you save $11.88"
+        _sharp_btn    = "&#x1F4C5; Subscribe &mdash; $107.88/yr"
+        _sharp_lookup = "sharp_iq_annual"
+        _smart_price  = "$22<span class='cents'>.49</span>"
+        _smart_period = "per month, billed annually"
+        _smart_yearly = "~$269.88/yr &middot; you save $30.00"
+        _smart_btn    = "&#x1F4C5; Subscribe &mdash; $269.88/yr"
+        _smart_lookup = "smart_money_annual"
+    else:
+        _sharp_price  = "$9<span class='cents'>.99</span>"
+        _sharp_period = "per month"
+        _sharp_yearly = "~$107/yr &middot; save 10% with annual"
+        _sharp_btn    = "&#x1F680; Subscribe &mdash; $9.99/mo"
+        _sharp_lookup = "sharp_iq"
+        _smart_price  = "$24<span class='cents'>.99</span>"
+        _smart_period = "per month"
+        _smart_yearly = "~$269/yr &middot; save 10% with annual"
+        _smart_btn    = "&#x1F680; Subscribe &mdash; $24.99/mo"
+        _smart_lookup = "smart_money"
 
     sub_cols = st.columns(4)
     with sub_cols[0]:
         st.markdown("""<div class="sub-card free">
-  <span class="sc-ico">⭐</span>
+  <span class="sc-ico">&#x2B50;</span>
   <div class="sc-name">Smart Rookie</div>
   <div class="sc-price">$0</div>
   <div class="sc-period">free forever</div>
@@ -8450,12 +8488,12 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
         st.success("✅ **Free** — create an account above!")
 
     with sub_cols[1]:
-        st.markdown("""<div class="sub-card sharp">
-  <span class="sc-ico">🔥</span>
+        st.markdown(f"""<div class="sub-card sharp">
+  <span class="sc-ico">&#x1F525;</span>
   <div class="sc-name">Sharp IQ</div>
-  <div class="sc-price">$9<span class="cents">.99</span></div>
-  <div class="sc-period">per month</div>
-  <span class="sc-yearly">~$107/yr &middot; save 10% annual</span>
+  <div class="sc-price">{_sharp_price}</div>
+  <div class="sc-period">{_sharp_period}</div>
+  <span class="sc-yearly">{_sharp_yearly}</span>
   <div class="sc-divider"></div>
   <ul class="sc-features">
     <li><span class="ck">&#x2713;</span> 25 AI-analyzed props</li>
@@ -8469,9 +8507,9 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
         if _stripe_ready:
             with st.form("gate_checkout_sharp", clear_on_submit=False):
                 _email_s = st.text_input("Email", placeholder="you@example.com", key="_gate_email_sharp")
-                if st.form_submit_button("🚀 Subscribe — $9.99/mo", type="primary", use_container_width=True):
+                if st.form_submit_button(_sharp_btn, type="primary", use_container_width=True):
                     with st.spinner("Creating secure checkout…"):
-                        _res = create_checkout_session(customer_email=_email_s.strip() if _email_s else "", price_lookup="sharp_iq")
+                        _res = create_checkout_session(customer_email=_email_s.strip() if _email_s else "", price_lookup=_sharp_lookup)
                     if _res["success"]:
                         st.markdown(f'<meta http-equiv="refresh" content="0; url={_res["url"]}">', unsafe_allow_html=True)
                         st.info(f"Redirecting… [Click here if not redirected]({_res['url']})")
@@ -8481,13 +8519,13 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
             st.info("💳 Stripe checkout — coming soon!")
 
     with sub_cols[2]:
-        st.markdown("""<div class="sub-card smart">
+        st.markdown(f"""<div class="sub-card smart">
   <span class="sc-pop">POPULAR</span>
-  <span class="sc-ico">💎</span>
+  <span class="sc-ico">&#x1F48E;</span>
   <div class="sc-name">Smart Money</div>
-  <div class="sc-price">$24<span class="cents">.99</span></div>
-  <div class="sc-period">per month</div>
-  <span class="sc-yearly">~$269/yr &middot; save 10% annual</span>
+  <div class="sc-price">{_smart_price}</div>
+  <div class="sc-period">{_smart_period}</div>
+  <span class="sc-yearly">{_smart_yearly}</span>
   <div class="sc-divider"></div>
   <ul class="sc-features">
     <li><span class="ck">&#x2713;</span> Unlimited AI props</li>
@@ -8501,9 +8539,9 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
         if _stripe_ready:
             with st.form("gate_checkout_smart", clear_on_submit=False):
                 _email_m = st.text_input("Email", placeholder="you@example.com", key="_gate_email_smart")
-                if st.form_submit_button("🚀 Subscribe — $24.99/mo", type="primary", use_container_width=True):
+                if st.form_submit_button(_smart_btn, type="primary", use_container_width=True):
                     with st.spinner("Creating secure checkout…"):
-                        _res = create_checkout_session(customer_email=_email_m.strip() if _email_m else "", price_lookup="smart_money")
+                        _res = create_checkout_session(customer_email=_email_m.strip() if _email_m else "", price_lookup=_smart_lookup)
                     if _res["success"]:
                         st.markdown(f'<meta http-equiv="refresh" content="0; url={_res["url"]}">', unsafe_allow_html=True)
                         st.info(f"Redirecting… [Click here if not redirected]({_res['url']})")
@@ -8514,7 +8552,7 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 
     with sub_cols[3]:
         st.markdown("""<div class="sub-card insider">
-  <span class="sc-ico">👑</span>
+  <span class="sc-ico">&#x1F451;</span>
   <div class="sc-name">Insider Circle</div>
   <div class="sc-price">$499<span class="cents">.99</span></div>
   <div class="sc-period">lifetime access</div>
@@ -8532,7 +8570,7 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
         if _stripe_ready:
             with st.form("gate_checkout_insider", clear_on_submit=False):
                 _email_i = st.text_input("Email", placeholder="you@example.com", key="_gate_email_insider")
-                if st.form_submit_button("👑 Lifetime — $499.99", type="primary", use_container_width=True):
+                if st.form_submit_button("&#x1F451; Lifetime — $499.99", type="primary", use_container_width=True):
                     with st.spinner("Creating secure checkout…"):
                         _res = create_checkout_session(customer_email=_email_i.strip() if _email_i else "", price_lookup="insider_circle")
                     if _res["success"]:

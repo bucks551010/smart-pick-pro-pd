@@ -6535,122 +6535,159 @@ html,body{background:transparent;overflow-y:hidden}
 
     <div class="ag-divider"></div>
 
-    <!-- ══ TOOL SHOWCASE v2: GAME REPORT + PLAYER SIMULATOR ══ -->
+    <!-- ══ TOOL SHOWCASE v3: GAME REPORT + PLAYER SIMULATOR + DARK HORSE ══ -->
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Barlow:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
+    /* ── KEYFRAMES ── */
+    @keyframes tsBarGrow{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}
+    @keyframes agLivePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.5)}}
+    @keyframes tsFloat{0%,100%{transform:perspective(1100px) rotateY(-5deg) rotateX(2deg) translateY(0)}50%{transform:perspective(1100px) rotateY(-5deg) rotateX(2deg) translateY(-8px)}}
+    @keyframes tsFloatR{0%,100%{transform:perspective(1100px) rotateY(5deg) rotateX(2deg) translateY(0)}50%{transform:perspective(1100px) rotateY(5deg) rotateX(2deg) translateY(-8px)}}
+    @keyframes dhScan{0%{transform:translateY(-100%);opacity:0}30%{opacity:.6}70%{opacity:.6}100%{transform:translateY(120%);opacity:0}}
+    @keyframes dhPing{0%,100%{box-shadow:0 0 0 0 rgba(249,198,43,.5)}50%{box-shadow:0 0 0 10px rgba(249,198,43,0)}}
     /* ── SECTION WRAPPER ── */
-    .ag-ts-wrap{position:relative;padding:80px 0 20px;overflow:hidden}
-    .ag-ts-bg-dots{position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.03) 1px,transparent 1px);background-size:30px 30px;pointer-events:none;-webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,#000 30%,transparent 100%);mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,#000 30%,transparent 100%)}
-    .ag-ts-orb-l{position:absolute;top:0;left:-20%;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(0,213,89,.11) 0%,transparent 60%);filter:blur(24px);pointer-events:none}
-    .ag-ts-orb-r{position:absolute;bottom:5%;right:-18%;width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(249,198,43,.09) 0%,transparent 60%);filter:blur(24px);pointer-events:none}
+    .ag-ts-wrap{position:relative;padding:90px 0 24px;overflow:hidden;font-family:'Barlow',sans-serif}
+    .ag-ts-bg-dots{position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.025) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;mask-image:radial-gradient(ellipse 85% 85% at 50% 50%,#000 20%,transparent 100%)}
+    .ag-ts-noise{position:absolute;inset:0;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none}
+    .ag-ts-orb-l{position:absolute;top:-10%;left:-15%;width:760px;height:760px;border-radius:50%;background:radial-gradient(circle,rgba(0,213,89,.13) 0%,transparent 58%);filter:blur(30px);pointer-events:none}
+    .ag-ts-orb-r{position:absolute;bottom:0;right:-15%;width:860px;height:860px;border-radius:50%;background:radial-gradient(circle,rgba(249,198,43,.1) 0%,transparent 58%);filter:blur(30px);pointer-events:none}
     /* ── INTRO ── */
-    .ag-ts-intro{text-align:center;padding:0 0 68px;position:relative;z-index:1}
-    .ag-ts-eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#00D559;background:rgba(0,213,89,.07);border:1px solid rgba(0,213,89,.2);padding:6px 18px;border-radius:100px;margin-bottom:24px}
-    .ag-ts-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:#00D559;box-shadow:0 0 10px #00D559;animation:agLivePulse 2s ease-in-out infinite;flex-shrink:0}
-    .ag-ts-h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(2rem,4.2vw,3.5rem);font-weight:900;letter-spacing:-.055em;line-height:1.06;color:#fff;margin-bottom:18px}
-    .ag-ts-h1 .g{background:linear-gradient(90deg,#00D559,#00FF85);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .ag-ts-sub{font-family:'Inter',sans-serif;font-size:.92rem;color:rgba(255,255,255,.35);max-width:520px;margin:0 auto 46px;line-height:1.78}
-    .ag-ts-kpis{display:flex;justify-content:center;gap:0;flex-wrap:wrap;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);border-radius:22px;overflow:hidden;width:fit-content;margin:0 auto;backdrop-filter:blur(8px)}
-    .ag-ts-kpi{padding:18px 38px;text-align:center;border-right:1px solid rgba(255,255,255,.06)}
+    .ag-ts-intro{text-align:center;padding:0 0 72px;position:relative;z-index:1}
+    .ag-ts-eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:'JetBrains Mono',monospace;font-size:.54rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#00D559;background:rgba(0,213,89,.07);border:1px solid rgba(0,213,89,.22);padding:7px 20px;border-radius:100px;margin-bottom:28px}
+    .ag-ts-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:#00D559;box-shadow:0 0 12px #00D559;animation:agLivePulse 2s ease-in-out infinite;flex-shrink:0}
+    .ag-ts-h1{font-family:'Barlow Condensed',sans-serif;font-size:clamp(2.6rem,5.5vw,4.8rem);font-weight:900;font-style:italic;letter-spacing:-.02em;line-height:.98;color:#fff;text-transform:uppercase;margin-bottom:20px}
+    .ag-ts-h1 .g{background:linear-gradient(90deg,#00D559 0%,#00FF99 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-style:normal}
+    .ag-ts-sub{font-family:'Barlow',sans-serif;font-size:.96rem;font-weight:400;color:rgba(255,255,255,.32);max-width:540px;margin:0 auto 50px;line-height:1.82;letter-spacing:.01em}
+    .ag-ts-kpis{display:flex;justify-content:center;gap:0;flex-wrap:wrap;background:rgba(255,255,255,.026);border:1px solid rgba(255,255,255,.07);border-radius:20px;overflow:hidden;width:fit-content;margin:0 auto;backdrop-filter:blur(10px)}
+    .ag-ts-kpi{padding:20px 40px;text-align:center;border-right:1px solid rgba(255,255,255,.06)}
     .ag-ts-kpi:last-child{border-right:none}
-    .ag-ts-kpi-n{font-family:'Space Grotesk',sans-serif;font-size:1.7rem;font-weight:900;letter-spacing:-.04em;color:#fff;line-height:1;margin-bottom:5px}
-    .ag-ts-kpi-n em{font-style:normal;background:linear-gradient(90deg,#00D559,#00FF85);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .ag-ts-kpi-l{font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:700;color:rgba(255,255,255,.22);text-transform:uppercase;letter-spacing:.09em}
-    @media(max-width:620px){.ag-ts-kpi{padding:14px 20px}.ag-ts-kpi-n{font-size:1.3rem}}
+    .ag-ts-kpi-n{font-family:'Barlow Condensed',sans-serif;font-size:2.0rem;font-weight:900;font-style:italic;letter-spacing:-.02em;color:#fff;line-height:1;margin-bottom:5px;text-transform:uppercase}
+    .ag-ts-kpi-n em{font-style:italic;background:linear-gradient(90deg,#00D559,#00FF99);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .ag-ts-kpi-l{font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:700;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.1em}
+    @media(max-width:620px){.ag-ts-kpi{padding:14px 22px}.ag-ts-kpi-n{font-size:1.5rem}}
     /* ── TOOL ROWS ── */
-    .ag-ts-row{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;margin-bottom:110px;position:relative;z-index:1}
+    .ag-ts-row{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center;margin-bottom:120px;position:relative;z-index:1}
     .ag-ts-row.rev{direction:rtl}
     .ag-ts-row.rev>*{direction:ltr}
-    @media(max-width:880px){.ag-ts-row,.ag-ts-row.rev{grid-template-columns:1fr;direction:ltr;gap:36px;margin-bottom:60px}}
+    @media(max-width:900px){.ag-ts-row,.ag-ts-row.rev{grid-template-columns:1fr;direction:ltr;gap:40px;margin-bottom:72px}}
     /* ── COPY PANEL ── */
-    .ag-ts-tag{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tc,#00D559);background:color-mix(in srgb,var(--tc,#00D559) 8%,transparent);border:1px solid color-mix(in srgb,var(--tc,#00D559) 22%,transparent);padding:5px 15px;border-radius:100px;margin-bottom:22px;width:fit-content}
-    .ag-ts-tag-dot{width:6px;height:6px;border-radius:50%;background:var(--tc,#00D559);box-shadow:0 0 8px var(--tc,#00D559)}
-    .ag-ts-copy-h{font-family:'Space Grotesk',sans-serif;font-size:clamp(1.8rem,2.9vw,2.7rem);font-weight:900;letter-spacing:-.055em;line-height:1.08;color:#fff;margin-bottom:16px}
-    .ag-ts-copy-h .em{background:linear-gradient(90deg,var(--tc,#00D559),var(--tc2,#00FF85));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .ag-ts-copy-p{font-family:'Inter',sans-serif;font-size:.88rem;color:rgba(255,255,255,.38);line-height:1.82;margin-bottom:30px}
-    .ag-ts-list{list-style:none;padding:0;margin:0 0 34px;display:flex;flex-direction:column}
-    .ag-ts-li{display:flex;align-items:flex-start;gap:14px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.04);font-family:'Inter',sans-serif;font-size:.84rem;color:rgba(255,255,255,.45);line-height:1.6}
+    .ag-ts-tag{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tc,#00D559);background:color-mix(in srgb,var(--tc,#00D559) 8%,transparent);border:1px solid color-mix(in srgb,var(--tc,#00D559) 24%,transparent);padding:5px 16px;border-radius:100px;margin-bottom:20px;width:fit-content}
+    .ag-ts-tag-dot{width:6px;height:6px;border-radius:50%;background:var(--tc,#00D559);box-shadow:0 0 9px var(--tc,#00D559);animation:agLivePulse 2.4s ease-in-out infinite}
+    .ag-ts-copy-h{font-family:'Barlow Condensed',sans-serif;font-size:clamp(2rem,3.4vw,3.2rem);font-weight:900;font-style:italic;letter-spacing:-.02em;line-height:1.0;color:#fff;text-transform:uppercase;margin-bottom:16px}
+    .ag-ts-copy-h .em{background:linear-gradient(90deg,var(--tc,#00D559),var(--tc2,#00FF99));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-style:normal}
+    .ag-ts-copy-p{font-family:'Barlow',sans-serif;font-size:.9rem;font-weight:400;color:rgba(255,255,255,.36);line-height:1.86;margin-bottom:30px;letter-spacing:.01em}
+    .ag-ts-list{list-style:none;padding:0;margin:0 0 36px;display:flex;flex-direction:column}
+    .ag-ts-li{display:flex;align-items:flex-start;gap:14px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.045);font-family:'Barlow',sans-serif;font-size:.87rem;font-weight:400;color:rgba(255,255,255,.42);line-height:1.65;letter-spacing:.01em}
     .ag-ts-li:first-child{padding-top:0}
     .ag-ts-li:last-child{border-bottom:none;padding-bottom:0}
-    .ag-ts-li b{color:rgba(255,255,255,.92);font-weight:700}
-    .ag-ts-li-num{min-width:24px;height:24px;border-radius:7px;background:color-mix(in srgb,var(--tc,#00D559) 12%,transparent);border:1px solid color-mix(in srgb,var(--tc,#00D559) 26%,transparent);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:900;color:var(--tc,#00D559);flex-shrink:0;margin-top:1px}
-    .ag-ts-btn{display:inline-flex;align-items:center;gap:10px;font-family:'Space Grotesk',sans-serif;font-size:.86rem;font-weight:800;letter-spacing:-.02em;color:var(--tc,#00D559);background:color-mix(in srgb,var(--tc,#00D559) 9%,transparent);border:1.5px solid color-mix(in srgb,var(--tc,#00D559) 28%,transparent);padding:13px 26px;border-radius:100px;text-decoration:none;transition:all .3s cubic-bezier(.16,1,.3,1);width:fit-content}
-    .ag-ts-btn:hover{background:color-mix(in srgb,var(--tc,#00D559) 16%,transparent);border-color:color-mix(in srgb,var(--tc,#00D559) 55%,transparent);gap:16px;box-shadow:0 0 32px color-mix(in srgb,var(--tc,#00D559) 24%,transparent),0 10px 28px rgba(0,0,0,.3)}
+    .ag-ts-li b{color:rgba(255,255,255,.94);font-weight:700;font-family:'Barlow',sans-serif}
+    .ag-ts-li-num{min-width:26px;height:26px;border-radius:8px;background:color-mix(in srgb,var(--tc,#00D559) 12%,transparent);border:1px solid color-mix(in srgb,var(--tc,#00D559) 28%,transparent);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:900;color:var(--tc,#00D559);flex-shrink:0;margin-top:2px}
+    .ag-ts-btn{display:inline-flex;align-items:center;gap:10px;font-family:'Barlow Condensed',sans-serif;font-size:1.0rem;font-weight:800;font-style:italic;letter-spacing:.04em;text-transform:uppercase;color:var(--tc,#00D559);background:color-mix(in srgb,var(--tc,#00D559) 9%,transparent);border:1.5px solid color-mix(in srgb,var(--tc,#00D559) 30%,transparent);padding:13px 28px;border-radius:100px;text-decoration:none;transition:all .3s cubic-bezier(.16,1,.3,1);width:fit-content}
+    .ag-ts-btn span{font-style:normal;transition:transform .3s}
+    .ag-ts-btn:hover{background:color-mix(in srgb,var(--tc,#00D559) 17%,transparent);border-color:color-mix(in srgb,var(--tc,#00D559) 58%,transparent);box-shadow:0 0 36px color-mix(in srgb,var(--tc,#00D559) 26%,transparent),0 12px 32px rgba(0,0,0,.35)}
+    .ag-ts-btn:hover span{transform:translateX(5px)}
     /* ── MOCKUP PANEL ── */
     .ag-ts-mk-wrap{position:relative}
-    .ag-ts-mk-orb{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:88%;height:88%;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--tc,#00D559) 18%,transparent) 0%,transparent 65%);filter:blur(55px);pointer-events:none;z-index:0}
-    .ag-ts-mk{position:relative;z-index:1;background:linear-gradient(155deg,rgba(255,255,255,.048) 0%,rgba(255,255,255,.016) 100%);border:1px solid rgba(255,255,255,.1);border-radius:24px;overflow:hidden;box-shadow:0 36px 90px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.05);transform:perspective(1100px) rotateY(-5deg) rotateX(2deg);transition:transform .6s cubic-bezier(.16,1,.3,1),box-shadow .6s}
-    .ag-ts-row.rev .ag-ts-mk{transform:perspective(1100px) rotateY(5deg) rotateX(2deg)}
-    .ag-ts-mk:hover,.ag-ts-row.rev .ag-ts-mk:hover{transform:perspective(1100px) rotateY(0deg) rotateX(0deg) translateY(-10px) scale(1.018);box-shadow:0 50px 110px rgba(0,0,0,.7),0 0 70px color-mix(in srgb,var(--tc,#00D559) 16%,transparent),0 0 0 1px color-mix(in srgb,var(--tc,#00D559) 22%,transparent)}
-    .ag-ts-mk::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 0%,var(--tc,#00D559) 30%,var(--tc2,#00FF85) 70%,transparent 100%);z-index:3}
-    .ag-mk-chrome{display:flex;align-items:center;gap:8px;padding:13px 18px;background:rgba(0,0,0,.28);border-bottom:1px solid rgba(255,255,255,.07);backdrop-filter:blur(10px)}
+    .ag-ts-mk-orb{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;height:90%;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--tc,#00D559) 20%,transparent) 0%,transparent 63%);filter:blur(60px);pointer-events:none;z-index:0}
+    .ag-ts-mk{position:relative;z-index:1;background:linear-gradient(158deg,rgba(255,255,255,.052) 0%,rgba(255,255,255,.014) 100%);border:1px solid rgba(255,255,255,.1);border-radius:22px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05),inset 0 1px 0 rgba(255,255,255,.08);transform:perspective(1100px) rotateY(-5deg) rotateX(2deg);animation:tsFloat 6s ease-in-out infinite;transition:box-shadow .6s}
+    .ag-ts-row.rev .ag-ts-mk{transform:perspective(1100px) rotateY(5deg) rotateX(2deg);animation-name:tsFloatR}
+    .ag-ts-mk:hover,.ag-ts-row.rev .ag-ts-mk:hover{animation-play-state:paused;transform:perspective(1100px) rotateY(0deg) rotateX(0deg) translateY(-12px) scale(1.02)!important;box-shadow:0 55px 120px rgba(0,0,0,.75),0 0 80px color-mix(in srgb,var(--tc,#00D559) 18%,transparent),0 0 0 1px color-mix(in srgb,var(--tc,#00D559) 26%,transparent)}
+    .ag-ts-mk::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 0%,var(--tc,#00D559) 28%,var(--tc2,#00FF99) 72%,transparent 100%);z-index:3}
+    .ag-mk-chrome{display:flex;align-items:center;gap:8px;padding:12px 18px;background:rgba(0,0,0,.32);border-bottom:1px solid rgba(255,255,255,.07);backdrop-filter:blur(12px)}
     .ag-mk-dots{display:flex;gap:5px}
     .ag-mk-dots span{width:9px;height:9px;border-radius:50%}
-    .ag-mk-dots span:nth-child(1){background:rgba(242,67,54,.7)}
-    .ag-mk-dots span:nth-child(2){background:rgba(249,198,43,.7)}
-    .ag-mk-dots span:nth-child(3){background:rgba(0,213,89,.7)}
-    .ag-mk-url-bar{flex:1;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:600;color:rgba(255,255,255,.22);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:4px 14px;text-align:center;letter-spacing:.02em}
-    .ag-mk-body{padding:22px}
-    /* ── GAME REPORT MOCK STYLES ── */
-    @keyframes tsBarGrow{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}
-    .gr2-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-    .gr2-title{font-family:'Space Grotesk',sans-serif;font-size:.84rem;font-weight:900;color:#fff;letter-spacing:-.02em}
+    .ag-mk-dots span:nth-child(1){background:rgba(242,67,54,.75)}
+    .ag-mk-dots span:nth-child(2){background:rgba(249,198,43,.75)}
+    .ag-mk-dots span:nth-child(3){background:rgba(0,213,89,.75)}
+    .ag-mk-url-bar{flex:1;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:600;color:rgba(255,255,255,.2);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:4px 14px;text-align:center;letter-spacing:.02em}
+    .ag-mk-body{padding:20px}
+    /* ── GAME REPORT MOCK ── */
+    .gr2-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .gr2-title{font-family:'Barlow Condensed',sans-serif;font-size:.95rem;font-weight:900;font-style:italic;color:#fff;letter-spacing:-.01em;text-transform:uppercase}
     .gr2-live{display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:.45rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#00D559;background:rgba(0,213,89,.1);border:1px solid rgba(0,213,89,.24);padding:3px 11px;border-radius:100px}
     .gr2-live::before{content:'';width:5px;height:5px;border-radius:50%;background:#00D559;box-shadow:0 0 8px #00D559;animation:agLivePulse 1.6s ease-in-out infinite;flex-shrink:0}
-    .gr2-game{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px 20px;margin-bottom:15px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
-    .gr2-game::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,213,89,.04) 0%,transparent 45%,transparent 55%,rgba(45,158,255,.04) 100%);pointer-events:none}
-    .gr2-team{display:flex;flex-direction:column;align-items:center;gap:5px}
-    .gr2-abbr{font-family:'Space Grotesk',sans-serif;font-size:1.45rem;font-weight:900;letter-spacing:-.04em;line-height:1}
+    .gr2-game{background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:14px 18px;margin-bottom:13px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
+    .gr2-game::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,213,89,.05) 0%,transparent 42%,transparent 58%,rgba(45,158,255,.05) 100%);pointer-events:none}
+    .gr2-team{display:flex;flex-direction:column;align-items:center;gap:4px}
+    .gr2-abbr{font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:900;font-style:italic;letter-spacing:-.02em;line-height:1;text-transform:uppercase}
     .gr2-rec{font-family:'JetBrains Mono',monospace;font-size:.42rem;font-weight:600;color:rgba(255,255,255,.2);letter-spacing:.04em}
     .gr2-mid{text-align:center;flex:1}
-    .gr2-vs{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:800;color:rgba(255,255,255,.14);letter-spacing:.12em}
-    .gr2-spread{font-family:'Space Grotesk',sans-serif;font-size:.7rem;font-weight:700;color:rgba(255,255,255,.5);margin:3px 0}
-    .gr2-ou{font-family:'JetBrains Mono',monospace;font-size:.43rem;color:rgba(255,255,255,.2)}
-    .gr2-pills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:15px}
+    .gr2-vs{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:900;font-style:italic;color:rgba(255,255,255,.14);letter-spacing:.1em;text-transform:uppercase}
+    .gr2-spread{font-family:'Barlow',sans-serif;font-size:.72rem;font-weight:700;color:rgba(255,255,255,.5);margin:3px 0}
+    .gr2-ou{font-family:'JetBrains Mono',monospace;font-size:.42rem;color:rgba(255,255,255,.2)}
+    .gr2-pills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:13px}
     .gr2-pill{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 10px;border-radius:6px;color:rgba(255,255,255,.28);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
     .gr2-pill.g{color:#00D559;background:rgba(0,213,89,.08);border-color:rgba(0,213,89,.2)}
     .gr2-pill.b{color:#2D9EFF;background:rgba(45,158,255,.08);border-color:rgba(45,158,255,.2)}
     .gr2-pill.p{color:#c084fc;background:rgba(192,132,252,.08);border-color:rgba(192,132,252,.2)}
-    .gr2-sec-lbl{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.18);margin-bottom:10px}
-    .gr2-bars{display:flex;flex-direction:column;gap:10px}
+    .gr2-sec-lbl{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.16);margin-bottom:10px}
+    .gr2-bars{display:flex;flex-direction:column;gap:9px}
     .gr2-brow{display:flex;align-items:center;gap:10px}
-    .gr2-blbl{font-family:'Inter',sans-serif;font-size:.58rem;font-weight:600;color:rgba(255,255,255,.28);width:80px;flex-shrink:0;text-align:right}
+    .gr2-blbl{font-family:'Barlow',sans-serif;font-size:.6rem;font-weight:600;color:rgba(255,255,255,.26);width:82px;flex-shrink:0;text-align:right}
     .gr2-btrack{flex:1;height:7px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden}
-    .gr2-bfill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--bc1),var(--bc2));box-shadow:0 0 10px var(--bglow);width:var(--w,50%);animation:tsBarGrow .9s cubic-bezier(.34,1.56,.64,1) forwards}
-    .gr2-bval{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:900;color:var(--bc1);width:36px;text-align:right;flex-shrink:0}
-    .gr2-alert{margin-top:16px;background:rgba(0,213,89,.06);border:1px solid rgba(0,213,89,.2);border-radius:12px;padding:10px 14px;display:flex;align-items:flex-start;gap:10px}
+    .gr2-bfill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--bc1),var(--bc2));box-shadow:0 0 12px var(--bglow);width:var(--w,50%);animation:tsBarGrow .9s cubic-bezier(.34,1.56,.64,1) forwards}
+    .gr2-bval{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:900;color:var(--bc1);width:38px;text-align:right;flex-shrink:0}
+    .gr2-alert{margin-top:14px;background:rgba(0,213,89,.06);border:1px solid rgba(0,213,89,.2);border-radius:11px;padding:10px 14px;display:flex;align-items:flex-start;gap:10px}
     .gr2-alert-ico{font-size:.9rem;flex-shrink:0;margin-top:1px}
-    .gr2-alert-txt{font-family:'Inter',sans-serif;font-size:.62rem;font-weight:600;color:rgba(255,255,255,.48);line-height:1.55}
-    .gr2-alert-txt b{color:#00D559;font-weight:700}
-    /* ── PLAYER SIM MOCK STYLES ── */
-    .ps2-hd{display:flex;align-items:center;gap:14px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px;margin-bottom:14px;position:relative;overflow:hidden}
-    .ps2-hd::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(249,198,43,.06) 0%,transparent 55%);pointer-events:none}
-    .ps2-av{width:42px;height:42px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:.74rem;font-weight:900;color:#020C07;background:linear-gradient(135deg,#F9C62B,#FFE066);box-shadow:0 0 20px rgba(249,198,43,.55)}
+    .gr2-alert-txt{font-family:'Barlow',sans-serif;font-size:.64rem;font-weight:600;color:rgba(255,255,255,.46);line-height:1.58;letter-spacing:.01em}
+    .gr2-alert-txt b{color:#00D559;font-weight:800}
+    /* ── PLAYER SIM MOCK ── */
+    .ps2-hd{display:flex;align-items:center;gap:14px;background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:13px 16px;margin-bottom:13px;position:relative;overflow:hidden}
+    .ps2-hd::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(249,198,43,.07) 0%,transparent 55%);pointer-events:none}
+    .ps2-av{width:42px;height:42px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:900;font-style:italic;color:#020C07;background:linear-gradient(135deg,#F9C62B,#FFE066);box-shadow:0 0 22px rgba(249,198,43,.6);text-transform:uppercase}
     .ps2-info{flex:1;min-width:0}
-    .ps2-name{font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:900;color:#fff;letter-spacing:-.02em;margin-bottom:2px}
-    .ps2-meta{font-family:'JetBrains Mono',monospace;font-size:.45rem;font-weight:600;color:rgba(255,255,255,.22);letter-spacing:.05em;text-transform:uppercase}
-    .ps2-dh{display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#F9C62B;background:rgba(249,198,43,.1);border:1px solid rgba(249,198,43,.3);padding:3px 10px;border-radius:100px;flex-shrink:0}
-    .ps2-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}
-    .ps2-stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:11px 6px;text-align:center}
-    .ps2-stat.hi{border-color:rgba(249,198,43,.35);background:rgba(249,198,43,.07);box-shadow:0 0 18px rgba(249,198,43,.12)}
-    .ps2-sv{font-family:'Space Grotesk',sans-serif;font-size:1.0rem;font-weight:900;color:#fff;letter-spacing:-.03em;line-height:1;margin-bottom:3px}
-    .ps2-stat.hi .ps2-sv{color:#F9C62B;text-shadow:0 0 16px rgba(249,198,43,.6)}
-    .ps2-sl{font-family:'JetBrains Mono',monospace;font-size:.42rem;font-weight:700;color:rgba(255,255,255,.18);text-transform:uppercase;letter-spacing:.07em}
-    .ps2-vs{display:flex;align-items:center;justify-content:space-between;background:rgba(249,198,43,.06);border:1px solid rgba(249,198,43,.16);border-radius:11px;padding:10px 14px;margin-bottom:14px}
-    .ps2-vs-lbl{font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:700;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.08em}
+    .ps2-name{font-family:'Barlow Condensed',sans-serif;font-size:1.05rem;font-weight:900;font-style:italic;color:#fff;letter-spacing:-.01em;margin-bottom:2px;text-transform:uppercase;line-height:1}
+    .ps2-meta{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:600;color:rgba(255,255,255,.2);letter-spacing:.05em;text-transform:uppercase}
+    .ps2-dh{display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#F9C62B;background:rgba(249,198,43,.1);border:1px solid rgba(249,198,43,.3);padding:3px 10px;border-radius:100px;flex-shrink:0;animation:dhPing 2.5s ease-in-out infinite}
+    .ps2-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:13px}
+    .ps2-stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 6px;text-align:center}
+    .ps2-stat.hi{border-color:rgba(249,198,43,.38);background:rgba(249,198,43,.07);box-shadow:0 0 20px rgba(249,198,43,.14)}
+    .ps2-sv{font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;font-weight:900;font-style:italic;color:#fff;letter-spacing:-.02em;line-height:1;margin-bottom:3px;text-transform:uppercase}
+    .ps2-stat.hi .ps2-sv{color:#F9C62B;text-shadow:0 0 18px rgba(249,198,43,.65)}
+    .ps2-sl{font-family:'JetBrains Mono',monospace;font-size:.41rem;font-weight:700;color:rgba(255,255,255,.18);text-transform:uppercase;letter-spacing:.07em}
+    .ps2-vs{display:flex;align-items:center;justify-content:space-between;background:rgba(249,198,43,.06);border:1px solid rgba(249,198,43,.16);border-radius:10px;padding:9px 13px;margin-bottom:13px}
+    .ps2-vs-lbl{font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:700;color:rgba(255,255,255,.24);text-transform:uppercase;letter-spacing:.08em}
     .ps2-vs-nums{display:flex;align-items:baseline;gap:8px}
-    .ps2-vs-sim{font-family:'Space Grotesk',sans-serif;font-size:.86rem;font-weight:900;color:#F9C62B}
-    .ps2-vs-sep{font-family:'JetBrains Mono',monospace;font-size:.42rem;color:rgba(255,255,255,.15)}
-    .ps2-vs-book{font-family:'Space Grotesk',sans-serif;font-size:.72rem;font-weight:700;color:rgba(255,255,255,.3);text-decoration:line-through}
+    .ps2-vs-sim{font-family:'Barlow Condensed',sans-serif;font-size:1.0rem;font-weight:900;font-style:italic;color:#F9C62B;text-transform:uppercase}
+    .ps2-vs-sep{font-family:'JetBrains Mono',monospace;font-size:.42rem;color:rgba(255,255,255,.14)}
+    .ps2-vs-book{font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:700;color:rgba(255,255,255,.28);text-decoration:line-through;font-style:italic}
     .ps2-edge{font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:900;color:#00D559;background:rgba(0,213,89,.1);border:1px solid rgba(0,213,89,.24);padding:2px 9px;border-radius:5px;margin-left:auto}
-    .ps2-dist{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 15px}
+    .ps2-dist{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:12px 14px}
     .ps2-dist-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
-    .ps2-dist-lbl{font-family:'JetBrains Mono',monospace;font-size:.45rem;font-weight:700;color:rgba(255,255,255,.18);text-transform:uppercase;letter-spacing:.07em}
-    .ps2-dist-ceil{font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:800;color:#F9C62B}
+    .ps2-dist-lbl{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:700;color:rgba(255,255,255,.17);text-transform:uppercase;letter-spacing:.07em}
+    .ps2-dist-ceil{font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:900;color:#F9C62B}
     .ps2-dist-chart{display:flex;align-items:flex-end;gap:3px;height:38px;margin-bottom:5px}
-    .ps2-dc{flex:1;border-radius:3px 3px 0 0;background:rgba(255,255,255,.09)}
-    .ps2-dc.pk{background:linear-gradient(180deg,#F9C62B,rgba(249,198,43,.3));box-shadow:0 0 9px rgba(249,198,43,.4)}
-    .ps2-dc.dh{background:linear-gradient(180deg,#00D559,rgba(0,213,89,.3));box-shadow:0 0 9px rgba(0,213,89,.35)}
-    .ps2-dist-foot{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:.4rem;color:rgba(255,255,255,.14);padding:0 2px}
+    .ps2-dc{flex:1;border-radius:3px 3px 0 0;background:rgba(255,255,255,.08)}
+    .ps2-dc.pk{background:linear-gradient(180deg,#F9C62B,rgba(249,198,43,.28));box-shadow:0 0 10px rgba(249,198,43,.42)}
+    .ps2-dc.dh{background:linear-gradient(180deg,#00D559,rgba(0,213,89,.28));box-shadow:0 0 10px rgba(0,213,89,.38)}
+    .ps2-dist-foot{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:.4rem;color:rgba(255,255,255,.13);padding:0 2px}
+    /* ── DARK HORSE MOCK ── */
+    .dh2-wrap{position:relative;overflow:hidden}
+    .dh2-scan{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(249,198,43,.6),transparent);animation:dhScan 3s ease-in-out infinite;pointer-events:none;z-index:4}
+    .dh2-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .dh2-title{font-family:'Barlow Condensed',sans-serif;font-size:.95rem;font-weight:900;font-style:italic;color:#fff;letter-spacing:-.01em;text-transform:uppercase}
+    .dh2-badge{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#F9C62B;background:rgba(249,198,43,.1);border:1px solid rgba(249,198,43,.28);padding:3px 10px;border-radius:5px}
+    .dh2-card{background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:13px 15px;margin-bottom:9px;display:flex;align-items:center;gap:13px;position:relative;overflow:hidden;transition:border-color .3s}
+    .dh2-card.hot{border-color:rgba(249,198,43,.38);background:rgba(249,198,43,.05)}
+    .dh2-card.hot::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;background:linear-gradient(180deg,#F9C62B,rgba(249,198,43,.2));border-radius:3px 0 0 3px}
+    .dh2-rank{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:900;font-style:italic;color:rgba(255,255,255,.1);width:28px;flex-shrink:0;text-align:center;line-height:1;text-transform:uppercase}
+    .dh2-card.hot .dh2-rank{color:rgba(249,198,43,.5)}
+    .dh2-player{flex:1;min-width:0}
+    .dh2-pname{font-family:'Barlow Condensed',sans-serif;font-size:.9rem;font-weight:900;font-style:italic;color:#fff;letter-spacing:-.01em;text-transform:uppercase;line-height:1;margin-bottom:3px}
+    .dh2-pmeta{font-family:'JetBrains Mono',monospace;font-size:.42rem;font-weight:600;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.05em}
+    .dh2-stat{text-align:right;flex-shrink:0}
+    .dh2-sval{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:900;font-style:italic;color:#fff;letter-spacing:-.02em;line-height:1;margin-bottom:2px;text-transform:uppercase}
+    .dh2-card.hot .dh2-sval{color:#F9C62B;text-shadow:0 0 14px rgba(249,198,43,.55)}
+    .dh2-slbl{font-family:'JetBrains Mono',monospace;font-size:.41rem;font-weight:700;color:rgba(255,255,255,.18);text-transform:uppercase;letter-spacing:.06em}
+    .dh2-edge-row{display:flex;align-items:center;gap:7px;margin-bottom:12px}
+    .dh2-edge-lbl{font-family:'JetBrains Mono',monospace;font-size:.44rem;font-weight:700;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+    .dh2-edge-bar{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+    .dh2-edge-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#F9C62B,#FFE066);box-shadow:0 0 10px rgba(249,198,43,.5);animation:tsBarGrow .9s cubic-bezier(.34,1.56,.64,1) forwards}
+    .dh2-edge-val{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:900;color:#F9C62B;white-space:nowrap}
+    .dh2-footer{background:rgba(249,198,43,.05);border:1px solid rgba(249,198,43,.15);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px}
+    .dh2-footer-ico{font-size:.8rem;flex-shrink:0}
+    .dh2-footer-txt{font-family:'Barlow',sans-serif;font-size:.62rem;font-weight:600;color:rgba(255,255,255,.4);line-height:1.5;letter-spacing:.01em}
+    .dh2-footer-txt b{color:#F9C62B;font-weight:800}
     </style>
 
     <div class="ag-ts-wrap">
@@ -6661,8 +6698,8 @@ html,body{background:transparent;overflow-y:hidden}
       <!-- Section intro -->
       <div class="ag-ts-intro">
         <div class="ag-ts-eyebrow">Inside the Platform</div>
-        <h2 class="ag-ts-h1">See Exactly<br><span class="g">What You&rsquo;re Getting.</span></h2>
-        <p class="ag-ts-sub">Not a black box. Every tool shows its work &mdash; so you understand the edge, not just follow it blindly.</p>
+        <h2 class="ag-ts-h1">THREE TOOLS.<br><span class="g">ONE EDGE.</span></h2>
+        <p class="ag-ts-sub">Not a black box. Every tool shows its work &mdash; so you own the edge, not just borrow it.</p>
         <div class="ag-ts-kpis">
           <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>10k</em></div><div class="ag-ts-kpi-l">Sims / Player</div></div>
           <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>6</em></div><div class="ag-ts-kpi-l">AI Models Fused</div></div>
@@ -6672,11 +6709,11 @@ html,body{background:transparent;overflow-y:hidden}
       </div>
 
       <!-- ── GAME REPORT ROW ── -->
-      <div class="ag-ts-row" style="--tc:#00D559;--tc2:#00FF85;">
+      <div class="ag-ts-row" style="--tc:#00D559;--tc2:#00FF99;">
         <div>
           <div class="ag-ts-tag"><span class="ag-ts-tag-dot"></span>&#x1F4CB;&nbsp; Game Report</div>
           <h3 class="ag-ts-copy-h">Every Matchup.<br><span class="em">Fully Decoded.</span></h3>
-          <p class="ag-ts-copy-p">Pick any game on tonight&rsquo;s slate and get a full AI briefing in seconds &mdash; win probability, pace factors, total projections, defensive mismatches, and the exact props with the sharpest edge.</p>
+          <p class="ag-ts-copy-p">Pick any game on tonight&rsquo;s slate and get a full AI briefing in seconds &mdash; win probability, pace factors, total projections, defensive mismatches, and the exact props carrying the sharpest edge.</p>
           <ul class="ag-ts-list">
             <li class="ag-ts-li"><span class="ag-ts-li-num">1</span><span><b>AI Win Probability</b> &mdash; 6-model consensus for each team, updated live as lines move.</span></li>
             <li class="ag-ts-li"><span class="ag-ts-li-num">2</span><span><b>Pace &amp; Total Projection</b> &mdash; True game total vs. the posted line. Know when the book is wrong.</span></li>
@@ -6721,7 +6758,7 @@ html,body{background:transparent;overflow-y:hidden}
               </div>
               <div class="gr2-sec-lbl">AI Consensus Metrics</div>
               <div class="gr2-bars">
-                <div class="gr2-brow"><div class="gr2-blbl">BOS Win Prob</div><div class="gr2-btrack"><div class="gr2-bfill" style="--w:67%;--bc1:#00D559;--bc2:#00FF85;--bglow:rgba(0,213,89,.45)"></div></div><div class="gr2-bval" style="--bc1:#00D559">67%</div></div>
+                <div class="gr2-brow"><div class="gr2-blbl">BOS Win Prob</div><div class="gr2-btrack"><div class="gr2-bfill" style="--w:67%;--bc1:#00D559;--bc2:#00FF99;--bglow:rgba(0,213,89,.45)"></div></div><div class="gr2-bval" style="--bc1:#00D559">67%</div></div>
                 <div class="gr2-brow"><div class="gr2-blbl">Tatum PTS Edge</div><div class="gr2-btrack"><div class="gr2-bfill" style="--w:82%;--bc1:#F9C62B;--bc2:#FFE066;--bglow:rgba(249,198,43,.45)"></div></div><div class="gr2-bval" style="--bc1:#F9C62B">+4.8%</div></div>
                 <div class="gr2-brow"><div class="gr2-blbl">SAFE Consensus</div><div class="gr2-btrack"><div class="gr2-bfill" style="--w:88%;--bc1:#2D9EFF;--bc2:#60b4ff;--bglow:rgba(45,158,255,.45)"></div></div><div class="gr2-bval" style="--bc1:#2D9EFF">88</div></div>
                 <div class="gr2-brow"><div class="gr2-blbl">Total Proj &Delta;</div><div class="gr2-btrack"><div class="gr2-bfill" style="--w:55%;--bc1:#c084fc;--bc2:#d8b4fe;--bglow:rgba(192,132,252,.45)"></div></div><div class="gr2-bval" style="--bc1:#c084fc">+3.2</div></div>
@@ -6804,6 +6841,83 @@ html,body{background:transparent;overflow-y:hidden}
             <li class="ag-ts-li"><span class="ag-ts-li-num">5</span><span><b>Context-Aware Inputs</b> &mdash; Opponent, pace, home/away, game total, and defensive matchup auto-loaded for every player.</span></li>
           </ul>
           <a href="?auth=signup" class="ag-ts-btn">Run Your First Simulation Free <span>&#x2192;</span></a>
+        </div>
+      </div>
+
+      <!-- ── DARK HORSE FINDER ROW ── -->
+      <div class="ag-ts-row" style="--tc:#c084fc;--tc2:#d8b4fe;">
+        <div>
+          <div class="ag-ts-tag"><span class="ag-ts-tag-dot"></span>&#x1F434;&nbsp; Dark Horse Finder</div>
+          <h3 class="ag-ts-copy-h">Hidden Edge.<br><span class="em">Spotted First.</span></h3>
+          <p class="ag-ts-copy-p">Dark Horse Finder scans every prop on the board and surfaces players whose sim ceiling outpaces the market line by the widest margin &mdash; the undervalued names books haven&rsquo;t caught up with yet.</p>
+          <ul class="ag-ts-list">
+            <li class="ag-ts-li"><span class="ag-ts-li-num">1</span><span><b>Ceiling vs. Line Gap</b> &mdash; Ranks all active props by the distance between the 90th-percentile sim outcome and the posted book line.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">2</span><span><b>Dark Horse Score 0&ndash;100</b> &mdash; Proprietary composite of edge size, sim confidence, matchup quality, and recent form.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">3</span><span><b>Multi-Stat Coverage</b> &mdash; Finds dark horses across PTS, REB, AST, 3PM, BLK, STL &mdash; not just the obvious scoring props.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">4</span><span><b>Live Line-Movement Watch</b> &mdash; Alerts you when a Dark Horse prop line starts moving, so you grab it before it closes.</span></li>
+            <li class="ag-ts-li"><span class="ag-ts-li-num">5</span><span><b>One-Click Deep Dive</b> &mdash; Jump straight into the full Player Simulator for any flagged name with context pre-loaded.</span></li>
+          </ul>
+          <a href="?auth=signup" class="ag-ts-btn">Find Tonight&rsquo;s Dark Horses <span>&#x2192;</span></a>
+        </div>
+        <div class="ag-ts-mk-wrap">
+          <div class="ag-ts-mk-orb"></div>
+          <div class="ag-ts-mk">
+            <div class="ag-mk-chrome">
+              <div class="ag-mk-dots"><span></span><span></span><span></span></div>
+              <div class="ag-mk-url-bar">smartpickpro.ai &nbsp;&middot;&nbsp; Dark Horse Finder</div>
+            </div>
+            <div class="ag-mk-body">
+              <div class="dh2-wrap">
+                <div class="dh2-scan"></div>
+                <div class="dh2-hd">
+                  <div class="dh2-title">&#x1F434; Dark Horse Finder</div>
+                  <div class="dh2-badge">LIVE &bull; 14 flagged</div>
+                </div>
+                <div class="dh2-card hot">
+                  <div class="dh2-rank">1</div>
+                  <div class="dh2-player">
+                    <div class="dh2-pname">A. Edwards</div>
+                    <div class="dh2-pmeta">MIN &middot; REB &middot; vs DEN</div>
+                  </div>
+                  <div class="dh2-stat">
+                    <div class="dh2-sval">7.8</div>
+                    <div class="dh2-slbl">Sim Ceiling</div>
+                  </div>
+                </div>
+                <div class="dh2-card hot">
+                  <div class="dh2-rank">2</div>
+                  <div class="dh2-player">
+                    <div class="dh2-pname">B. Beal</div>
+                    <div class="dh2-pmeta">PHX &middot; PTS &middot; vs LAL</div>
+                  </div>
+                  <div class="dh2-stat">
+                    <div class="dh2-sval">31.4</div>
+                    <div class="dh2-slbl">Sim Ceiling</div>
+                  </div>
+                </div>
+                <div class="dh2-card">
+                  <div class="dh2-rank">3</div>
+                  <div class="dh2-player">
+                    <div class="dh2-pname">D. Mitchell</div>
+                    <div class="dh2-pmeta">CLE &middot; AST &middot; vs CHI</div>
+                  </div>
+                  <div class="dh2-stat">
+                    <div class="dh2-sval">8.1</div>
+                    <div class="dh2-slbl">Sim Ceiling</div>
+                  </div>
+                </div>
+                <div class="dh2-edge-row">
+                  <div class="dh2-edge-lbl">Top Edge Score</div>
+                  <div class="dh2-edge-bar"><div class="dh2-edge-fill" style="width:91%"></div></div>
+                  <div class="dh2-edge-val">91 / 100</div>
+                </div>
+                <div class="dh2-footer">
+                  <div class="dh2-footer-ico">&#x26A1;</div>
+                  <div class="dh2-footer-txt"><b>A. Edwards REB &mdash; ceiling +2.8 above line.</b> Matchup vs DEN &mdash; 3rd in pace, bottom-5 reb def. rating this month.</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

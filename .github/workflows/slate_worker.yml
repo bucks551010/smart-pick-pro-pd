@@ -35,6 +35,8 @@ jobs:
     name: Run slate_worker.py
     runs-on: ubuntu-latest
     timeout-minutes: 20       # hard kill if pipeline hangs
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"  # opt into Node.js 24 for actions
 
     steps:
       - name: Checkout repository

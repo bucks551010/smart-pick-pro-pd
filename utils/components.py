@@ -171,22 +171,28 @@ def render_sidebar_auth() -> None:
 
         st.markdown(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,700;1,800;1,900&family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
 /* ══════════════════════════════════════════════════════
-   SMART PICK PRO — Elite Sidebar Identity Card v2
+   SMART PICK PRO — Elite Sidebar Identity Card v3
+   Barlow Condensed / Nike-style upgrade
    ══════════════════════════════════════════════════════ */
 .sb-card {{
   position: relative;
-  border-radius: 18px;
+  border-radius: 22px;
   padding: 0;
   background: {_s['bg']};
   border: 1px solid {_s['border']};
   box-shadow: {_s['glow']};
   margin-bottom: 12px;
   overflow: hidden;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  transition: box-shadow .3s ease, transform .3s ease;
+}}
+.sb-card:hover {{
+  transform: translateY(-2px);
+  box-shadow: {_s['glow']}, 0 8px 32px rgba(0,0,0,0.4);
 }}
 /* Animated shimmer top bar */
 .sb-card::before {{
@@ -194,16 +200,16 @@ def render_sidebar_auth() -> None:
   position: absolute; top: 0; left: 0; right: 0; height: 3px;
   background: {_s['top_bar']};
   background-size: 300% 100%;
-  border-radius: 18px 18px 0 0;
+  border-radius: 22px 22px 0 0;
   animation: sb-shimmer 3s linear infinite;
 }}
 /* Subtle inner glow overlay */
 .sb-card::after {{
   content: '';
   position: absolute; inset: 0;
-  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,255,255,0.04) 0%, transparent 70%);
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,255,255,0.05) 0%, transparent 70%);
   pointer-events: none;
-  border-radius: 18px;
+  border-radius: 22px;
 }}
 @keyframes sb-shimmer {{
   0%   {{ background-position: 200% center }}
@@ -212,19 +218,21 @@ def render_sidebar_auth() -> None:
 
 /* Inner padding wrapper */
 .sb-inner {{
-  padding: 14px 14px 13px;
+  padding: 16px 14px 14px;
   position: relative; z-index: 1;
 }}
 
 /* Avatar — larger, prominent ring */
 .sb-avatar {{
-  width: 42px; height: 42px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   background: {_s['avatar_bg']};
   display: inline-flex; align-items: center; justify-content: center;
-  font-weight: 900; font-size: 1.1rem; color: #fff; flex-shrink: 0;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900; font-style: italic; font-size: 1.3rem;
+  color: #fff; flex-shrink: 0;
   box-shadow: {_s['avatar_glow']}, 0 3px 12px rgba(0,0,0,0.55);
-  border: 2px solid rgba(255,255,255,0.18);
+  border: 2px solid rgba(255,255,255,0.20);
   position: relative;
 }}
 /* Subtle pulse ring on the avatar */
@@ -238,13 +246,13 @@ def render_sidebar_auth() -> None:
 }}
 @keyframes sb-pulse {{
   0%, 100% {{ transform: scale(1); opacity: 0.55; }}
-  50%       {{ transform: scale(1.07); opacity: 0.25; }}
+  50%       {{ transform: scale(1.07); opacity: 0.22; }}
 }}
 
 /* Email — mono, readable */
 .sb-email {{
-  color: #d4e4f7;
-  font-size: 0.75rem;
+  color: rgba(212,228,247,0.75);
+  font-size: 0.68rem;
   font-weight: 500;
   font-family: 'JetBrains Mono', monospace;
   letter-spacing: 0.01em;
@@ -253,101 +261,104 @@ def render_sidebar_auth() -> None:
   line-height: 1.3;
 }}
 
-/* Tier badge — pill style */
+/* Tier badge — Barlow Condensed italic pill */
 .sb-badge {{
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 10px 3px 8px;
+  padding: 3px 12px 3px 9px;
   border-radius: 100px;
   background: {_s['badge_bg']};
   color: {_s['badge_clr']};
-  font-size: 0.66rem; font-weight: 800;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  font-family: 'Inter', sans-serif;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.35);
-  border: 1px solid rgba(255,255,255,0.12);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.78rem; font-weight: 900; font-style: italic;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.4), 0 0 10px rgba(0,0,0,0.2) inset;
+  border: 1px solid rgba(255,255,255,0.14);
 }}
 
 /* Stats row — compact metrics below email */
 .sb-stats {{
-  display: flex; gap: 8px; margin-top: 10px;
+  display: flex; gap: 7px; margin-top: 11px;
 }}
 .sb-stat {{
   flex: 1;
-  background: rgba(0,0,0,0.22);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 9px;
-  padding: 5px 7px 4px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 6px 6px 5px;
   text-align: center;
+  transition: background .2s ease;
+}}
+.sb-stat:hover {{
+  background: rgba(255,255,255,0.04);
 }}
 .sb-stat-val {{
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.82rem; font-weight: 700;
-  color: #fff; line-height: 1.1;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900; font-style: italic;
+  font-size: 0.88rem;
+  color: #fff; line-height: 1;
+  letter-spacing: .02em;
 }}
 .sb-stat-lbl {{
-  font-size: 0.46rem; font-weight: 700;
-  color: rgba(255,255,255,0.38);
-  text-transform: uppercase; letter-spacing: 0.09em;
-  margin-top: 1px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.42rem; font-weight: 700;
+  color: rgba(255,255,255,0.30);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  margin-top: 2px;
 }}
 
 /* Divider line inside card */
 .sb-divider {{
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-  margin: 10px 0 9px;
+  margin: 11px 0 10px;
 }}
 
 /* Upgrade CTA */
 .sb-upgrade-btn {{
   display: flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 10px 0; border-radius: 11px;
-  background: linear-gradient(90deg, #ff5e00 0%, #ff8c00 50%, #ffb300 100%);
+  padding: 11px 0; border-radius: 13px;
+  background: linear-gradient(135deg, #ff5e00 0%, #ff8c00 50%, #ffb300 100%);
   background-size: 200% 100%;
-  text-align: center; color: #fff !important;
-  font-weight: 900; font-size: 0.80rem;
-  letter-spacing: 0.07em; text-decoration: none !important;
-  font-family: 'Inter', sans-serif; text-transform: uppercase;
-  box-shadow: 0 0 24px rgba(255,94,0,0.50), 0 3px 10px rgba(0,0,0,0.45);
+  text-align: center; color: #050910 !important;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900; font-style: italic; font-size: 0.86rem;
+  letter-spacing: 0.05em; text-decoration: none !important;
+  text-transform: uppercase;
+  box-shadow: 0 0 28px rgba(255,94,0,0.50), 0 4px 14px rgba(0,0,0,0.45),
+              inset 0 1px 0 rgba(255,255,255,0.22);
   transition: filter 0.2s, transform 0.18s, box-shadow 0.2s;
   animation: sb-upgrade-glow 2.5s ease-in-out infinite;
 }}
 @keyframes sb-upgrade-glow {{
   0%, 100% {{ box-shadow: 0 0 22px rgba(255,94,0,0.45), 0 3px 10px rgba(0,0,0,0.45); }}
-  50%       {{ box-shadow: 0 0 40px rgba(255,140,0,0.65), 0 3px 10px rgba(0,0,0,0.45); }}
+  50%       {{ box-shadow: 0 0 44px rgba(255,140,0,0.70), 0 3px 10px rgba(0,0,0,0.45); }}
 }}
 .sb-upgrade-btn:hover {{
-  filter: brightness(1.15);
+  filter: brightness(1.12);
   transform: translateY(-2px);
-  box-shadow: 0 0 36px rgba(255,140,0,0.70), 0 6px 20px rgba(0,0,0,0.55) !important;
+  box-shadow: 0 0 44px rgba(255,140,0,0.70), 0 8px 24px rgba(0,0,0,0.55) !important;
 }}
 
 /* ── Elite Log Out button ── */
 [data-testid="stSidebar"] .stButton > button {{
   width: 100% !important;
-  background: linear-gradient(135deg, rgba(242,67,54,0.06) 0%, rgba(180,30,20,0.08) 100%) !important;
-  border: 1px solid rgba(242,67,54,0.28) !important;
-  color: rgba(240,184,180,0.90) !important;
-  font-weight: 700 !important; font-size: 0.80rem !important;
-  letter-spacing: 0.08em !important; text-transform: uppercase !important;
-  border-radius: 11px !important;
-  padding: 10px 20px !important; min-height: 42px !important;
+  background: linear-gradient(135deg, rgba(242,67,54,0.05) 0%, rgba(180,30,20,0.07) 100%) !important;
+  border: 1px solid rgba(242,67,54,0.25) !important;
+  color: rgba(240,184,180,0.85) !important;
+  font-family: 'Barlow Condensed', sans-serif !important;
+  font-weight: 900 !important; font-style: italic !important;
+  font-size: 0.88rem !important;
+  letter-spacing: 0.06em !important; text-transform: uppercase !important;
+  border-radius: 13px !important;
+  padding: 11px 20px !important; min-height: 44px !important;
   transition: all 0.22s cubic-bezier(0.16,1,0.3,1) !important;
-  font-family: 'Inter', sans-serif !important;
   position: relative !important; overflow: hidden !important;
 }}
-[data-testid="stSidebar"] .stButton > button::before {{
-  content: '' !important;
-  position: absolute !important; inset: 0 !important;
-  background: linear-gradient(135deg, rgba(242,67,54,0.0) 0%, rgba(242,67,54,0.0) 100%) !important;
-  transition: background 0.22s ease !important;
-  border-radius: 11px !important;
-}}
 [data-testid="stSidebar"] .stButton > button:hover {{
-  background: linear-gradient(135deg, rgba(242,67,54,0.16) 0%, rgba(180,30,20,0.20) 100%) !important;
-  border-color: rgba(242,67,54,0.65) !important;
-  color: #ff6b60 !important;
-  box-shadow: 0 4px 22px rgba(242,67,54,0.28), inset 0 0 18px rgba(242,67,54,0.07) !important;
+  background: linear-gradient(135deg, rgba(242,67,54,0.14) 0%, rgba(180,30,20,0.18) 100%) !important;
+  border-color: rgba(242,67,54,0.60) !important;
+  color: #ff7a72 !important;
+  box-shadow: 0 0 28px rgba(242,67,54,0.25), inset 0 0 16px rgba(242,67,54,0.06) !important;
   transform: translateY(-1px) !important;
 }}
 </style>
@@ -1449,12 +1460,13 @@ def render_sidebar_attribution() -> None:
 
     st.markdown("""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,700;1,800;1,900&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
 .spp-sidebar-attr {
   position: relative;
   background: linear-gradient(135deg, rgba(0,213,89,0.05) 0%, rgba(45,158,255,0.04) 100%);
   border: 1px solid rgba(0,213,89,0.14);
-  border-radius: 13px;
-  padding: 11px 13px 10px;
+  border-radius: 14px;
+  padding: 12px 13px 11px;
   margin: 8px 0 6px;
   text-align: center;
   overflow: hidden;
@@ -1465,33 +1477,34 @@ def render_sidebar_attribution() -> None:
   background: linear-gradient(90deg, transparent, rgba(0,213,89,0.40), rgba(45,158,255,0.30), transparent);
 }
 .spp-sidebar-attr-label {
-  color: rgba(255,255,255,0.28);
-  font-size: 0.56rem; font-weight: 700;
-  letter-spacing: 0.14em; text-transform: uppercase;
-  margin-bottom: 4px;
-  font-family: 'Inter', sans-serif;
+  color: rgba(255,255,255,0.22);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.48rem; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  margin-bottom: 5px;
 }
 .spp-sidebar-attr-name {
   color: #E8F0FC;
-  font-size: 0.84rem; font-weight: 800;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.0rem; font-weight: 900; font-style: italic;
   letter-spacing: 0.04em; text-transform: uppercase;
-  font-family: 'Inter', sans-serif;
 }
 .spp-sidebar-attr-role {
-  color: rgba(255,255,255,0.35);
-  font-size: 0.64rem; font-weight: 500;
-  margin-top: 2px; letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.28);
   font-family: 'Inter', sans-serif;
+  font-size: 0.60rem; font-weight: 500;
+  margin-top: 2px; letter-spacing: 0.02em;
 }
 .spp-sidebar-attr-badge {
   display: inline-block;
-  background: linear-gradient(90deg, rgba(0,213,89,0.12), rgba(45,158,255,0.10));
+  background: linear-gradient(90deg, rgba(0,213,89,0.10), rgba(45,158,255,0.08));
   color: #00D559;
-  font-size: 0.58rem; font-weight: 800;
-  padding: 3px 10px; border-radius: 100px;
-  border: 1px solid rgba(0,213,89,0.22);
-  margin-top: 6px; letter-spacing: 0.07em; text-transform: uppercase;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.68rem; font-weight: 900; font-style: italic;
+  padding: 3px 12px; border-radius: 100px;
+  border: 1px solid rgba(0,213,89,0.20);
+  margin-top: 7px; letter-spacing: 0.05em; text-transform: uppercase;
+  box-shadow: 0 0 14px rgba(0,213,89,0.12);
 }
 </style>
 <div class="spp-sidebar-attr">

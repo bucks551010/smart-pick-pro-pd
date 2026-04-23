@@ -1336,6 +1336,8 @@ def enrich_props_batch(props_list: list, players_list: list) -> list:
             "rebounds_assists":          reb + ast,
             "points_rebounds_assists":   pts + reb + ast,
             "blocks_steals":             blk + stl,
+            # PrizePicks fantasy score: used by goblin/demon fantasy_score_pp lines
+            "fantasy_score_pp":          pts + 1.2 * reb + 1.5 * ast + 3.0 * (stl + blk) - tov,
         }
 
         # Fields to merge directly onto the enriched prop dict

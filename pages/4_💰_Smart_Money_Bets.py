@@ -1813,6 +1813,11 @@ def _filter_zone_picks(all_props: list, players_data: dict,
     Returns enriched prop dicts sorted by deviation (most extreme first).
     Only OVER direction (line below avg → negative deviation).
 
+    Fallback mode: when players_data is empty (ETL DB unavailable), deviation
+    cannot be computed. In this case we trust PrizePicks' own goblin/demon
+    designation as the value signal and include all props of the target
+    odds_type (subject to per-player/per-team limits only).
+
     Performance: pre-filters to the target odds_type *before* enrichment so
     enrich_props_batch() builds its player-stat memo only for the relevant
     subset.  O(p+n) vs the previous O(p×n) per-prop loop.
@@ -1825,14 +1830,19 @@ def _filter_zone_picks(all_props: list, players_data: dict,
     # Batch enrich: one player-index build + per-player stat memo across all props
     enriched_batch = enrich_props_batch(typed_props, players_data)
 
+    # Fallback mode: no player stats available — trust PrizePicks' own designation
+    _fallback_mode = not bool(players_data)
+
     results = []
     for enriched in enriched_batch:
         dev = float(enriched.get("line_vs_avg_pct", 0) or 0)
-        # Only negative deviation (line below avg) → OVER opportunity
-        if dev > -min_dev:
-            continue
-        if not _passes_smart_money_quality_gate(enriched):
-            continue
+        if not _fallback_mode:
+            # Normal mode: require confirmed negative deviation
+            if dev > -min_dev:
+                continue
+            if not _passes_smart_money_quality_gate(enriched):
+                continue
+        # Fallback mode: PrizePicks labelled this as goblin/demon → include it
         results.append(enriched)
 
     results.sort(key=lambda x: x.get("line_vs_avg_pct", 0))

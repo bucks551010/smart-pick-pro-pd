@@ -369,6 +369,17 @@ def _initialize_pg_database() -> bool:
             created_at TEXT DEFAULT (NOW()::text),
             updated_at TEXT DEFAULT (NOW()::text)
         )""",
+        """CREATE TABLE IF NOT EXISTS slate_cache (
+            id SERIAL PRIMARY KEY,
+            for_date TEXT NOT NULL,
+            run_at TEXT NOT NULL,
+            pick_count INTEGER NOT NULL DEFAULT 0,
+            props_fetched INTEGER NOT NULL DEFAULT 0,
+            games_count INTEGER NOT NULL DEFAULT 0,
+            status TEXT NOT NULL DEFAULT 'ok',
+            error_message TEXT,
+            duration_seconds REAL
+        )""",
         """CREATE TABLE IF NOT EXISTS bet_audit_log (
             audit_id SERIAL PRIMARY KEY,
             bet_id INTEGER NOT NULL,
@@ -774,6 +785,23 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 );
 """
 
+# ── slate_cache — one row per slate_worker run ───────────────────────────
+# Written exclusively by slate_worker.py (background job).
+# Read by the Streamlit UI to surface worker health and staleness info.
+CREATE_SLATE_CACHE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS slate_cache (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    for_date TEXT NOT NULL,
+    run_at TEXT NOT NULL,
+    pick_count INTEGER NOT NULL DEFAULT 0,
+    props_fetched INTEGER NOT NULL DEFAULT 0,
+    games_count INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'ok',
+    error_message TEXT,
+    duration_seconds REAL
+);
+"""
+
 # ============================================================
 # END SECTION: Database Configuration
 # ============================================================
@@ -852,6 +880,7 @@ def initialize_database():
             cursor.execute(CREATE_USER_SETTINGS_TABLE_SQL)        # User settings persistence
             cursor.execute(CREATE_PAGE_STATE_TABLE_SQL)             # Page state persistence
             cursor.execute(CREATE_USER_PROFILES_TABLE_SQL)          # Premium profile onboarding
+            cursor.execute(CREATE_SLATE_CACHE_TABLE_SQL)             # slate_worker run metadata
 
             # â”€â”€ Indexes for performance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             _TRACKING_INDEXES = (
@@ -1432,6 +1461,110 @@ def update_bet_fields(bet_id, updates):
     return True, f"Bet #{bet_id} updated: {', '.join(filtered.keys())}."
 
 
+def apply_bet_edits_atomic(edits: list, deletes: list) -> tuple:
+    """Apply a batch of field edits and row deletions in one atomic transaction.
+
+    All-or-nothing: if any statement fails the entire batch is rolled back and
+    the DB is left unchanged. The caller receives a (False, reason) tuple so it
+    can surface an st.error without showing a false success.
+
+    Args:
+        edits:   list of {"bet_id": int, "updates": dict[str, Any]}
+        deletes: list of int bet_ids to hard-delete
+
+    Returns:
+        tuple[bool, str]: (success, human-readable message)
+    """
+    ALLOWED = {"prop_line", "direction", "platform", "notes", "tier", "stat_type"}
+
+    if not edits and not deletes:
+        return False, "Nothing to apply."
+
+    # Compile and validate all edits before opening a DB connection
+    compiled_edits = []
+    for item in edits:
+        bid = item.get("bet_id")
+        safe = {k: v for k, v in (item.get("updates") or {}).items() if k in ALLOWED}
+        if not bid or not safe:
+            continue
+        set_clause = ", ".join(f"{k} = ?" for k in safe)
+        params = tuple(safe.values()) + (int(bid),)
+        compiled_edits.append((int(bid), f"UPDATE bets SET {set_clause} WHERE bet_id = ?", params, safe))
+
+    compiled_deletes = [int(d) for d in deletes if d]
+
+    if not compiled_edits and not compiled_deletes:
+        return False, "No valid changes after field validation."
+
+    n_edits, n_dels = len(compiled_edits), len(compiled_deletes)
+    _now_sql = "NOW()" if _DATABASE_URL else "datetime('now')"
+
+    # ── PostgreSQL — single connection, explicit transaction ──────────────
+    if _DATABASE_URL:
+        import psycopg2
+        conn = None
+        try:
+            conn = _pg_conn()
+            cur = conn.cursor()
+            for bid, sql, params, safe in compiled_edits:
+                cur.execute(_to_pg_sql(sql), params)
+                cur.execute(
+                    _to_pg_sql(
+                        "INSERT INTO bet_audit_log (bet_id, action, old_values, new_values, changed_at) "
+                        "VALUES (?, 'EDIT', NULL, ?, " + _now_sql + ")"
+                    ),
+                    (bid, json.dumps(safe, default=str)),
+                )
+            for did in compiled_deletes:
+                cur.execute(_to_pg_sql("DELETE FROM bets WHERE bet_id = ?"), (did,))
+                cur.execute(
+                    _to_pg_sql(
+                        "INSERT INTO bet_audit_log (bet_id, action, old_values, new_values, changed_at) "
+                        "VALUES (?, 'DELETE', NULL, NULL, " + _now_sql + ")"
+                    ),
+                    (did,),
+                )
+            conn.commit()
+            return True, f"Applied {n_edits} edit(s) and {n_dels} deletion(s)."
+        except psycopg2.Error as _pg_err:
+            _logger.error("apply_bet_edits_atomic PG error: %s", _pg_err)
+            try:
+                if conn:
+                    conn.rollback()
+            except Exception:
+                pass
+            return False, f"Transaction rolled back: {_pg_err}"
+        finally:
+            try:
+                if conn:
+                    conn.close()
+            except Exception:
+                pass
+
+    # ── SQLite — context manager auto-commits on clean exit, rolls back on exception
+    try:
+        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
+            conn.execute("PRAGMA journal_mode=WAL")
+            for bid, sql, params, safe in compiled_edits:
+                conn.execute(sql, params)
+                conn.execute(
+                    "INSERT INTO bet_audit_log (bet_id, action, old_values, new_values, changed_at) "
+                    "VALUES (?, 'EDIT', NULL, ?, datetime('now'))",
+                    (bid, json.dumps(safe, default=str)),
+                )
+            for did in compiled_deletes:
+                conn.execute("DELETE FROM bets WHERE bet_id = ?", (did,))
+                conn.execute(
+                    "INSERT INTO bet_audit_log (bet_id, action, old_values, new_values, changed_at) "
+                    "VALUES (?, 'DELETE', NULL, NULL, datetime('now'))",
+                    (did,),
+                )
+        return True, f"Applied {n_edits} edit(s) and {n_dels} deletion(s)."
+    except sqlite3.Error as _sq_err:
+        _logger.error("apply_bet_edits_atomic SQLite error: %s", _sq_err)
+        return False, f"Transaction rolled back: {_sq_err}"
+
+
 def search_bets_by_player(query, limit=200):
     """
     Search bets by player name substring (case-insensitive).
@@ -1811,7 +1944,7 @@ def load_bets_page(
         SELECT *
         FROM bets
         {where_sql}
-        ORDER BY COALESCE(bet_date, '') DESC, created_at DESC NULLS LAST
+        ORDER BY DATE(COALESCE(bet_date, '1900-01-01')) DESC, created_at DESC NULLS LAST
         LIMIT ? OFFSET ?
     """
 
@@ -2697,22 +2830,52 @@ def get_rolling_stats(days=14):
     total_pushes = sum(s.get("pushes", 0) for s in snapshots)
     win_rate = round(total_wins / max(total_wins + total_losses, 1) * 100, 1)
 
-    # Current streak: walk from most recent snapshot backward
-    streak = 0
-    for snap in snapshots:
-        w = snap.get("wins", 0)
-        l = snap.get("losses", 0)
-        if w + l == 0:
-            continue
-        day_wr = w / (w + l)
-        if streak == 0:
-            streak = 1 if day_wr >= 0.5 else -1
-        elif streak > 0 and day_wr >= 0.5:
-            streak += 1
-        elif streak < 0 and day_wr < 0.5:
-            streak -= 1
-        else:
-            break
+    # Current streak: walk individual resolved bets newest→oldest.
+    # This matches the individual-bet streak displayed in Health tab summary cards.
+    try:
+        _recent_bets = load_all_bets(limit=500)
+        _cutoff = (
+            __import__("datetime").date.today()
+            - __import__("datetime").timedelta(days=days)
+        ).isoformat()
+        _resolved_bets = sorted(
+            [
+                b for b in _recent_bets
+                if b.get("result") in ("WIN", "LOSS")
+                and str(b.get("bet_date", ""))[:10] >= _cutoff
+            ],
+            key=lambda b: (b.get("bet_date", ""), b.get("id", 0)),
+            reverse=True,  # newest first
+        )
+        streak = 0
+        if _resolved_bets:
+            _first = _resolved_bets[0].get("result")
+            streak = 1 if _first == "WIN" else -1
+            for _b in _resolved_bets[1:]:
+                _r = _b.get("result")
+                if streak > 0 and _r == "WIN":
+                    streak += 1
+                elif streak < 0 and _r == "LOSS":
+                    streak -= 1
+                else:
+                    break
+    except Exception:
+        # Fall back to day-level streak if bets can't be loaded
+        streak = 0
+        for snap in snapshots:
+            w = snap.get("wins", 0)
+            l = snap.get("losses", 0)
+            if w + l == 0:
+                continue
+            day_wr = w / (w + l)
+            if streak == 0:
+                streak = 1 if day_wr >= 0.5 else -1
+            elif streak > 0 and day_wr >= 0.5:
+                streak += 1
+            elif streak < 0 and day_wr < 0.5:
+                streak -= 1
+            else:
+                break
 
     resolved = [s for s in snapshots if (s.get("wins", 0) + s.get("losses", 0)) > 0]
     best_day = max(resolved, key=lambda s: s.get("win_rate", 0)) if resolved else {}
@@ -3804,6 +3967,142 @@ def is_profile_complete(email: str) -> bool:
 
 # ============================================================
 # END SECTION: User Profile Persistence
+# ============================================================
+
+
+# ============================================================
+# SECTION: Slate Worker Integration
+# Helpers used by slate_worker.py (background job) and the
+# Streamlit UI to record/read pre-computed slate results.
+# ============================================================
+
+def record_slate_run(
+    *,
+    for_date: str,
+    pick_count: int,
+    props_fetched: int,
+    games_count: int,
+    status: str = "ok",
+    error_message: str | None = None,
+    duration_seconds: float | None = None,
+) -> bool:
+    """Insert a slate_worker run record into slate_cache.
+
+    Called exclusively by slate_worker.py after each pipeline execution.
+    Only keeps the last 30 rows per date to prevent unbounded table growth.
+
+    Returns:
+        True on success, False on error.
+    """
+    run_at = datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    sql = (
+        "INSERT INTO slate_cache "
+        "(for_date, run_at, pick_count, props_fetched, games_count, status, error_message, duration_seconds) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    params = (
+        for_date, run_at, pick_count, props_fetched, games_count,
+        status, error_message, duration_seconds,
+    )
+    try:
+        _execute_write(sql, params, caller="record_slate_run")
+        # Prune old rows (keep last 30)
+        _execute_write(
+            "DELETE FROM slate_cache WHERE id NOT IN "
+            "(SELECT id FROM slate_cache ORDER BY id DESC LIMIT 30)",
+            caller="record_slate_run_prune",
+        )
+        return True
+    except Exception as exc:
+        _logger.error("record_slate_run failed: %s", exc)
+        return False
+
+
+def get_slate_status() -> dict:
+    """Return metadata about the most recent slate_worker run.
+
+    Used by Admin Metrics to show worker health and data freshness.
+
+    Returns:
+        dict with keys: for_date, run_at, pick_count, props_fetched,
+        games_count, status, error_message, duration_seconds.
+        Empty dict if no record exists.
+    """
+    try:
+        if _DATABASE_URL:
+            conn = _pg_conn()
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT for_date, run_at, pick_count, props_fetched, games_count, "
+                "status, error_message, duration_seconds "
+                "FROM slate_cache ORDER BY id DESC LIMIT 1"
+            )
+            row = cur.fetchone()
+            conn.close()
+            if row:
+                keys = ["for_date", "run_at", "pick_count", "props_fetched",
+                        "games_count", "status", "error_message", "duration_seconds"]
+                return dict(zip(keys, row))
+            return {}
+        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False, timeout=10) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                "SELECT for_date, run_at, pick_count, props_fetched, games_count, "
+                "status, error_message, duration_seconds "
+                "FROM slate_cache ORDER BY id DESC LIMIT 1"
+            ).fetchone()
+            return dict(row) if row else {}
+    except Exception as exc:
+        _logger.debug("get_slate_status failed: %s", exc)
+        return {}
+
+
+def get_slate_picks_for_today() -> list[dict]:
+    """Return today's pre-computed picks from all_analysis_picks.
+
+    Designed to be wrapped in ``@st.cache_data(ttl=300)`` so concurrent
+    Streamlit sessions share one DB round-trip per 5-minute window.
+
+    Uses the NBA ET-anchored date so Railway (UTC server) doesn't query
+    the wrong day after midnight UTC.
+
+    Returns:
+        List of pick dicts sorted by confidence_score DESC.
+        Empty list if no picks exist for today.
+    """
+    today_str = _nba_today_iso()
+    try:
+        if _DATABASE_URL:
+            conn = _pg_conn()
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT pick_id, pick_date, player_name, team, stat_type, prop_line, "
+                "direction, platform, confidence_score, probability_over, edge_percentage, "
+                "tier, result, actual_value, notes, bet_type, std_devs_from_line, is_risky "
+                "FROM all_analysis_picks "
+                "WHERE pick_date = %s "
+                "ORDER BY confidence_score DESC",
+                (today_str,),
+            )
+            cols = [d[0] for d in cur.description]
+            rows = [dict(zip(cols, row)) for row in cur.fetchall()]
+            conn.close()
+            return rows
+        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False, timeout=10) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                "SELECT * FROM all_analysis_picks "
+                "WHERE pick_date = ? "
+                "ORDER BY confidence_score DESC",
+                (today_str,),
+            ).fetchall()
+            return [dict(r) for r in rows]
+    except Exception as exc:
+        _logger.debug("get_slate_picks_for_today failed: %s", exc)
+        return []
+
+# ============================================================
+# END SECTION: Slate Worker Integration
 # ============================================================
 
 # ============================================================

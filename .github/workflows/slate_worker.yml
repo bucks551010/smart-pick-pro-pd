@@ -1,0 +1,67 @@
+name: Slate Worker — Tonight's Picks Pipeline
+
+# Runs slate_worker.py on a frequent schedule so the DB always has
+# tonight's pre-computed picks ready before users log in.
+#
+# Schedule window: ~12 PM ET → 1 AM ET every day (NBA game coverage).
+# Two cron blocks cover the window across midnight UTC:
+#   Block A: 16:00–23:30 UTC  (12 PM–7:30 PM ET)
+#   Block B: 00:00–05:30 UTC  (8 PM–1:30 AM ET, next UTC day)
+# Each fires every 30 minutes.
+#
+# Required repository secrets (Settings → Secrets → Actions):
+#   DATABASE_URL   — Railway PostgreSQL connection string
+#   ODDS_API_KEY   — (optional) The Odds API key for DK enrichment
+
+on:
+  schedule:
+    # Block A — every 30 min, 12 PM–7:30 PM ET (16:00–23:30 UTC)
+    - cron: "0,30 16-23 * * *"
+    # Block B — every 30 min, 8 PM–1:30 AM ET (00:00–05:30 UTC, next day)
+    - cron: "0,30 0-5 * * *"
+  workflow_dispatch:          # Manual trigger from GitHub UI
+    inputs:
+      dry_run:
+        description: "Dry run (analyse but skip DB writes)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+jobs:
+  slate:
+    name: Run slate_worker.py
+    runs-on: ubuntu-latest
+    timeout-minutes: 20       # hard kill if pipeline hangs
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run slate worker
+        run: |
+          DRY_FLAG=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            DRY_FLAG="--dry-run"
+            echo "DRY RUN mode — no DB writes."
+          fi
+          python slate_worker.py $DRY_FLAG
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          QAM_SIM_DEPTH: "1000"
+          SLATE_WORKER_LOG: "INFO"
+          LOG_LEVEL: "INFO"

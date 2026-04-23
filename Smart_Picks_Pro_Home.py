@@ -194,167 +194,51 @@ except Exception:
     pass
 
 # ─── Auto-seed picks & props into session on first load ───────
+# Reads ONLY from the database (pre-populated by slate_worker.py).
+# Never calls external APIs or runs analysis — instant for the user.
+@st.cache_data(ttl=300, show_spinner=False)
+def _load_cached_slate() -> tuple[list, list]:
+    """Read today's pre-computed picks + props from the DB.
+
+    Wrapped in @st.cache_data(ttl=300) so concurrent logins share a
+    single DB round-trip for up to 5 minutes, preventing thundering-herd
+    hammering during peak evening traffic.
+
+    Returns:
+        (picks, props) — both may be empty lists if the worker hasn't run
+        yet for today.
+    """
+    from tracking.database import get_slate_picks_for_today
+    from data.data_manager import load_platform_props_from_csv as _lpc
+    picks = get_slate_picks_for_today()
+    try:
+        props = _lpc() or []
+    except Exception:
+        props = []
+    return picks, props
+
 if not st.session_state.get("_picks_seeded"):
     st.session_state["_picks_seeded"] = True
     try:
-        # 1) Seed props from live_props.csv → session state
-        from data.data_manager import load_platform_props_from_csv as _load_csv_props
-        _csv_props = _load_csv_props()
-        if _csv_props:
-            st.session_state.setdefault("current_props", _csv_props)
-            st.session_state.setdefault("platform_props", _csv_props)
-    except Exception:
-        pass
-    try:
-        # 2) Seed analysis picks from DB/cache → session state
-        from tracking.database import initialize_database as _init_db, _nba_today_iso as _today_iso2
-        _init_db()
-        import sqlite3 as _sq2
-        from pathlib import Path as _P2
-        _db2 = _P2(os.environ.get(
-            "DB_DIR", str(_P2(__file__).resolve().parent / "db")
-        )) / "smartpicks.db"
-        # Use NBA ET-anchored date (not UTC server date) so Railway doesn't
-        # query the wrong day when it's after midnight UTC but still the
-        # previous NBA day in Eastern Time.
-        _today2 = _today_iso2()
-        if _db2.exists():
-            _conn2 = _sq2.connect(str(_db2), check_same_thread=False)
-            _conn2.row_factory = _sq2.Row
-            _rows2 = _conn2.execute(
-                "SELECT * FROM all_analysis_picks WHERE pick_date = ? "
-                "ORDER BY confidence_score DESC",
-                (_today2,),
-            ).fetchall()
-            _conn2.close()
-            if _rows2:
-                _picks2 = [dict(r) for r in _rows2]
-                if not st.session_state.get("analysis_results"):
-                    st.session_state["analysis_results"] = _picks2
-        # Fallback: cache/latest_picks.json — only if it contains TODAY's picks.
-        # Never seed yesterday's cached picks as today's results; that would
-        # show stale data across the entire app.
-        if not st.session_state.get("analysis_results"):
-            import json as _j2
-            _cache2 = _P2(__file__).resolve().parent / "cache" / "latest_picks.json"
-            if _cache2.exists():
-                _cdata = _j2.loads(_cache2.read_text(encoding="utf-8"))
-                if _cdata.get("date") == _today2:
-                    _cpicks = _cdata.get("picks", [])
-                    if _cpicks:
-                        st.session_state["analysis_results"] = _cpicks
+        _cached_picks, _cached_props = _load_cached_slate()
+        if _cached_props:
+            st.session_state.setdefault("current_props", _cached_props)
+            st.session_state.setdefault("platform_props", _cached_props)
+        if _cached_picks and not st.session_state.get("analysis_results"):
+            st.session_state["analysis_results"] = _cached_picks
     except Exception:
         pass
 
-# ─── Auto-init: silently load slate + run analysis on login ────────────────
-# Fires exactly once per NBA day (Eastern Time) when no analysis exists in
-# session state after the DB restore above.  Covers the "user just signed in
-# on a fresh day" case so they immediately see picks without pressing anything.
+# ─── No picks yet — slate_worker hasn't run today ─────────────────────────
+# Show a non-blocking info banner instead of triggering a live pipeline run.
+# The etl.scheduler daemon (already running) will populate picks within its
+# next cycle; or an admin can trigger slate_worker.py manually.
 if not st.session_state.get("analysis_results"):
-    try:
-        from zoneinfo import ZoneInfo as _ZI_ai
-        import datetime as _dt_ai
-        _ai_today = _dt_ai.datetime.now(_ZI_ai("America/New_York")).date().isoformat()
-    except Exception:
-        import datetime as _dt_ai
-        _ai_today = _dt_ai.date.today().isoformat()
-
-    if st.session_state.get("_auto_init_date") != _ai_today:
-        st.session_state["_auto_init_date"] = _ai_today  # mark attempted immediately
-
-        _ai_placeholder = st.empty()
-        # Use a minimal styled banner so it renders with the already-injected
-        # dark theme instead of the bare Streamlit default styling.
-        _ai_placeholder.markdown(
-            "<div style='padding:12px 18px;background:rgba(0,213,89,0.07);"
-            "border:1px solid rgba(0,213,89,0.25);border-radius:10px;"
-            "color:#00D559;font-size:0.88rem;font-weight:600;'>"
-            "⚡ Loading tonight's slate &amp; running analysis…</div>",
-            unsafe_allow_html=True,
-        )
-
-        try:
-            # ── Phase 1: Games & rosters ──────────────────────────────────
-            from data.nba_data_service import (
-                get_todays_games as _ai_fg,
-                get_todays_players as _ai_fp,
-            )
-            _ai_games = st.session_state.get("todays_games") or _ai_fg()
-            if _ai_games:
-                st.session_state["todays_games"] = _ai_games
-                _ai_fp(_ai_games)
-                try:
-                    from data.data_manager import load_injury_status as _ai_li, clear_all_caches as _ai_cc
-                    _ai_cc()
-                    st.session_state["injury_status_map"] = _ai_li()
-                except Exception:
-                    pass
-
-            # ── Phase 2: Live props (only if empty) ───────────────────────
-            if not st.session_state.get("current_props"):
-                from data.sportsbook_service import get_all_sportsbook_props as _ai_fap
-                from data.data_manager import (
-                    save_props_to_session as _ai_sps,
-                    save_platform_props_to_session as _ai_spps,
-                    save_platform_props_to_csv as _ai_csv,
-                )
-                _ai_live = _ai_fap(
-                    odds_api_key=st.session_state.get("odds_api_key") or None
-                )
-                if _ai_live:
-                    _ai_sps(_ai_live, st.session_state)
-                    _ai_spps(_ai_live, st.session_state)
-                    try:
-                        _ai_csv(_ai_live)
-                    except Exception:
-                        pass
-
-            # ── Phase 3: Run Neural Analysis ─────────────────────────────
-            from data.data_manager import (
-                load_props_from_session as _ai_lps,
-                load_players_data as _ai_lpd,
-                load_teams_data as _ai_ltd,
-                load_defensive_ratings_data as _ai_ldr,
-            )
-            from engine.analysis_orchestrator import analyze_props_batch as _ai_analyze
-
-            _ai_props      = _ai_lps(st.session_state)
-            _ai_players    = _ai_lpd()
-            _ai_teams      = _ai_ltd()
-            _ai_def_rtgs   = _ai_ldr()
-            _ai_games_sess = st.session_state.get("todays_games", [])
-
-            if _ai_props and _ai_players:
-                _ai_results = _ai_analyze(
-                    _ai_props,
-                    players_data=_ai_players,
-                    todays_games=_ai_games_sess,
-                    injury_map=st.session_state.get("injury_status_map", {}),
-                    defensive_ratings_data=_ai_def_rtgs,
-                    teams_data=_ai_teams,
-                    simulation_depth=1000,
-                )
-                if _ai_results:
-                    st.session_state["analysis_results"] = _ai_results
-                    import datetime as _dt_ai2
-                    st.session_state["analysis_timestamp"] = _dt_ai2.datetime.now()
-                    try:
-                        from tracking.database import (
-                            save_analysis_session as _ai_sas,
-                            insert_analysis_picks as _ai_iap,
-                        )
-                        _ai_sas(
-                            analysis_results=_ai_results,
-                            todays_games=_ai_games_sess,
-                            selected_picks=st.session_state.get("selected_picks", []),
-                        )
-                        _ai_iap(_ai_results)
-                    except Exception:
-                        pass
-        except Exception:
-            pass  # non-fatal — user can still trigger manually
-
-        _ai_placeholder.empty()
+    st.info(
+        "⏳ Tonight's slate analysis is being prepared in the background. "
+        "Picks will appear automatically within a few minutes — no action needed.",
+        icon="🔄",
+    )
 
 # ─── Landing Page Theme CSS — page-level overrides ───────────
 from styles.theme import get_home_page_css as _get_home_page_css

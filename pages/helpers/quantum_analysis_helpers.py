@@ -1093,7 +1093,7 @@ def _render_game_group_label(matchup: str, meta: dict) -> str:
         away_rec_html = f' <span class="espn-parlay-team-rec">({away_rec})</span>' if away_rec else ""
         home_rec_html = f' <span class="espn-parlay-team-rec">({home_rec})</span>' if home_rec else ""
 
-        _onerror_logo = f'this.onerror=null;this.src="{_NBA_LOGO_FALLBACK}"'
+        _onerror_logo = f"this.onerror=null;this.src='{_NBA_LOGO_FALLBACK}'"
         return (
             f'<div class="espn-parlay-matchup">'
             f'<div class="espn-parlay-team">'
@@ -1107,7 +1107,7 @@ def _render_game_group_label(matchup: str, meta: dict) -> str:
             f'<div class="espn-parlay-team">'
             f'<img class="espn-parlay-team-logo" '
             f'src="{home_logo}" alt="{safe_home}" '
-            f'onerror="{_onerror_logo}">'
+            f'onerror="{_onerror_logo}">' 
             f'<span class="espn-parlay-team-name" style="color:{home_color};">{safe_home}</span>'
             f'{home_rec_html}'
             f'</div>'
@@ -1302,7 +1302,7 @@ def render_game_matchup_card_html(
     home_logo = _safe_logo_url(home_team)
     safe_away = _html.escape(str(away_team))
     safe_home = _html.escape(str(home_team))
-    _onerror_logo_qam = f'this.onerror=null;this.src="{_NBA_LOGO_FALLBACK}"'
+    _onerror_logo_qam = f"this.onerror=null;this.src='{_NBA_LOGO_FALLBACK}'"
     safe_away_rec = _html.escape(str(away_record)) if away_record else ""
     safe_home_rec = _html.escape(str(home_record)) if home_record else ""
 

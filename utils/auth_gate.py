@@ -7938,25 +7938,6 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 .pr-save-txt{font-family:'Space Grotesk',sans-serif;font-size:0.95rem;font-weight:700;color:rgba(255,255,255,0.6);margin:0}
 .pr-save-sub{font-size:0.72rem;color:rgba(255,255,255,0.28);margin:8px 0 0;line-height:1.6}
 
-/* ── Insider CTA ── */
-.pr-insider{background:linear-gradient(135deg,rgba(192,132,252,0.08) 0%,rgba(147,51,234,0.04) 100%);border:1.5px solid rgba(192,132,252,0.2);border-radius:24px;padding:36px 28px;text-align:center;position:relative;overflow:hidden;animation:prFadeUp 0.8s ease 0.7s both}
-.pr-insider::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#c084fc,#9333ea,transparent);background-size:200% 100%;animation:prShimmer 3s ease infinite}
-.pr-insider::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(192,132,252,0.06),transparent 60%);pointer-events:none}
-.pr-ins-badge{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:0.6rem;font-weight:800;color:#c084fc;background:rgba(192,132,252,0.08);border:1px solid rgba(192,132,252,0.15);padding:5px 16px;border-radius:100px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;position:relative}
-.pr-ins-badge .dot{width:6px;height:6px;border-radius:50%;background:#c084fc;animation:prGlow 2s ease infinite}
-.pr-ins-h{font-family:'Space Grotesk',sans-serif;font-size:1.3rem;font-weight:800;color:#fff;margin:0 0 6px;position:relative}
-.pr-ins-seats{font-family:'JetBrains Mono',monospace;font-size:3rem;font-weight:800;margin:8px 0;position:relative;animation:prSeatPulse 3s ease infinite}
-.pr-ins-seats .of{font-size:0.9rem;font-weight:500;color:rgba(255,255,255,0.25)}
-.pr-ins-sub{font-size:0.72rem;color:rgba(255,255,255,0.3);margin:0 0 16px;line-height:1.6;max-width:400px;margin-left:auto;margin-right:auto;position:relative}
-.pr-ins-price{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:0.88rem;font-weight:800;color:#c084fc;background:rgba(192,132,252,0.08);border:1.5px solid rgba(192,132,252,0.2);padding:8px 24px;border-radius:100px;position:relative;transition:all 0.3s}
-.pr-ins-price:hover{background:rgba(192,132,252,0.15);border-color:rgba(192,132,252,0.4);box-shadow:0 8px 32px rgba(192,132,252,0.15);transform:translateY(-2px)}
-.pr-ins-bar{margin-top:18px;position:relative}
-.pr-ins-track{height:6px;background:rgba(255,255,255,0.04);border-radius:100px;overflow:hidden}
-.pr-ins-fill{height:100%;width:84%;background:linear-gradient(90deg,#c084fc,#9333ea);border-radius:100px;position:relative}
-.pr-ins-fill::after{content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:#c084fc;box-shadow:0 0 12px rgba(192,132,252,0.5)}
-.pr-ins-labels{display:flex;justify-content:space-between;margin-top:6px}
-.pr-ins-labels span{font-family:'JetBrains Mono',monospace;font-size:0.5rem;color:rgba(255,255,255,0.15)}
-
 /* ── Responsive ── */
 @media(max-width:900px){
   .pr-grid{grid-template-columns:repeat(2,1fr)}
@@ -7966,9 +7947,7 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
   .pr-grid{grid-template-columns:1fr}
   .pr-head h2{font-size:1.8rem}
   .tc2{padding:24px 16px 20px}
-  .pr-ins-seats{font-size:2.2rem}
   .pr-save{padding:22px 16px}
-  .pr-insider{padding:28px 18px}
   .pr-head p{font-size:.85rem}
 }
 @media(max-width:380px){
@@ -7978,9 +7957,6 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
   .tc2-name{font-size:.82rem}
   .pr-save-big{font-size:1.8rem}
   .pr-save-txt{font-size:.82rem}
-  .pr-ins-h{font-size:1.1rem}
-  .pr-ins-seats{font-size:1.8rem}
-  .pr-insider{padding:22px 14px;border-radius:18px}
   .pr-save{padding:18px 12px;border-radius:16px}
 }
 </style>
@@ -8100,18 +8076,6 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
   <p class="pr-save-sub">Smart Pick Pro gives you more features, more AI, more props &mdash; for <strong style="color:#00D559;">$0</strong>. Do the math.</p>
 </div>
 
-<!-- Insider urgency -->
-<div class="pr-insider">
-  <div class="pr-ins-badge"><span class="dot"></span> LIMITED AVAILABILITY</div>
-  <div class="pr-ins-h">Founding Member Seats Are Going Fast</div>
-  <div class="pr-ins-seats">12 <span class="of">of 75 remaining</span></div>
-  <div class="pr-ins-sub">Once all 75 seats are claimed, Insider Circle closes permanently. Lifetime access &mdash; one payment, never pay again.</div>
-  <div class="pr-ins-price">&#x1F451; $499.99 &middot; Lifetime</div>
-  <div class="pr-ins-bar">
-    <div class="pr-ins-track"><div class="pr-ins-fill"></div></div>
-    <div class="pr-ins-labels"><span>0 claimed</span><span>63 claimed</span><span>75 total</span></div>
-  </div>
-</div>
 """)
 
     # ── Subscription Purchase Section ─────────────────────────

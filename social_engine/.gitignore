@@ -1,0 +1,7 @@
+# ── Social Engine ignores ──
+.env
+_out/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/

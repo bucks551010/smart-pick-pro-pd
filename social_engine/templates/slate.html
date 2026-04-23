@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>{{ title }}</title>
+<style>{{ base_css }}</style>
+</head>
+<body>
+<div class="poster">
+
+  <!-- Anti-theft watermark -->
+  <div class="watermark" aria-hidden="true">
+    {% for _ in range(40) %}<span>{{ watermark_text }}</span>{% endfor %}
+  </div>
+
+  <header class="hdr">
+    <div class="brand">
+      <div class="brand-mark">SP</div>
+      <div>
+        <div class="eyebrow">{{ eyebrow }}</div>
+        <div>SMART PICK PRO</div>
+      </div>
+    </div>
+    <div class="date-pill">📅 {{ date_str }}</div>
+  </header>
+
+  <h1 class="title">{{ title }}</h1>
+  <div class="subtitle">{{ subtitle }}</div>
+
+  <div class="grid cols-{{ cols|default(1) }}">
+    {% for p in picks %}
+    <div class="pick">
+      <div class="pick-row">
+        <div>
+          <div class="pick-player">{{ p.player_name }}</div>
+          <div class="pick-team">{{ p.team }} {% if p.opponent %}vs {{ p.opponent }}{% endif %}</div>
+        </div>
+        {% if p.tier %}<div class="tier-badge tier-{{ p.tier|lower }}">{{ p.tier }}</div>{% endif %}
+      </div>
+      <div class="pick-row">
+        <div class="pick-line dir-{{ p.direction|lower }}">
+          {{ p.direction }} {{ "%.1f"|format(p.prop_line) }} {{ p.stat_type }}
+        </div>
+        {% if p.platform %}<div class="pick-team">{{ p.platform }}</div>{% endif %}
+      </div>
+      <div class="confidence">
+        <div class="conf-bar"><div class="conf-fill" style="width: {{ p.confidence_score }}%"></div></div>
+        <div>{{ "%.0f"|format(p.confidence_score) }}%{% if p.edge_pct %} • {{ "%.1f"|format(p.edge_pct) }}% edge{% endif %}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <footer class="footer">
+    <div class="compliance">{{ compliance_footer }}</div>
+    <div class="qr">
+      <img src="{{ qr_data_uri }}" alt="QR" />
+      <div class="qr-cap">SCAN FOR FREE PICKS</div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

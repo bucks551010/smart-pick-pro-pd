@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>{{ title }}</title>
+<style>{{ base_css }}</style>
+</head>
+<body>
+<div class="poster">
+  <div class="watermark" aria-hidden="true">
+    {% for _ in range(40) %}<span>{{ watermark_text }}</span>{% endfor %}
+  </div>
+
+  <header class="hdr">
+    <div class="brand">
+      <div class="brand-mark">SP</div>
+      <div>
+        <div class="eyebrow">JOIN THE EDGE</div>
+        <div>SMART PICK PRO</div>
+      </div>
+    </div>
+    <div class="date-pill">{{ tagline|default("Quantitative NBA Analytics") }}</div>
+  </header>
+
+  <div class="cta-hero">
+    <div class="cta-headline">{{ headline }}</div>
+    <div class="cta-sub">{{ subheadline }}</div>
+    <div class="cta-button">{{ button_text|default("→ START FREE TRIAL") }}</div>
+  </div>
+
+  <footer class="footer">
+    <div class="compliance">{{ compliance_footer }}</div>
+    <div class="qr">
+      <img src="{{ qr_data_uri }}" alt="QR" />
+      <div class="qr-cap">SCAN TO JOIN</div>
+    </div>
+  </footer>
+</div>
+</body>
+</html>

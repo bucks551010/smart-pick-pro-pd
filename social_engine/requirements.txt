@@ -1,0 +1,30 @@
+# ── Streamlit UI ─────────────────────────────────────────────
+streamlit==1.40.1
+python-dotenv==1.0.1
+
+# ── Templating + Rendering ───────────────────────────────────
+Jinja2==3.1.4
+playwright==1.49.1
+qrcode[pil]==8.0
+Pillow==10.4.0
+
+# ── LLM (free tier) ──────────────────────────────────────────
+google-generativeai==0.8.3
+
+# ── Distributors ─────────────────────────────────────────────
+tweepy==4.14.0
+requests==2.32.3
+# Meta Graph API + TikTok use plain `requests` — no SDK needed
+
+# ── Scheduler + Webhook ──────────────────────────────────────
+apscheduler==3.10.4
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+
+# ── Database (shared with main app) ──────────────────────────
+psycopg2-binary==2.9.10
+SQLAlchemy==2.0.35
+
+# ── Utilities ────────────────────────────────────────────────
+pydantic==2.10.3
+python-multipart==0.0.17

@@ -4228,7 +4228,7 @@ def _render_auth_portal(mode: str, logo_b64: str) -> None:
 
     logo_html = (
         f'<img src="data:image/png;base64,{logo_b64}" '
-        'style="width:72px;height:72px;object-fit:contain;'
+        'style="width:360px;height:360px;object-fit:contain;'
         'animation:agLogoGlow 4s ease-in-out infinite;" alt="Smart Pick Pro">'
         if logo_b64
         else '<span style="font-size:3.5rem">&#x1F3AF;</span>'
@@ -4579,7 +4579,7 @@ def _render_auth_portal(mode: str, logo_b64: str) -> None:
 
     logo_html = (
         f'<img src="data:image/png;base64,{logo_b64}" '
-        'style="width:72px;height:72px;object-fit:contain;'
+        'style="width:360px;height:360px;object-fit:contain;'
         'animation:agLogoGlow 4s ease-in-out infinite;" alt="Smart Pick Pro">'
         if logo_b64
         else '<span style="font-size:3.5rem">&#x1F3AF;</span>'

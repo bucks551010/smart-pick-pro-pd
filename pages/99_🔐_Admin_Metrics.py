@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: pages/99_🔐_Admin_Metrics.py
 # PURPOSE: Hidden admin-only observability dashboard.
 #
@@ -70,19 +70,341 @@ except ImportError:
     pass  # autorefresh is optional
 
 # ─────────────────────────────────────────────────────────
-st.title("🔐 Admin Metrics Dashboard")
-st.caption(f"Last refreshed: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+# ── Elite Admin Dashboard CSS ────────────────────────────
+st.markdown("""
+<style>
+/* ═══════════════════════════════════════════════
+   ADMIN DASHBOARD — ELITE DARK THEME
+   Color palette:
+     --bg-base:    #0a0d14   (deep navy black)
+     --bg-card:    #0f1420   (card surface)
+     --bg-glass:   rgba(15,20,40,0.85)
+     --accent-1:   #2D9EFF   (electric blue)
+     --accent-2:   #F9C62B   (gold)
+     --accent-3:   #00D559   (green)
+     --accent-4:   #B06EFF   (violet)
+     --danger:     #F24336
+     --text-hi:    #f0f4ff
+     --text-lo:    #7a8499
+═══════════════════════════════════════════════ */
+
+/* ── Page background ─────────────────────────── */
+[data-testid="stAppViewContainer"] > .main {
+    background: radial-gradient(ellipse at 20% 0%, rgba(45,158,255,0.08) 0%, transparent 55%),
+                radial-gradient(ellipse at 80% 100%, rgba(176,110,255,0.07) 0%, transparent 55%),
+                #0a0d14 !important;
+}
+[data-testid="stSidebar"] {
+    background: #070a10 !important;
+    border-right: 1px solid rgba(45,158,255,0.12) !important;
+}
+
+/* ── Block container padding ─────────────────── */
+.block-container { padding-top: 0 !important; max-width: 1400px !important; }
+
+/* ── Hero header ─────────────────────────────── */
+.adm-hero {
+    background: linear-gradient(135deg, #0f1928 0%, #0a0d14 40%, #0d1020 100%);
+    border: 1px solid rgba(45,158,255,0.18);
+    border-radius: 16px;
+    padding: 28px 36px 20px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+}
+.adm-hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #2D9EFF 0%, #B06EFF 50%, #00D559 100%);
+}
+.adm-hero-title {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #f0f4ff;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.adm-hero-sub {
+    font-size: 0.82rem;
+    color: #7a8499;
+    margin: 0 0 18px;
+    letter-spacing: 0.4px;
+}
+.adm-hero-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.adm-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 11px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.adm-badge-blue  { background: rgba(45,158,255,0.12); color: #2D9EFF; border: 1px solid rgba(45,158,255,0.25); }
+.adm-badge-gold  { background: rgba(249,198,43,0.12); color: #F9C62B; border: 1px solid rgba(249,198,43,0.25); }
+.adm-badge-green { background: rgba(0,213,89,0.10);   color: #00D559; border: 1px solid rgba(0,213,89,0.22); }
+.adm-badge-red   { background: rgba(242,67,54,0.10);  color: #F24336; border: 1px solid rgba(242,67,54,0.22); }
+.adm-badge-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor;
+    animation: adm-pulse 2s ease-in-out infinite;
+}
+@keyframes adm-pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:0.4; transform:scale(0.7); }
+}
+
+/* ── Section headers ─────────────────────────── */
+.adm-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0 8px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(45,158,255,0.1);
+}
+.adm-section-accent {
+    width: 4px;
+    height: 22px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #2D9EFF, #B06EFF);
+    flex-shrink: 0;
+}
+.adm-section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #f0f4ff;
+    margin: 0;
+    letter-spacing: -0.2px;
+}
+.adm-section-sub {
+    font-size: 0.75rem;
+    color: #7a8499;
+    margin-left: auto;
+}
+
+/* ── KPI metric cards ─────────────────────────── */
+[data-testid="stMetric"] {
+    background: linear-gradient(135deg, rgba(15,20,40,0.9) 0%, rgba(10,13,20,0.95) 100%) !important;
+    border: 1px solid rgba(45,158,255,0.12) !important;
+    border-radius: 12px !important;
+    padding: 16px 20px 14px !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transition: border-color 0.2s, transform 0.15s !important;
+}
+[data-testid="stMetric"]:hover {
+    border-color: rgba(45,158,255,0.32) !important;
+    transform: translateY(-1px) !important;
+}
+[data-testid="stMetric"]::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(45,158,255,0.4), transparent);
+}
+[data-testid="stMetricLabel"] {
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.7px !important;
+    color: #7a8499 !important;
+}
+[data-testid="stMetricValue"] {
+    font-size: 1.65rem !important;
+    font-weight: 800 !important;
+    color: #f0f4ff !important;
+    line-height: 1.15 !important;
+}
+[data-testid="stMetricDelta"] { font-size: 0.78rem !important; }
+
+/* ── Dividers ─────────────────────────────────── */
+hr {
+    border: none !important;
+    height: 1px !important;
+    background: linear-gradient(90deg, transparent, rgba(45,158,255,0.18), rgba(176,110,255,0.12), transparent) !important;
+    margin: 28px 0 !important;
+}
+
+/* ── Expanders ────────────────────────────────── */
+[data-testid="stExpander"] {
+    background: rgba(15,20,40,0.6) !important;
+    border: 1px solid rgba(45,158,255,0.1) !important;
+    border-radius: 10px !important;
+    margin-bottom: 8px !important;
+    overflow: hidden !important;
+}
+[data-testid="stExpander"]:hover {
+    border-color: rgba(45,158,255,0.22) !important;
+}
+[data-testid="stExpanderToggleIcon"] { color: #2D9EFF !important; }
+
+/* ── Dataframes ───────────────────────────────── */
+[data-testid="stDataFrame"] {
+    border: 1px solid rgba(45,158,255,0.1) !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+}
+
+/* ── Buttons ──────────────────────────────────── */
+[data-testid="stButton"] > button,
+button[kind="primary"] {
+    background: linear-gradient(135deg, #1a4a8a, #2D9EFF) !important;
+    border: 1px solid rgba(45,158,255,0.4) !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.3px !important;
+    border-radius: 8px !important;
+    transition: all 0.2s !important;
+}
+[data-testid="stButton"] > button:hover {
+    background: linear-gradient(135deg, #2D9EFF, #5bb5ff) !important;
+    border-color: #2D9EFF !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 14px rgba(45,158,255,0.3) !important;
+}
+
+/* ── Select/input fields ──────────────────────── */
+[data-testid="stSelectbox"] > div > div,
+[data-testid="stTextInput"] > div > div > input {
+    background: rgba(15,20,40,0.8) !important;
+    border-color: rgba(45,158,255,0.2) !important;
+    color: #f0f4ff !important;
+    border-radius: 8px !important;
+}
+
+/* ── Info / warning / success boxes ──────────── */
+[data-testid="stAlert"] {
+    border-radius: 10px !important;
+    border-left-width: 4px !important;
+}
+
+/* ── Download buttons ─────────────────────────── */
+[data-testid="stDownloadButton"] > button {
+    background: rgba(0,213,89,0.1) !important;
+    border: 1px solid rgba(0,213,89,0.3) !important;
+    color: #00D559 !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    transition: all 0.2s !important;
+}
+[data-testid="stDownloadButton"] > button:hover {
+    background: rgba(0,213,89,0.18) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0,213,89,0.2) !important;
+}
+
+/* ── Tab nav ──────────────────────────────────── */
+[data-testid="stTabs"] [role="tablist"] {
+    border-bottom: 1px solid rgba(45,158,255,0.15) !important;
+    gap: 4px !important;
+}
+[data-testid="stTabs"] [role="tab"] {
+    border-radius: 8px 8px 0 0 !important;
+    color: #7a8499 !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+    transition: color 0.2s !important;
+}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+    color: #2D9EFF !important;
+    border-bottom: 2px solid #2D9EFF !important;
+    background: rgba(45,158,255,0.06) !important;
+}
+
+/* ── Plotly chart containers ─────────────────── */
+.js-plotly-plot {
+    border-radius: 10px !important;
+    overflow: hidden !important;
+}
+
+/* ── Spinner ─────────────────────────────────── */
+[data-testid="stSpinner"] > div { border-top-color: #2D9EFF !important; }
+
+/* ── Caption text ─────────────────────────────── */
+[data-testid="stCaptionContainer"] { color: #7a8499 !important; font-size: 0.78rem !important; }
+
+/* ── Scrollbar ─────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #0a0d14; }
+::-webkit-scrollbar-thumb { background: rgba(45,158,255,0.3); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #2D9EFF; }
+</style>
+""", unsafe_allow_html=True)
+
+# ── Hero header ───────────────────────────────────────────
+_refresh_ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
+st.markdown(f"""
+<div class="adm-hero">
+  <div class="adm-hero-title">🔐 Admin Operations Center</div>
+  <div class="adm-hero-sub">Smart Pick Pro · Internal Observability Dashboard · {_refresh_ts}</div>
+  <div class="adm-hero-badges">
+    <span class="adm-badge adm-badge-green"><span class="adm-badge-dot"></span>Live</span>
+    <span class="adm-badge adm-badge-blue">18 Metric Sections</span>
+    <span class="adm-badge adm-badge-gold">Insider Circle Access</span>
+    <span class="adm-badge adm-badge-red">🔒 Admin Only</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 _7D_AGO  = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(timespec="seconds")
 _14D_AGO = (datetime.now(timezone.utc) - timedelta(days=14)).isoformat(timespec="seconds")
 _1H_AGO  = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(timespec="seconds")
+
+# ── Quick-nav pill bar ────────────────────────────────────
+st.markdown("""
+<style>
+.adm-nav { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px; }
+.adm-nav a {
+    display:inline-block; padding:4px 13px;
+    background:rgba(45,158,255,0.06);
+    border:1px solid rgba(45,158,255,0.15);
+    border-radius:20px; color:#7a9ec8;
+    font-size:0.72rem; font-weight:600;
+    text-decoration:none; letter-spacing:0.3px;
+    transition:all 0.15s;
+}
+.adm-nav a:hover { background:rgba(45,158,255,0.14); color:#2D9EFF; border-color:rgba(45,158,255,0.35); }
+</style>
+<div class="adm-nav">
+  <a href="#sys">🖥️ System</a>
+  <a href="#features">📊 Features</a>
+  <a href="#perf">⚡ Performance</a>
+  <a href="#errors">🚨 Errors</a>
+  <a href="#sessions">🌍 Sessions</a>
+  <a href="#analytics">📣 Analytics</a>
+  <a href="#users">👥 Users</a>
+  <a href="#model">🧠 Model</a>
+  <a href="#business">💰 Business</a>
+  <a href="#bets">📊 Bets</a>
+  <a href="#security">🔐 Security</a>
+  <a href="#infra">🏗️ Infra</a>
+  <a href="#freshness">📡 Freshness</a>
+  <a href="#deepmodel">🔬 Deep Model</a>
+  <a href="#engagement">📈 Engagement</a>
+  <a href="#revenue">💳 Revenue</a>
+  <a href="#ops">🚨 Ops</a>
+</div>
+""", unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════
 # ROW 1 — System Resource KPIs
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("🖥️ System Resources")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">🖥️ System Resources</div><span class="adm-section-sub">CPU · Memory · Disk · Sessions</span></div>', unsafe_allow_html=True)
 
 if _HAS_PSUTIL:
     cpu_pct    = psutil.cpu_percent(interval=0.5)
@@ -128,7 +450,7 @@ st.divider()
 # ROW 2 — Feature Usage Heatmap (last 7 days)
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("📊 Feature Utilisation — Last 7 Days")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">📊 Feature Utilisation</div><span class="adm-section-sub">Last 7 days</span></div>', unsafe_allow_html=True)
 
 feature_rows = query_telemetry(
     """
@@ -180,7 +502,7 @@ st.divider()
 # ROW 3 — Execution Performance (p50 / p95 / p99)
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("⚡ Execution Performance — Last 7 Days")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">⚡ Execution Performance</div><span class="adm-section-sub">p50 · p95 · p99 latency — Last 7 days</span></div>', unsafe_allow_html=True)
 
 timing_rows = query_telemetry(
     """
@@ -272,7 +594,7 @@ st.divider()
 # ROW 4 — Error Rate Over Time (last 14 days)
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("🚨 Error Rate — Last 14 Days")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">🚨 Error Rate</div><span class="adm-section-sub">Daily error count by type — Last 14 days</span></div>', unsafe_allow_html=True)
 
 error_daily = query_telemetry(
     """
@@ -343,7 +665,7 @@ st.divider()
 # ROW 5 — Recent Error Log (searchable)
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("📋 Recent Error Log")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">📋 Recent Error Log</div><span class="adm-section-sub">Last 50 exceptions · searchable</span></div>', unsafe_allow_html=True)
 
 with st.expander("Show last 50 errors", expanded=False):
     search_term = st.text_input("Filter by error type or context", key="_admin_err_search")
@@ -375,7 +697,7 @@ st.divider()
 # ROW 6 — User Geography (hashed, PII-free)
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("🌍 Active User Sessions — Geography (approximate)")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">🌍 Active Sessions by Page</div><span class="adm-section-sub">PII-free · last 60 min</span></div>', unsafe_allow_html=True)
 st.caption(
     "User emails are one-way hashed before storage.  "
     "Geography is inferred from the hashed session ID prefix only — "
@@ -410,7 +732,7 @@ st.divider()
 # ROW 7 — Website Analytics (analytics_events table)
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("📣 Website Analytics")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">📣 Website Analytics</div><span class="adm-section-sub">GA4 events · page views · top pages</span></div>', unsafe_allow_html=True)
 st.caption("Server-side events from `analytics_events`. Complements GA4 with full server visibility.")
 
 _ana_days = st.select_slider(
@@ -555,7 +877,7 @@ st.divider()
 # ROW 8 — User Management
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("👥 User Management")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">👥 User Management</div><span class="adm-section-sub">Tiers · roster · overrides · account controls</span></div>', unsafe_allow_html=True)
 
 try:
     from tracking.database import get_database_connection as _gdc, _execute_write as _ew
@@ -724,7 +1046,7 @@ st.divider()
 # ROW 9 — Prediction / Model Health
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("🧠 Prediction / Model Health")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">🧠 Prediction / Model Health</div><span class="adm-section-sub">Calibration · hit rate · confidence · daily snapshots</span></div>', unsafe_allow_html=True)
 
 try:
     from tracking.database import get_calibration_report as _gcr, load_daily_snapshots as _lds
@@ -837,7 +1159,7 @@ st.divider()
 # ROW 10 — Business Metrics
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("💰 Business Metrics")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">💰 Business Metrics</div><span class="adm-section-sub">MRR · Stripe · churn risk · funnel</span></div>', unsafe_allow_html=True)
 
 _TIER_PRICES = {
     "free": 0.0,
@@ -920,7 +1242,7 @@ st.divider()
 # ROW 11 — Bet Tracker Aggregate
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("📊 Bet Tracker Aggregate")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">📊 Bet Tracker Aggregate</div><span class="adm-section-sub">All users · platform breakdown · win rates</span></div>', unsafe_allow_html=True)
 
 try:
     from tracking.database import get_performance_summary as _gps, get_rolling_stats as _grs
@@ -1034,7 +1356,7 @@ st.divider()
 # ROW 12 — Security / Audit Log
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("🔐 Security & Audit Log")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">🔐 Security & Audit Log</div><span class="adm-section-sub">Failed logins · resets · permission denials · bet audit</span></div>', unsafe_allow_html=True)
 
 try:
     from tracking.database import get_database_connection as _gdc4
@@ -1130,7 +1452,7 @@ st.divider()
 # ROW 13 — Infrastructure
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("🏗️ Infrastructure")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">🏗️ Infrastructure</div><span class="adm-section-sub">DB size · table counts · backups · maintenance</span></div>', unsafe_allow_html=True)
 
 try:
     from tracking.database import get_database_connection as _gdc5, DB_FILE_PATH as _DBP
@@ -1217,7 +1539,7 @@ st.divider()
 # ROW 14 — Data Freshness & API Health
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("📡 Data Freshness & API Health")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">📡 Data Freshness & API Health</div><span class="adm-section-sub">Props · games · players · cache staleness · scanner output</span></div>', unsafe_allow_html=True)
 
 try:
     from data.nba_data_service import load_last_updated as _llu
@@ -1362,7 +1684,7 @@ st.divider()
 # ROW 15 — Deeper Model Intelligence
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("🔬 Deeper Model Intelligence")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">🔬 Deeper Model Intelligence</div><span class="adm-section-sub">Backtests · edge dist · confidence · player leaderboard · bias</span></div>', unsafe_allow_html=True)
 
 try:
     from tracking.database import (
@@ -1544,7 +1866,7 @@ st.divider()
 # ROW 16 — User Engagement Depth
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("📈 User Engagement Depth")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">📈 User Engagement Depth</div><span class="adm-section-sub">Active sessions · peak-usage heatmap · page time · scores</span></div>', unsafe_allow_html=True)
 
 try:
     from tracking.database import get_database_connection as _gdc8
@@ -1687,7 +2009,7 @@ st.divider()
 # ROW 17 — Revenue / Subscription Operations
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("💳 Revenue / Subscription Operations")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">💳 Revenue & Subscriptions</div><span class="adm-section-sub">MRR trend · expiring subs · funnel · resets</span></div>', unsafe_allow_html=True)
 
 try:
     from tracking.database import get_database_connection as _gdc9
@@ -1821,7 +2143,7 @@ st.divider()
 # ROW 18 — Operations & Alerts
 # ═══════════════════════════════════════════════════════════
 
-st.subheader("🚨 Operations & Anomaly Alerts")
+st.markdown('<div class="adm-section-header"><div class="adm-section-accent"></div><div class="adm-section-title">🚨 Operations & Anomaly Alerts</div><span class="adm-section-sub">Error spikes · login surges · brute-force · data exports</span></div>', unsafe_allow_html=True)
 
 try:
     from tracking.database import get_database_connection as _gdc10

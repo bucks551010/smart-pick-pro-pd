@@ -105,15 +105,17 @@ PLAYER_CARD_CSS = r"""
 /* ── Horizontal prop scroll strip ───────────────────────────── */
 .pc-props-scroll {
   display: flex; gap: 12px; align-items: flex-start;
+  flex-wrap: nowrap;
   overflow-x: auto; overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
   padding: 10px 2px 16px;
   max-width: 100vw;
-  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent;
+  scrollbar-width: thin; scrollbar-color: rgba(99,102,241,0.60) transparent;
 }
-.pc-props-scroll::-webkit-scrollbar { height: 4px; }
-.pc-props-scroll::-webkit-scrollbar-track { background: transparent; }
-.pc-props-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 2px; }
-.pc-props-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.20); }
+.pc-props-scroll::-webkit-scrollbar { height: 6px; }
+.pc-props-scroll::-webkit-scrollbar-track { background: rgba(99,102,241,0.06); border-radius: 100px; }
+.pc-props-scroll::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.60); border-radius: 100px; }
+.pc-props-scroll::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.85); }
 
 /* ── PP-style prop card (fixed width, expands vertically on click) ── */
 .pc-prop {

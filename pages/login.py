@@ -271,7 +271,7 @@ html, body, .stApp {
     margin-bottom: 32px;
 }
 .spp-form-logo img {
-    width: 68px; height: 68px;
+    width: 100px; height: 100px;
     object-fit: contain;
     animation: agLogoGlow 4s ease-in-out infinite;
 }

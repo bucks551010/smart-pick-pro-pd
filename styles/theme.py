@@ -457,10 +457,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* â”€â”€ Scrollbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: rgba(13,15,20,0.9); }
-::-webkit-scrollbar-thumb { background: rgba(0,213,89,0.25); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0,213,89,0.50); }
+::-webkit-scrollbar { width: 5px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(99,102,241,0.06); border-radius: 100px; }
+::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.55); border-radius: 100px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.82); }
 ::selection     { background: rgba(0,213,89,0.25); color: #fff; }
 ::-moz-selection{ background: rgba(0,213,89,0.25); color: #fff; }
 
@@ -7489,10 +7489,10 @@ QUANTUM_CARD_MATRIX_CSS = """
     scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
 }
-.qeg-props-scroll::-webkit-scrollbar { height: 4px; }
-.qeg-props-scroll::-webkit-scrollbar-track { background: transparent; }
-.qeg-props-scroll::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.14); border-radius: 2px; }
-.qeg-props-scroll::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.26); }
+.qeg-props-scroll::-webkit-scrollbar { height: 6px; }
+.qeg-props-scroll::-webkit-scrollbar-track { background: rgba(99,102,241,0.06); border-radius: 100px; }
+.qeg-props-scroll::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.60); border-radius: 100px; }
+.qeg-props-scroll::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.85); }
 
 /* Singles row — horizontal scroll strip */
 .qeg-singles-row {
@@ -7506,12 +7506,12 @@ QUANTUM_CARD_MATRIX_CSS = """
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x proximity;
     scrollbar-width: thin;
-    scrollbar-color: rgba(99,102,241,0.14) transparent;
+    scrollbar-color: rgba(99,102,241,0.60) transparent;
 }
-.qeg-singles-row::-webkit-scrollbar { height: 4px; }
-.qeg-singles-row::-webkit-scrollbar-track { background: transparent; }
-.qeg-singles-row::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.14); border-radius: 2px; }
-.qeg-singles-row::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.26); }
+.qeg-singles-row::-webkit-scrollbar { height: 6px; }
+.qeg-singles-row::-webkit-scrollbar-track { background: rgba(99,102,241,0.06); border-radius: 100px; }
+.qeg-singles-row::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.60); border-radius: 100px; }
+.qeg-singles-row::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.85); }
 
 .qeg-prop {
     flex-shrink: 0;
@@ -8388,11 +8388,15 @@ QUANTUM_CARD_MATRIX_CSS = """
     gap: 20px;
     padding: 12px 16px 16px;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,0.10) transparent;
+    scrollbar-color: rgba(99,102,241,0.60) transparent;
 }
-.plc-row::-webkit-scrollbar { height: 4px; }
-.plc-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 4px; }
+.plc-row::-webkit-scrollbar { height: 6px; }
+.plc-row::-webkit-scrollbar-track { background: rgba(99,102,241,0.06); border-radius: 100px; }
+.plc-row::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.60); border-radius: 100px; }
+.plc-row::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.85); }
 
 /* ── Card shell ──────────────────────────────────────────── */
 .plc-card {
@@ -9576,17 +9580,21 @@ QUANTUM_CARD_MATRIX_CSS = """
     width: 100%;
     padding-bottom: 8px;
     scrollbar-width: thin;
-    scrollbar-color: rgba(138,92,246,0.5) rgba(255,255,255,0.05);
+    scrollbar-color: rgba(99,102,241,0.65) rgba(99,102,241,0.06);
 }
 .plat-grid::-webkit-scrollbar {
-    height: 5px;
+    height: 6px;
 }
 .plat-grid::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.04);
+    background: rgba(99,102,241,0.06);
     border-radius: 100px;
 }
 .plat-grid::-webkit-scrollbar-thumb {
-    background: rgba(138,92,246,0.55);
+    background: rgba(99,102,241,0.65);
+    border-radius: 100px;
+}
+.plat-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(99,102,241,0.88);
     border-radius: 100px;
 }
 
@@ -9882,7 +9890,7 @@ QUANTUM_CARD_MATRIX_CSS = """
 /* ── Tablet  (≤ 768px) ─────────────────────────────────────── */
 @media (max-width: 768px) {
     /* --- Hero cards — horizontal scroll on mobile (mirrors Platform AI Picks) --- */
-    .qam-hero-grid { flex-direction: row; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; align-items: flex-start; gap: 10px; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: rgba(99,102,241,0.25) transparent; }
+    .qam-hero-grid { flex-direction: row; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; align-items: flex-start; gap: 10px; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: rgba(99,102,241,0.60) transparent; }
     .qam-hero-card { flex: 0 0 200px; min-width: 200px; max-width: 200px; width: 200px; }
     .qam-hero-hs-wrap, .qam-hero-headshot { width: 64px; height: 64px; }
     .qam-hero-name { font-size: 0.92rem; }

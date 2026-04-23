@@ -359,8 +359,9 @@ with st.expander("⚙️ Advanced Options — Individual Data Pipelines", expand
     with _dk_col:
         _include_dk = st.checkbox("🔵 DraftKings Pick6", value=True, key="platform_dk_checkbox")
 
-    # Smart Filter controls (collapsible)
-    with st.expander("🧠 Smart Filter Settings", expanded=False):
+    # Smart Filter controls
+    st.markdown("**🧠 Smart Filter Settings**")
+    if True:
         _sf_col1, _sf_col2, _sf_col3 = st.columns(3)
         with _sf_col1:
             _smart_filter_on = st.toggle(
@@ -397,7 +398,8 @@ with st.expander("⚙️ Advanced Options — Individual Data Pipelines", expand
             )
 
     # ── Platform Preference ──────────────────────────────────────
-    with st.expander("⚙️ Platform Settings", expanded=False):
+    st.markdown("**⚙️ Platform Settings**")
+    if True:
         _PLATFORM_OPTIONS = [
             "PrizePicks", "Underdog Fantasy", "DraftKings Pick6",
         ]
@@ -434,7 +436,8 @@ with st.expander("⚙️ Advanced Options — Individual Data Pipelines", expand
 
     # ── ETL Data Pull Section ────────────────────────────────────────────────
     if _ETL_AVAILABLE_LG:
-        with st.expander("🗄️ ETL Data Pull — Fresh Stats from Local Database", expanded=False):
+        st.markdown("**🗄️ ETL Data Pull — Fresh Stats from Local Database**")
+        if True:
             st.markdown(
                 '<span style="color:#6B7A9A;font-size:0.84rem;">'
                 'Pull the latest player stats into your local database before loading games. '

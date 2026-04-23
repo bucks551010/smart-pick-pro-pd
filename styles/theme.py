@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # FILE: styles/theme.py
 # PURPOSE: All CSS/HTML generators for the SmartBetPro NBA UI.
 #          Provides a futuristic "AI Neural Network Lab" bright
@@ -270,7 +270,7 @@ def get_global_css():
    =========================================================== */
 
 /* â”€â”€ Google Fonts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Bebas+Neue&family=Oswald:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Barlow:wght@400;500;600;700;800;900&family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 /* â”€â”€ CSS Custom Properties â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 :root {
@@ -406,7 +406,7 @@ footer    { display: none !important; }
 
 /* â”€â”€ Base / Body â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 html, body, [class*="css"] {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-family: 'Barlow Condensed', 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
   font-size: 16px;
   color: #A0AABE;
   background-color: #0D0F14;
@@ -451,7 +451,7 @@ code, pre, .monospace {
 .stHeadingWithActionElements,
 h1, h2, h3, h4, h5, h6 {
   color: #FFFFFF !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Barlow Condensed', sans-serif !important;
   font-weight: 800 !important;
   letter-spacing: -0.01em !important;
 }
@@ -530,7 +530,7 @@ h1, h2, h3, h4, h5, h6 {
 [data-testid="stSidebar"] [data-testid="stSidebarNavItems"] a {
   font-size: 0.84rem !important;
   font-weight: 600 !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Barlow Condensed', sans-serif !important;
   color: #7A8EAE !important;
   padding: 11px 18px 11px 20px !important;
   border-radius: 12px !important;
@@ -661,7 +661,7 @@ h1, h2, h3, h4, h5, h6 {
   width: 272px;
   text-align: center;
   font-size: 0.57rem;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Barlow Condensed', sans-serif;
   font-weight: 800;
   color: rgba(0,213,89,0.28) !important;
   letter-spacing: 0.16em;
@@ -686,7 +686,7 @@ h1, h2, h3, h4, h5, h6 {
 [data-testid="stMetricValue"] {
   color: #FFFFFF !important;
   font-size: 1.6rem !important;
-  font-family: 'Bebas Neue', 'Inter', sans-serif !important;
+  font-family: 'Bebas Neue', 'Barlow Condensed', sans-serif !important;
   font-variant-numeric: tabular-nums !important;
   letter-spacing: 0.04em !important;
 }
@@ -698,7 +698,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600 !important;
 }
 [data-testid="stMetricDelta"] {
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Barlow Condensed', sans-serif !important;
   font-weight: 700 !important;
   font-variant-numeric: tabular-nums !important;
 }
@@ -726,7 +726,7 @@ button[kind="primary"] {
   background: #00D559 !important;
   color: #0D0F14 !important;
   border: none !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Barlow Condensed', sans-serif !important;
   font-weight: 800 !important;
   letter-spacing: 0.03em !important;
   border-radius: 100px !important;
@@ -796,7 +796,7 @@ button[kind="primary"]:hover {
   color: #6B7A9A !important;
   text-transform: uppercase !important;
   letter-spacing: 1px !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Barlow Condensed', sans-serif !important;
   font-weight: 700 !important;
   background: #0D0F14 !important;
   border-color: rgba(255,255,255,0.05) !important;
@@ -908,7 +908,7 @@ input:focus, textarea:focus, select:focus,
 .neural-header-title {
   font-size: 1.8rem;
   font-weight: 900;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Barlow Condensed', sans-serif;
   color: #FFFFFF;
   letter-spacing: -0.01em;
   line-height: 1.15;
@@ -942,14 +942,14 @@ input:focus, textarea:focus, select:focus,
 .nba-edition-label {
   font-size: 1.05rem; letter-spacing: 0.22em;
   color: #F24336;
-  font-family: 'Bebas Neue', 'Oswald', sans-serif;
+  font-family: 'Bebas Neue', 'Barlow Condensed', sans-serif;
   font-weight: 700; margin-top: 4px;
 }
 
 /* â”€â”€ Player Name / Team Pill â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .player-name {
   font-size: 1.2rem; font-weight: 800;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Barlow Condensed', sans-serif;
   color: #FFFFFF; letter-spacing: -0.01em;
 }
 .team-pill {
@@ -966,7 +966,7 @@ input:focus, textarea:focus, select:focus,
 /* â”€â”€ Tier Badges â€” pill shaped â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .tier-badge {
   display: inline-block; padding: 5px 16px; border-radius: 100px;
-  font-weight: 800; font-size: 0.78rem; font-family: 'Inter', sans-serif;
+  font-weight: 800; font-size: 0.78rem; font-family: 'Barlow Condensed', sans-serif;
   letter-spacing: 0.06em; text-transform: uppercase;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
@@ -1023,7 +1023,7 @@ input:focus, textarea:focus, select:focus,
 .game-live-badge {
   display: inline-flex; align-items: center; gap: 6px;
   background: #F24336; color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Barlow Condensed', sans-serif;
   font-size: 0.74rem; font-weight: 800;
   letter-spacing: 0.10em; padding: 4px 12px; border-radius: 100px;
   animation: nba-live-pulse 1.5s ease-in-out infinite;
@@ -1042,7 +1042,7 @@ input:focus, textarea:focus, select:focus,
   padding: 5px 16px; border-radius: 100px;
   font-weight: 800; font-size: 0.82rem;
   border: 1px solid rgba(0,213,89,0.32);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Barlow Condensed', sans-serif;
   text-transform: uppercase; letter-spacing: 0.06em;
 }
 .dir-under {
@@ -1050,7 +1050,7 @@ input:focus, textarea:focus, select:focus,
   padding: 5px 16px; border-radius: 100px;
   font-weight: 800; font-size: 0.82rem;
   border: 1px solid rgba(242,67,54,0.32);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Barlow Condensed', sans-serif;
   text-transform: uppercase; letter-spacing: 0.06em;
 }
 
@@ -1059,7 +1059,7 @@ input:focus, textarea:focus, select:focus,
 .dir-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   padding: 10px 8px; border-radius: 12px; cursor: default;
-  font-weight: 800; font-size: 0.88rem; font-family: 'Inter', sans-serif;
+  font-weight: 800; font-size: 0.88rem; font-family: 'Barlow Condensed', sans-serif;
   letter-spacing: 0.05em; text-transform: uppercase;
   border: 1.5px solid transparent;
   transition: box-shadow 0.18s ease, transform 0.14s ease;
@@ -1087,7 +1087,7 @@ input:focus, textarea:focus, select:focus,
 .sc-player-info { flex: 1; min-width: 0; }
 .sc-player-name {
   font-size: 1.05rem; font-weight: 800; color: #FFFFFF;
-  font-family: 'Inter', sans-serif; letter-spacing: -0.01em;
+  font-family: 'Barlow Condensed', sans-serif; letter-spacing: -0.01em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .sc-meta-row { display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
@@ -1100,7 +1100,7 @@ input:focus, textarea:focus, select:focus,
 .sc-plat-def { background: rgba(255,255,255,0.06); color: #A0AABE;  border: 1px solid rgba(255,255,255,0.12); }
 .sc-line-block { text-align: center; padding: 12px 10px 8px; background: linear-gradient(180deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.12) 100%); border-radius: 14px; margin: 10px 0 6px; border-top: 1px solid rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.03); }
 .sc-stat-label { font-size: 0.65rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #6B7A9A; margin-bottom: 3px; }
-.sc-line-number { font-size: 2.6rem; font-weight: 900; color: #FFFFFF; font-family: 'Bebas Neue','Inter',sans-serif; letter-spacing: -0.01em; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 2px 10px rgba(0,0,0,0.35); }
+.sc-line-number { font-size: 2.6rem; font-weight: 900; color: #FFFFFF; font-family: 'Bebas Neue','Barlow Condensed',sans-serif; letter-spacing: -0.01em; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 2px 10px rgba(0,0,0,0.35); }
 .sc-avg-row { font-size: 0.72rem; color: #6B7A9A; margin-top: 4px; }
 .sc-avg-val { font-weight: 700; color: #A0AABE; }
 .sc-avg-diff-pos { color: #00D559; font-weight: 700; }
@@ -1148,7 +1148,7 @@ input:focus, textarea:focus, select:focus,
 }
 .verdict-label {
   font-size: 1.3rem; font-weight: 900;
-  font-family: 'Bebas Neue', 'Inter', sans-serif;
+  font-family: 'Bebas Neue', 'Barlow Condensed', sans-serif;
   letter-spacing: 0.12em; text-transform: uppercase;
 }
 .verdict-label-bet   { color: #00D559; }
@@ -1189,7 +1189,7 @@ input:focus, textarea:focus, select:focus,
 .prob-gauge-wrap { background: rgba(13,15,20,0.80); border-radius: 10px; height: 14px; overflow: hidden; margin-top: 6px; border: 1px solid rgba(255,255,255,0.06); }
 .prob-gauge-fill-over  { background: linear-gradient(90deg, #00D559, #2D9EFF); height: 100%; border-radius: 10px; transition: width 0.5s ease; }
 .prob-gauge-fill-under { background: linear-gradient(90deg, #F24336, #ff6b6b); height: 100%; border-radius: 10px; transition: width 0.5s ease; }
-.prob-value { font-size: 1.15rem; font-weight: 800; color: #FFFFFF; font-family: 'Bebas Neue', 'Inter', sans-serif; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+.prob-value { font-size: 1.15rem; font-weight: 800; color: #FFFFFF; font-family: 'Bebas Neue', 'Barlow Condensed', sans-serif; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
 .edge-badge { padding: 3px 10px; border-radius: 100px; font-size: 0.78rem; font-weight: 700; }
 .edge-positive { background: rgba(0,213,89,0.12);  color: #00D559; border: 1px solid rgba(0,213,89,0.32);  }
 .edge-negative { background: rgba(242,67,54,0.12); color: #F24336; border: 1px solid rgba(242,67,54,0.32); }
@@ -1220,7 +1220,7 @@ input:focus, textarea:focus, select:focus,
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 .summary-card:hover { border-color: rgba(0,213,89,0.28); box-shadow: 0 4px 20px rgba(0,213,89,0.10), 0 6px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04); transform: translateY(-2px); }
-.summary-value { font-size: 2rem; font-weight: 900; color: #FFFFFF; line-height: 1.1; font-family: 'Bebas Neue', 'Inter', sans-serif; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.summary-value { font-size: 2rem; font-weight: 900; color: #FFFFFF; line-height: 1.1; font-family: 'Bebas Neue', 'Barlow Condensed', sans-serif; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
 .summary-label { font-size: 0.72rem; color: #6B7A9A; text-transform: uppercase; letter-spacing: 1.2px; margin-top: 5px; font-weight: 600; }
 
 /* â”€â”€ Best Bet Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -1232,7 +1232,7 @@ input:focus, textarea:focus, select:focus,
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 .best-bet-card:hover { border-color: rgba(0,213,89,0.30); transform: translateX(3px); box-shadow: 0 4px 20px rgba(0,213,89,0.10), 0 6px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04); }
-.best-bet-rank { position: absolute; top: -10px; left: 16px; background: linear-gradient(135deg, #00D559, #2D9EFF); color: #0D0F14; font-weight: 900; font-size: 0.72rem; padding: 2px 10px; border-radius: 100px; font-family: 'Inter', sans-serif; letter-spacing: 0.05em; }
+.best-bet-rank { position: absolute; top: -10px; left: 16px; background: linear-gradient(135deg, #00D559, #2D9EFF); color: #0D0F14; font-weight: 900; font-size: 0.72rem; padding: 2px 10px; border-radius: 100px; font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.05em; }
 .player-analysis-card {
   background: linear-gradient(168deg, #1A1F2E 0%, #161B27 40%, #131722 100%);
   border: 1px solid rgba(255,255,255,0.08);
@@ -1248,7 +1248,7 @@ input:focus, textarea:focus, select:focus,
   background-size: 200% 100%; animation: ppShimmer 4s ease infinite;
 }
 .player-analysis-card:hover { border-color: rgba(0,213,89,0.30); transform: translateY(-4px); box-shadow: 0 8px 32px rgba(0,213,89,0.10), 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04); }
-.add-to-slip-btn { background: #00D559; color: #0D0F14; border: none; border-radius: 100px; padding: 7px 18px; font-weight: 800; font-size: 0.78rem; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.2s ease, transform 0.2s ease; box-shadow: 0 4px 14px rgba(0,213,89,0.32); letter-spacing: 0.04em; text-transform: uppercase; }
+.add-to-slip-btn { background: #00D559; color: #0D0F14; border: none; border-radius: 100px; padding: 7px 18px; font-weight: 800; font-size: 0.78rem; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; transition: opacity 0.2s ease, transform 0.2s ease; box-shadow: 0 4px 14px rgba(0,213,89,0.32); letter-spacing: 0.04em; text-transform: uppercase; }
 .add-to-slip-btn:hover { opacity: 0.88; transform: scale(1.03); }
 
 /* â”€â”€ Roster Health â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -1295,7 +1295,7 @@ input:focus, textarea:focus, select:focus,
 .status-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, #00D559, #2D9EFF); opacity:0; transition:opacity 0.25s ease; }
 .status-card:hover::before { opacity:1; }
 .status-card:hover { border-color:rgba(0,213,89,0.22); transform:translateY(-3px); box-shadow:0 6px 24px rgba(0,213,89,0.10), 0 8px 28px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04); }
-.status-card-value { font-size:2.2rem; font-weight:900; color:#FFFFFF; font-family:'Bebas Neue','Inter',sans-serif; font-variant-numeric:tabular-nums; letter-spacing:0.04em; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.status-card-value { font-size:2.2rem; font-weight:900; color:#FFFFFF; font-family:'Bebas Neue','Barlow Condensed',sans-serif; font-variant-numeric:tabular-nums; letter-spacing:0.04em; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
 .status-card-label { font-size:0.70rem; color:#6B7A9A; text-transform:uppercase; letter-spacing:1.2px; margin-top:6px; font-weight:600; }
 
 /* â”€â”€ Team Chip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -1310,22 +1310,22 @@ input:focus, textarea:focus, select:focus,
 .grt-chip { display:inline-flex; align-items:center; gap:4px; padding:5px 14px; border-radius:100px; font-size:0.70rem; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; white-space:nowrap; }
 .grt-table-wrap { border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,0.07); background:#161B27; box-shadow:0 4px 20px rgba(0,0,0,0.3); }
 .grt-table { width:100%; border-collapse:collapse; table-layout:fixed; }
-.grt-th { padding:10px 12px; font-size:0.68rem; font-family:'Inter',sans-serif; font-weight:700; color:#6B7A9A; text-transform:uppercase; letter-spacing:1.2px; background:#0D0F14; border-bottom:1px solid rgba(255,255,255,0.06); text-align:left; white-space:nowrap; }
+.grt-th { padding:10px 12px; font-size:0.68rem; font-family:'Barlow Condensed',sans-serif; font-weight:700; color:#6B7A9A; text-transform:uppercase; letter-spacing:1.2px; background:#0D0F14; border-bottom:1px solid rgba(255,255,255,0.06); text-align:left; white-space:nowrap; }
 .grt-th-rank { width:44px; text-align:center; }
 .grt-th-center { text-align:center; }
 .grt-th-right { text-align:right; }
 .grt-row { transition:background 0.15s ease; border-bottom:1px solid rgba(255,255,255,0.03); }
 .grt-row:hover { background: rgba(0,213,89,0.04); }
-.grt-td { padding:10px 12px; font-size:0.85rem; color:#E0E8FF; font-family:'Inter',sans-serif; vertical-align:middle; border-bottom:1px solid rgba(255,255,255,0.03); }
+.grt-td { padding:10px 12px; font-size:0.85rem; color:#E0E8FF; font-family:'Barlow Condensed',sans-serif; vertical-align:middle; border-bottom:1px solid rgba(255,255,255,0.03); }
 .grt-td-rank { text-align:center; width:44px; }
 .grt-td-center { text-align:center; }
 .grt-td-right { text-align:right; }
 .grt-td-player { display:flex; align-items:center; gap:8px; }
 .grt-team-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-.grt-player-name { font-family:'Inter',sans-serif; font-weight:700; font-size:0.85rem; color:#FFFFFF; white-space:nowrap; }
+.grt-player-name { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.85rem; color:#FFFFFF; white-space:nowrap; }
 .grt-team-label { font-size:0.68rem; color:#6B7A9A; font-weight:600; margin-left:2px; letter-spacing:0.5px; }
 .grt-mono { font-variant-numeric:tabular-nums; }
-.grt-dir { display:inline-block; padding:3px 12px; border-radius:100px; font-size:0.68rem; font-weight:800; font-family:'Inter',sans-serif; letter-spacing:0.5px; text-transform:uppercase; }
+.grt-dir { display:inline-block; padding:3px 12px; border-radius:100px; font-size:0.68rem; font-weight:800; font-family:'Barlow Condensed',sans-serif; letter-spacing:0.5px; text-transform:uppercase; }
 .grt-dir-over  { background:rgba(0,213,89,0.12);  color:#00D559; border:1px solid rgba(0,213,89,0.28);  }
 .grt-dir-under { background:rgba(242,67,54,0.12); color:#F24336; border:1px solid rgba(242,67,54,0.28); }
 .grt-safe-wrap { display:flex; flex-direction:column; align-items:center; gap:3px; min-width:56px; }
@@ -1363,7 +1363,7 @@ input:focus, textarea:focus, select:focus,
 .nba-stat-highlight { display:inline-flex; flex-direction:column; align-items:flex-start; border-left:4px solid #00D559; padding:8px 16px 8px 14px; background:rgba(0,213,89,0.06); border-radius:0 12px 12px 0; margin:4px 8px; transition:border-color 0.2s ease, background 0.2s ease; }
 .nba-stat-highlight:hover { border-color:#2D9EFF; background:rgba(45,158,255,0.06); }
 .nba-stat-number { font-family:'Bebas Neue',sans-serif; font-size:2.2rem; font-weight:700; color:#FFFFFF; line-height:1; letter-spacing:0.03em; }
-.nba-stat-label  { font-family:'Oswald','Inter',sans-serif; font-size:0.70rem; font-weight:600; color:#6B7A9A; letter-spacing:0.12em; text-transform:uppercase; margin-top:2px; }
+.nba-stat-label  { font-family:'Barlow Condensed','Barlow Condensed',sans-serif; font-size:0.70rem; font-weight:600; color:#6B7A9A; letter-spacing:0.12em; text-transform:uppercase; margin-top:2px; }
 .stApp::after { content:''; display:block; position:fixed; bottom:-120px; right:-120px; width:360px; height:360px; border-radius:50%; border:40px solid rgba(0,213,89,0.02); pointer-events:none; z-index:0; }
 .premium-metric-card {
   background: linear-gradient(168deg, #1A1F2E 0%, #161B27 40%, #131722 100%);
@@ -2276,9 +2276,9 @@ def get_best_bets_section_html(best_bets):
 <div style="background:#161B27;
             border:1px solid rgba(0,213,89,0.18);border-radius:16px;padding:20px 24px;margin-bottom:20px;
             box-shadow:0 4px 24px rgba(0,0,0,0.4);">
-  <div style="font-size:1.15rem;font-weight:900;color:#FFFFFF;margin-bottom:14px;font-family:'Inter',sans-serif;letter-spacing:-0.01em;">
+  <div style="font-size:1.15rem;font-weight:900;color:#FFFFFF;margin-bottom:14px;font-family:'Barlow Condensed',sans-serif;letter-spacing:-0.01em;">
     🏆 Best Bets Today
-    <span style="font-size:0.8rem;font-weight:500;color:#6B7A9A;margin-left:10px;font-family:'Inter',sans-serif;">Ranked by confidence score</span>
+    <span style="font-size:0.8rem;font-weight:500;color:#6B7A9A;margin-left:10px;font-family:'Barlow Condensed',sans-serif;">Ranked by confidence score</span>
   </div>
   {cards_html}
 </div>
@@ -2723,7 +2723,7 @@ def get_progress_ring_html(percentage, label):
             stroke-dashoffset="{circumference * 0.25:.2f}"
             style="filter:drop-shadow(0 0 4px {ring_color});transition:stroke-dasharray 0.5s ease;"/>
     <text x="36" y="40" text-anchor="middle"
-          font-family="'Bebas Neue','Inter',sans-serif"
+          font-family="'Bebas Neue','Barlow Condensed',sans-serif"
           font-size="14" font-weight="700"
           fill="{ring_color}">{pct:.0f}%</text>
   </svg>
@@ -2833,7 +2833,7 @@ _QDS_REPORT_CSS = """
 *{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
 body{
-  font-family:'Inter',sans-serif;
+  font-family:'Barlow Condensed',sans-serif;
   background:var(--qds-bg);
   color:var(--qds-text-light);
   line-height:1.6;
@@ -2844,7 +2844,7 @@ body{
   background-attachment:fixed;
   padding:0 0 40px;
 }
-h1,h2,h3,h4{font-family:'Bebas Neue','Inter',sans-serif;letter-spacing:0.5px;font-weight:700;color:var(--qds-text-light);}
+h1,h2,h3,h4{font-family:'Bebas Neue','Barlow Condensed',sans-serif;letter-spacing:0.5px;font-weight:700;color:var(--qds-text-light);}
 .qds-container{max-width:1100px;margin:0 auto;padding:0 16px;}
 
 /* ── Header ── */
@@ -4648,7 +4648,7 @@ _BET_CARD_CSS = """
 .bet-card-player {
     font-size: 1.15rem;
     font-weight: 900;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
     color: #F0F4FF;
     letter-spacing: -0.01em;
 }
@@ -4837,7 +4837,7 @@ _BET_CARD_CSS = """
 .summary-card-value {
     font-size: 1.8rem;
     font-weight: 900;
-    font-family: 'Bebas Neue', 'Inter', sans-serif;
+    font-family: 'Bebas Neue', 'Barlow Condensed', sans-serif;
     color: #00D559;
     line-height: 1;
 }
@@ -5356,7 +5356,7 @@ def get_summary_cards_html(total, wins, losses, evens, pending, win_rate, streak
         cards += (
             f'<div class="summary-card" style="flex:1.2;min-width:130px;">'
             f'<div class="summary-card-value" style="color:#7c4dff;font-size:1.0rem;'
-            f'font-family:Inter,sans-serif;line-height:1.3;">{safe_plat}</div>'
+            f'font-family:Barlow Condensed,sans-serif;line-height:1.3;">{safe_plat}</div>'
             f'<div class="summary-card-label">Best Platform</div>'
             f'</div>'
         )
@@ -5432,7 +5432,7 @@ def get_styled_stats_table_html(rows, columns, title=""):
 
     header_cells = "".join(
         f'<th style="padding:10px 16px;text-align:left;color:#8899BB;'
-        f'font-family:Inter,sans-serif;font-size:0.72rem;font-weight:800;'
+        f'font-family:Barlow Condensed,sans-serif;font-size:0.72rem;font-weight:800;'
         f'text-transform:uppercase;letter-spacing:1px;'
         f'background:rgba(0,0,0,0.30);'
         f'border-bottom:1px solid rgba(255,255,255,0.08);">'
@@ -5502,7 +5502,7 @@ def get_styled_stats_table_html(rows, columns, title=""):
             cell_content = display_val if is_html else _h.escape(display_val)
             cells.append(
                 f'<td style="padding:10px 16px;color:{cell_color};'
-                f'font-family:Inter,sans-serif;font-size:0.86rem;'
+                f'font-family:Barlow Condensed,sans-serif;font-size:0.86rem;'
                 f'border-bottom:1px solid rgba(255,255,255,0.05);">'
                 f'{cell_content}</td>'
             )
@@ -5512,7 +5512,7 @@ def get_styled_stats_table_html(rows, columns, title=""):
         )
 
     title_html = (
-        f'<div style="color:#00D559;font-family:Inter,sans-serif;'
+        f'<div style="color:#00D559;font-family:Barlow Condensed,sans-serif;'
         f'font-size:0.78rem;font-weight:800;text-transform:uppercase;'
         f'letter-spacing:0.12em;margin-bottom:10px;'
         f'text-shadow:0 0 12px rgba(0,213,89,0.40);">'
@@ -5653,7 +5653,7 @@ _PLAYER_INTEL_CSS = """
 .qa-edge-neu { color: #6B7A9A; }
 
 /* ── QA Card Grid ─────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Barlow:wght@400;500;600;700;800;900&family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 .qa-grid {
     display: grid;
@@ -5667,7 +5667,7 @@ _PLAYER_INTEL_CSS = """
     padding: 8px 14px; margin-bottom: 10px;
     background: rgba(13,20,45,0.55); border-radius: 8px;
     border: 1px solid rgba(0,213,89,0.06);
-    font-family: 'Inter', sans-serif; font-size: 0.78rem; color: #6B7A9A;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 0.78rem; color: #6B7A9A;
 }
 .qa-count-bar b { color: #e0eeff; }
 
@@ -5684,7 +5684,7 @@ _PLAYER_INTEL_CSS = """
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     text-align: center;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
 }
 .qa-kpi-value {
     font-size: 1.8rem; font-weight: 800; line-height: 1.1;
@@ -5716,7 +5716,7 @@ _PLAYER_INTEL_CSS = """
     box-shadow: 0 4px 20px rgba(0,0,0,0.40), 0 0 12px rgba(0,213,89,0.03);
     transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
     animation: qa-card-in 0.35s ease both;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
     color: #e0eeff;
     position: relative;
     overflow: hidden;
@@ -6144,7 +6144,7 @@ QUANTUM_CARD_MATRIX_CSS = """
    QUANTUM CARD MATRIX — High-Capacity Grid Renderer
    Full Breakdown Cards with Distribution, Forces & Scores
    ═══════════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Barlow:wght@400;500;600;700;800;900&family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 /* Container query context — cards adapt to their container,
    not the viewport.  Critical for iframe-embedded rendering. */
@@ -6177,7 +6177,7 @@ QUANTUM_CARD_MATRIX_CSS = """
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(0, 240, 255, 0.04);
     transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
     animation: qcm-fade-in-up 0.4s ease both;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
     color: #e0eeff;
 }
 .qcm-card:hover {
@@ -6679,7 +6679,7 @@ QUANTUM_CARD_MATRIX_CSS = """
                 0 0 20px rgba(0, 240, 255, 0.06),
                 inset 0 1px 0 rgba(255, 255, 255, 0.04);
     margin-bottom: 14px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
     color: #e0eeff;
     border-left: 4px solid var(--h-card-accent, #00D559);
     animation: qcm-fade-in-up 0.4s ease both;
@@ -7519,7 +7519,7 @@ QUANTUM_CARD_MATRIX_CSS = """
     background: linear-gradient(168deg, rgba(3,4,16,0.98) 0%, rgba(6,8,28,0.96) 40%, rgba(3,4,16,0.97) 100%);
     border: 1px solid rgba(99,102,241,0.14);
     border-radius: 22px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
     color: #c8d8e0;
     overflow: visible;
     transition: width 0.25s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.22s cubic-bezier(.22,1,.36,1);
@@ -7673,7 +7673,7 @@ QUANTUM_CARD_MATRIX_CSS = """
     letter-spacing: 0.04em;
 }
 .qeg-prop-big-line {
-    font-family: 'Bebas Neue', 'Oswald', sans-serif;
+    font-family: 'Bebas Neue', 'Barlow Condensed', sans-serif;
     font-size: 3.2rem;
     font-weight: 700;
     color: #FFFFFF;
@@ -7965,7 +7965,7 @@ QUANTUM_CARD_MATRIX_CSS = """
     border: 1.5px solid rgba(0,180,100,0.08);
     border-left: 3px solid transparent;
     border-radius: 16px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
     color: #c8d8e0;
     overflow: visible;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -8110,12 +8110,12 @@ QUANTUM_CARD_MATRIX_CSS = """
 }
 .espn-parlay-section-title {
     color: #FFFFFF; margin: 0; font-size: 1.15rem;
-    font-family: Inter, -apple-system, sans-serif; font-weight: 800;
+    font-family: Barlow Condensed, -apple-system, sans-serif; font-weight: 800;
     letter-spacing: -0.2px;
 }
 .espn-parlay-section-sub {
     color: #6B7A9A; margin: 4px 0 0; font-size: 0.72rem;
-    font-family: Inter, sans-serif; font-weight: 500;
+    font-family: Barlow Condensed, sans-serif; font-weight: 500;
 }
 .espn-parlay-section-badge {
     color: #000; font-size: 0.55rem;
@@ -8194,7 +8194,7 @@ QUANTUM_CARD_MATRIX_CSS = """
 }
 .espn-parlay-label {
     color: #FFFFFF; font-size: 1.0rem; font-weight: 800;
-    font-family: Inter, -apple-system, sans-serif;
+    font-family: Barlow Condensed, -apple-system, sans-serif;
     letter-spacing: -0.01em;
 }
 
@@ -8232,7 +8232,7 @@ QUANTUM_CARD_MATRIX_CSS = """
 }
 .espn-parlay-team:hover .espn-parlay-team-logo { transform: scale(1.1); }
 .espn-parlay-team-name {
-    font-family: Inter, -apple-system, sans-serif;
+    font-family: Barlow Condensed, -apple-system, sans-serif;
     font-size: 0.78rem; font-weight: 700;
     letter-spacing: 0.3px;
 }
@@ -8273,7 +8273,7 @@ QUANTUM_CARD_MATRIX_CSS = """
 }
 .espn-leg-player {
     color: #FFFFFF; font-weight: 800; font-size: 0.88rem;
-    font-family: Inter, -apple-system, sans-serif;
+    font-family: Barlow Condensed, -apple-system, sans-serif;
     white-space: nowrap; letter-spacing: -0.01em;
 }
 .espn-leg-dir {
@@ -8293,7 +8293,7 @@ QUANTUM_CARD_MATRIX_CSS = """
 }
 .espn-leg-detail {
     color: #A0AABE; font-size: 0.80rem;
-    font-weight: 600; font-family: Inter, sans-serif;
+    font-weight: 600; font-family: Barlow Condensed, sans-serif;
 }
 .espn-leg-tier {
     font-size: 0.55rem; padding: 2px 7px;
@@ -8528,7 +8528,7 @@ QUANTUM_CARD_MATRIX_CSS = """
     font-size: 3.2rem;
     font-weight: 900;
     color: #FFFFFF;
-    font-family: 'Bebas Neue', 'Inter', sans-serif;
+    font-family: 'Bebas Neue', 'Barlow Condensed', sans-serif;
     line-height: 1;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;
@@ -8625,7 +8625,7 @@ QUANTUM_CARD_MATRIX_CSS = """
 .qam-gold-banner h3 { color: #ffd700; font-family: Orbitron, sans-serif; margin: 0 0 4px; }
 .qam-gold-banner p  { color: #ffe082; font-size: 0.85rem; margin: 0; }
 .qam-section-header-single h3 { color: #00D559; font-family: Orbitron, sans-serif; margin: 0 0 6px; }
-.qam-section-header-parlay h3 { color: #00D959; font-family: Inter, -apple-system, sans-serif; margin: 0 0 6px; font-weight: 800; }
+.qam-section-header-parlay h3 { color: #00D959; font-family: Barlow Condensed, -apple-system, sans-serif; margin: 0 0 6px; font-weight: 800; }
 .qam-section-header p { color: #a0b4d0; font-size: 0.85rem; margin: 0; }
 
 /* ── Parlay header h4 uses parent card styles ──────────────── */
@@ -8890,7 +8890,7 @@ QUANTUM_CARD_MATRIX_CSS = """
     margin-bottom: 10px;
     overflow: hidden;
     position: relative;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
 }
 /* Gradient accent from each team color (faint wash on each side) */
 .qam-mu-bar::before {
@@ -9039,7 +9039,7 @@ QUANTUM_CARD_MATRIX_CSS = """
     border-left: 3px solid #ffc107;
     border-radius: 8px;
     margin-bottom: 12px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
 }
 .qam-uncertain-icon {
     font-size: 1.1rem;
@@ -9269,7 +9269,7 @@ QUANTUM_CARD_MATRIX_CSS = """
     font-size: 3.2rem;
     font-weight: 900;
     color: #FFFFFF;
-    font-family: 'Bebas Neue', 'Inter', sans-serif;
+    font-family: 'Bebas Neue', 'Barlow Condensed', sans-serif;
     line-height: 1;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;
@@ -9406,7 +9406,7 @@ QUANTUM_CARD_MATRIX_CSS = """
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
 }
 .qam-quick-table thead th {
     font-family: 'Orbitron', sans-serif;
@@ -9740,7 +9740,7 @@ QUANTUM_CARD_MATRIX_CSS = """
     font-size: 3.2rem;
     font-weight: 900;
     color: #FFFFFF;
-    font-family: 'Bebas Neue', 'Inter', sans-serif;
+    font-family: 'Bebas Neue', 'Barlow Condensed', sans-serif;
     line-height: 1;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;
@@ -10125,7 +10125,7 @@ UNIFIED_PLAYER_CARD_CSS = """
    UNIFIED PLAYER CARD — Compact accordion-style player rows
    Clean sports-dashboard aesthetic
    ═══════════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Barlow:wght@400;500;600;700;800;900&family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 .upc-grid {
     display: flex;
@@ -10140,7 +10140,7 @@ UNIFIED_PLAYER_CARD_CSS = """
     background: rgba(15, 18, 30, 0.92);
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 12px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
     color: #e0eeff;
     overflow: visible;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -10334,7 +10334,7 @@ UNIFIED_PLAYER_CARD_CSS = """
     color: #ff9e00;
     font-size: 0.80rem;
     font-weight: 700;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
 }
 
 /* ── Joseph M Smith response panel (toggled on click) ──── */
@@ -10393,7 +10393,7 @@ UNIFIED_PLAYER_CARD_CSS = """
     color: #e2e8f0;
     font-size: 0.82rem;
     line-height: 1.65;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
 }
 
 /* ── Responsive: tablets & phones ───────────────────────── */
@@ -10590,12 +10590,12 @@ GLASSMORPHIC_CARD_CSS = """
   --gm-accent-red: #FF0055;
   --gm-text-primary: #E2E8F0;
   --gm-text-muted: #94A3B8;
-  --gm-font-body: 'Inter', sans-serif;
+  --gm-font-body: 'Barlow Condensed', sans-serif;
   --gm-font-mono: 'JetBrains Mono', monospace;
 }
 
 /* ── Google-Font import for Inter ────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Barlow:wght@400;500;600;700;800;900&family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 /* ── Trading-Card Grid ───────────────────────────────────── */
 .gm-card-grid {
@@ -10947,7 +10947,7 @@ def get_data_feed_css() -> str:
     height: 2px;
 }
 .df-action-card .df-card-title {
-    font-family: 'Orbitron', 'Inter', sans-serif;
+    font-family: 'Orbitron', 'Barlow Condensed', sans-serif;
     font-size: 1.05rem;
     font-weight: 800;
     letter-spacing: 0.03em;
@@ -11361,7 +11361,7 @@ _PROP_SCANNER_CSS = """
     border: 1.5px solid rgba(255,255,255,0.08);
     border-radius: 18px;
     padding: 0;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
     animation: ps-card-in 0.30s cubic-bezier(0.22,1,0.36,1) both;
     position: relative; overflow: hidden;
     transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
@@ -11416,7 +11416,7 @@ _PROP_SCANNER_CSS = """
 }
 .ps-card-line {
     font-size: 2.2rem; font-weight: 900; color: #FFFFFF;
-    font-family: 'Bebas Neue', 'Inter', sans-serif;
+    font-family: 'Bebas Neue', 'Barlow Condensed', sans-serif;
     letter-spacing: -0.01em; line-height: 1;
     font-variant-numeric: tabular-nums;
 }
@@ -11850,7 +11850,7 @@ def get_home_page_css() -> str:
 
 /* ── Hero Badge Row ───────────────────────────────────────── */
 .hero-badge-row { display:flex; align-items:center; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
-.hero-badge { display:inline-flex; align-items:center; gap:5px; padding:5px 13px; border-radius:100px; font-size:0.72rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; font-family:'Inter',sans-serif; }
+.hero-badge { display:inline-flex; align-items:center; gap:5px; padding:5px 13px; border-radius:100px; font-size:0.72rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; font-family:'Barlow Condensed',sans-serif; }
 .hero-badge-ai   { background:rgba(45,158,255,0.14);  color:#2D9EFF; border:1px solid rgba(45,158,255,0.40); box-shadow:0 0 12px rgba(45,158,255,0.12); }
 .hero-badge-free { background:rgba(0,213,89,0.14);    color:#00D559; border:1px solid rgba(0,213,89,0.40);   box-shadow:0 0 12px rgba(0,213,89,0.12); }
 .hero-badge-dfs  { background:rgba(249,198,43,0.12);  color:#F9C62B; border:1px solid rgba(249,198,43,0.38); box-shadow:0 0 12px rgba(249,198,43,0.10); }
@@ -11898,7 +11898,7 @@ def get_home_page_css() -> str:
 .hero-tagline {
     font-size: clamp(1.9rem, 3.6vw, 3.2rem);
     font-weight: 900;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
     color: #FFFFFF;
     letter-spacing: -0.025em;
     line-height: 1.12;
@@ -11914,7 +11914,7 @@ def get_home_page_css() -> str:
 .hero-subtext {
     font-size: clamp(0.95rem, 1.5vw, 1.10rem);
     color: rgba(255,255,255,0.88);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
     margin-top: 16px; line-height: 1.65;
     text-shadow: 0 1px 8px rgba(0,0,0,0.4);
 }
@@ -11958,7 +11958,7 @@ def get_home_page_css() -> str:
 .spp-proof-item { display:flex; flex-direction:column; align-items:center; gap:4px; }
 .spp-proof-num {
     font-size: 1.80rem; font-weight: 900;
-    font-family: 'Bebas Neue', 'Inter', sans-serif;
+    font-family: 'Bebas Neue', 'Barlow Condensed', sans-serif;
     color: #FFFFFF; line-height: 1;
 }
 .spp-proof-num.green { color: #00D559; text-shadow: 0 0 20px rgba(0,213,89,0.50); }
@@ -11970,7 +11970,7 @@ def get_home_page_css() -> str:
 
 /* ── Section Header ───────────────────────────────────────── */
 .section-header {
-    font-size: 1.25rem; font-weight: 800; font-family: 'Inter', sans-serif;
+    font-size: 1.25rem; font-weight: 800; font-family: 'Barlow Condensed', sans-serif;
     color: #FFFFFF; letter-spacing: -0.015em; margin: 36px 0 18px;
     display: flex; align-items: center; gap: 12px;
 }
@@ -11984,12 +11984,12 @@ def get_home_page_css() -> str:
     font-size: 0.74rem; font-weight: 800; color: #00D559;
     text-transform: uppercase; letter-spacing: 0.18em;
     text-align: center; margin-bottom: 10px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
     text-shadow: 0 0 16px rgba(0,213,89,0.50);
 }
 .section-header-xl {
     font-size: clamp(1.7rem, 3.2vw, 2.6rem);
-    font-weight: 900; font-family: 'Inter', sans-serif;
+    font-weight: 900; font-family: 'Barlow Condensed', sans-serif;
     text-align: center; color: #FFFFFF;
     letter-spacing: -0.03em; line-height: 1.12; margin: 0 0 8px;
 }
@@ -12001,13 +12001,13 @@ def get_home_page_css() -> str:
 }
 .section-subheader {
     font-size: 0.92rem; color: rgba(160,170,190,0.90);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
     margin-top: -8px; margin-bottom: 22px;
     letter-spacing: 0.01em; line-height: 1.62;
 }
 .section-subheader-center {
     font-size: 0.96rem; color: rgba(160,170,190,0.90);
-    font-family: 'Inter', sans-serif; text-align: center;
+    font-family: 'Barlow Condensed', sans-serif; text-align: center;
     max-width: 700px; margin: 0 auto 34px; line-height: 1.68;
 }
 
@@ -12043,7 +12043,7 @@ def get_home_page_css() -> str:
 .pillar-card.accent-green .pillar-icon-halo { background:rgba(0,213,89,0.14);   box-shadow:0 0 20px rgba(0,213,89,0.16); }
 .pillar-card.accent-gold  .pillar-icon-halo { background:rgba(249,198,43,0.12); box-shadow:0 0 20px rgba(249,198,43,0.14); }
 .pillar-icon    { font-size:1.9rem; }
-.pillar-title   { font-size:1.05rem; font-weight:800; color:#FFFFFF; font-family:'Inter',sans-serif; }
+.pillar-title   { font-size:1.05rem; font-weight:800; color:#FFFFFF; font-family:'Barlow Condensed',sans-serif; }
 .pillar-subtitle{ font-size:0.81rem; color:rgba(107,122,154,0.95); font-style:italic; margin-top:-6px; line-height:1.4; }
 .pillar-body    { font-size:0.85rem; color:#B8C4D8; line-height:1.60; flex:1; }
 .pillar-footer  { font-size:0.76rem; color:#6B7A9A; margin-top:auto; padding-top:12px; border-top:1px solid rgba(255,255,255,0.07); font-style:italic; }
@@ -12066,7 +12066,7 @@ def get_home_page_css() -> str:
 }
 .proof-card-number {
     font-size: 2.8rem; font-weight: 900;
-    font-family: 'Bebas Neue', 'Inter', sans-serif;
+    font-family: 'Bebas Neue', 'Barlow Condensed', sans-serif;
     line-height: 1; font-variant-numeric: tabular-nums;
 }
 .proof-card-label { font-size:0.72rem; color:#6B7A9A; text-transform:uppercase; letter-spacing:1.1px; margin-top:7px; font-weight:700; }
@@ -12112,7 +12112,7 @@ def get_home_page_css() -> str:
     background: linear-gradient(90deg, transparent 5%, #00D559 40%, #2D9EFF 60%, transparent 95%);
     opacity: 0.85;
 }
-.urgency-title { font-size:1.12rem; font-weight:900; color:#FFFFFF; font-family:'Inter',sans-serif; margin-bottom:8px; letter-spacing:-0.01em; }
+.urgency-title { font-size:1.12rem; font-weight:900; color:#FFFFFF; font-family:'Barlow Condensed',sans-serif; margin-bottom:8px; letter-spacing:-0.01em; }
 .urgency-subtitle { font-size:0.92rem; color:rgba(180,192,214,0.90); line-height:1.62; }
 .urgency-subtitle strong { color:#00D559; font-weight:800; }
 .urgency-subtitle .blue  { color:#2D9EFF; font-weight:700; }
@@ -12138,7 +12138,7 @@ def get_home_page_css() -> str:
     transform: translateY(-5px);
     box-shadow: 0 8px 30px rgba(0,213,89,0.15), 0 14px 40px rgba(0,0,0,0.50);
 }
-.status-card-value { font-size:2.4rem; font-weight:900; color:#FFFFFF; font-family:'Bebas Neue','Inter',sans-serif; }
+.status-card-value { font-size:2.4rem; font-weight:900; color:#FFFFFF; font-family:'Bebas Neue','Barlow Condensed',sans-serif; }
 .status-card-label { font-size:0.72rem; color:#6B7A9A; text-transform:uppercase; letter-spacing:1.3px; margin-top:6px; font-weight:700; }
 
 /* ── HIW Stage Cards ──────────────────────────────────────── */
@@ -12195,11 +12195,11 @@ def get_home_page_css() -> str:
 .pipeline-connector::before { content: '→'; }
 .pipeline-connector.active { color: #00D559; text-shadow: 0 0 10px rgba(0,213,89,0.60); }
 .pipeline-step-num {
-    font-family:'Bebas Neue','Inter',sans-serif; font-size:1.5rem; font-weight:900;
+    font-family:'Bebas Neue','Barlow Condensed',sans-serif; font-size:1.5rem; font-weight:900;
     color:#00D559; line-height:1; text-shadow:0 0 16px rgba(0,213,89,0.50);
 }
 .pipeline-step.pending .pipeline-step-num { color:#F9C62B; text-shadow:0 0 16px rgba(249,198,43,0.50); }
-.pipeline-step-label { font-size:0.88rem; font-weight:800; color:#FFFFFF; font-family:'Inter',sans-serif; }
+.pipeline-step-label { font-size:0.88rem; font-weight:800; color:#FFFFFF; font-family:'Barlow Condensed',sans-serif; }
 .pipeline-step-title { font-size:0.88rem; font-weight:800; color:#FFFFFF; } /* alias */
 .pipeline-step-status { font-size:0.76rem; color:#6B7A9A; }
 .pipeline-step-status.green { color:#00D559; font-weight:700; }
@@ -12320,7 +12320,7 @@ def get_home_page_css() -> str:
     font-size: 0.96rem;
     font-weight: 800;
     color: #FFFFFF;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Barlow Condensed', sans-serif;
     letter-spacing: -0.01em;
     line-height: 1.2;
 }
@@ -12358,7 +12358,7 @@ def get_home_page_css() -> str:
 .nav-row-label {
     font-size: 0.72rem !important;
     font-weight: 900 !important;
-    font-family: 'Inter', sans-serif !important;
+    font-family: 'Barlow Condensed', sans-serif !important;
     text-transform: uppercase !important;
     letter-spacing: 0.16em !important;
     padding: 7px 20px !important;
@@ -12512,7 +12512,7 @@ def get_home_page_css() -> str:
     border: 1px solid rgba(255,255,255,0.12) !important;
     border-radius: 14px !important; padding: 12px 18px !important;
     color: #D0DCF0 !important; font-weight: 700 !important; font-size: 0.88rem !important;
-    font-family: 'Inter', sans-serif !important; letter-spacing: 0.02em !important;
+    font-family: 'Barlow Condensed', sans-serif !important; letter-spacing: 0.02em !important;
     text-decoration: none !important; display: flex !important;
     align-items: center !important; justify-content: center !important;
     gap: 8px !important; min-height: 48px !important;
@@ -12653,7 +12653,7 @@ def get_premium_ui_css() -> str:
   text-transform: uppercase;
   letter-spacing: 0.11em;
   margin-bottom: 7px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Barlow Condensed', sans-serif;
 }
 .spp-metric-value {
   color: #FFFFFF;
@@ -12668,7 +12668,7 @@ def get_premium_ui_css() -> str:
   font-size: 0.74rem;
   font-weight: 600;
   margin-top: 5px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Barlow Condensed', sans-serif;
 }
 .spp-metric-delta-pos { color: #00D559; }
 .spp-metric-delta-neg { color: #F24336; }
@@ -12691,7 +12691,7 @@ div[data-testid="stForm"] .stFormSubmitButton > button {
   background: linear-gradient(90deg, #00D559 0%, #00B84A 100%) !important;
   color: #03080E !important;
   font-weight: 800 !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Barlow Condensed', sans-serif !important;
   border: none !important;
   border-radius: 10px !important;
   padding: 10px 26px !important;
@@ -12737,7 +12737,7 @@ div[data-testid="stForm"] .stFormSubmitButton > button:hover {
     radial-gradient(ellipse 80% 60% at 50% 100%, rgba(0,213,89,0.04) 0%, transparent 70%);
   border-top: 1px solid rgba(255,255,255,0.06);
   text-align: center;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Barlow Condensed', sans-serif;
   animation: ppFadeUp 0.6s ease-out;
 }
 .spp-footer-logo {
@@ -12885,7 +12885,7 @@ div[data-testid="stForm"] .stFormSubmitButton > button:hover {
   font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.10em !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Barlow Condensed', sans-serif !important;
 }
 [data-testid="stMetricValue"] > div {
   font-family: 'JetBrains Mono', monospace !important;

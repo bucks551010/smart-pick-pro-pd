@@ -106,10 +106,12 @@ PLAYER_CARD_CSS = r"""
 .pc-props-scroll {
   display: flex; gap: 12px; align-items: flex-start;
   flex-wrap: nowrap;
-  overflow-x: auto; overflow-y: visible;
+  overflow-x: auto !important; overflow-y: visible;
   -webkit-overflow-scrolling: touch;
   padding: 10px 2px 16px;
-  max-width: 100vw;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   scrollbar-width: thin; scrollbar-color: rgba(99,102,241,0.60) transparent;
 }
 .pc-props-scroll::-webkit-scrollbar { height: 6px; }
@@ -120,7 +122,7 @@ PLAYER_CARD_CSS = r"""
 /* ── PP-style prop card (fixed width, expands vertically on click) ── */
 .pc-prop {
   flex-shrink: 0;
-  width: min(280px, 85vw);
+  width: min(238px, 85vw);
   background: linear-gradient(168deg, #1E2336 0%, #1A1F2E 35%, #161B27 100%);
   border: 1.5px solid rgba(255,255,255,0.08);
   border-radius: 22px;
@@ -130,7 +132,7 @@ PLAYER_CARD_CSS = r"""
   box-shadow: 0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 .pc-prop:hover { border-color:rgba(255,255,255,0.20); transform:translateY(-4px) scale(1.015); box-shadow:0 16px 40px rgba(0,0,0,0.6), 0 0 24px rgba(45,158,255,0.06), inset 0 1px 0 rgba(255,255,255,0.06); }
-.pc-prop[open] { width:min(420px, 92vw); border-color:rgba(0,213,89,0.28); box-shadow:0 8px 28px rgba(0,213,89,0.08); transform:none; }
+.pc-prop[open] { width:min(357px, 92vw); border-color:rgba(0,213,89,0.28); box-shadow:0 8px 28px rgba(0,213,89,0.08); transform:none; }
 .pc-prop-platinum { border-color:rgba(0,213,89,0.35) !important; box-shadow:0 0 24px rgba(0,213,89,0.14), 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,213,89,0.06); }
 .pc-prop-gold     { border-color:rgba(249,198,43,0.30) !important; box-shadow:0 0 22px rgba(249,198,43,0.12), 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(249,198,43,0.05); }
 
@@ -1254,5 +1256,7 @@ def compile_player_cards_flat(grouped_players):
             all_cards.append(_build_prop_card(p, player_info=player_info))
 
     return (
+        '<div style="overflow-x:auto;overflow-y:visible;width:100%;max-width:100%;">'
         f'<div class="pc-props-scroll" style="padding:10px 0 16px;">{"".join(all_cards)}</div>'
+        '</div>'
     )

@@ -231,6 +231,7 @@ def get_team_colors(team_abbrev):
 # Injected once per page via st.markdown(unsafe_allow_html=True)
 # ============================================================
 
+@_functools.lru_cache(maxsize=1)
 def get_global_css():
     """
     Return the full CSS string for the Smart Pick Pro AI theme.
@@ -372,6 +373,12 @@ def get_global_css():
 footer    { display: none !important; }
 .stDeployButton { display: none !important; }
 .block-container { padding-top: 1rem !important; }
+
+/* â"€â"€ Hide home/login from sidebar nav (utility pages, not app sections) â"€â"€ */
+[data-testid="stSidebarNavLink"][href$="/home"],
+[data-testid="stSidebarNavLink"][href$="/login"] {
+  display: none !important;
+}
 
 @media (min-width: 769px) {
   header[data-testid="stHeader"] { display: none !important; }
@@ -3977,6 +3984,7 @@ _QDS_NA_CSS = """
 """
 
 
+@_functools.lru_cache(maxsize=1)
 def get_qds_css():
     """Return the lightweight QDS CSS for the Neural Analysis page."""
     return _QDS_NA_CSS
@@ -5014,6 +5022,7 @@ _BET_CARD_CSS = """
 """
 
 
+@_functools.lru_cache(maxsize=1)
 def get_bet_card_css():
     """Return CSS for bet tracker cards."""
     return _BET_CARD_CSS
@@ -11755,6 +11764,7 @@ def get_prop_card_html(
 # Call: st.markdown(get_home_page_css(), unsafe_allow_html=True)
 # ============================================================
 
+@_functools.lru_cache(maxsize=1)
 def get_home_page_css() -> str:
     """Return the full CSS <style> block for the landing/home page.
 
@@ -12618,6 +12628,7 @@ def get_home_page_css() -> str:
 #   st.markdown(get_premium_ui_css(), unsafe_allow_html=True)
 # ============================================================
 
+@_functools.lru_cache(maxsize=1)
 def get_premium_ui_css() -> str:
     """Return supplemental CSS for premium UI components.
 

@@ -1458,8 +1458,8 @@ input:focus, textarea:focus, select:focus,
   [data-testid="stExpander"] summary { min-height:44px !important; padding:10px 14px !important; }
   [data-testid="stTabs"] [role="tablist"] { overflow-x:auto !important; -webkit-overflow-scrolling:touch !important; flex-wrap:nowrap !important; gap:4px !important; }
   [data-testid="stTabs"] button[role="tab"] { min-height:44px !important; white-space:nowrap !important; flex-shrink:0 !important; padding:8px 14px !important; font-size:0.85rem !important; }
-  img:not(.qcm-headshot):not(.upc-headshot):not(.bet-card-headshot):not(.gm-card-headshot):not(.gm-modal-headshot):not(.joseph-welcome-avatar):not(.upc-joseph-avatar):not(.upc-joseph-resp-avatar):not(.qds-player-img):not(.sweat-card-headshot):not(.joseph-floating-avatar):not(.joseph-avatar):not(.joseph-avatar-sm):not(.joseph-sidebar-avatar):not(.joseph-inline-avatar):not(.joseph-popover-avatar):not(.qam-mu-logo):not(.pc-head):not(.pc-id-avatar):not(.sc-headshot):not(.qeg-prop-hs):not(.qeg-detail-hs):not(.qeg-sum-head):not(.qam-hero-headshot):not(.plc-hs):not(.plat-headshot) { max-width:100% !important; height:auto !important; }
-  .sc-headshot, .qeg-prop-hs, .qeg-detail-hs, .qeg-sum-head, .qam-hero-headshot, .plc-hs, .plat-headshot, .qcm-headshot, .upc-headshot, .bet-card-headshot, .gm-card-headshot, .gm-modal-headshot, .sweat-card-headshot, .qds-player-img { object-fit: cover !important; aspect-ratio: 1 / 1; }
+  img:not(.qcm-headshot):not(.upc-headshot):not(.bet-card-headshot):not(.gm-card-headshot):not(.gm-modal-headshot):not(.joseph-welcome-avatar):not(.upc-joseph-avatar):not(.upc-joseph-resp-avatar):not(.qds-player-img):not(.sweat-card-headshot):not(.joseph-floating-avatar):not(.joseph-avatar):not(.joseph-avatar-sm):not(.joseph-sidebar-avatar):not(.joseph-inline-avatar):not(.joseph-popover-avatar):not(.qam-mu-logo):not(.pc-head):not(.pc-id-avatar):not(.pc-prop-hs):not(.sc-headshot):not(.qeg-prop-hs):not(.qeg-detail-hs):not(.qeg-sum-head):not(.qam-hero-headshot):not(.plc-hs):not(.plat-headshot) { max-width:100% !important; height:auto !important; }
+  .sc-headshot, .qeg-prop-hs, .qeg-detail-hs, .qeg-sum-head, .qam-hero-headshot, .plc-hs, .plat-headshot, .qcm-headshot, .upc-headshot, .bet-card-headshot, .gm-card-headshot, .gm-modal-headshot, .sweat-card-headshot, .qds-player-img, .pc-prop-hs { object-fit: cover !important; aspect-ratio: 1 / 1; }
   iframe { max-width:100% !important; }
   [data-testid="stPageLink"] a { min-height:44px !important; display:flex !important; align-items:center !important; }
   [data-testid="stMetricLabel"] { font-size:0.75rem !important; }
@@ -9881,18 +9881,21 @@ QUANTUM_CARD_MATRIX_CSS = """
 
 /* ── Tablet  (≤ 768px) ─────────────────────────────────────── */
 @media (max-width: 768px) {
-    /* --- Hero cards --- */
-    .qam-hero-grid { flex-direction: column; align-items: stretch; gap: 12px; }
-    .qam-hero-card { width: 100%; max-width: 100%; }
-    .qam-hero-hs-wrap, .qam-hero-headshot { width: 80px; height: 80px; }
-    .qam-hero-name { font-size: 1.0rem; }
-    .qam-hero-line { font-size: 2.6rem; }
-    .qam-hero-stat { font-size: 0.78rem; }
-    .qam-hero-dir { font-size: 0.88rem; padding: 10px 6px; }
-    .qam-hero-metrics { grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 10px 12px 14px; }
-    .qam-hero-metric-val { font-size: 0.85rem; }
-    .qam-hero-metric-label { font-size: 0.48rem; }
-    .qam-hero-line-area { padding: 10px 10px 4px; }
+    /* --- Hero cards — horizontal scroll on mobile (mirrors Platform AI Picks) --- */
+    .qam-hero-grid { flex-direction: row; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; align-items: flex-start; gap: 10px; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: rgba(99,102,241,0.25) transparent; }
+    .qam-hero-card { flex: 0 0 200px; min-width: 200px; max-width: 200px; width: 200px; }
+    .qam-hero-hs-wrap, .qam-hero-headshot { width: 64px; height: 64px; }
+    .qam-hero-name { font-size: 0.92rem; }
+    .qam-hero-line { font-size: 2.2rem; }
+    .qam-hero-stat { font-size: 0.70rem; }
+    .qam-hero-dir { font-size: 0.80rem; padding: 8px 6px; }
+    .qam-hero-metrics { grid-template-columns: repeat(2, 1fr); gap: 5px; padding: 8px 10px 10px; }
+    .qam-hero-metric-val { font-size: 0.78rem; }
+    .qam-hero-metric-label { font-size: 0.44rem; }
+    .qam-hero-line-area { padding: 8px 8px 4px; }
+    .qam-hero-status { padding: 8px 10px 4px; }
+    .qam-hero-proj-bar { margin: 4px 8px 2px; width: calc(100% - 16px); }
+    .qam-hero-range { width: calc(100% - 16px); margin: 0 8px; padding-bottom: 8px; }
 
     /* --- Parlay leg cards --- */
     .plc-row { gap: 12px; padding: 10px 10px 14px; }
@@ -9962,22 +9965,23 @@ QUANTUM_CARD_MATRIX_CSS = """
 
 /* ── Phone  (≤ 480px) ──────────────────────────────────────── */
 @media (max-width: 480px) {
-    /* --- Hero cards --- */
-    .qam-hero-card { border-radius: 16px; }
-    .qam-hero-hs-wrap, .qam-hero-headshot { width: 64px; height: 64px; }
-    .qam-hero-name { font-size: 0.88rem; }
-    .qam-hero-team-pos { font-size: 0.56rem; }
-    .qam-hero-line { font-size: 2.2rem; }
-    .qam-hero-stat { font-size: 0.68rem; }
-    .qam-hero-dir { font-size: 0.80rem; padding: 8px 4px; margin: 6px 10px 0; border-radius: 10px; }
-    .qam-hero-metrics { grid-template-columns: repeat(2, 1fr); gap: 5px; padding: 8px 10px 12px; }
-    .qam-hero-metric-val { font-size: 0.78rem; }
-    .qam-hero-metric-label { font-size: 0.42rem; }
-    .qam-hero-status { padding: 8px 10px 4px; }
-    .qam-hero-rank { font-size: 1.2rem; top: 10px; right: 12px; }
-    .qam-hero-proj-bar { width: calc(100% - 20px); margin: 6px 10px 4px; }
-    .qam-hero-range { width: calc(100% - 20px); margin: 0 10px; padding-bottom: 10px; }
-    .qam-hero-range-vals { font-size: 0.68rem; }
+    /* --- Hero cards — compact on small phones --- */
+    .qam-hero-card { flex: 0 0 175px; min-width: 175px; max-width: 175px; border-radius: 14px; }
+    .qam-hero-hs-wrap, .qam-hero-headshot { width: 52px; height: 52px; }
+    .qam-hero-name { font-size: 0.82rem; }
+    .qam-hero-team-pos { font-size: 0.50rem; }
+    .qam-hero-line { font-size: 1.9rem; }
+    .qam-hero-stat { font-size: 0.60rem; }
+    .qam-hero-dir { font-size: 0.72rem; padding: 6px 4px; margin: 4px 8px 0; border-radius: 8px; }
+    .qam-hero-metrics { grid-template-columns: repeat(2, 1fr); gap: 4px; padding: 6px 8px 8px; }
+    .qam-hero-metric-val { font-size: 0.70rem; }
+    .qam-hero-metric-label { font-size: 0.38rem; }
+    .qam-hero-status { padding: 6px 8px 2px; }
+    .qam-hero-rank { font-size: 1.0rem; top: 8px; right: 10px; }
+    .qam-hero-proj-bar { display: none; }
+    .qam-hero-range { width: calc(100% - 16px); margin: 0 8px; padding-bottom: 6px; }
+    .qam-hero-range-vals { font-size: 0.60rem; }
+    .qam-hero-line-area { padding: 6px 6px 2px; }
 
     /* --- Parlay leg cards --- */
     .plc-card { min-width: 180px; max-width: 240px; border-radius: 16px; }

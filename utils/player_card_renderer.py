@@ -374,6 +374,7 @@ PLAYER_CARD_CSS = r"""
   .pc-prop[open] { width:340px; }
   .pc-prop-big-line { font-size:2.6rem; }
   .pc-prop-hs-wrap { width:80px; height:80px; }
+  .pc-prop-hs { width:80px; height:80px; }
   .pc-identity { flex-wrap:wrap; }
   .pc-id-avatar { width:56px; height:56px; }
   .pc-id-stats { width:100%; justify-content:center; }
@@ -386,6 +387,7 @@ PLAYER_CARD_CSS = r"""
   .pc-prop[open] { width:280px; border-radius:16px; }
   .pc-prop-big-line { font-size:2.2rem; }
   .pc-prop-hs-wrap { width:64px; height:64px; }
+  .pc-prop-hs { width:64px; height:64px; }
   .pc-prop-player-name { font-size:0.82rem; }
   .pc-prop-stat-name { font-size:0.62rem; }
   .pc-prop-team-pos { font-size:0.56rem; }
@@ -396,6 +398,7 @@ PLAYER_CARD_CSS = r"""
   .pc-prop[open] { width:260px; }
   .pc-prop-big-line { font-size:1.9rem; }
   .pc-prop-hs-wrap { width:56px; height:56px; }
+  .pc-prop-hs { width:56px; height:56px; }
   .pc-prop-player-name { font-size:0.76rem; }
 }
 """

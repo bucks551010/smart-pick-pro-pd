@@ -171,84 +171,202 @@ def render_sidebar_auth() -> None:
 
         st.markdown(f"""
 <style>
-/* ── Smart Pick Pro sidebar identity card ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+/* ══════════════════════════════════════════════════════
+   SMART PICK PRO — Elite Sidebar Identity Card v2
+   ══════════════════════════════════════════════════════ */
 .sb-card {{
-  position:relative;border-radius:16px;padding:14px 14px 13px;
-  background:{_s['bg']};border:1px solid {_s['border']};
-  box-shadow:{_s['glow']};margin-bottom:10px;overflow:hidden;
+  position: relative;
+  border-radius: 18px;
+  padding: 0;
+  background: {_s['bg']};
+  border: 1px solid {_s['border']};
+  box-shadow: {_s['glow']};
+  margin-bottom: 12px;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }}
+/* Animated shimmer top bar */
 .sb-card::before {{
-  content:'';position:absolute;top:0;left:0;right:0;height:2.5px;
-  background:{_s['top_bar']};border-radius:16px 16px 0 0;
-  animation:sb-shimmer 3s linear infinite;background-size:200% 100%;
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: {_s['top_bar']};
+  background-size: 300% 100%;
+  border-radius: 18px 18px 0 0;
+  animation: sb-shimmer 3s linear infinite;
+}}
+/* Subtle inner glow overlay */
+.sb-card::after {{
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,255,255,0.04) 0%, transparent 70%);
+  pointer-events: none;
+  border-radius: 18px;
 }}
 @keyframes sb-shimmer {{
-  0%{{background-position:200% center}}
-  100%{{background-position:-200% center}}
+  0%   {{ background-position: 200% center }}
+  100% {{ background-position: -200% center }}
 }}
-.sb-avatar {{
-  width:36px;height:36px;border-radius:50%;
-  background:{_s['avatar_bg']};display:inline-flex;align-items:center;
-  justify-content:center;font-weight:900;font-size:1.0rem;
-  color:#fff;flex-shrink:0;
-  box-shadow:{_s['avatar_glow']},0 2px 8px rgba(0,0,0,0.50);
-}}
-.sb-email {{
-  color:#c8d8ee;font-size:0.74rem;font-weight:500;
-  font-family:'JetBrains Mono',monospace;letter-spacing:0.01em;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:148px;
-  opacity:0.90;
-}}
-.sb-badge {{
-  display:inline-block;padding:3px 10px;border-radius:100px;
-  background:{_s['badge_bg']};color:{_s['badge_clr']};
-  font-size:0.67rem;font-weight:800;letter-spacing:0.08em;
-  text-transform:uppercase;font-family:'Inter',sans-serif;
-  box-shadow:0 1px 8px rgba(0,0,0,0.40);
-}}
-.sb-upgrade-btn {{
-  display:block;margin-top:11px;padding:9px 0;
-  background:linear-gradient(90deg,#ff5e00,#ff8c00);border-radius:10px;
-  text-align:center;color:#fff!important;font-weight:800;
-  font-size:0.78rem;letter-spacing:0.07em;text-decoration:none!important;
-  font-family:'Inter',sans-serif;text-transform:uppercase;
-  box-shadow:0 0 20px rgba(255,94,0,0.45),0 2px 8px rgba(0,0,0,0.40);
-  transition:filter 0.2s,transform 0.2s;
-}}
-.sb-upgrade-btn:hover{{filter:brightness(1.18);transform:translateY(-1px);}}
 
-/* ── Elite Log Out button — crimson glow ── */
+/* Inner padding wrapper */
+.sb-inner {{
+  padding: 14px 14px 13px;
+  position: relative; z-index: 1;
+}}
+
+/* Avatar — larger, prominent ring */
+.sb-avatar {{
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: {_s['avatar_bg']};
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 1.1rem; color: #fff; flex-shrink: 0;
+  box-shadow: {_s['avatar_glow']}, 0 3px 12px rgba(0,0,0,0.55);
+  border: 2px solid rgba(255,255,255,0.18);
+  position: relative;
+}}
+/* Subtle pulse ring on the avatar */
+.sb-avatar::after {{
+  content: '';
+  position: absolute; inset: -4px;
+  border-radius: 50%;
+  border: 1.5px solid {_s['border']};
+  opacity: 0.55;
+  animation: sb-pulse 3s ease-in-out infinite;
+}}
+@keyframes sb-pulse {{
+  0%, 100% {{ transform: scale(1); opacity: 0.55; }}
+  50%       {{ transform: scale(1.07); opacity: 0.25; }}
+}}
+
+/* Email — mono, readable */
+.sb-email {{
+  color: #d4e4f7;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.01em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 152px;
+  line-height: 1.3;
+}}
+
+/* Tier badge — pill style */
+.sb-badge {{
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 100px;
+  background: {_s['badge_bg']};
+  color: {_s['badge_clr']};
+  font-size: 0.66rem; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.12);
+}}
+
+/* Stats row — compact metrics below email */
+.sb-stats {{
+  display: flex; gap: 8px; margin-top: 10px;
+}}
+.sb-stat {{
+  flex: 1;
+  background: rgba(0,0,0,0.22);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 9px;
+  padding: 5px 7px 4px;
+  text-align: center;
+}}
+.sb-stat-val {{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem; font-weight: 700;
+  color: #fff; line-height: 1.1;
+}}
+.sb-stat-lbl {{
+  font-size: 0.46rem; font-weight: 700;
+  color: rgba(255,255,255,0.38);
+  text-transform: uppercase; letter-spacing: 0.09em;
+  margin-top: 1px;
+}}
+
+/* Divider line inside card */
+.sb-divider {{
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  margin: 10px 0 9px;
+}}
+
+/* Upgrade CTA */
+.sb-upgrade-btn {{
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 10px 0; border-radius: 11px;
+  background: linear-gradient(90deg, #ff5e00 0%, #ff8c00 50%, #ffb300 100%);
+  background-size: 200% 100%;
+  text-align: center; color: #fff !important;
+  font-weight: 900; font-size: 0.80rem;
+  letter-spacing: 0.07em; text-decoration: none !important;
+  font-family: 'Inter', sans-serif; text-transform: uppercase;
+  box-shadow: 0 0 24px rgba(255,94,0,0.50), 0 3px 10px rgba(0,0,0,0.45);
+  transition: filter 0.2s, transform 0.18s, box-shadow 0.2s;
+  animation: sb-upgrade-glow 2.5s ease-in-out infinite;
+}}
+@keyframes sb-upgrade-glow {{
+  0%, 100% {{ box-shadow: 0 0 22px rgba(255,94,0,0.45), 0 3px 10px rgba(0,0,0,0.45); }}
+  50%       {{ box-shadow: 0 0 40px rgba(255,140,0,0.65), 0 3px 10px rgba(0,0,0,0.45); }}
+}}
+.sb-upgrade-btn:hover {{
+  filter: brightness(1.15);
+  transform: translateY(-2px);
+  box-shadow: 0 0 36px rgba(255,140,0,0.70), 0 6px 20px rgba(0,0,0,0.55) !important;
+}}
+
+/* ── Elite Log Out button ── */
 [data-testid="stSidebar"] .stButton > button {{
-  background: rgba(242,67,54,0.07) !important;
-  border: 1px solid rgba(242,67,54,0.30) !important;
-  color: #F0B8B4 !important;
-  font-weight: 700 !important;
-  font-size: 0.83rem !important;
-  letter-spacing: 0.06em !important;
-  text-transform: uppercase !important;
-  border-radius: 100px !important;
-  padding: 10px 22px !important;
-  min-height: 42px !important;
-  transition: all 0.22s ease !important;
+  width: 100% !important;
+  background: linear-gradient(135deg, rgba(242,67,54,0.06) 0%, rgba(180,30,20,0.08) 100%) !important;
+  border: 1px solid rgba(242,67,54,0.28) !important;
+  color: rgba(240,184,180,0.90) !important;
+  font-weight: 700 !important; font-size: 0.80rem !important;
+  letter-spacing: 0.08em !important; text-transform: uppercase !important;
+  border-radius: 11px !important;
+  padding: 10px 20px !important; min-height: 42px !important;
+  transition: all 0.22s cubic-bezier(0.16,1,0.3,1) !important;
   font-family: 'Inter', sans-serif !important;
+  position: relative !important; overflow: hidden !important;
+}}
+[data-testid="stSidebar"] .stButton > button::before {{
+  content: '' !important;
+  position: absolute !important; inset: 0 !important;
+  background: linear-gradient(135deg, rgba(242,67,54,0.0) 0%, rgba(242,67,54,0.0) 100%) !important;
+  transition: background 0.22s ease !important;
+  border-radius: 11px !important;
 }}
 [data-testid="stSidebar"] .stButton > button:hover {{
-  background: rgba(242,67,54,0.18) !important;
-  border-color: rgba(242,67,54,0.60) !important;
-  color: #F24336 !important;
-  box-shadow: 0 4px 22px rgba(242,67,54,0.30) !important;
+  background: linear-gradient(135deg, rgba(242,67,54,0.16) 0%, rgba(180,30,20,0.20) 100%) !important;
+  border-color: rgba(242,67,54,0.65) !important;
+  color: #ff6b60 !important;
+  box-shadow: 0 4px 22px rgba(242,67,54,0.28), inset 0 0 18px rgba(242,67,54,0.07) !important;
   transform: translateY(-1px) !important;
 }}
 </style>
 <div class="sb-card">
-  <div style="display:flex;align-items:center;gap:10px;">
-    <div class="sb-avatar">{_initial}</div>
-    <div style="min-width:0;flex:1;">
-      <div class="sb-email" title="{_email}">{_disp_email}</div>
-      <div style="margin-top:5px;"><span class="sb-badge">{_s['icon']} {_tier_label}</span></div>
+  <div class="sb-inner">
+    <div style="display:flex;align-items:center;gap:11px;">
+      <div class="sb-avatar">{_initial}</div>
+      <div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:5px;">
+        <div class="sb-email" title="{_email}">{_disp_email}</div>
+        <span class="sb-badge">{_s['icon']} {_tier_label}</span>
+      </div>
     </div>
+    <div class="sb-stats">
+      <div class="sb-stat"><div class="sb-stat-val">AI</div><div class="sb-stat-lbl">Engine</div></div>
+      <div class="sb-stat"><div class="sb-stat-val">5.6</div><div class="sb-stat-lbl">Version</div></div>
+      <div class="sb-stat"><div class="sb-stat-val">ON</div><div class="sb-stat-lbl">Live</div></div>
+    </div>
+    {f'<div class="sb-divider"></div><a href="{_PREM_PATH}" target="_self" class="sb-upgrade-btn"><span>🚀</span>Unlock Full Access</a>' if _tier == 'free' else ''}
   </div>
-{f'<a href="{_PREM_PATH}" target="_self" class="sb-upgrade-btn">🚀 Unlock Full Access</a>' if _tier == 'free' else ''}
 </div>
 """, unsafe_allow_html=True)
 
@@ -1330,6 +1448,52 @@ def render_sidebar_attribution() -> None:
         pass
 
     st.markdown("""
+<style>
+.spp-sidebar-attr {
+  position: relative;
+  background: linear-gradient(135deg, rgba(0,213,89,0.05) 0%, rgba(45,158,255,0.04) 100%);
+  border: 1px solid rgba(0,213,89,0.14);
+  border-radius: 13px;
+  padding: 11px 13px 10px;
+  margin: 8px 0 6px;
+  text-align: center;
+  overflow: hidden;
+}
+.spp-sidebar-attr::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0,213,89,0.40), rgba(45,158,255,0.30), transparent);
+}
+.spp-sidebar-attr-label {
+  color: rgba(255,255,255,0.28);
+  font-size: 0.56rem; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  margin-bottom: 4px;
+  font-family: 'Inter', sans-serif;
+}
+.spp-sidebar-attr-name {
+  color: #E8F0FC;
+  font-size: 0.84rem; font-weight: 800;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
+}
+.spp-sidebar-attr-role {
+  color: rgba(255,255,255,0.35);
+  font-size: 0.64rem; font-weight: 500;
+  margin-top: 2px; letter-spacing: 0.02em;
+  font-family: 'Inter', sans-serif;
+}
+.spp-sidebar-attr-badge {
+  display: inline-block;
+  background: linear-gradient(90deg, rgba(0,213,89,0.12), rgba(45,158,255,0.10));
+  color: #00D559;
+  font-size: 0.58rem; font-weight: 800;
+  padding: 3px 10px; border-radius: 100px;
+  border: 1px solid rgba(0,213,89,0.22);
+  margin-top: 6px; letter-spacing: 0.07em; text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+}
+</style>
 <div class="spp-sidebar-attr">
   <div class="spp-sidebar-attr-label">Platform Architecture</div>
   <div class="spp-sidebar-attr-name">Joseph M. Smith</div>

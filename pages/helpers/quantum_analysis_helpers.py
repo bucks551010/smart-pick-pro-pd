@@ -587,7 +587,7 @@ def render_quantum_edge_gap_card_html(result: dict, rank: int = 0) -> str:
     delay_style = f' style="animation-delay:{(rank - 1) * 0.06:.2f}s;"' if rank > 0 else ""
 
     # Headshot HTML
-    _onerror_hide = 'this.style.display="none"'
+    _onerror_hide = "this.style.display='none'"
     hs_img = (
         f'<img class="qeg-prop-hs" src="{_html.escape(headshot_url)}" '
         f'alt="{player_name}" loading="lazy" '
@@ -626,7 +626,7 @@ def render_quantum_edge_gap_card_html(result: dict, rank: int = 0) -> str:
     prop_call_cls = "qeg-detail-prop-over" if direction == "OVER" else "qeg-detail-prop-under"
 
     # Detail header
-    _onerror_hide_detail = 'this.style.display="none"'
+    _onerror_hide_detail = "this.style.display='none'"
     detail_hs = (
         f'<img class="qeg-detail-hs" src="{_html.escape(headshot_url)}" '
         f'alt="{player_name}" loading="lazy" '
@@ -843,7 +843,7 @@ def render_quantum_edge_gap_grouped_html(picks: list) -> str:
         headshot_url = (
             f"{_NBA_HEADSHOT_CDN}/{player_id}.png" if player_id else ""
         )
-        _onerr_sum = 'this.style.display="none"'
+        _onerr_sum = "this.style.display='none'"
         headshot_img = (
             f'<img class="qeg-sum-head" src="{_html.escape(headshot_url)}" '
             f'alt="{_html.escape(player_name)}" loading="lazy" '
@@ -1170,7 +1170,7 @@ def _render_single_leg_html(leg_info: dict, raw_picks: list) -> str:
     team_colors = get_team_colors(leg_info.get("player_team", leg_info.get("team", "")) or "")
     team_color = team_colors[0] if team_colors else "rgba(255,255,255,0.12)"
 
-    _onerror_hide_plc = 'this.style.display="none"'
+    _onerror_hide_plc = "this.style.display='none'"
     headshot_html = (
         f'<div class="plc-hs-wrap">'
         f'<img class="plc-hs" '
@@ -1446,7 +1446,7 @@ def render_hero_section_html(top_picks: list) -> str:
         )
         team_colors = get_team_colors(r.get("player_team", "") or "")
         team_color = team_colors[0] if team_colors else "rgba(255,255,255,0.12)"
-        _onerror_hero = 'this.style.display="none"'
+        _onerror_hero = "this.style.display='none'"
         headshot_html = (
             f'<div class="qam-hero-hs-wrap">'
             f'<img class="qam-hero-headshot" '
@@ -1631,7 +1631,7 @@ def render_platform_picks_html(picks: list) -> str:
             f"https://cdn.nba.com/headshots/nba/latest/1040x760/{player_id}.png"
             if player_id else ""
         )
-        _onerror_plat = 'this.style.display="none"'
+        _onerror_plat = "this.style.display='none'"
         headshot_html = (
             f'<div class="plat-hs-wrap">'
             f'<img class="plat-headshot" '

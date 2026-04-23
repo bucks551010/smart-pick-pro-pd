@@ -1205,13 +1205,13 @@ def seed_admin_account() -> None:
             existing = db.fetchone("SELECT user_id FROM users WHERE email = ?", (admin_email,))
             if existing:
                 db.execute(
-                    "UPDATE users SET password_hash = ?, is_admin = 1 WHERE email = ?",
+                    "UPDATE users SET password_hash = ?, is_admin = 1, plan_tier = 'insider_circle' WHERE email = ?",
                     (pw_hash, admin_email),
                 )
             else:
                 db.execute(
-                    "INSERT INTO users (email, password_hash, display_name, is_admin) "
-                    "VALUES (?, ?, ?, 1)",
+                    "INSERT INTO users (email, password_hash, display_name, is_admin, plan_tier) "
+                    "VALUES (?, ?, ?, 1, 'insider_circle')",
                     (admin_email, pw_hash, "Admin"),
                 )
         _logger.info("Admin account seeded for %s", admin_email)

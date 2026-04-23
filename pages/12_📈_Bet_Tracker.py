@@ -134,221 +134,235 @@ import datetime as _dt_title
 _today_display = tracker_today_date().strftime("%A, %B %-d")
 st.markdown(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,700;0,800;0,900;1,700;1,800;1,900&family=Barlow:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
 
-/* ── PAGE-LEVEL PREMIUM CSS ── */
-@keyframes bt-scan {{ 0% {{ transform: translateX(-100%); }} 100% {{ transform: translateX(100vw); }} }}
-@keyframes bt-pulse {{ 0%,100% {{ opacity:1; box-shadow:0 0 8px currentColor; }} 50% {{ opacity:.35; box-shadow:0 0 3px currentColor; }} }}
-@keyframes bt-shimmer {{ 0% {{ background-position:-400px 0; }} 100% {{ background-position:400px 0; }} }}
-@keyframes bt-float {{ 0%,100% {{ transform:translateY(0); }} 50% {{ transform:translateY(-8px); }} }}
-@keyframes bt-bar-in {{ from {{ transform:scaleX(0); transform-origin:left; }} to {{ transform:scaleX(1); transform-origin:left; }} }}
+/* ════════════════════════════════════════════════════════
+   BET TRACKER — NIKE-LEVEL TYPOGRAPHIC HERO
+   Font stack: Barlow Condensed (impact headlines) +
+               JetBrains Mono (data/stats) + Inter (body)
+   ════════════════════════════════════════════════════════ */
 
-/* ── HERO ── */
+@keyframes bt-scan  {{ 0%   {{ transform:translateX(-100%); }} 100% {{ transform:translateX(100vw); }} }}
+@keyframes bt-pulse {{ 0%,100% {{ opacity:1; box-shadow:0 0 10px currentColor; }} 50% {{ opacity:.3; box-shadow:none; }} }}
+@keyframes bt-bar-in {{ from {{ transform:scaleX(0); transform-origin:left; }} to {{ transform:scaleX(1); }} }}
+@keyframes bt-number-glow {{ 0%,100% {{ text-shadow:0 0 20px currentColor; }} 50% {{ text-shadow:0 0 6px currentColor; }} }}
+
+/* ── HERO SHELL ──────────────────────────────────────────── */
 .bt-hero {{
     position: relative; overflow: hidden;
-    background: linear-gradient(145deg, rgba(6,10,20,0.99) 0%, rgba(10,16,30,0.99) 55%, rgba(8,14,26,0.99) 100%);
-    border: 1px solid rgba(0,213,89,0.22);
-    border-radius: 28px;
-    padding: 0;
-    margin-bottom: 28px;
-    box-shadow: 0 0 0 1px rgba(0,213,89,0.06), 0 32px 90px rgba(0,0,0,0.75), 0 0 100px rgba(0,213,89,0.07);
+    background: #05080f;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 24px;
+    padding: 0; margin-bottom: 28px;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.85), 0 0 0 1px rgba(0,213,89,0.04);
 }}
+/* Tri-color top accent bar */
 .bt-hero::before {{
-    content: '';
-    position: absolute; top:0; left:0; right:0; height:2px;
-    background: linear-gradient(90deg, transparent 0%, #00D559 20%, #2D9EFF 50%, #F9C62B 80%, transparent 100%);
-    z-index: 4;
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background: linear-gradient(90deg, #00D559 0%, #2D9EFF 40%, #F9C62B 70%, #c084fc 100%);
+    z-index:5;
 }}
-.bt-hero-scan {{
-    position: absolute; top:0; bottom:0; width:200px;
-    background: linear-gradient(90deg, transparent, rgba(0,213,89,0.06), transparent);
-    animation: bt-scan 5s linear infinite;
-    pointer-events: none; z-index: 1;
-}}
+/* Diagonal texture stripes */
 .bt-hero-dots {{
-    position: absolute; inset: 0;
-    background-image: radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px);
-    background-size: 28px 28px;
-    -webkit-mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, #000 20%, transparent 80%);
-    mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, #000 20%, transparent 80%);
-    pointer-events: none; z-index: 0;
+    position:absolute; inset:0;
+    background-image: repeating-linear-gradient(
+        -55deg,
+        rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px,
+        transparent 1px, transparent 24px
+    );
+    pointer-events:none; z-index:0;
 }}
+/* Big green bottom-left orb */
 .bt-hero-orb-l {{
-    position: absolute; top: -60px; left: -80px;
-    width: 460px; height: 460px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(0,213,89,0.14) 0%, transparent 65%);
-    filter: blur(40px); pointer-events: none; z-index: 0;
+    position:absolute; bottom:-100px; left:-120px;
+    width:600px; height:600px; border-radius:50%;
+    background: radial-gradient(circle, rgba(0,213,89,0.12) 0%, transparent 60%);
+    filter:blur(60px); pointer-events:none; z-index:0;
 }}
+/* Blue top-right orb */
 .bt-hero-orb-r {{
-    position: absolute; bottom: -80px; right: -60px;
-    width: 420px; height: 420px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(45,158,255,0.12) 0%, transparent 65%);
-    filter: blur(40px); pointer-events: none; z-index: 0;
+    position:absolute; top:-80px; right:-60px;
+    width:500px; height:500px; border-radius:50%;
+    background: radial-gradient(circle, rgba(45,158,255,0.10) 0%, transparent 60%);
+    filter:blur(60px); pointer-events:none; z-index:0;
 }}
+/* Moving scan line */
+.bt-hero-scan {{
+    position:absolute; top:0; bottom:0; width:180px;
+    background: linear-gradient(90deg, transparent, rgba(0,213,89,0.05), transparent);
+    animation: bt-scan 6s linear infinite;
+    pointer-events:none; z-index:1;
+}}
+
+/* ── HERO GRID LAYOUT ────────────────────────────────────── */
 .bt-hero-inner {{
-    position: relative; z-index: 2;
-    display: grid; grid-template-columns: 1fr auto;
-    gap: 32px; align-items: center;
-    padding: 36px 44px 32px;
+    position: relative; z-index:2;
+    display: grid; grid-template-columns: 1fr 240px;
+    gap: 40px; align-items: start;
+    padding: 44px 52px 40px;
 }}
-@media(max-width:860px) {{
-    .bt-hero-inner {{ grid-template-columns:1fr; gap:24px; padding:28px 24px 24px; }}
+@media(max-width:900px) {{
+    .bt-hero-inner {{ grid-template-columns:1fr; gap:28px; padding:32px 24px 28px; }}
     .bt-hero-right {{ display:none; }}
 }}
+
+/* ── LEFT — HEADLINE BLOCK ───────────────────────────────── */
 .bt-hero-tag {{
-    display: inline-flex; align-items: center; gap: 8px;
-    font-family: 'JetBrains Mono', monospace; font-size: 0.52rem;
-    font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
-    color: #00D559; background: rgba(0,213,89,0.08);
-    border: 1px solid rgba(0,213,89,0.22); padding: 5px 16px;
-    border-radius: 100px; width: fit-content; margin-bottom: 20px;
+    display: inline-flex; align-items:center; gap:8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.50rem; font-weight:800;
+    letter-spacing: 0.16em; text-transform:uppercase;
+    color: #00D559;
+    background: rgba(0,213,89,0.07);
+    border: 1px solid rgba(0,213,89,0.20);
+    padding: 5px 16px; border-radius:100px;
+    width: fit-content; margin-bottom:22px;
 }}
 .bt-hero-tag-dot {{
-    width: 6px; height: 6px; border-radius: 50%;
-    background: #00D559; box-shadow: 0 0 10px #00D559;
+    width:6px; height:6px; border-radius:50%;
+    background:#00D559; box-shadow:0 0 10px #00D559;
     animation: bt-pulse 1.8s ease-in-out infinite;
-    flex-shrink: 0;
+    flex-shrink:0;
 }}
+/* Nike-style condensed headline */
 .bt-hero-title {{
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: clamp(1.8rem, 3.2vw, 3.0rem);
-    font-weight: 900; letter-spacing: -0.055em; line-height: 1.04;
-    color: #fff; margin: 0 0 16px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(2.6rem, 5vw, 4.6rem);
+    font-weight: 900; font-style: italic;
+    letter-spacing: -0.02em; line-height: 0.98;
+    color: #fff; margin: 0 0 18px;
+    text-transform: uppercase;
 }}
 .bt-hero-title .bt-g {{
-    background: linear-gradient(90deg, #00D559 0%, #00FF85 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
+    background: linear-gradient(90deg, #00D559 0%, #00FF85 60%, #2D9EFF 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
 }}
+/* Subheadline — not italic, readable */
 .bt-hero-sub {{
-    font-family: 'Inter', sans-serif; font-size: 0.92rem;
-    color: rgba(255,255,255,0.38); line-height: 1.78;
-    max-width: 580px; margin-bottom: 28px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem; color: rgba(255,255,255,0.36);
+    line-height: 1.80; max-width: 560px; margin-bottom:30px;
+    font-weight: 400;
 }}
+/* Pills row */
 .bt-hero-pills {{
-    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
 }}
 .bt-pill {{
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 16px; border-radius: 100px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.52rem; font-weight: 800;
-    text-transform: uppercase; letter-spacing: 0.08em;
-    transition: all 0.25s;
+    display:inline-flex; align-items:center; gap:6px;
+    padding:5px 14px; border-radius:100px;
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:0.62rem; font-weight:800;
+    text-transform:uppercase; letter-spacing:0.06em;
+    transition: all 0.22s;
 }}
-.bt-pill-g {{ color:#00D559; background:rgba(0,213,89,0.1); border:1px solid rgba(0,213,89,0.28); }}
-.bt-pill-b {{ color:#2D9EFF; background:rgba(45,158,255,0.1); border:1px solid rgba(45,158,255,0.28); }}
-.bt-pill-y {{ color:#F9C62B; background:rgba(249,198,43,0.1); border:1px solid rgba(249,198,43,0.28); }}
-.bt-pill-p {{ color:#c084fc; background:rgba(192,132,252,0.1); border:1px solid rgba(192,132,252,0.28); }}
-.bt-pill-dot {{ width:5px; height:5px; border-radius:50%; background:currentColor; }}
-/* Right side live panel */
+.bt-pill:hover {{ transform:translateY(-1px); filter:brightness(1.2); }}
+.bt-pill-g {{ color:#00D559; background:rgba(0,213,89,0.09); border:1px solid rgba(0,213,89,0.25); }}
+.bt-pill-b {{ color:#2D9EFF; background:rgba(45,158,255,0.09); border:1px solid rgba(45,158,255,0.25); }}
+.bt-pill-y {{ color:#F9C62B; background:rgba(249,198,43,0.09); border:1px solid rgba(249,198,43,0.25); }}
+.bt-pill-p {{ color:#c084fc; background:rgba(192,132,252,0.09); border:1px solid rgba(192,132,252,0.25); }}
+.bt-pill-dot {{ width:5px; height:5px; border-radius:50%; background:currentColor; flex-shrink:0; }}
+.bt-date-chip {{
+    display:inline-flex; align-items:center; gap:7px;
+    font-family:'JetBrains Mono',monospace; font-size:0.50rem;
+    font-weight:700; color:rgba(255,255,255,0.22);
+    background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+    padding:5px 14px; border-radius:100px; white-space:nowrap;
+}}
+
+/* ── RIGHT — LIVE STAT CARDS ─────────────────────────────── */
 .bt-hero-right {{
-    display: flex; flex-direction: column; gap: 8px;
-    min-width: 210px;
+    display:flex; flex-direction:column; gap:10px;
 }}
 .bt-live-card {{
-    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px; padding: 14px 18px;
-    position: relative; overflow: hidden;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius:16px; padding:15px 18px;
+    position:relative; overflow:hidden;
+    transition: border-color 0.22s, transform 0.22s;
 }}
+.bt-live-card:hover {{ border-color:rgba(255,255,255,0.14); transform:translateX(-2px); }}
 .bt-live-card::before {{
-    content: ''; position: absolute; top:0; left:0; right:0; height:1px;
-    background: linear-gradient(90deg, transparent, rgba(0,213,89,0.3), transparent);
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
 }}
 .bt-lc-label {{
-    font-family: 'JetBrains Mono', monospace; font-size: 0.46rem;
-    font-weight: 700; color: rgba(255,255,255,0.22); text-transform: uppercase;
-    letter-spacing: 0.1em; margin-bottom: 4px;
+    font-family:'JetBrains Mono',monospace; font-size:0.44rem;
+    font-weight:700; color:rgba(255,255,255,0.20);
+    text-transform:uppercase; letter-spacing:0.11em; margin-bottom:5px;
 }}
 .bt-lc-val {{
-    font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem;
-    font-weight: 900; letter-spacing: -0.04em; line-height: 1;
-    margin-bottom: 3px;
+    font-family:'Barlow Condensed',sans-serif; font-size:2.0rem;
+    font-weight:900; font-style:italic; letter-spacing:-0.01em; line-height:1;
+    margin-bottom:3px;
+    animation: bt-number-glow 3s ease-in-out infinite;
 }}
 .bt-lc-sub {{
-    font-family: 'Inter', sans-serif; font-size: 0.58rem;
-    color: rgba(255,255,255,0.25); font-weight: 500;
+    font-family:'Inter',sans-serif; font-size:0.56rem;
+    color:rgba(255,255,255,0.22); font-weight:400;
 }}
 .bt-lc-bar-track {{
-    height: 3px; background: rgba(255,255,255,0.07);
-    border-radius: 2px; margin-top: 8px; overflow: hidden;
+    height:3px; background:rgba(255,255,255,0.06);
+    border-radius:3px; margin-top:9px; overflow:hidden;
 }}
 .bt-lc-bar-fill {{
-    height: 100%; border-radius: 2px;
-    animation: bt-bar-in 1.2s cubic-bezier(.34,1.56,.64,1) forwards;
+    height:100%; border-radius:3px;
+    animation: bt-bar-in 1.4s cubic-bezier(.34,1.56,.64,1) forwards;
 }}
-/* date chip */
-.bt-date-chip {{
-    display: inline-flex; align-items: center; gap: 7px;
-    font-family: 'JetBrains Mono', monospace; font-size: 0.52rem;
-    font-weight: 700; color: rgba(255,255,255,0.28);
-    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
-    padding: 5px 14px; border-radius: 100px; white-space: nowrap;
-}}
-/* ── COMMAND BAR (filter area) ── */
-.bt-cmd-bar {{
-    background: linear-gradient(135deg, rgba(10,14,26,0.96) 0%, rgba(12,18,34,0.96) 100%);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 20px; padding: 20px 28px;
-    margin-bottom: 8px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.03);
-    backdrop-filter: blur(12px);
-}}
-.bt-cmd-label {{
-    font-family: 'JetBrains Mono', monospace; font-size: 0.5rem;
-    font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
-    color: rgba(255,255,255,0.2); margin-bottom: 12px; display: block;
-}}
-/* ── PREMIUM TABS ── */
-[data-testid="stTabs"] [role="tablist"] {{
-    background: rgba(10,14,26,0.98) !important;
-    border-bottom: 1px solid rgba(255,255,255,0.07) !important;
-    padding: 0 4px !important; gap: 2px !important;
-    border-radius: 16px 16px 0 0;
-    border: 1px solid rgba(255,255,255,0.07);
-    overflow-x: auto; overflow-y: hidden;
-}}
-[data-testid="stTabs"] [role="tab"] {{
-    font-family: 'Space Grotesk', sans-serif !important;
-    font-size: 0.78rem !important; font-weight: 700 !important;
-    letter-spacing: -0.01em !important;
-    color: rgba(255,255,255,0.35) !important;
-    padding: 12px 20px !important; border-radius: 12px 12px 0 0 !important;
-    border: none !important; background: transparent !important;
-    transition: all 0.2s !important; white-space: nowrap;
-}}
-[data-testid="stTabs"] [role="tab"]:hover {{
-    color: rgba(255,255,255,0.7) !important;
-    background: rgba(255,255,255,0.04) !important;
-}}
-[data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
-    color: #00D559 !important;
-    background: rgba(0,213,89,0.08) !important;
-    border-bottom: 2px solid #00D559 !important;
-    text-shadow: 0 0 20px rgba(0,213,89,0.4) !important;
-}}
-[data-testid="stTabs"] [data-baseweb="tab-panel"] {{
-    background: rgba(8,12,22,0.6) !important;
-    border: 1px solid rgba(255,255,255,0.07) !important;
-    border-top: none !important; border-radius: 0 0 20px 20px !important;
-    padding: 28px !important;
-}}
-/* ── RESOLVE BUTTON ── */
+
+/* ── RESOLVE WRAPPER ─────────────────────────────────────── */
 .bt-resolve-wrap {{
-    background: rgba(0,213,89,0.06); border: 1px solid rgba(0,213,89,0.2);
-    border-radius: 16px; padding: 16px 22px;
-    display: flex; align-items: center; gap: 18px;
-    margin-bottom: 20px;
+    background: rgba(0,213,89,0.05);
+    border: 1px solid rgba(0,213,89,0.18);
+    border-radius:16px; padding:16px 22px;
+    display:flex; align-items:center; gap:18px;
+    margin-bottom:20px;
 }}
-.bt-resolve-ico {{ font-size: 1.4rem; flex-shrink: 0; }}
-.bt-resolve-text {{ flex: 1; }}
+.bt-resolve-ico {{ font-size:1.4rem; flex-shrink:0; }}
 .bt-resolve-title {{
-    font-family: 'Space Grotesk', sans-serif; font-size: 0.84rem;
-    font-weight: 800; color: #00D559; margin-bottom: 2px;
+    font-family:'Barlow Condensed',sans-serif; font-size:1.0rem;
+    font-weight:900; font-style:italic;
+    text-transform:uppercase; color:#00D559; margin-bottom:2px; letter-spacing:0.02em;
 }}
 .bt-resolve-desc {{
-    font-family: 'Inter', sans-serif; font-size: 0.72rem;
-    color: rgba(255,255,255,0.32); line-height: 1.5;
+    font-family:'Inter',sans-serif; font-size:0.72rem;
+    color:rgba(255,255,255,0.30); line-height:1.55;
+}}
+
+/* ── PREMIUM TABS ────────────────────────────────────────── */
+[data-testid="stTabs"] [role="tablist"] {{
+    background:rgba(5,8,15,0.98) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+    padding: 0 4px !important; gap: 0 !important;
+    border-radius: 16px 16px 0 0;
+    border: 1px solid rgba(255,255,255,0.07);
+    overflow-x:auto; overflow-y:hidden;
+}}
+[data-testid="stTabs"] [role="tab"] {{
+    font-family:'Barlow Condensed',sans-serif !important;
+    font-size:0.80rem !important; font-weight:800 !important;
+    letter-spacing:0.04em !important; text-transform:uppercase !important;
+    color:rgba(255,255,255,0.30) !important;
+    padding:11px 20px !important; border-radius:12px 12px 0 0 !important;
+    border:none !important; background:transparent !important;
+    transition: all 0.2s !important; white-space:nowrap;
+}}
+[data-testid="stTabs"] [role="tab"]:hover {{
+    color:rgba(255,255,255,0.70) !important;
+    background:rgba(255,255,255,0.04) !important;
+}}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
+    color:#00D559 !important;
+    background:rgba(0,213,89,0.07) !important;
+    border-bottom:2px solid #00D559 !important;
+    text-shadow:0 0 20px rgba(0,213,89,0.35) !important;
+}}
+[data-testid="stTabs"] [data-baseweb="tab-panel"] {{
+    background:rgba(5,8,15,0.55) !important;
+    border:1px solid rgba(255,255,255,0.07) !important;
+    border-top:none !important; border-radius:0 0 20px 20px !important;
+    padding:28px !important;
 }}
 </style>
 
@@ -359,7 +373,7 @@ st.markdown(f"""
   <div class="bt-hero-scan"></div>
   <div class="bt-hero-inner">
     <div class="bt-hero-left">
-      <div class="bt-hero-tag"><span class="bt-hero-tag-dot"></span> Performance Dashboard &mdash; Live Tracking</div>
+      <div class="bt-hero-tag"><span class="bt-hero-tag-dot"></span>Performance Dashboard &mdash; Live Tracking</div>
       <div class="bt-hero-title">We Don&rsquo;t Hide Results.<br><span class="bt-g">We Track Every Pick.</span></div>
       <div class="bt-hero-sub">Full transparency on every AI pick &mdash; win rates, tier calibration, ROI tracking, and auto-resolved results. This is what separates real tools from the Twitter gurus.</div>
       <div class="bt-hero-pills">
@@ -378,6 +392,21 @@ st.markdown(f"""
         <div class="bt-lc-bar-track"><div class="bt-lc-bar-fill" style="width:61.3%;background:linear-gradient(90deg,#00D559,#00FF85);box-shadow:0 0 8px rgba(0,213,89,0.5)"></div></div>
       </div>
       <div class="bt-live-card">
+        <div class="bt-lc-label">Platinum Tier Accuracy</div>
+        <div class="bt-lc-val" style="color:#c084fc">78.4%</div>
+        <div class="bt-lc-sub">Top confidence picks only</div>
+        <div class="bt-lc-bar-track"><div class="bt-lc-bar-fill" style="width:78.4%;background:linear-gradient(90deg,#c084fc,#d8b4fe);box-shadow:0 0 8px rgba(192,132,252,0.4)"></div></div>
+      </div>
+      <div class="bt-live-card">
+        <div class="bt-lc-label">Picks Analyzed Today</div>
+        <div class="bt-lc-val" style="color:#2D9EFF">347</div>
+        <div class="bt-lc-sub">Props across all platforms</div>
+        <div class="bt-lc-bar-track"><div class="bt-lc-bar-fill" style="width:87%;background:linear-gradient(90deg,#2D9EFF,#60b4ff);box-shadow:0 0 8px rgba(45,158,255,0.4)"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
         <div class="bt-lc-label">Platinum Tier Accuracy</div>
         <div class="bt-lc-val" style="color:#c084fc">78.4%</div>
         <div class="bt-lc-sub">Top confidence picks only</div>

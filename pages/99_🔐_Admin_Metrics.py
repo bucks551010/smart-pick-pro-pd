@@ -1209,3 +1209,733 @@ try:
 
 except Exception as _infra_exc:
     st.warning(f"Could not load infrastructure data: {_infra_exc}")
+
+st.divider()
+
+
+# ═══════════════════════════════════════════════════════════
+# ROW 14 — Data Freshness & API Health
+# ═══════════════════════════════════════════════════════════
+
+st.subheader("📡 Data Freshness & API Health")
+
+try:
+    from data.nba_data_service import load_last_updated as _llu
+    from tracking.database import get_database_connection as _gdc6, is_game_log_cache_stale as _icls
+
+    _lu = _llu() or {}
+
+    # ── Staleness check helpers ───────────────────────────────────────────────
+    def _staleness_flag(ts_str):
+        """Return (age_str, is_stale) for a timestamp string."""
+        if not ts_str:
+            return "never", True
+        try:
+            _ts = datetime.fromisoformat(str(ts_str).replace("Z", "+00:00"))
+            if _ts.tzinfo is None:
+                _ts = _ts.replace(tzinfo=timezone.utc)
+            _age = datetime.now(timezone.utc) - _ts
+            _h = int(_age.total_seconds() // 3600)
+            _m = int((_age.total_seconds() % 3600) // 60)
+            return (f"{_h}h {_m}m ago", _age.total_seconds() > 86400)
+        except Exception:
+            return str(ts_str)[:16], False
+
+    # ── KPIs ─────────────────────────────────────────────────────────────────
+    _df_c1, _df_c2, _df_c3, _df_c4 = st.columns(4)
+
+    _props_ts = _lu.get("props") or _lu.get("prop_lines") or _lu.get("last_updated")
+    _games_ts = _lu.get("games") or _lu.get("todays_games")
+    _players_ts = _lu.get("players") or _lu.get("player_stats")
+
+    _props_age, _props_stale = _staleness_flag(_props_ts)
+    _games_age, _games_stale = _staleness_flag(_games_ts)
+    _players_age, _players_stale = _staleness_flag(_players_ts)
+
+    _df_c1.metric("Props Last Fetched",   _props_age,   delta="⚠️ STALE" if _props_stale else None,
+                  delta_color="inverse")
+    _df_c2.metric("Games Last Fetched",   _games_age,   delta="⚠️ STALE" if _games_stale else None,
+                  delta_color="inverse")
+    _df_c3.metric("Players Last Fetched", _players_age, delta="⚠️ STALE" if _players_stale else None,
+                  delta_color="inverse")
+
+    # ── Game log cache staleness ──────────────────────────────────────────────
+    with _gdc6() as _dfc:
+        import sqlite3 as _sqlite3
+        _dfc.row_factory = _sqlite3.Row
+        _cache_rows = [dict(r) for r in _dfc.execute(
+            """
+            SELECT player_id, player_name,
+                   MAX(retrieved_at) AS last_fetched,
+                   COUNT(*) AS log_rows
+            FROM player_game_logs
+            GROUP BY player_id
+            ORDER BY last_fetched ASC
+            LIMIT 20
+            """
+        ).fetchall()]
+
+        _total_cached = (dict(_dfc.execute(
+            "SELECT COUNT(DISTINCT player_id) AS cnt FROM player_game_logs"
+        ).fetchone() or {}) or {}).get("cnt", 0)
+
+        _stale_cached = (dict(_dfc.execute(
+            "SELECT COUNT(DISTINCT player_id) AS cnt FROM player_game_logs "
+            "WHERE retrieved_at < datetime('now','-24 hours')"
+        ).fetchone() or {}) or {}).get("cnt", 0)
+
+    _df_c4.metric("Cached Players", f"{_total_cached} ({_stale_cached} stale)")
+
+    # ── All last_updated keys table ───────────────────────────────────────────
+    if _lu:
+        with st.expander("🕐 Full Data Freshness Log", expanded=False):
+            _lu_rows = [{"data_type": k, "last_updated": v} for k, v in _lu.items()]
+            st.dataframe(pd.DataFrame(_lu_rows), use_container_width=True, hide_index=True)
+
+    # ── Stalest cached players ────────────────────────────────────────────────
+    if _cache_rows:
+        with st.expander("🏀 Stalest Game Log Cache Entries (oldest 20)", expanded=False):
+            st.dataframe(pd.DataFrame(_cache_rows), use_container_width=True, hide_index=True)
+
+    # ── API call telemetry ────────────────────────────────────────────────────
+    _api_calls = query_telemetry(
+        """
+        SELECT SUBSTR(timestamp,1,10) AS day,
+               feature_name,
+               COUNT(*) AS calls
+        FROM telemetry_features
+        WHERE feature_name LIKE '%nba%' OR feature_name LIKE '%api%' OR feature_name LIKE '%fetch%'
+          AND timestamp >= ?
+        GROUP BY day, feature_name ORDER BY day DESC, calls DESC
+        LIMIT 50
+        """,
+        (_7D_AGO,),
+    )
+    if _api_calls:
+        with st.expander("📊 API-Related Feature Calls (7 d)", expanded=False):
+            st.dataframe(pd.DataFrame(_api_calls), use_container_width=True, hide_index=True)
+
+    # ── Prop scanner daily summary from all_analysis_picks ───────────────────
+    with _gdc6() as _psc:
+        _psc.row_factory = _sqlite3.Row
+        _scan_daily = [dict(r) for r in _psc.execute(
+            """
+            SELECT SUBSTR(pick_date,1,10) AS day,
+                   COUNT(*) AS picks_generated,
+                   ROUND(AVG(COALESCE(edge_percentage,0)),1) AS avg_edge,
+                   ROUND(AVG(COALESCE(confidence_score,0)),1) AS avg_confidence,
+                   SUM(CASE WHEN LOWER(COALESCE(tier,'')) IN ('platinum','gold') THEN 1 ELSE 0 END) AS elite_picks
+            FROM all_analysis_picks
+            WHERE pick_date >= ?
+            GROUP BY day ORDER BY day DESC
+            """,
+            (_14D_AGO[:10],),
+        ).fetchall()]
+
+    if _scan_daily:
+        with st.expander("⚡ Prop Scanner Daily Output (14 d)", expanded=False):
+            try:
+                import plotly.express as _px
+                _df_scan = pd.DataFrame(_scan_daily).sort_values("day")
+                _fig_scan = _px.bar(
+                    _df_scan, x="day", y="picks_generated",
+                    color="avg_edge", color_continuous_scale="Teal",
+                    labels={"day": "Date", "picks_generated": "Picks", "avg_edge": "Avg Edge %"},
+                    title="Daily Prop Scanner Output",
+                    text_auto=True,
+                )
+                _fig_scan.update_layout(
+                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                    font_color="#e0e0e0", height=280,
+                )
+                st.plotly_chart(_fig_scan, use_container_width=True)
+            except ImportError:
+                st.dataframe(pd.DataFrame(_scan_daily), use_container_width=True, hide_index=True)
+
+except Exception as _df_exc:
+    st.warning(f"Could not load data freshness info: {_df_exc}")
+
+st.divider()
+
+
+# ═══════════════════════════════════════════════════════════
+# ROW 15 — Deeper Model Intelligence
+# ═══════════════════════════════════════════════════════════
+
+st.subheader("🔬 Deeper Model Intelligence")
+
+try:
+    from tracking.database import (
+        load_backtest_results as _lbr,
+        load_all_analysis_picks as _laap,
+        load_recent_predictions as _lrp,
+        get_database_connection as _gdc7,
+    )
+
+    # ── Backtest results table ────────────────────────────────────────────────
+    _bt_results = _lbr(limit=20)
+    if _bt_results:
+        with st.expander("📈 Backtest Results (last 20 runs)", expanded=True):
+            _df_bt = pd.DataFrame(_bt_results)
+            _display_cols = [c for c in [
+                "run_timestamp","season","min_edge","tier_filter",
+                "total_picks","wins","losses","win_rate","roi","total_pnl"
+            ] if c in _df_bt.columns]
+            st.dataframe(_df_bt[_display_cols], use_container_width=True, hide_index=True)
+    else:
+        st.info("No backtest runs recorded yet. Run a backtest from the QAM page to populate this.")
+
+    # ── Edge / confidence distribution ───────────────────────────────────────
+    with _gdc7() as _mi_c:
+        import sqlite3 as _sqlite3
+        _mi_c.row_factory = _sqlite3.Row
+
+        _edge_dist = [dict(r) for r in _mi_c.execute(
+            """
+            SELECT ROUND(COALESCE(edge_percentage,0)/5)*5 AS edge_bucket,
+                   COUNT(*) AS picks
+            FROM all_analysis_picks
+            WHERE pick_date >= ?
+            GROUP BY edge_bucket ORDER BY edge_bucket
+            """,
+            (_14D_AGO[:10],),
+        ).fetchall()]
+
+        _conf_dist = [dict(r) for r in _mi_c.execute(
+            """
+            SELECT ROUND(COALESCE(confidence_score,0)/5)*5 AS conf_bucket,
+                   COUNT(*) AS picks
+            FROM all_analysis_picks
+            WHERE pick_date >= ?
+            GROUP BY conf_bucket ORDER BY conf_bucket
+            """,
+            (_14D_AGO[:10],),
+        ).fetchall()]
+
+        # ── Player pick leaderboard (accuracy, min 10 graded) ─────────────────
+        _player_lb = [dict(r) for r in _mi_c.execute(
+            """
+            SELECT player_name,
+                   COUNT(*) AS total,
+                   SUM(CASE WHEN result='WIN'  THEN 1 ELSE 0 END) AS wins,
+                   SUM(CASE WHEN result='LOSS' THEN 1 ELSE 0 END) AS losses,
+                   ROUND(
+                       CAST(SUM(CASE WHEN result='WIN' THEN 1 ELSE 0 END) AS REAL)
+                       / NULLIF(SUM(CASE WHEN result IN ('WIN','LOSS') THEN 1 ELSE 0 END),0) * 100
+                   ,1) AS hit_rate_pct,
+                   ROUND(AVG(COALESCE(edge_percentage,0)),1) AS avg_edge
+            FROM all_analysis_picks
+            WHERE result IN ('WIN','LOSS')
+            GROUP BY player_name
+            HAVING COUNT(*) >= 10
+            ORDER BY hit_rate_pct DESC
+            LIMIT 20
+            """
+        ).fetchall()]
+
+        # ── Over/Under bias ───────────────────────────────────────────────────
+        _ou_bias = [dict(r) for r in _mi_c.execute(
+            """
+            SELECT UPPER(COALESCE(direction,'?')) AS direction,
+                   COUNT(*) AS picks,
+                   ROUND(COUNT(*)*100.0/SUM(COUNT(*)) OVER(),1) AS pct
+            FROM all_analysis_picks
+            WHERE pick_date >= ?
+            GROUP BY direction
+            """,
+            (_14D_AGO[:10],),
+        ).fetchall()]
+
+    # ── Edge distribution histogram ──────────────────────────────────────────
+    if _edge_dist:
+        with st.expander("📊 Edge Distribution (14 d)", expanded=False):
+            try:
+                import plotly.express as _px
+                _fig_ed = _px.bar(
+                    pd.DataFrame(_edge_dist), x="edge_bucket", y="picks",
+                    labels={"edge_bucket": "Edge % (5-pt bucket)", "picks": "Picks"},
+                    title="Distribution of Edge % Across All Picks",
+                    color_discrete_sequence=["#2D9EFF"],
+                )
+                _fig_ed.update_layout(
+                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                    font_color="#e0e0e0", height=280,
+                )
+                st.plotly_chart(_fig_ed, use_container_width=True)
+            except ImportError:
+                st.dataframe(pd.DataFrame(_edge_dist), use_container_width=True, hide_index=True)
+
+    # ── Confidence distribution ───────────────────────────────────────────────
+    if _conf_dist:
+        with st.expander("🎯 Confidence Score Distribution (14 d)", expanded=False):
+            try:
+                import plotly.express as _px
+                _fig_cd = _px.bar(
+                    pd.DataFrame(_conf_dist), x="conf_bucket", y="picks",
+                    labels={"conf_bucket": "Confidence (5-pt bucket)", "picks": "Picks"},
+                    title="Distribution of Confidence Scores",
+                    color_discrete_sequence=["#00D559"],
+                )
+                _fig_cd.update_layout(
+                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                    font_color="#e0e0e0", height=280,
+                )
+                st.plotly_chart(_fig_cd, use_container_width=True)
+            except ImportError:
+                st.dataframe(pd.DataFrame(_conf_dist), use_container_width=True, hide_index=True)
+
+    # ── Player pick leaderboard ───────────────────────────────────────────────
+    if _player_lb:
+        with st.expander("🏆 Player Prediction Leaderboard (min 10 graded)", expanded=False):
+            _df_plb = pd.DataFrame(_player_lb)
+            try:
+                import plotly.express as _px
+                _fig_plb = _px.bar(
+                    _df_plb.head(15), x="player_name", y="hit_rate_pct",
+                    color="hit_rate_pct", color_continuous_scale="RdYlGn",
+                    range_color=[40, 75],
+                    labels={"player_name": "Player", "hit_rate_pct": "Hit Rate %"},
+                    title="Top 15 Players by Prediction Hit Rate",
+                    text_auto=".1f",
+                )
+                _fig_plb.add_hline(y=52.4, line_dash="dot", line_color="#F9C62B",
+                                   annotation_text="52.4% breakeven")
+                _fig_plb.update_layout(
+                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                    font_color="#e0e0e0", coloraxis_showscale=False, height=320,
+                )
+                st.plotly_chart(_fig_plb, use_container_width=True)
+            except ImportError:
+                pass
+            st.dataframe(_df_plb, use_container_width=True, hide_index=True)
+
+    # ── Over/Under bias ───────────────────────────────────────────────────────
+    if _ou_bias:
+        with st.expander("⚖️ Over/Under Recommendation Bias (14 d)", expanded=False):
+            _df_ou = pd.DataFrame(_ou_bias)
+            try:
+                import plotly.express as _px
+                _fig_ou = _px.pie(
+                    _df_ou, names="direction", values="picks",
+                    title="OVER vs UNDER Pick Distribution",
+                    color_discrete_map={"OVER": "#00D559", "UNDER": "#F24336"},
+                )
+                _fig_ou.update_layout(
+                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                    font_color="#e0e0e0", height=280,
+                )
+                st.plotly_chart(_fig_ou, use_container_width=True)
+            except ImportError:
+                st.dataframe(_df_ou, use_container_width=True, hide_index=True)
+            if len(_df_ou) == 2:
+                _over_pct = float(_df_ou[_df_ou["direction"] == "OVER"]["pct"].iloc[0]) if "OVER" in _df_ou["direction"].values else 50.0
+                if abs(_over_pct - 50) > 10:
+                    st.warning(f"⚠️ Bias detected: model recommends OVER {_over_pct:.1f}% of the time (healthy range: 40–60%).")
+                else:
+                    st.success(f"✅ Bias is within healthy range: OVER {_over_pct:.1f}% / UNDER {100-_over_pct:.1f}%.")
+
+except Exception as _mi_exc:
+    st.warning(f"Could not load model intelligence data: {_mi_exc}")
+
+st.divider()
+
+
+# ═══════════════════════════════════════════════════════════
+# ROW 16 — User Engagement Depth
+# ═══════════════════════════════════════════════════════════
+
+st.subheader("📈 User Engagement Depth")
+
+try:
+    from tracking.database import get_database_connection as _gdc8
+
+    # ── Top 10 most active users ──────────────────────────────────────────────
+    _top_users = query_telemetry(
+        """
+        SELECT session_id,
+               COUNT(*) AS interactions,
+               COUNT(DISTINCT feature_name) AS unique_features,
+               COUNT(DISTINCT page) AS pages_visited,
+               MAX(timestamp) AS last_seen
+        FROM telemetry_features
+        WHERE timestamp >= ?
+        GROUP BY session_id
+        ORDER BY interactions DESC
+        LIMIT 10
+        """,
+        (_14D_AGO,),
+    )
+
+    if _top_users:
+        with st.expander("🔝 Top 10 Most Active Sessions (14 d)", expanded=True):
+            st.dataframe(pd.DataFrame(_top_users), use_container_width=True, hide_index=True)
+
+    # ── Peak usage heatmap (hour × weekday) ───────────────────────────────────
+    _heatmap_rows = query_telemetry(
+        """
+        SELECT
+            CAST(strftime('%H', timestamp) AS INTEGER) AS hour_of_day,
+            CAST(strftime('%w', timestamp) AS INTEGER) AS day_of_week,
+            COUNT(*) AS events
+        FROM telemetry_features
+        WHERE timestamp >= ?
+        GROUP BY hour_of_day, day_of_week
+        """,
+        (_14D_AGO,),
+    )
+
+    if _heatmap_rows:
+        with st.expander("🕐 Peak Usage Heatmap — Hour × Weekday (14 d)", expanded=False):
+            try:
+                import plotly.graph_objects as _go
+                import numpy as _np
+                _dow_labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+                _matrix = [[0] * 24 for _ in range(7)]
+                for _hr in _heatmap_rows:
+                    _d = int(_hr.get("day_of_week", 0) or 0)
+                    _h = int(_hr.get("hour_of_day", 0) or 0)
+                    if 0 <= _d < 7 and 0 <= _h < 24:
+                        _matrix[_d][_h] = int(_hr.get("events", 0) or 0)
+                _fig_hm = _go.Figure(data=_go.Heatmap(
+                    z=_matrix,
+                    x=[f"{h:02d}:00" for h in range(24)],
+                    y=_dow_labels,
+                    colorscale="Teal",
+                    colorbar=dict(title="Events"),
+                ))
+                _fig_hm.update_layout(
+                    title="Activity by Hour of Day × Day of Week",
+                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                    font_color="#e0e0e0", height=320,
+                    xaxis_title="Hour (UTC)", yaxis_title="Day",
+                )
+                st.plotly_chart(_fig_hm, use_container_width=True)
+            except ImportError:
+                st.dataframe(pd.DataFrame(_heatmap_rows), use_container_width=True, hide_index=True)
+
+    # ── Session duration / time-on-page estimate ──────────────────────────────
+    _page_duration = query_telemetry(
+        """
+        SELECT page,
+               COUNT(*) AS total_events,
+               COUNT(DISTINCT session_id) AS sessions,
+               ROUND(CAST(COUNT(*) AS REAL) / COUNT(DISTINCT session_id), 1) AS events_per_session
+        FROM telemetry_features
+        WHERE timestamp >= ?
+        GROUP BY page ORDER BY events_per_session DESC
+        LIMIT 15
+        """,
+        (_7D_AGO,),
+    )
+
+    if _page_duration:
+        with st.expander("⏱️ Engagement by Page (events/session as proxy for time-on-page)", expanded=False):
+            try:
+                import plotly.express as _px
+                _fig_pd = _px.bar(
+                    pd.DataFrame(_page_duration), x="page", y="events_per_session",
+                    color="events_per_session", color_continuous_scale="Blues",
+                    labels={"page": "Page", "events_per_session": "Events / Session"},
+                    title="Events per Session by Page (engagement proxy)",
+                    text_auto=".1f",
+                )
+                _fig_pd.update_layout(
+                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                    font_color="#e0e0e0", coloraxis_showscale=False, height=300,
+                )
+                st.plotly_chart(_fig_pd, use_container_width=True)
+            except ImportError:
+                st.dataframe(pd.DataFrame(_page_duration), use_container_width=True, hide_index=True)
+
+    # ── Per-user engagement score from analytics_events ───────────────────────
+    with _gdc8() as _eng_c:
+        import sqlite3 as _sqlite3
+        _eng_c.row_factory = _sqlite3.Row
+        _eng_scores = [dict(r) for r in _eng_c.execute(
+            """
+            SELECT user_email,
+                   COUNT(*) AS total_events,
+                   SUM(CASE WHEN event_name='login'         THEN 3 ELSE 0 END) +
+                   SUM(CASE WHEN event_name='analysis_run'  THEN 5 ELSE 0 END) +
+                   SUM(CASE WHEN event_name='bet_logged'     THEN 4 ELSE 0 END) +
+                   SUM(CASE WHEN event_name='page_view'     THEN 1 ELSE 0 END) AS engagement_score,
+                   SUM(CASE WHEN event_name='analysis_run'  THEN 1 ELSE 0 END) AS analysis_runs,
+                   SUM(CASE WHEN event_name='bet_logged'     THEN 1 ELSE 0 END) AS bets_logged,
+                   MAX(SUBSTR(timestamp,1,10)) AS last_active
+            FROM analytics_events
+            WHERE user_email IS NOT NULL AND user_email != ''
+              AND timestamp >= ?
+            GROUP BY user_email
+            ORDER BY engagement_score DESC
+            LIMIT 25
+            """,
+            (_14D_AGO,),
+        ).fetchall()]
+
+    if _eng_scores:
+        with st.expander("🏅 Top 25 Users by Engagement Score (14 d)", expanded=False):
+            st.caption("Scoring: login=3, analysis_run=5, bet_logged=4, page_view=1")
+            st.dataframe(pd.DataFrame(_eng_scores), use_container_width=True, hide_index=True)
+
+except Exception as _eng_exc:
+    st.warning(f"Could not load engagement data: {_eng_exc}")
+
+st.divider()
+
+
+# ═══════════════════════════════════════════════════════════
+# ROW 17 — Revenue / Subscription Operations
+# ═══════════════════════════════════════════════════════════
+
+st.subheader("💳 Revenue / Subscription Operations")
+
+try:
+    from tracking.database import get_database_connection as _gdc9
+
+    with _gdc9() as _rev_c:
+        import sqlite3 as _sqlite3
+        _rev_c.row_factory = _sqlite3.Row
+
+        # ── MRR trend by month ────────────────────────────────────────────────
+        _mrr_trend = [dict(r) for r in _rev_c.execute(
+            """
+            SELECT SUBSTR(created_at,1,7) AS month,
+                   LOWER(COALESCE(plan_tier,'free')) AS tier,
+                   COUNT(*) AS subscribers
+            FROM users
+            WHERE LOWER(COALESCE(plan_tier,'free')) NOT IN ('free','admin')
+            GROUP BY month, tier
+            ORDER BY month
+            """
+        ).fetchall()]
+
+        # ── Upcoming subscription expirations (7 days) ───────────────────────
+        _expiring = [dict(r) for r in _rev_c.execute(
+            """
+            SELECT customer_email, plan_name, status,
+                   SUBSTR(current_period_end,1,10) AS expires
+            FROM subscriptions
+            WHERE current_period_end IS NOT NULL
+              AND current_period_end <= datetime('now','+7 days')
+              AND current_period_end >= datetime('now')
+              AND status = 'active'
+            ORDER BY current_period_end
+            LIMIT 50
+            """
+        ).fetchall()]
+
+        # ── Password reset completion rate ────────────────────────────────────
+        _rst_issued = (dict(_rev_c.execute(
+            "SELECT COUNT(*) AS cnt FROM users WHERE reset_token IS NOT NULL"
+        ).fetchone() or {}) or {}).get("cnt", 0)
+        _rst_completed = (dict(_rev_c.execute(
+            "SELECT COUNT(*) AS cnt FROM analytics_events WHERE event_name='password_reset_complete'"
+        ).fetchone() or {}) or {}).get("cnt", 0)
+        _rst_requested = (dict(_rev_c.execute(
+            "SELECT COUNT(*) AS cnt FROM analytics_events WHERE event_name IN ('password_reset','reset_requested')"
+        ).fetchone() or {}) or {}).get("cnt", 0)
+
+        # ── Signup funnel drop-off ────────────────────────────────────────────
+        _step1_starts = (dict(_rev_c.execute(
+            "SELECT COUNT(*) AS cnt FROM analytics_events WHERE event_name IN ('signup_step1','signup_start')"
+        ).fetchone() or {}) or {}).get("cnt", 0)
+        _step2_done = (dict(_rev_c.execute(
+            "SELECT COUNT(*) AS cnt FROM analytics_events WHERE event_name IN ('signup_complete','signup')"
+        ).fetchone() or {}) or {}).get("cnt", 0)
+        _total_users_count = (dict(_rev_c.execute(
+            "SELECT COUNT(*) AS cnt FROM users"
+        ).fetchone() or {}) or {}).get("cnt", 0)
+
+    # ── KPI row ───────────────────────────────────────────────────────────────
+    _rv_c1, _rv_c2, _rv_c3, _rv_c4 = st.columns(4)
+    _rv_c1.metric("Expiring Subs (7 d)",  len(_expiring))
+    _rv_c2.metric("Pending Resets",       _rst_issued)
+    _rv_c3.metric("Reset Completions",    _rst_completed)
+    _rv_c4.metric("Total Registered",     _total_users_count)
+
+    # ── MRR trend chart ───────────────────────────────────────────────────────
+    if _mrr_trend:
+        with st.expander("📅 Monthly Paid Subscriber Trend", expanded=True):
+            _TIER_PRICES2 = {"sharp_iq": 9.99, "smart_money": 19.99, "insider_circle": 39.99}
+            _df_mrr = pd.DataFrame(_mrr_trend)
+            _df_mrr["mrr_contrib"] = _df_mrr.apply(
+                lambda r: r["subscribers"] * _TIER_PRICES2.get(r["tier"], 0), axis=1
+            )
+            try:
+                import plotly.express as _px
+                _fig_mrr = _px.bar(
+                    _df_mrr, x="month", y="mrr_contrib", color="tier",
+                    barmode="stack",
+                    labels={"month": "Month", "mrr_contrib": "Est. MRR ($)", "tier": "Tier"},
+                    title="Estimated MRR by Tier per Month",
+                    color_discrete_map={
+                        "sharp_iq": "#2D9EFF",
+                        "smart_money": "#F9C62B",
+                        "insider_circle": "#00D559",
+                    },
+                )
+                _fig_mrr.update_layout(
+                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                    font_color="#e0e0e0", height=320,
+                )
+                st.plotly_chart(_fig_mrr, use_container_width=True)
+            except ImportError:
+                st.dataframe(_df_mrr, use_container_width=True, hide_index=True)
+
+    # ── Expiring subscriptions ────────────────────────────────────────────────
+    if _expiring:
+        with st.expander(f"⏰ Subscriptions Expiring Within 7 Days ({len(_expiring)})", expanded=True):
+            st.dataframe(pd.DataFrame(_expiring), use_container_width=True, hide_index=True)
+    else:
+        st.caption("✅ No active subscriptions expiring in the next 7 days.")
+
+    # ── Signup funnel ─────────────────────────────────────────────────────────
+    with st.expander("🔄 Signup Funnel Drop-off", expanded=False):
+        _funnel_steps = [
+            {"step": "Started signup (step 1)", "count": _step1_starts or _total_users_count},
+            {"step": "Completed signup",        "count": _step2_done or _total_users_count},
+            {"step": "Total registered users",  "count": _total_users_count},
+        ]
+        try:
+            import plotly.express as _px
+            _fig_sf = _px.funnel(
+                pd.DataFrame(_funnel_steps), x="count", y="step",
+                title="Signup Funnel",
+                color_discrete_sequence=["#2D9EFF"],
+            )
+            _fig_sf.update_layout(
+                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                font_color="#e0e0e0", height=280,
+            )
+            st.plotly_chart(_fig_sf, use_container_width=True)
+        except ImportError:
+            st.dataframe(pd.DataFrame(_funnel_steps), use_container_width=True, hide_index=True)
+
+except Exception as _rev_exc:
+    st.warning(f"Could not load revenue data: {_rev_exc}")
+
+st.divider()
+
+
+# ═══════════════════════════════════════════════════════════
+# ROW 18 — Operations & Alerts
+# ═══════════════════════════════════════════════════════════
+
+st.subheader("🚨 Operations & Anomaly Alerts")
+
+try:
+    from tracking.database import get_database_connection as _gdc10
+
+    with _gdc10() as _ops_c:
+        import sqlite3 as _sqlite3
+        _ops_c.row_factory = _sqlite3.Row
+
+        # ── Error spike detection ─────────────────────────────────────────────
+        _err_1h = query_telemetry(
+            "SELECT COUNT(*) AS cnt FROM telemetry_errors WHERE timestamp >= ?",
+            (_1H_AGO,),
+        )
+        _err_1h_count = (_err_1h[0]["cnt"] if _err_1h else 0) or 0
+        _err_24h = query_telemetry(
+            "SELECT COUNT(*) AS cnt FROM telemetry_errors WHERE timestamp >= ?",
+            ((datetime.now(timezone.utc) - timedelta(hours=24)).isoformat(timespec="seconds"),),
+        )
+        _err_24h_count = (_err_24h[0]["cnt"] if _err_24h else 0) or 0
+
+        # ── Login surge detection ─────────────────────────────────────────────
+        _logins_1h = (dict(_ops_c.execute(
+            "SELECT COUNT(*) AS cnt FROM analytics_events "
+            "WHERE event_name='login' AND timestamp >= datetime('now','-1 hour')"
+        ).fetchone() or {}) or {}).get("cnt", 0)
+
+        _logins_24h = (dict(_ops_c.execute(
+            "SELECT COUNT(*) AS cnt FROM analytics_events "
+            "WHERE event_name='login' AND timestamp >= datetime('now','-24 hours')"
+        ).fetchone() or {}) or {}).get("cnt", 0)
+
+        # ── Brute-force candidates (5+ fails, not yet locked) ─────────────────
+        _brute_candidates = [dict(r) for r in _ops_c.execute(
+            """
+            SELECT email, failed_login_count,
+                   COALESCE(lockout_until,'—') AS lockout_until
+            FROM users
+            WHERE failed_login_count >= 5
+              AND (lockout_until IS NULL OR lockout_until <= datetime('now'))
+            ORDER BY failed_login_count DESC
+            LIMIT 20
+            """
+        ).fetchall()]
+
+    # ── Anomaly flag panel ────────────────────────────────────────────────────
+    _alerts = []
+    if _err_1h_count > 10:
+        _alerts.append(f"🔴 **Error spike**: {_err_1h_count} errors in the last hour")
+    if _logins_1h > 50:
+        _alerts.append(f"🟡 **Login surge**: {_logins_1h} logins in the last hour")
+    if _brute_candidates:
+        _alerts.append(f"🔴 **Brute-force risk**: {len(_brute_candidates)} account(s) with 5+ failed logins, not yet locked")
+
+    if _alerts:
+        for _alert in _alerts:
+            st.warning(_alert)
+    else:
+        st.success("✅ No anomalies detected right now.")
+
+    # ── Alert metric row ──────────────────────────────────────────────────────
+    _op_c1, _op_c2, _op_c3, _op_c4 = st.columns(4)
+    _op_c1.metric("Errors (1 h)",   _err_1h_count,  delta="⚠️" if _err_1h_count > 10 else None, delta_color="inverse")
+    _op_c2.metric("Errors (24 h)",  _err_24h_count)
+    _op_c3.metric("Logins (1 h)",   _logins_1h,     delta="⚠️" if _logins_1h > 50 else None, delta_color="inverse")
+    _op_c4.metric("Logins (24 h)",  _logins_24h)
+
+    # ── Brute-force candidates ────────────────────────────────────────────────
+    if _brute_candidates:
+        with st.expander(f"🔐 Brute-force Risk Accounts ({len(_brute_candidates)})", expanded=True):
+            st.dataframe(pd.DataFrame(_brute_candidates), use_container_width=True, hide_index=True)
+
+    # ── Data export buttons ───────────────────────────────────────────────────
+    with st.expander("⬇️ Data Exports (CSV)", expanded=False):
+        _ex_c1, _ex_c2, _ex_c3 = st.columns(3)
+
+        try:
+            from tracking.database import get_database_connection as _gdc_ex
+            with _gdc_ex() as _ex_c:
+                import sqlite3 as _sqlite3
+                _ex_c.row_factory = _sqlite3.Row
+
+                _users_csv = pd.DataFrame([dict(r) for r in _ex_c.execute(
+                    "SELECT user_id,email,display_name,plan_tier,created_at,last_login_at,is_admin FROM users ORDER BY created_at DESC"
+                ).fetchall()])
+                _bets_csv = pd.DataFrame([dict(r) for r in _ex_c.execute(
+                    "SELECT bet_id,bet_date,player_name,stat_type,direction,platform,tier,result,edge_percentage,confidence_score FROM bets ORDER BY created_at DESC LIMIT 5000"
+                ).fetchall()])
+                _picks_csv = pd.DataFrame([dict(r) for r in _ex_c.execute(
+                    "SELECT pick_id,pick_date,player_name,stat_type,direction,platform,tier,result,edge_percentage,confidence_score FROM all_analysis_picks ORDER BY created_at DESC LIMIT 5000"
+                ).fetchall()])
+
+            _ex_c1.download_button(
+                "👥 User Roster CSV",
+                data=_users_csv.to_csv(index=False).encode("utf-8"),
+                file_name=f"user_roster_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                key="_admin_export_users",
+            )
+            _ex_c2.download_button(
+                "📊 Bet History CSV",
+                data=_bets_csv.to_csv(index=False).encode("utf-8"),
+                file_name=f"bet_history_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                key="_admin_export_bets",
+            )
+            _ex_c3.download_button(
+                "⚡ Analysis Picks CSV",
+                data=_picks_csv.to_csv(index=False).encode("utf-8"),
+                file_name=f"analysis_picks_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                key="_admin_export_picks",
+            )
+        except Exception as _exp_err:
+            st.warning(f"Export error: {_exp_err}")
+
+except Exception as _ops_exc:
+    st.warning(f"Could not load operations data: {_ops_exc}")

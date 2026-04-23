@@ -96,7 +96,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
             f"Auto-filled: confidence={confidence_score:.1f}, P(over)={probability_over:.2f}, edge={edge_percentage:+.1f}%"
             if confidence_score else "Enter player name to auto-fill from analysis."
         )
-        submit = st.form_submit_button("📌 Log Bet", width="stretch", type="primary")
+        submit = st.form_submit_button("📌 Log Bet", use_container_width=True, type="primary")
 
     if submit:
         if not final_player:

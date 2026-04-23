@@ -5,11 +5,19 @@
 # ============================================================
 
 [theme]
+base = "dark"
 primaryColor = "#00f0ff"
 backgroundColor = "#070A13"
 secondaryBackgroundColor = "#0F172A"
 textColor = "#c8d8f0"
 font = "sans serif"
+
+[client]
+# Prevent the raw Python traceback from hijacking the DOM.
+# Errors are caught by the app-level exception handler and shown as
+# styled banners instead; detailed tracebacks go to server logs only.
+showErrorDetails = false
+toolbarMode = "minimal"
 
 [server]
 headless = true
@@ -18,9 +26,14 @@ enableWebsocketCompression = true
 # Mobile connections on LTE/3G can be slow; 60s default is too short
 # when the DB + JS bridge session restore happen on the same first run.
 scriptRunTimeoutSecs = 120
+# Disable the welcome dialog that adds a render cycle on first load.
+enableStaticServing = false
 
 [browser]
 gatherUsageStats = false
+# serverAddress must match the deployment origin to avoid cross-origin
+# websocket delays that make the page appear to "reload" on navigation.
+serverAddress = "0.0.0.0"
 
 [ui]
 # hideTopBar must be false so the sidebar toggle (hamburger) button

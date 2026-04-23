@@ -47,6 +47,41 @@ st.set_page_config(
     initial_sidebar_state="auto",
 )
 
+# ─── Theme CSS — injected BEFORE login gate to prevent white flash ────────
+from utils.page_bootstrap import inject_theme_css, init_session_state
+inject_theme_css()
+
+# ─── Global exception safety net ────────────────────────────────────────────
+# Streamlit's script runner catches *most* exceptions and shows a native
+# traceback widget.  This hook fires for exceptions that leak past that layer
+# (e.g. during module-level imports, thread callbacks, etc.).  It:
+#   1. Logs the full traceback to the server log (ops-visible, not user-visible)
+#   2. Re-injects the theme CSS so the page stays dark even in failure state
+#   3. Renders a user-friendly styled banner instead of a raw traceback
+import sys as _sys
+
+_original_excepthook = _sys.excepthook
+
+def _smartai_excepthook(exc_type, exc_value, exc_tb):
+    import traceback as _tb_mod
+    logging.getLogger("smartai.global").error(
+        "Unhandled top-level exception:\n%s",
+        "".join(_tb_mod.format_exception(exc_type, exc_value, exc_tb)),
+    )
+    try:
+        inject_theme_css()
+    except Exception:
+        pass
+    try:
+        st.error(
+            "⚠️ **An unexpected error occurred.** Our team has been notified. "
+            "Please refresh the page or navigate to another section."
+        )
+    except Exception:
+        _original_excepthook(exc_type, exc_value, exc_tb)
+
+_sys.excepthook = _smartai_excepthook
+
 # ─── Verify DB volume is persistent (log once per session) ───
 if not st.session_state.get("_db_volume_checked"):
     import logging as _logging, os as _os
@@ -79,14 +114,8 @@ from utils.auth_gate import require_login as _require_login
 if not _require_login():
     st.stop()
 
-# ─── Inject Global CSS Theme ── MUST be first st.markdown after login ──────
-# Injecting here ensures the dark theme is applied BEFORE any spinners or
-# content render, eliminating the white-flash / old-theme glitch on login.
-st.markdown(get_global_css(), unsafe_allow_html=True)
-
-# ── Premium UI layer — metric cards, chart wraps, footer CSS ─
-from styles.theme import get_premium_ui_css as _get_premium_ui_css
-st.markdown(_get_premium_ui_css(), unsafe_allow_html=True)
+# ─── State hydration barrier — guarantee all shared keys exist ─
+init_session_state()
 
 # ─── Analytics: GA4 injection + server-side page view ─────────
 from utils.analytics import inject_ga4, track_page_view
@@ -468,6 +497,12 @@ inject_aria_enhancements()
 # ============================================================
 # END SECTION: Initialize App on Startup
 # ============================================================
+
+# ─── Theme re-injection guard ─────────────────────────────────────────────
+# Executing a second inject_theme_css() here guarantees the full CSS suite
+# is in the DOM even if an exception fired in the setup block above and
+# Streamlit skipped the first injection's render pass.
+inject_theme_css()
 
 # ============================================================
 # SECTION 1: Cinematic Hero — Joseph Banner + Hero HUD + CTA

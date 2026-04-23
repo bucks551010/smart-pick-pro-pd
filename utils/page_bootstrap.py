@@ -31,6 +31,49 @@
 import streamlit as st
 
 
+# ── Critical fallback CSS ─────────────────────────────────────────────────────
+# Injected unconditionally so that even if the Python script halts before the
+# full theme module is imported, the browser still renders the dark palette and
+# Streamlit's native exception/error widgets adopt the app's visual language.
+_CRITICAL_FALLBACK_CSS = """
+<style>
+/* ── Base palette guarantee ── */
+html, body,
+[data-testid="stApp"],
+[data-testid="stAppViewContainer"],
+.main, section.main { background-color: #070A13 !important; color: #c8d8f0 !important; }
+
+/* ── Streamlit native exception widget ── */
+[data-testid="stException"] {
+    background: rgba(7,10,19,0.96) !important;
+    border: 1px solid rgba(0,240,255,0.25) !important;
+    border-radius: 12px !important;
+    color: #c8d8f0 !important;
+}
+[data-testid="stException"] summary {
+    color: #ff6b6b !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+}
+[data-testid="stException"] pre,
+[data-testid="stException"] code {
+    background: rgba(15,23,42,0.85) !important;
+    color: #ff6b6b !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255,107,107,0.15) !important;
+}
+/* ── Alert / info / warning banners ── */
+[data-testid="stAlert"] {
+    background-color: rgba(15,23,42,0.92) !important;
+    border-radius: 10px !important;
+    color: #c8d8f0 !important;
+}
+/* ── Prevent white-flash on skeleton/placeholder frames ── */
+[data-testid="stSkeleton"] { background: rgba(15,23,42,0.4) !important; }
+</style>
+"""
+
+
 # ── 1. Deterministic CSS Pre-Loader ─────────────────────────────────────────
 
 def inject_theme_css() -> None:
@@ -46,6 +89,9 @@ def inject_theme_css() -> None:
     session-state flag) because Streamlit requires each page render to
     re-emit all ``st.markdown`` / ``st.html`` DOM patches.
     """
+    # 1a. Critical fallback first — tiny, fast, covers the error-box case
+    st.markdown(_CRITICAL_FALLBACK_CSS, unsafe_allow_html=True)
+    # 1b. Full premium theme
     from styles.theme import get_global_css, get_premium_ui_css
     st.markdown(get_global_css(), unsafe_allow_html=True)
     st.markdown(get_premium_ui_css(), unsafe_allow_html=True)

@@ -22,6 +22,28 @@ import os as _os
 
 _logger_theme = _logging.getLogger(__name__)
 
+
+def _resolve_headshot_url(player_id: str, player_name: str = "", size: str = "1040x760") -> str:
+    """Return an NBA CDN headshot URL from player_id; fall back to name-based lookup.
+
+    DB-loaded picks have no player_id column, so this lets every card renderer
+    resolve a photo via data.player_profile_service without requiring the caller
+    to pre-enrich picks.  The import is deferred so theme.py stays stdlib-safe.
+    """
+    if player_id:
+        return f"https://cdn.nba.com/headshots/nba/latest/{size}/{player_id}.png"
+    if player_name:
+        try:
+            from data.player_profile_service import get_headshot_url as _ghu
+            url = _ghu(str(player_name))
+            if url and size != "1040x760":
+                url = url.replace("1040x760", size)
+            return url or ""
+        except Exception:
+            pass
+    return ""
+
+
 # ── Line Value vs Average Badge ──────────────────────────────
 
 def get_line_value_badge_html(gap_pct: float) -> str:
@@ -2005,10 +2027,10 @@ def get_player_card_html(result):
     # Player headshot from NBA CDN with fallback silhouette
     NBA_CDN_BASE = "https://cdn.nba.com/headshots/nba/latest/1040x760"
     FALLBACK_HEADSHOT = f"{NBA_CDN_BASE}/fallback.png"
-    if player_id:
-        headshot_url = f"{NBA_CDN_BASE}/{player_id}.png"
+    _hs_url = _resolve_headshot_url(player_id, player)
+    if _hs_url:
         headshot_html = (
-            f'<img src="{headshot_url}" '
+            f'<img src="{_hs_url}" '
             f'onerror="this.onerror=null;this.src=\'{FALLBACK_HEADSHOT}\';" '
             f'style="width:60px;height:60px;border-radius:50%;object-fit:cover;'
             f'margin-right:12px;flex-shrink:0;background:#1C2232;" '
@@ -2138,10 +2160,10 @@ def get_player_card_html(result):
     # New 72px headshot for sc-header
     NBA_CDN_BASE = "https://cdn.nba.com/headshots/nba/latest/1040x760"
     FALLBACK_HEADSHOT = f"{NBA_CDN_BASE}/fallback.png"
-    if player_id:
-        headshot_url = f"{NBA_CDN_BASE}/{player_id}.png"
+    _sc_hs_url = _resolve_headshot_url(player_id, player)
+    if _sc_hs_url:
         new_headshot = (
-            f'<img src="{headshot_url}" '
+            f'<img src="{_sc_hs_url}" '
             f'onerror="this.onerror=null;this.src=\'{FALLBACK_HEADSHOT}\';" '
             f'class="sc-headshot" alt="{player}">'
         )
@@ -4122,10 +4144,7 @@ def get_qds_prop_card_html(
     cfg = _TIER_CFG.get(tier, _TIER_CFG["Bronze"])
 
     # ── Player headshot ───────────────────────────────────────────
-    if player_id:
-        headshot_url = f"https://cdn.nba.com/headshots/nba/latest/1040x760/{player_id}.png"
-    else:
-        headshot_url = ""
+    headshot_url = _resolve_headshot_url(player_id, player_name)
 
     fallback_svg = (
         "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
@@ -5235,13 +5254,12 @@ def get_bet_card_html(bet, show_live_status=False):
 
     # Player headshot thumbnail (NBA CDN)
     player_id = bet.get("player_id") or ""
-    headshot_html = ""
-    if player_id:
-        headshot_html = (
-            f'<img class="bet-card-headshot" '
-            f'src="https://cdn.nba.com/headshots/nba/latest/1040x760/{player_id}.png" '
-            f'alt="" onerror="this.style.display=\'none\'" loading="lazy"/>'
-        )
+    _bet_hs = _resolve_headshot_url(player_id, bet.get("player_name") or "")
+    headshot_html = (
+        f'<img class="bet-card-headshot" '
+        f'src="{_html.escape(_bet_hs)}" '
+        f'alt="" onerror="this.style.display=\'none\'" loading="lazy"/>'
+    ) if _bet_hs else ""
 
     return (
         f'<div class="{card_class}" style="border-left-color:{platform_border_color};">'
@@ -11690,14 +11708,10 @@ def get_prop_card_html(
         accent = "ps-card-neu"
 
     # Headshot (260x190 per project conventions)
-    headshot_url = (
-        f"https://cdn.nba.com/headshots/nba/latest/260x190/{player_id}.png"
-        if player_id
-        else ""
-    )
+    headshot_url = _resolve_headshot_url(player_id, player_name, size="260x190")
     headshot_html = (
         f'<img class="ps-card-headshot" src="{headshot_url}" alt="" loading="lazy" '
-        f'onerror="this.style.display=\'none\'">'
+        f'onerror="this.style.display=\'none\'">' 
         if headshot_url
         else ""
     )

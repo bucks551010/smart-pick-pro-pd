@@ -49,7 +49,7 @@ TEMPLATES = {
         "slug": "brand",
         "ctx": {
             "headline": "THE EDGE\nISN'T LUCK.\nIT'S MATH.",
-            "subheadline": "1,000 Monte Carlo simulations per pick. Zero black boxes. Free trial.",
+            "subheadline": "1,000 Quantum simulations per pick. Zero black boxes. Free trial.",
             "button_text": "\u2192 START FREE TRIAL",
             "tagline": "Quantitative NBA Analytics",
             "watermark_text": "SMART PICK PRO",

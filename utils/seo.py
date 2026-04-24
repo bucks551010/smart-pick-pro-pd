@@ -285,7 +285,7 @@ SEO_PAGES = {
     },
     "Quantum Analysis": {
         "page_title": "Quantum Analysis Matrix — Deep Neural NBA Projections",
-        "page_description": "Advanced neural analysis engine running 2000+ Monte Carlo simulations per player. Get quantum-grade confidence scores and edge detection for NBA props.",
+        "page_description": "Advanced neural analysis engine running 2000+ Quantum simulations per player. Get quantum-grade confidence scores and edge detection for NBA props.",
         "page_path": "/quantum-analysis",
     },
     "Smart Money Bets": {
@@ -304,8 +304,8 @@ SEO_PAGES = {
         "page_path": "/game-report",
     },
     "Player Simulator": {
-        "page_title": "Player Simulator — Monte Carlo NBA Prop Projections",
-        "page_description": "Simulate any NBA player's performance with Monte Carlo methods. Adjust minutes, pace, and matchup factors to project props with confidence intervals.",
+        "page_title": "Player Simulator — Quantum NBA Prop Projections",
+        "page_description": "Simulate any NBA player's performance with Quantum methods. Adjust minutes, pace, and matchup factors to project props with confidence intervals.",
         "page_path": "/player-simulator",
     },
     "Entry Builder": {

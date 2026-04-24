@@ -37,7 +37,7 @@ the Streamlit app is running.
 ``QAM_AUTO_ANALYSIS_DISABLED`` — set to ``1`` to skip auto QAM runs          (default off)
 ``QAM_ANALYSIS_HOUR_START``  — ET hour to begin allowing QAM runs            (default 17)
 ``QAM_ANALYSIS_HOUR_END``    — ET hour after which QAM runs are skipped      (default 23)
-``QAM_SIM_DEPTH``            — Monte Carlo simulation depth for auto runs     (default 1000)
+``QAM_SIM_DEPTH``            — Quantum simulation depth for auto runs     (default 1000)
 """
 
 from __future__ import annotations

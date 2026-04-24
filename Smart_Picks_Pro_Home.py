@@ -435,7 +435,7 @@ st.markdown(f"""
   <span class="live-dot"></span>
   <span class="lab-accent">LIVE</span>
   <span class="lab-dim">&nbsp;&mdash;&nbsp;</span>
-  <span>NBA prop engine active &nbsp;&bull;&nbsp; {game_count_text} &nbsp;&bull;&nbsp; <span class="lab-accent">Monte Carlo online</span></span>
+  <span>NBA prop engine active &nbsp;&bull;&nbsp; {game_count_text} &nbsp;&bull;&nbsp; <span class="lab-accent">Quantum online</span></span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -444,7 +444,7 @@ st.markdown(f"""
   <div class="hero-hud-inner-glow"></div>
   <div class="hero-hud-text">
     <div class="hero-badge-row">
-      <span class="hero-badge hero-badge-ai">🤖 Monte Carlo AI</span>
+      <span class="hero-badge hero-badge-ai">🤖 Quantum AI</span>
       <span class="hero-badge hero-badge-free">✅ Free Picks Daily</span>
       <span class="hero-badge hero-badge-dfs">🏀 PrizePicks + Underdog</span>
     </div>
@@ -912,7 +912,7 @@ st.markdown(f"""
 st.markdown("""
 <div class="section-eyebrow lp-anim lp-anim-d1">The Unfair Advantage</div>
 <div class="section-header-xl lp-anim lp-anim-d2">Other Tools Guess. <span class="xl-accent">We Simulate.</span></div>
-<div class="section-subheader-center lp-anim lp-anim-d3">The only prop engine purpose-built for NBA DFS — live data from PrizePicks &amp; Underdog, Monte Carlo simulation, and full transparent reasoning. No human bias. No black box.</div>
+<div class="section-subheader-center lp-anim lp-anim-d3">The only prop engine purpose-built for NBA DFS — live data from PrizePicks &amp; Underdog, Quantum simulation, and full transparent reasoning. No human bias. No black box.</div>
 """, unsafe_allow_html=True)
 
 # ── 3A: Three Pillars ───────────────────────────────────────────
@@ -924,7 +924,7 @@ with _p1:
       <div class="pillar-accent"></div>
       <div class="pillar-card-inner">
         <div class="pillar-icon-halo"><span class="pillar-icon">🎲</span></div>
-        <div class="pillar-title">Monte Carlo Simulation Engine</div>
+        <div class="pillar-title">Quantum Simulation Engine</div>
         <div class="pillar-subtitle">Up to 1,000 Simulated Games Per Prop — Tonight's Matchup, Not a Generic Average</div>
         <div class="pillar-body">
           Every prop runs through up to 1,000 simulated game scenarios —
@@ -1029,7 +1029,7 @@ st.markdown("""
       <td>Simulation Engine</td>
       <td class="cross">✗ Editorial picks, no simulation</td>
       <td class="cross">✗ Human handicapper opinion</td>
-      <td class="check">✓ Monte Carlo — up to 1,000 sims per prop</td>
+      <td class="check">✓ Quantum — up to 1,000 sims per prop</td>
     </tr>
     <tr>
       <td>PrizePicks + Underdog Integration</td>
@@ -1110,7 +1110,7 @@ _proof_cols = st.columns(5)
 
 _proof_data = [
     ("5,000+", "Live Props Analyzed Daily"),
-    ("1,000", "Monte Carlo Sims Per Prop"),
+    ("1,000", "Quantum Sims Per Prop"),
     ("16", "NBA-Specific Data Signals"),
     ("100%", "Transparent Reasoning"),
     ("FREE", "Top Picks Every Night"),
@@ -1288,7 +1288,7 @@ _hiw_stages = [
      "Real-time NBA data ingested: player stats, hustle metrics, clutch splits, defensive ratings, injuries, and 5,000+ live prop lines from PrizePicks and Underdog."),
     ("📐", "Matchup Projection",
      "Each player's baseline is adjusted for tonight's specific opponent, pace, game environment, rest days, and injury-impacted usage — no generic season averages."),
-    ("🎲", "Monte Carlo Simulation",
+    ("🎲", "Quantum Simulation",
      "Up to 1,000 simulated games per prop. Every sim randomizes real NBA game chaos — minutes volatility, momentum swings, blowout risk — to build a true probability distribution."),
     ("🔬", "Force Analysis",
      "16 NBA-specific signals are measured, strength-rated, and balanced. Trap lines are flagged. Coin-flip props are caught and filtered before they reach your picks list."),

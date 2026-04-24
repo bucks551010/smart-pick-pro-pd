@@ -1867,7 +1867,7 @@ st.markdown("""
       <div class="lp-step">
         <div class="lp-step-num-wrap"><span class="lp-step-num">02</span></div>
         <div class="lp-step-title">AI Scores Every Prop</div>
-        <p class="lp-step-desc">6 AI models — ensemble, Bayesian, Monte Carlo, regression, CLV tracker &amp; line movement mirror — converge on a single SAFE Score™.</p>
+        <p class="lp-step-desc">6 AI models — ensemble, Bayesian, Quantum, regression, CLV tracker &amp; line movement mirror — converge on a single SAFE Score™.</p>
       </div>
       <div class="lp-step">
         <div class="lp-step-num-wrap"><span class="lp-step-num">03</span></div>
@@ -1898,7 +1898,7 @@ st.markdown("""
       <div class="lp-feat-card lf-blue">
         <span class="lp-feat-icon">🧠</span>
         <div class="lp-feat-title">Neural Engine v6.0 <span class="lp-feat-badge">AI</span></div>
-        <p class="lp-feat-desc">Six parallel models run on every prop: Ensemble, Bayesian, Monte Carlo, Linear Regression, Neural Net, and Game Script. Zero human bias.</p>
+        <p class="lp-feat-desc">Six parallel models run on every prop: Ensemble, Bayesian, Quantum, Linear Regression, Neural Net, and Game Script. Zero human bias.</p>
       </div>
 
       <div class="lp-feat-card lf-purple">
@@ -2105,7 +2105,7 @@ st.markdown("""
           <span class="lp-model-icon">🎲</span>
           <span class="lp-model-accuracy">62.8%</span>
         </div>
-        <div class="lp-model-name">Monte Carlo Simulation</div>
+        <div class="lp-model-name">Quantum Simulation</div>
         <p class="lp-model-desc">Runs 10,000+ game simulations per prop. Maps outcome distributions, calculates true fair probability, exposes mispriced lines with precision.</p>
         <div class="lp-model-bar-wrap"><div class="lp-model-bar" data-target-pct="62.8"></div></div>
         <div class="lp-model-bar-label"><span>Accuracy</span><span>62.8%</span></div>
@@ -3735,7 +3735,7 @@ st.markdown("""
         </div>
         <div class="lp-faq-a">
           <div class="lp-faq-a-inner">
-            The <strong>SAFE Score™</strong> is our proprietary 0–100 confidence rating for every prop. It aggregates outputs from 6 AI models — Ensemble Neural Network, Bayesian Inference, Monte Carlo Simulation, Linear Regression, CLV Tracker, and Line Movement Mirror — weighted by each model's recent accuracy. A score above <strong>70 is a strong signal</strong>; above 85 is our highest-confidence tier.
+            The <strong>SAFE Score™</strong> is our proprietary 0–100 confidence rating for every prop. It aggregates outputs from 6 AI models — Ensemble Neural Network, Bayesian Inference, Quantum Simulation, Linear Regression, CLV Tracker, and Line Movement Mirror — weighted by each model's recent accuracy. A score above <strong>70 is a strong signal</strong>; above 85 is our highest-confidence tier.
           </div>
         </div>
       </div>
@@ -4316,7 +4316,7 @@ st.markdown(f"""
       <div class="spp-proof-card">
         <div class="spp-proof-big">6</div>
         <div class="spp-proof-label">AI Models</div>
-        <div class="spp-proof-sub">Ensemble + Monte Carlo</div>
+        <div class="spp-proof-sub">Ensemble + Quantum</div>
       </div>
       <div class="spp-proof-card">
         <div class="spp-proof-big">2,400+</div>

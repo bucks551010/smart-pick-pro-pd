@@ -5779,7 +5779,7 @@ def require_login() -> bool:
         <strong>The NBA prop machine the Twitter gurus don&rsquo;t want you to know about.</strong><br>
         Every night, 6 AI models scan 300+ props across PrizePicks, DraftKings &amp; Underdog
         and score each one with a proprietary <strong>SAFE Score&trade;</strong> &mdash; a 0&ndash;100
-        confidence rating powered by Monte Carlo simulation, ensemble modeling &amp; real-time edge
+        confidence rating powered by Quantum simulation, ensemble modeling &amp; real-time edge
         detection. Stop playing blind. Start playing with a verifiable edge.
       </div>
       <div class="ag-hero-badges">
@@ -6503,7 +6503,7 @@ html,body{background:transparent;overflow-y:hidden}
         <div class="ag-inside-card">
           <div class="ag-inside-ico">&#x1F9E0;</div>
           <div class="ag-inside-name">SAFE Score System</div>
-          <div class="ag-inside-desc">Proprietary 0&ndash;100 confidence rating that fuses Monte Carlo simulation, Ridge regression, Random Forest, XGBoost, LSTM sequence modeling, and Bayesian networks. One number tells you if a prop is worth playing.</div>
+          <div class="ag-inside-desc">Proprietary 0&ndash;100 confidence rating that fuses Quantum simulation, Ridge regression, Random Forest, XGBoost, LSTM sequence modeling, and Bayesian networks. One number tells you if a prop is worth playing.</div>
           <div class="ag-inside-tag">AI CONFIDENCE</div>
         </div>
         <div class="ag-inside-card">
@@ -8112,7 +8112,7 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
     <li class="tc2-feat"><span class="tc2-fico">&#x1F9EC;</span><div><div class="tc2-ftxt">Entry Builder</div><div class="tc2-fdesc">Build optimized PrizePicks &amp; Pick6 entries by EV.</div></div></li>
     <li class="tc2-feat"><span class="tc2-fico">&#x1F6E1;&#xFE0F;</span><div><div class="tc2-ftxt">Risk Shield</div><div class="tc2-fdesc">Portfolio-level exposure analysis by player &amp; team.</div></div></li>
     <li class="tc2-feat"><span class="tc2-fico">&#x1F4CB;</span><div><div class="tc2-ftxt">Game Report</div><div class="tc2-fdesc">Matchup reports: pace, defense, rest, AI game scripts.</div></div></li>
-    <li class="tc2-feat"><span class="tc2-fico">&#x1F52E;</span><div><div class="tc2-ftxt">Player Simulator</div><div class="tc2-fdesc">Monte Carlo: 10K+ scenarios for hit probability.</div></div></li>
+    <li class="tc2-feat"><span class="tc2-fico">&#x1F52E;</span><div><div class="tc2-ftxt">Player Simulator</div><div class="tc2-fdesc">Quantum: 10K+ scenarios for hit probability.</div></div></li>
     <li class="tc2-feat"><span class="tc2-fico">&#x1F4C8;</span><div><div class="tc2-ftxt">Bet Tracker</div><div class="tc2-fdesc">ROI, win rate, CLV capture, bankroll growth tracking.</div></div></li>
   </ul>
 </div>

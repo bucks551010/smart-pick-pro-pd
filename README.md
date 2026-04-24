@@ -24,7 +24,7 @@ Smart Pick Pro is a locally-run Streamlit web app that ingests live NBA data, si
 
 | Capability | How |
 |---|---|
-| **Prop simulation** | Quantum Matrix Engine 5.6 — Monte Carlo sim (1k–5k iterations) with directional force analysis |
+| **Prop simulation** | Quantum Matrix Engine 5.6 — Quantum sim (1k–5k iterations) with directional force analysis |
 | **Machine learning** | XGBoost + CatBoost + Ridge ensemble with 6-step feature pipeline |
 | **Live tracking** | In-game pace projections, sweat cards, Joseph M. Smith AI commentary |
 | **Entry building** | Optimal parlay construction with EV-maximized combinatorics |
@@ -157,7 +157,7 @@ Smart Pick Pro/
 │     └─ bet_tracker_tabs/          #   11 Bet Tracker tab modules
 │
 ├─ engine/                          # Core math & ML
-│  ├─ simulation.py                 #   QME 5.6 Monte Carlo simulator
+│  ├─ simulation.py                 #   QME 5.6 Quantum simulator
 │  ├─ projections.py                #   Player stat projections
 │  ├─ edge_detection.py             #   Edge + directional force analysis
 │  ├─ confidence.py                 #   Confidence scoring + tier system
@@ -201,7 +201,7 @@ Smart Pick Pro/
 
 ### Quantum Matrix Engine 5.6
 
-For each prop, the engine runs **1,000–5,000 Monte Carlo simulations**:
+For each prop, the engine runs **1,000–5,000 Quantum simulations**:
 
 1. **Minutes** — randomized with variance (rest days, foul trouble, blowouts)
 2. **Stats** — drawn from a normal distribution centered on the projected line, shaped by directional forces (matchup, pace, home/away, injury context, recent form)

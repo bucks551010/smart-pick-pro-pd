@@ -15,7 +15,7 @@ Pipeline phases
 2. Initialize the database schema (idempotent)
 3. Fetch today's games & active rosters
 4. Fetch live props from PrizePicks + Underdog (DK skipped to save budget)
-5. Run analyze_props_batch() — Monte Carlo + ML ensemble
+5. Run analyze_props_batch() — Quantum + ML ensemble
 6. Persist picks to ``all_analysis_picks`` via insert_analysis_picks()
 7. Write a summary record to ``slate_cache`` (for staleness checks)
 8. Persist props to ``data/live_props.csv`` (so the CSV path also stays fresh)
@@ -31,7 +31,7 @@ Environment variables
     DATABASE_URL          PostgreSQL URL (auto-set by Railway).  If absent,
                           falls back to local SQLite at db/smartai_nba.db.
     ODDS_API_KEY          Optional — enriches props with The Odds API lines.
-    QAM_SIM_DEPTH         Monte Carlo depth (default 1000).
+    QAM_SIM_DEPTH         Quantum depth (default 1000).
     DB_DIR                Override SQLite directory (default: db/).
     SLATE_WORKER_LOG      Log level for this script (default INFO).
 """

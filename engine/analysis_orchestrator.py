@@ -1213,7 +1213,7 @@ def analyze_props_batch(
     teams_data : any
         Loaded teams data.
     simulation_depth : int
-        Number of Monte Carlo simulations per prop.
+        Number of Quantum simulations per prop.
     prefetched_bios : dict, optional
         Pre-fetched player bios {name: bio_dict}.
     advanced_enrichment : dict, optional

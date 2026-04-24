@@ -262,7 +262,7 @@ def _render_card_native(card_html):
         :func:`utils.renderers.compile_unified_card_matrix` or the
         parlay rendering functions.
     """
-    st.html(card_html, unsafe_allow_javascript=True)
+    st.html(card_html)
 
 
 st.set_page_config(

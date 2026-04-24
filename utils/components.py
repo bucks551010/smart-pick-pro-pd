@@ -1552,7 +1552,7 @@ def render_attribution_footer() -> None:
   <div class="spp-footer-badges">
     <span class="spp-footer-badge">🏀 NBA Prop Analytics</span>
     <span class="spp-footer-badge">⚡ Quantum Matrix Engine 5.6</span>
-    <span class="spp-footer-badge">🔬 Monte Carlo Simulation</span>
+    <span class="spp-footer-badge">🔬 Quantum Simulation</span>
     <span class="spp-footer-badge">🛡️ Risk-Adjusted Betting Intelligence</span>
   </div>
   <div class="spp-footer-copy">

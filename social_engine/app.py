@@ -61,7 +61,7 @@ with st.sidebar:
     else:  # Brand / CTA
         cta_headline = st.text_input("Headline", "THE EDGE ISN'T LUCK. IT'S MATH.")
         cta_sub      = st.text_input("Sub-headline",
-            "1,000 Monte Carlo simulations per pick. Zero black boxes. Free trial.")
+            "1,000 Quantum simulations per pick. Zero black boxes. Free trial.")
         cta_button   = st.text_input("Button text", "→ START FREE")
 
     st.divider()

@@ -20,6 +20,7 @@ import io         # For in-memory CSV buffer
 import os         # For file path operations
 import time       # For retry backoff delays
 import datetime   # For timestamps in analysis session persistence
+import functools  # For lru_cache on the PostgreSQL connection pool
 from pathlib import Path  # Modern file path handling
 
 try:
@@ -49,10 +50,42 @@ def _normalize_pg_url(url: str) -> str:
     return "postgresql://" + url[len("postgres://"):] if url.startswith("postgres://") else url
 
 
+@functools.lru_cache(maxsize=1)
+def _pg_pool():
+    """Module-level PostgreSQL ThreadedConnectionPool (lazy, cached per process).
+
+    Reusing a pool across Streamlit reruns prevents the "new connection per
+    rerun" overhead that exhausts PostgreSQL connection limits and causes the
+    WebSocket to drop with a white screen.  The pool is created once and
+    shared for the lifetime of the Streamlit worker process.
+    """
+    import psycopg2.pool
+    return psycopg2.pool.ThreadedConnectionPool(
+        minconn=1,
+        maxconn=5,
+        dsn=_normalize_pg_url(_DATABASE_URL),
+        connect_timeout=10,
+    )
+
+
 def _pg_conn():
-    """Return a new psycopg2 connection. Caller must close."""
-    import psycopg2
-    return psycopg2.connect(_normalize_pg_url(_DATABASE_URL))
+    """Return a connection from the module-level pool (falls back to fresh connect)."""
+    try:
+        return _pg_pool().getconn()
+    except Exception:
+        import psycopg2
+        return psycopg2.connect(_normalize_pg_url(_DATABASE_URL), connect_timeout=10)
+
+
+def _pg_putconn(conn):
+    """Return a connection to the pool (or close it if the pool is unavailable)."""
+    try:
+        _pg_pool().putconn(conn)
+    except Exception:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 def _to_pg_sql(sql: str) -> str:
@@ -71,19 +104,21 @@ def _pg_execute_write(sql: str, params=(), *, caller: str = "write"):
             cur = conn.cursor()
             cur.execute(pg_sql, params)
             conn.commit()
-            conn.close()
             return cur
         except psycopg2.Error as err:
             _logger.error(f"{caller} PG write error (attempt {_attempt + 1}): {err}")
             try:
                 if conn:
                     conn.rollback()
-                    conn.close()
             except Exception:
                 pass
             if _attempt >= _WRITE_RETRY_ATTEMPTS - 1:
                 return None
             time.sleep(_WRITE_RETRY_DELAY * (2 ** _attempt))
+        finally:
+            if conn is not None:
+                _pg_putconn(conn)
+                conn = None
     return None
 
 
@@ -92,16 +127,19 @@ def _pg_execute_read(sql: str, params=()) -> list:
     import psycopg2
     import psycopg2.extras
     pg_sql = _to_pg_sql(sql)
+    conn = None
     try:
         conn = _pg_conn()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute(pg_sql, params if params else ())
         rows = [dict(r) for r in cur.fetchall()]
-        conn.close()
         return rows
     except Exception as err:
         _logger.warning(f"PG read error: {err}")
         return []
+    finally:
+        if conn is not None:
+            _pg_putconn(conn)
 
 
 def _get_eastern_tz():
@@ -2881,6 +2919,62 @@ def load_latest_analysis_session():
             return row_dict
     except Exception as _err:
         _logger.warning(f"load_latest_analysis_session error (non-fatal): {_err}")
+        return None
+
+
+def load_analysis_session_by_id(session_id: int):
+    """Load a specific Neural Analysis session from the DB by its primary key.
+
+    Used by the QAM Session Bridge: after a run is saved the session_id is
+    written to ``st.query_params["sid"]`` so that a page refresh or tab-switch
+    recovers the EXACT run the user was viewing rather than whatever the most
+    recent DB row happens to be.
+
+    Args:
+        session_id: The ``session_id`` primary key returned by
+            ``save_analysis_session``.
+
+    Returns:
+        dict|None: Session dict with deserialized ``analysis_results``,
+            ``todays_games``, ``selected_picks`` fields, or None if not found.
+    """
+    if not session_id:
+        return None
+    try:
+        row_dict: dict | None = None
+        if _DATABASE_URL:
+            rows = _pg_execute_read(
+                "SELECT * FROM analysis_sessions WHERE session_id = ?",
+                (int(session_id),),
+            )
+            row_dict = dict(rows[0]) if rows else None
+        else:
+            with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
+                conn.execute("PRAGMA journal_mode=WAL")
+                conn.row_factory = sqlite3.Row
+                cursor = conn.execute(
+                    "SELECT * FROM analysis_sessions WHERE session_id = ?",
+                    (int(session_id),),
+                )
+                row = cursor.fetchone()
+                row_dict = dict(row) if row else None
+        if not row_dict:
+            return None
+        try:
+            row_dict["analysis_results"] = json.loads(row_dict.get("analysis_results_json") or "[]")
+        except Exception:
+            row_dict["analysis_results"] = []
+        try:
+            row_dict["todays_games"] = json.loads(row_dict.get("todays_games_json") or "[]")
+        except Exception:
+            row_dict["todays_games"] = []
+        try:
+            row_dict["selected_picks"] = json.loads(row_dict.get("selected_picks_json") or "[]")
+        except Exception:
+            row_dict["selected_picks"] = []
+        return row_dict
+    except Exception as _err:
+        _logger.warning(f"load_analysis_session_by_id({session_id}) error (non-fatal): {_err}")
         return None
 
 # ============================================================

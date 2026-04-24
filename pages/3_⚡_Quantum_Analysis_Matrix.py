@@ -391,13 +391,21 @@ st.session_state.setdefault("joseph_used_fragments", set())
 st.session_state.setdefault("joseph_bets_logged", False)
 
 # ── Analysis Session Persistence — Rehydrate from DB if session empty ──────
-# If the user's session state has no analysis results (e.g. after inactivity
-# or a page refresh), reload the most recently saved session from SQLite so
-# they never have to re-run analysis just because time passed.
+# Session Bridge: checks st.query_params["sid"] first so that a page refresh
+# or tab-switch recovers the EXACT run the user was viewing, not just the
+# latest DB row.  Falls back to load_latest_analysis_session when no sid is
+# present (e.g. first visit or bookmarked URL without params).
 if not st.session_state.get("analysis_results"):
     try:
-        from tracking.database import load_latest_analysis_session as _load_session
-        _saved_session = _load_session()
+        from tracking.database import (
+            load_latest_analysis_session as _load_session,
+            load_analysis_session_by_id as _load_session_by_id,
+        )
+        _qam_sid_param = st.query_params.get("sid")
+        if _qam_sid_param:
+            _saved_session = _load_session_by_id(int(_qam_sid_param))
+        else:
+            _saved_session = _load_session()
         if _saved_session and _saved_session.get("analysis_results"):
             st.session_state["analysis_results"] = _saved_session["analysis_results"]
             if _saved_session.get("todays_games") and not st.session_state.get("todays_games"):
@@ -406,6 +414,9 @@ if not st.session_state.get("analysis_results"):
                 st.session_state["selected_picks"] = _saved_session["selected_picks"]
             # Record the timestamp so the UI can show when the session was saved
             st.session_state["_analysis_session_reloaded_at"] = _saved_session.get("analysis_timestamp", "")
+            # Prevent the auto-run guard from re-triggering the engine when we
+            # already have results from the DB.
+            st.session_state["_qam_db_restored"] = True
     except Exception:
         pass  # Non-fatal — just show empty state
 
@@ -701,7 +712,10 @@ if _dedup_removed > 0:
 
 # ── Auto-trigger: run analysis immediately if props exist but no results ──
 _qam_auto_triggered = False
-if final_props and not st.session_state.get("analysis_results") and not st.session_state.get("_qam_analysis_requested"):
+if (final_props
+        and not st.session_state.get("analysis_results")
+        and not st.session_state.get("_qam_analysis_requested")
+        and not st.session_state.get("_qam_db_restored")):
     try:
         from zoneinfo import ZoneInfo as _ZI_qam
         import datetime as _dt_qam
@@ -1054,11 +1068,18 @@ if run_analysis:
         # ── Persist analysis session to SQLite (survives page refresh/inactivity) ──
         try:
             from tracking.database import save_analysis_session as _save_session
-            _save_session(
+            _qam_new_sid = _save_session(
                 analysis_results=analysis_results_list,
                 todays_games=st.session_state.get("todays_games", []),
                 selected_picks=st.session_state.get("selected_picks", []),
             )
+            # Session Bridge: write the new session_id into the URL so that
+            # a page refresh or tab-switch recovers exactly this run from DB
+            # instead of defaulting to a fresh analysis.
+            if _qam_new_sid and _qam_new_sid > 0:
+                st.query_params["sid"] = str(_qam_new_sid)
+                # Clear the DB-restored flag — this is now a brand-new run.
+                st.session_state.pop("_qam_db_restored", None)
         except Exception as _persist_err:
             pass  # Non-fatal — session state still has results
         progress_bar.empty()
@@ -1155,6 +1176,38 @@ if analysis_results and st.session_state.get("_analysis_session_reloaded_at"):
         f"💾 **Analysis restored from saved session** (last run: {_reloaded_ts}). "
         "Results are preserved from your last analysis run — click **🚀 Run Analysis** above to refresh."
     )
+
+# ── ⚡ Platform AI Picks (own section, above Joseph Broadcast Desk) ──────────
+if analysis_results:
+    _outer_plat_ai_pool = [
+        r for r in analysis_results
+        if r.get("platform", "").strip()
+        and not r.get("should_avoid", False)
+        and not r.get("player_is_out", False)
+        and float(r.get("confidence_score", 0)) >= 60
+    ]
+    _outer_plat_ai_pool = sorted(
+        _outer_plat_ai_pool,
+        key=lambda r: float(r.get("confidence_score", 0)),
+        reverse=True,
+    )[:8]
+    if _outer_plat_ai_pool:
+        if players_data and any(not r.get("player_id") for r in _outer_plat_ai_pool):
+            _outer_pid_lookup = {
+                str(p.get("name", "")).lower(): str(p.get("player_id", ""))
+                for p in players_data
+                if p.get("player_id")
+            }
+            for _op in _outer_plat_ai_pool:
+                if not _op.get("player_id"):
+                    _op["player_id"] = _outer_pid_lookup.get(
+                        str(_op.get("player_name", "")).lower(), ""
+                    )
+        st.markdown(
+            _render_platform_picks_html(_outer_plat_ai_pool),
+            unsafe_allow_html=True,
+        )
+# ── END Platform AI Picks ─────────────────────────────────────────────────────
 
 # ════ JOSEPH M. SMITH LIVE BROADCAST DESK ════
 # Reduce Joseph's container size by 60% on this page per design requirements.
@@ -1588,39 +1641,6 @@ def _render_results_fragment():
 
         st.markdown(
             _render_hero_section_html(_hero_pool),
-            unsafe_allow_html=True,
-        )
-
-    # ── ⚡ Platform AI Picks ────────────────────────────────────────
-    # Show picks that have a specific platform attached, sorted by confidence.
-    # These are the picks that map directly to active sportsbook lines.
-    _plat_ai_pool = [
-        r for r in displayed_results
-        if r.get("platform", "").strip()
-        and not r.get("should_avoid", False)
-        and not r.get("player_is_out", False)
-        and float(r.get("confidence_score", 0)) >= 60
-    ]
-    _plat_ai_pool = sorted(
-        _plat_ai_pool,
-        key=lambda r: float(r.get("confidence_score", 0)),
-        reverse=True,
-    )[:8]
-    if _plat_ai_pool:
-        # Enrich with player_id for headshots (same as hero pool above)
-        if players_data and any(not r.get("player_id") for r in _plat_ai_pool):
-            _pid_lookup_plat = {
-                str(p.get("name", "")).lower(): str(p.get("player_id", ""))
-                for p in players_data
-                if p.get("player_id")
-            }
-            for _pp in _plat_ai_pool:
-                if not _pp.get("player_id"):
-                    _pp["player_id"] = _pid_lookup_plat.get(
-                        str(_pp.get("player_name", "")).lower(), ""
-                    )
-        st.markdown(
-            _render_platform_picks_html(_plat_ai_pool),
             unsafe_allow_html=True,
         )
 

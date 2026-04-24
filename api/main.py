@@ -87,6 +87,12 @@ if _FASTAPI_AVAILABLE:
     except Exception as exc:
         _logger.warning("notifications router failed to load: %s", exc)
 
+    try:
+        from api.routes.seo import router as seo_router
+        app.include_router(seo_router)
+    except Exception as exc:
+        _logger.warning("seo router failed to load: %s", exc)
+
     # ── /healthz — zero-cost liveness probe ──────────────────────
     # Intentionally inline (not a router) so it is ALWAYS registered
     # regardless of which optional routers fail to load.

@@ -1,9 +1,138 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  sitemap.xml — SmartPickPro.ai
+  Last updated: 2026-04-24
+  This static sitemap is served from /static/sitemap.xml.
+  A live, auto-dated version is also available at /sitemap.xml via the FastAPI layer.
+-->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 
   <url>
-    <loc>https://smartpickpro.app/</loc>
+    <loc>https://smartpickpro.ai/</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://smartpickpro.ai/assets/Gold_Logo.png</image:loc>
+      <image:title>Smart Pick Pro — AI NBA Analytics</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/prop-scanner</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/quantum-analysis</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/live-games</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>always</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/live-sweat</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>always</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/smart-money</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/entry-builder</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/player-simulator</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/game-report</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/correlation-matrix</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/bet-tracker</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/risk-shield</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/studio</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/nba-data</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.70</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/proving-grounds</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.65</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/pricing</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+
+  <url>
+    <loc>https://smartpickpro.ai/results</loc>
+    <lastmod>2026-04-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+</urlset>
+
     <lastmod>2026-04-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>

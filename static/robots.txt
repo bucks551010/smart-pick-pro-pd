@@ -1,27 +1,68 @@
-# User-agent rules
+# ============================================================
+# robots.txt — SmartPickPro.ai
+# Last updated: 2026-04-24
+#
+# IMPORTANT NOTES FOR MAINTAINERS:
+#   - /static/ must remain ALLOWED — it serves JS bundles, CSS, and
+#     image assets that Googlebot needs to render the app shell.
+#     Blocking /static/ de-optimises Core Web Vitals and prevents
+#     the crawler from seeing OG images.
+#   - /_stcore/ and /component/ are Streamlit's internal WebSocket
+#     and custom-component endpoints — not useful for crawlers.
+#   - /api/ endpoints return JSON; disallowing prevents wasted crawl
+#     budget on machine-readable routes.
+# ============================================================
+
+# ── Global rules ─────────────────────────────────────────────
 User-agent: *
 Allow: /
-Disallow: /settings
-Disallow: /api/
+
+# Streamlit internals (WebSocket handshake paths — crawlers cannot
+# render these and wasting crawl budget here hurts Core Web Vitals)
 Disallow: /_stcore/
-Disallow: /static/
 Disallow: /component/
+Disallow: /stream
 
-# Crawl-delay (be polite)
-Crawl-delay: 2
+# JSON / API routes (machine-readable, not indexable content)
+Disallow: /api/
+Disallow: /health
+Disallow: /healthz
 
-# Sitemaps
+# Settings and admin (private, user-specific)
+Disallow: /settings
+Disallow: /admin
+
+# NOTE: /static/ is intentionally NOT disallowed.
+# Blocking static assets prevents Googlebot from evaluating
+# page rendering quality and Core Web Vitals.
+
+# ── Player & game parameter URLs (explicitly allow for rich indexing) ──
+Allow: /?player=
+Allow: /?game=
+Allow: /prop/
+Allow: /game/
+
+# ── Sitemaps ─────────────────────────────────────────────────
 Sitemap: https://smartpickpro.ai/sitemap.xml
 
-# Common bot-specific rules
+# ── Googlebot: tighter crawl-delay to preserve server resources ──
 User-agent: Googlebot
 Allow: /
+Disallow: /_stcore/
+Disallow: /component/
+Disallow: /stream
+Disallow: /api/
 Crawl-delay: 1
 
+# ── Bingbot ──────────────────────────────────────────────────
 User-agent: Bingbot
 Allow: /
+Disallow: /_stcore/
+Disallow: /component/
+Disallow: /api/
 Crawl-delay: 2
 
+# ── Social media crawlers (allow all for OG/Twitter Card previews) ──
 User-agent: Twitterbot
 Allow: /
 
@@ -30,3 +71,20 @@ Allow: /
 
 User-agent: LinkedInBot
 Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+# ── GPTBot / AI crawlers (allow for brand visibility in AI answers) ──
+User-agent: GPTBot
+Allow: /
+Disallow: /api/
+Disallow: /admin
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /api/
+Disallow: /admin

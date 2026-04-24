@@ -29,6 +29,37 @@
 # ============================================================
 
 import streamlit as st
+import inspect
+import os
+
+
+# ── Page-script → SEO preset mapping ─────────────────────────────────────────
+# Maps the basename of each Streamlit page script to the key used in
+# utils.seo.SEO_PAGES.  inject_theme_css() walks the call stack, finds the
+# outermost page script, and calls inject_page_seo() automatically — so
+# every page gets full meta/OG/JSON-LD injection with zero per-page boilerplate.
+_SEO_SCRIPT_MAP: dict[str, str] = {
+    "Smart_Picks_Pro_Home.py":       "Home",
+    "home.py":                        "Home",
+    "0_💦_Live_Sweat.py":            "Live Sweat",
+    "1_📡_Live_Games.py":            "Live Games",
+    "2_🔬_Prop_Scanner.py":          "Prop Scanner",
+    "3_⚡_Quantum_Analysis_Matrix.py": "Quantum Analysis",
+    "4_💰_Smart_Money_Bets.py":      "Smart Money Bets",
+    "5_🎙️_The_Studio.py":           "The Studio",
+    "6_📋_Game_Report.py":           "Game Report",
+    "7_🔮_Player_Simulator.py":      "Player Simulator",
+    "8_🧬_Entry_Builder.py":         "Entry Builder",
+    "9_🛡️_Risk_Shield.py":          "Risk Shield",
+    "10_📡_Smart_NBA_Data.py":       "Smart NBA Data",
+    "11_🗺️_Correlation_Matrix.py":  "Correlation Matrix",
+    "12_📈_Bet_Tracker.py":          "Bet Tracker",
+    "13_📊_Proving_Grounds.py":      "Proving Grounds",
+    "14_⚙️_Settings.py":            "Settings",
+    "15_💎_Subscription_Level.py":   "Subscription",
+    "16_🧾_Results_Ledger.py":       "Results Ledger",
+    "99_🔐_Admin_Metrics.py":        "Admin Metrics",
+}
 
 
 # ── Critical fallback CSS ─────────────────────────────────────────────────────
@@ -95,6 +126,31 @@ def inject_theme_css() -> None:
     from styles.theme import get_global_css, get_premium_ui_css
     st.markdown(get_global_css(), unsafe_allow_html=True)
     st.markdown(get_premium_ui_css(), unsafe_allow_html=True)
+    # 1c. SEO meta/OG/JSON-LD injection (auto-detected from call stack)
+    _inject_page_seo_auto()
+
+
+def _inject_page_seo_auto() -> None:
+    """
+    Walk the Python call stack to identify the current Streamlit page script
+    and inject its SEO preset (meta tags, OG, Twitter Card, JSON-LD) via
+    utils.seo.inject_page_seo().
+
+    Called automatically by inject_theme_css() — no per-page boilerplate needed.
+    Silently no-ops if detection fails or the SEO module is unavailable.
+    """
+    try:
+        page_name: str | None = None
+        for frame_info in inspect.stack():
+            basename = os.path.basename(frame_info.filename)
+            if basename in _SEO_SCRIPT_MAP:
+                page_name = _SEO_SCRIPT_MAP[basename]
+                break
+        if page_name:
+            from utils.seo import inject_page_seo
+            inject_page_seo(page_name)
+    except Exception:
+        pass  # SEO injection must never crash the page
 
 
 # ── 2. State Hydration Barrier ───────────────────────────────────────────────

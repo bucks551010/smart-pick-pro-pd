@@ -639,7 +639,7 @@ def _build_entry_strategy(results):
             "combo_type":    _LEG_LABELS.get(num_legs, f"{num_legs}-Leg"),
             "num_legs":      num_legs,
             "picks": [
-                f"{r['player_name']} {r['direction']} {r['line']} {r['stat_type'].title()}"
+                f"{r.get('player_name', '')} {r.get('direction', 'OVER')} {r.get('line', '')} {str(r.get('stat_type', 'points')).title()}"
                 for r in picks
             ],
             "safe_avg":      f"{avg_conf:.1f}",

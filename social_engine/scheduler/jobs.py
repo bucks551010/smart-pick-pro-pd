@@ -6,6 +6,7 @@ from pathlib import Path
 
 from core import data_source as ds
 from core.llm_copy import CopyVariants, generate_copy
+from core.variants import pick_random_skin
 from distribute.base import PostResult
 from distribute.campaign import deploy_campaign
 from render.headless import render_to_images
@@ -48,16 +49,18 @@ def build_and_post_morning_recap(channels=_DEFAULT_CHANNELS) -> list[PostResult]
         "winning_props": wins_only,
     }
     copy = generate_copy("results", payload)
+    skin = pick_random_skin()
 
     html = render_html(
         "results.html",
         context={
-            "title":    f"{summary.wins}-{summary.losses} Last Night",
-            "subtitle": "Receipts always shown.",
-            "wins": summary.wins, "losses": summary.losses,
-            "win_rate": summary.win_rate, "roi_pct": summary.roi_pct,
-            "picks":    wins_only,   # all wins displayed for verification
-            "cols":     2,
+            "title":      f"{summary.wins}-{summary.losses} Last Night",
+            "subtitle":   "Receipts always shown.",
+            "wins":       summary.wins, "losses": summary.losses,
+            "win_rate":   summary.win_rate, "roi_pct": summary.roi_pct,
+            "picks":      wins_only,   # all wins displayed for verification
+            "cols":       2,
+            "skin_class": skin["class"],
         },
         utm_source="recap",
         utm_campaign=f"morning_recap_{summary.bet_date}",
@@ -102,15 +105,17 @@ def build_and_post_pregame_slate(
         "platforms": list({p.get("platform", "Unknown") for p in picks}),
     }
     copy = generate_copy("slate", payload)
+    skin = pick_random_skin()
 
     html = render_html(
         "slate.html",
         context={
-            "eyebrow":  "TONIGHT'S PICKS",
-            "title":    title,
-            "subtitle": sub,
-            "picks":    picks[:12],
-            "cols":     2 if len(picks) > 1 else 1,
+            "eyebrow":    "TONIGHT'S PICKS",
+            "title":      title,
+            "subtitle":   sub,
+            "picks":      picks[:12],
+            "cols":       2 if len(picks) > 1 else 1,
+            "skin_class": skin["class"],
         },
         utm_source="pregame",
         utm_campaign=f"pregame_{pick_filter}_{date.today():%Y%m%d}",
@@ -138,18 +143,20 @@ def build_and_post_weekly_scorecard(channels=_DEFAULT_CHANNELS) -> list[PostResu
         "winning_props": summary.winning_bets,
     }
     copy = generate_copy("weekly", payload)
+    skin = pick_random_skin()
 
     html = render_html(
         "results.html",
         context={
-            "title":    f"Week of {summary.week_start}",
-            "subtitle": f"{summary.wins}W - {summary.losses}L | {summary.win_rate:.0f}% Win Rate",
-            "wins":     summary.wins,
-            "losses":   summary.losses,
-            "win_rate": summary.win_rate,
-            "roi_pct":  summary.roi_pct,
-            "picks":    summary.winning_bets,  # winning props only
-            "cols":     2,
+            "title":      f"Week of {summary.week_start}",
+            "subtitle":   f"{summary.wins}W - {summary.losses}L | {summary.win_rate:.0f}% Win Rate",
+            "wins":       summary.wins,
+            "losses":     summary.losses,
+            "win_rate":   summary.win_rate,
+            "roi_pct":    summary.roi_pct,
+            "picks":      summary.winning_bets,  # winning props only
+            "cols":       2,
+            "skin_class": skin["class"],
         },
         utm_source="weekly",
         utm_campaign=f"weekly_scorecard_{summary.week_end}",
@@ -163,6 +170,7 @@ def build_and_post_weekly_scorecard(channels=_DEFAULT_CHANNELS) -> list[PostResu
 def build_and_post_branding(channels=_DEFAULT_CHANNELS) -> list[PostResult]:
     payload = {"product": "SmartPickPro NBA", "stage": "brand_awareness"}
     copy = generate_copy("brand", payload)
+    skin = pick_random_skin()
 
     html = render_html(
         "brand_cta.html",
@@ -170,8 +178,9 @@ def build_and_post_branding(channels=_DEFAULT_CHANNELS) -> list[PostResult]:
             "title":        "Quant NBA Analytics",
             "headline":     "THE EDGE ISN'T LUCK. IT'S MATH.",
             "subheadline":  "1,000 Monte Carlo simulations per pick. Zero black boxes. Free trial.",
-            "button_text":  "→ START FREE",
+            "button_text":  "\u2192 START FREE",
             "tagline":      "Quantitative NBA Analytics",
+            "skin_class":   skin["class"],
         },
         utm_source="brand",
         utm_campaign=f"brand_cta_{date.today():%Y%m%d}",

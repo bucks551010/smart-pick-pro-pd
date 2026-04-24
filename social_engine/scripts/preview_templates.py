@@ -52,8 +52,18 @@ TEMPLATES = {
     },
 }
 
+# Platform sizes (square=IG/FB, landscape=Twitter, portrait=Stories/TikTok)
+SIZES = {
+    "square":    (1080, 1080),
+    "landscape": (1200, 675),
+    "portrait":  (1080, 1920),
+}
+
 with sync_playwright() as p:
     browser = p.chromium.launch()
+
+    # ── Pass 1: all 5 skins at square (skin comparison) ───────────────────────
+    print("Pass 1 — Skin comparison (square 1080×1080):")
     for skin in SKINS:
         for tpl_name, tpl in TEMPLATES.items():
             tmpl = env.get_template(tpl_name)
@@ -63,7 +73,24 @@ with sync_playwright() as p:
             fname = f"{tpl['slug']}_{skin['id']}.png"
             page.screenshot(path=str(out_dir / fname), full_page=False)
             print(f"  [{skin['label']:18}] {tpl['slug']:7} → {fname}")
+            page.close()
+
+    # ── Pass 2: all 3 platform sizes using neural skin (layout check) ─────────
+    print("\nPass 2 — Platform size layouts (neural skin):")
+    neural_skin = next(s for s in SKINS if s["id"] == "neural")
+    for size_key, (w, h) in SIZES.items():
+        for tpl_name, tpl in TEMPLATES.items():
+            tmpl = env.get_template(tpl_name)
+            html = tmpl.render(**tpl["ctx"], base_css=base_css, skin_class=neural_skin["class"])
+            page = browser.new_page(viewport={"width": w, "height": h})
+            page.set_content(html, wait_until="networkidle")
+            fname = f"{tpl['slug']}_neural_{size_key}_{w}x{h}.png"
+            page.screenshot(path=str(out_dir / fname), full_page=False)
+            print(f"  [{size_key:9} {w}×{h}] {tpl['slug']:7} → {fname}")
+            page.close()
+
     browser.close()
 
-total = len(SKINS) * len(TEMPLATES)
-print(f"\nDone — {total} previews in social_engine/_previews/")
+total_skins = len(SKINS) * len(TEMPLATES)
+total_sizes = len(SIZES) * len(TEMPLATES)
+print(f"\nDone — {total_skins} skin + {total_sizes} layout previews in social_engine/_previews/")

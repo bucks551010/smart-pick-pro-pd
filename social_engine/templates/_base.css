@@ -507,3 +507,102 @@ html, body {
   text-align: right; line-height: 1.6; text-shadow: 0 0 12px var(--a2-glow);
 }
 .brand-url span { color: var(--dim); font-size: 1.0vmin; letter-spacing: 0.22em; display: block; }
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE LAYOUTS — adapts per platform aspect ratio
+   ─────────────────────────────────────────────────────────
+   Square   1080×1080  →  Instagram, Facebook    (baseline)
+   Landscape 1200×675  →  Twitter / X            (min-aspect-ratio 4/3)
+   Portrait 1080×1920  →  Stories, Reels, TikTok (max-aspect-ratio 3/4)
+═══════════════════════════════════════════════════════════ */
+
+/* ── Landscape: Twitter / X  1200×675 ──────────────────── */
+@media (min-aspect-ratio: 4/3) {
+  .poster { padding: 2vmin 4.5vmin 1.8vmin; }
+  .hdr { margin-bottom: 1.5vmin; }
+  .brand-mark { width: 4vmin; height: 4vmin; font-size: 2.2vmin; }
+  .brand-eyebrow { font-size: 1.1vmin; }
+  .brand-name { font-size: 2vmin; }
+  .date-pill { font-size: 1.2vmin; padding: 0.6vmin 1.4vmin; }
+  .section-title { font-size: 6vmin; margin-bottom: 0.8vmin; }
+  .section-sub { font-size: 1.3vmin; margin-bottom: 1.8vmin; }
+  .score-row { gap: 1.2vmin; margin-bottom: 1.5vmin; }
+  .score-cell { padding: 1.5vmin 0.8vmin 1vmin; }
+  .score-num { font-size: 7.5vmin; }
+  .score-label { font-size: 1vmin; margin-top: 0.5vmin; }
+  .picks-grid { gap: 1vmin; }
+  .pick-card { padding: 1.4vmin 2vmin 1.2vmin 2.2vmin; gap: 0.9vmin; border-radius: 1vmin; }
+  .pc-player { font-size: 2.2vmin; }
+  .pc-val { font-size: 5.2vmin; }
+  .pc-dir { font-size: 2vmin; }
+  .pc-stat { font-size: 1.4vmin; }
+  .pc-conf-num { font-size: 2.6vmin; }
+  .pc-conf-num span { font-size: 1.4vmin; }
+  .conf-bar { height: 0.5vmin; }
+  .edge-tag { font-size: 1.1vmin; }
+  .intel-bar { margin: 1vmin 0 0.8vmin; }
+  .intel-val { font-size: 1.6vmin; }
+  .intel-label { font-size: 0.85vmin; }
+  .footer { padding-top: 1.2vmin; }
+  .compliance { font-size: 0.9vmin; }
+  .brand-url { font-size: 1.2vmin; }
+  .qr-block img { width: 7vmin; height: 7vmin; }
+  /* CTA template — landscape */
+  .cta-eyebrow { font-size: 1.3vmin; margin-bottom: 1.2vmin; }
+  .cta-headline { font-size: 9vmin; margin-bottom: 1.5vmin; }
+  .cta-sub { font-size: 1.8vmin; margin-bottom: 1.8vmin; }
+  .cta-stats { gap: 3vmin; margin-bottom: 2vmin; }
+  .cta-stat-val { font-size: 4vmin; }
+  .cta-stat-label { font-size: 0.9vmin; }
+  .cta-pills { gap: 1.2vmin; margin-bottom: 2.5vmin; }
+  .fp { font-size: 1.2vmin; padding: 0.8vmin 1.6vmin; }
+  .cta-btn { font-size: 2.5vmin; padding: 1.6vmin 5.5vmin; }
+  .cta-glow-orb { width: 60vmin; height: 60vmin; }
+}
+
+/* ── Portrait: Stories / Reels / TikTok  1080×1920 ─────── */
+@media (max-aspect-ratio: 3/4) {
+  .poster { padding: 6.5vmin 5.5vmin 5vmin; }
+  .hdr { margin-bottom: 5vmin; }
+  .brand-mark { width: 6.5vmin; height: 6.5vmin; font-size: 3.2vmin; }
+  .brand-eyebrow { font-size: 1.7vmin; }
+  .brand-name { font-size: 3vmin; }
+  .date-pill { font-size: 1.8vmin; padding: 1.1vmin 2.4vmin; }
+  .section-title { font-size: 9.5vmin; margin-bottom: 1.6vmin; }
+  .section-sub { font-size: 1.9vmin; margin-bottom: 4vmin; }
+  /* force single-column in portrait — platform cards stack vertically */
+  .picks-grid.cols-2, .picks-grid.cols-3 { grid-template-columns: 1fr; }
+  .picks-grid { gap: 2.5vmin; }
+  .pick-card { padding: 3.2vmin 3vmin 2.8vmin 3.6vmin; gap: 1.8vmin; border-radius: 1.8vmin; }
+  .pc-player { font-size: 3.4vmin; }
+  .pc-val { font-size: 8vmin; }
+  .pc-dir { font-size: 3vmin; }
+  .pc-stat { font-size: 2.1vmin; }
+  .pc-conf-num { font-size: 4.2vmin; }
+  .pc-conf-num span { font-size: 2.2vmin; }
+  .edge-tag { font-size: 1.7vmin; }
+  .result-badge { font-size: 2.1vmin; padding: 0.8vmin 2.2vmin; }
+  .score-row { gap: 2.2vmin; margin-bottom: 4vmin; }
+  .score-cell { padding: 4.5vmin 1vmin 3.5vmin; }
+  .score-num { font-size: 12vmin; }
+  .score-label { font-size: 1.5vmin; margin-top: 1.2vmin; }
+  .intel-bar { margin: 4vmin 0 3vmin; }
+  .intel-items { gap: 4vmin; }
+  .intel-val { font-size: 2.5vmin; }
+  .intel-label { font-size: 1.25vmin; }
+  .footer { padding-top: 3.5vmin; }
+  .compliance { font-size: 1.3vmin; max-width: 72%; }
+  .brand-url { font-size: 1.8vmin; }
+  .qr-block img { width: 11.5vmin; height: 11.5vmin; }
+  /* CTA template — portrait */
+  .cta-eyebrow { font-size: 2vmin; margin-bottom: 3.5vmin; }
+  .cta-headline { font-size: 14.5vmin; margin-bottom: 4vmin; }
+  .cta-sub { font-size: 2.6vmin; max-width: 82%; margin-bottom: 4.5vmin; line-height: 1.6; }
+  .cta-stats { gap: 5.5vmin; margin-bottom: 4.5vmin; }
+  .cta-stat-val { font-size: 6.5vmin; }
+  .cta-stat-label { font-size: 1.4vmin; }
+  .cta-pills { gap: 2vmin; margin-bottom: 5.5vmin; }
+  .fp { font-size: 1.9vmin; padding: 1.4vmin 2.8vmin; }
+  .cta-btn { font-size: 3.8vmin; padding: 3vmin 10vmin; border-radius: 1.4vmin; }
+  .cta-glow-orb { width: 85vmin; height: 85vmin; }
+}

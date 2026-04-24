@@ -117,6 +117,19 @@ except ImportError:
     def _is_db_available():          # type: ignore[misc]
         return False
 
+# Optional Streamlit import — used for @st.cache_data on public data
+# functions.  Falls back to an identity decorator when running outside
+# the Streamlit server (ETL scripts, unit tests, etc.).
+try:
+    import streamlit as _st_nba_svc
+    _cache_data = _st_nba_svc.cache_data
+except ImportError:
+    def _cache_data(ttl=None, show_spinner=True):  # type: ignore[misc]
+        def _d(fn):
+            fn.clear = lambda: None
+            return fn
+        return _d
+
 # Build a reverse lookup: abbreviation → team full name
 _ABBREVIATION_TO_TEAM_NAME: dict[str, str] = {
     v: k for k, v in TEAM_NAME_TO_ABBREVIATION.items()
@@ -192,16 +205,6 @@ def _normalize_db_player(p: dict) -> dict:
         "oreb_avg":        p.get("oreb_avg", 0.0),
         "dreb_avg":        p.get("dreb_avg", 0.0),
         "pf_avg":          p.get("pf_avg", 0.0),
-        # Engine-expected aliases for extended stats
-        "offensive_rebounds_avg": p.get("oreb_avg", 0.0),
-        "defensive_rebounds_avg": p.get("dreb_avg", 0.0),
-        "personal_fouls_avg":     p.get("pf_avg", 0.0),
-        # Usage, efficiency, and DD/TD rates (from Player_Bio + League_Dash)
-        "usg_pct":             p.get("usg_pct", 0.0),
-        "ts_pct":              p.get("ts_pct", 0.0),
-        "usage_rate":          p.get("usg_pct", 0.0),
-        "double_double_rate":  p.get("double_double_rate", 0.0),
-        "triple_double_rate":  p.get("triple_double_rate", 0.0),
         "plus_minus_avg":  p.get("plus_minus_avg", 0.0),
         # Standard deviations — pass through
         "points_std":      p.get("points_std", 0.0),
@@ -221,6 +224,7 @@ def _normalize_db_player(p: dict) -> dict:
 # Public API — DB-only wrappers (no live API fallback)
 # ============================================================
 
+@_cache_data(ttl=60, show_spinner=False)
 def get_todays_games():
     """Retrieve tonight's NBA games.
 
@@ -319,6 +323,7 @@ def get_player_recent_form(player_id, last_n_games=10):
     return []
 
 
+@_cache_data(ttl=300, show_spinner=False)
 def get_player_stats(progress_callback=None):
     """Retrieve all active player season stats from the local DB only."""
     if _is_db_available():
@@ -336,6 +341,7 @@ def get_player_stats(progress_callback=None):
     return []
 
 
+@_cache_data(ttl=300, show_spinner=False)
 def get_team_stats(progress_callback=None):
     """Retrieve team-level stats from the local DB only."""
     if _is_db_available():

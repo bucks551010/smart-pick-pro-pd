@@ -32,7 +32,7 @@ except ImportError:
 # ── DB path ───────────────────────────────────────────────────────────────────
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = Path(os.environ.get("DB_DIR", str(_REPO_ROOT / "db"))) / "smartpicks.db"
+DB_PATH = _REPO_ROOT / "db" / "smartpicks.db"
 
 
 # ── Connection helper ─────────────────────────────────────────────────────────
@@ -61,18 +61,35 @@ def _rows_to_dicts(rows) -> list[dict]:
     return [dict(row) for row in rows]
 
 
+# Module-level cache: [bool|None, timestamp_monotonic]
+_is_db_available_cache: list = [None, 0.0]
+
+
 def is_db_available() -> bool:
-    """Return True if the ETL database exists and has player data."""
+    """Return True if the ETL database exists and has player data.
+
+    Result is module-level cached for 60 s to avoid a new SQLite connection
+    on every Streamlit rerun.
+    """
+    import time as _time
+    now = _time.monotonic()
+    cached_val, cached_at = _is_db_available_cache
+    if cached_val is not None and (now - cached_at) < 60:
+        return cached_val
     conn = _get_conn()
     if conn is None:
-        return False
-    try:
-        count = conn.execute("SELECT COUNT(*) FROM Players").fetchone()[0]
-        return count > 0
-    except Exception:
-        return False
-    finally:
-        conn.close()
+        result = False
+    else:
+        try:
+            count = conn.execute("SELECT COUNT(*) FROM Players").fetchone()[0]
+            result = count > 0
+        except Exception:
+            result = False
+        finally:
+            conn.close()
+    _is_db_available_cache[0] = result
+    _is_db_available_cache[1] = now
+    return result
 
 
 # ── Season averages helper ────────────────────────────────────────────────────
@@ -307,24 +324,6 @@ def get_all_players() -> list[dict]:
         except Exception:
             ext_map = {}
 
-        # Pull dd2, td3 from League_Dash_Player_Stats (actual recorded counts)
-        try:
-            dash_rows = conn.execute(
-                "SELECT player_id, dd2, td3, gp FROM League_Dash_Player_Stats"
-            ).fetchall()
-            dash_map = {int(r["player_id"]): r for r in dash_rows}
-        except Exception:
-            dash_map = {}
-
-        # Pull usg_pct, ts_pct, oreb_pct, dreb_pct, net_rating from Player_Bio
-        try:
-            bio_rows = conn.execute(
-                "SELECT player_id, usg_pct, ts_pct, oreb_pct, dreb_pct, net_rating FROM Player_Bio"
-            ).fetchall()
-            bio_map = {int(r["player_id"]): r for r in bio_rows}
-        except Exception:
-            bio_map = {}
-
         # Bulk std-dev query — one pass over all game logs
         try:
             _all_logs = conn.execute(
@@ -366,16 +365,6 @@ def get_all_players() -> list[dict]:
         for row in rows:
             pid = int(row["player_id"])
             ext = ext_map.get(pid)
-            dash = dash_map.get(pid)
-            bio = bio_map.get(pid)
-            gp_count = int(row["gp"] or 0)
-            # Compute actual DD/TD rates from League_Dash_Player_Stats
-            _dd2 = int(dash["dd2"] or 0) if dash else 0
-            _td3 = int(dash["td3"] or 0) if dash else 0
-            _dash_gp = int(dash["gp"] or 0) if dash else 0
-            _eff_gp = _dash_gp if _dash_gp > 0 else gp_count
-            _dd_rate = round(_dd2 / _eff_gp, 4) if _eff_gp > 0 else 0.0
-            _td_rate = round(_td3 / _eff_gp, 4) if _eff_gp > 0 else 0.0
             result.append({
                 "player_id":         pid,
                 "first_name":        row["first_name"] or "",
@@ -414,15 +403,6 @@ def get_all_players() -> list[dict]:
                 "ftm_std":        std_map.get(pid, {}).get("ftm_std", 0.0),
                 "oreb_std":       std_map.get(pid, {}).get("oreb_std", 0.0),
                 "plus_minus_std": std_map.get(pid, {}).get("plus_minus_std", 0.0),
-                # Actual DD/TD rates from League_Dash_Player_Stats
-                "double_double_rate": _dd_rate,
-                "triple_double_rate": _td_rate,
-                # Usage and efficiency from Player_Bio
-                "usg_pct":   _r(bio["usg_pct"], 3)   if bio else 0.0,
-                "ts_pct":    _r(bio["ts_pct"], 3)     if bio else 0.0,
-                "oreb_pct":  _r(bio["oreb_pct"], 3)   if bio else 0.0,
-                "dreb_pct":  _r(bio["dreb_pct"], 3)   if bio else 0.0,
-                "net_rating": _r(bio["net_rating"], 1) if bio else 0.0,
             })
         return result
     except Exception as exc:
@@ -794,14 +774,7 @@ def get_todays_games() -> list[dict]:
     DB-only — no live API fallback.  Data must be populated
     by the ETL initial pull before this function is used.
     """
-    # Use Eastern Time — the NBA schedules games by ET date.
-    # A server running UTC would roll to the next day at 6-7 PM CST
-    # (midnight UTC), causing CST users to see tomorrow's slate.
-    try:
-        from zoneinfo import ZoneInfo as _ZI
-        today = datetime.datetime.now(_ZI("America/New_York")).strftime("%Y-%m-%d")
-    except Exception:
-        today = datetime.date.today().strftime("%Y-%m-%d")
+    today = datetime.date.today().strftime("%Y-%m-%d")
 
     conn = _get_conn()
     db_games: list[dict] = []

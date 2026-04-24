@@ -179,8 +179,6 @@ from data.platform_mappings import COMBO_STATS, FANTASY_SCORING
 from utils.renderers import compile_card_matrix as _compile_card_matrix
 from utils.renderers import build_horizontal_card_html as _build_h_card
 from utils.player_card_renderer import compile_player_card_matrix as _compile_player_cards
-from utils.player_card_renderer import compile_player_cards_flat as _compile_player_cards_flat
-from utils.player_card_renderer import PLAYER_CARD_CSS as _PLAYER_CARD_CSS
 from styles.theme import get_quantum_card_matrix_css as _get_qcm_css
 
 # ── Glassmorphic Trading-Card imports ────────────────────────────────────────
@@ -264,7 +262,7 @@ def _render_card_native(card_html):
         :func:`utils.renderers.compile_unified_card_matrix` or the
         parlay rendering functions.
     """
-    st.html(card_html)
+    st.html(card_html, unsafe_allow_javascript=True)
 
 
 st.set_page_config(
@@ -273,28 +271,10 @@ st.set_page_config(
     layout="wide",
 )
 
-# ── Login Gate ─────────────────────────────────────────────────
-from utils.auth_gate import require_login as _require_login
-if not _require_login():
-    st.stop()
-
-# ── Analytics ─────────────────────────────────────────────────
-from utils.analytics import inject_ga4, track_page_view
-inject_ga4()
-track_page_view("Quantum Analysis")
-from utils.seo import inject_page_seo
-inject_page_seo("Quantum Analysis")
-
 # Inject global CSS + QDS CSS
 st.markdown(get_global_css(), unsafe_allow_html=True)
 st.markdown(get_qds_css(), unsafe_allow_html=True)
 st.markdown(_get_gm_css(), unsafe_allow_html=True)
-st.markdown(_get_qcm_css(), unsafe_allow_html=True)
-st.markdown(f'<style>{_PLAYER_CARD_CSS}</style>', unsafe_allow_html=True)
-
-# ── Premium UI layer ─────────────────────────────────────────
-from styles.theme import get_premium_ui_css as _qam_premium_css
-st.markdown(_qam_premium_css(), unsafe_allow_html=True)
 
 # ── Reduce excessive bottom padding / blank space ─────────────
 # Also disable pull-to-refresh on mobile to prevent accidental reloads
@@ -324,28 +304,6 @@ st.markdown(
     '[data-testid="stSelectbox"],'
     '[data-testid="stMultiSelect"]'
     '{touch-action:manipulation;min-height:48px}'
-    '@media (max-width: 768px){'
-    '.main .block-container{padding-left:0.75rem !important;padding-right:0.75rem !important;padding-top:0.75rem !important}'
-    'section[data-testid="stMain"] [data-testid="stHorizontalBlock"]{flex-wrap:wrap !important;gap:0.5rem !important}'
-    'section[data-testid="stMain"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]{flex:1 1 100% !important;width:100% !important;min-width:0 !important}'
-    'section[data-testid="stMain"] [data-testid="stButton"] button{width:100% !important}'
-    'section[data-testid="stMain"] [data-testid="stSelectbox"],'
-    'section[data-testid="stMain"] [data-testid="stMultiSelect"],'
-    'section[data-testid="stMain"] [data-testid="stRadio"],'
-    'section[data-testid="stMain"] [data-testid="stToggle"]'
-    '{width:100% !important}'
-    'section[data-testid="stMain"] [data-testid="stRadio"] [role="radiogroup"]{display:flex !important;flex-wrap:wrap !important;gap:0.35rem 0.75rem !important}'
-    'section[data-testid="stMain"] [data-testid="stMetric"]{min-width:0 !important}'
-    '.qam-sticky-summary,.qam-uncertain-banner,.qam-parlay-container,.qam-top-picks-bar{overflow:hidden !important}'
-    '.qam-uncertain-text{display:block !important;line-height:1.4 !important}'
-    '}'
-    '@media (max-width: 480px){'
-    '.main .block-container{padding-left:0.5rem !important;padding-right:0.5rem !important}'
-    'section[data-testid="stMain"] [data-testid="stHorizontalBlock"]{gap:0.4rem !important}'
-    'section[data-testid="stMain"] [data-testid="stButton"] button{min-height:46px !important;padding-left:0.8rem !important;padding-right:0.8rem !important}'
-    'section[data-testid="stMain"] [data-testid="stRadio"] label{margin-right:0 !important}'
-    '.qam-uncertain-banner{padding:10px 12px !important}'
-    '}'
     # ── During active scroll: disable pointer events on widgets ──
     # The JS scroll-guard adds ``.qam-scrolling`` to ``<body>`` while
     # the user is actively scrolling.  This prevents accidental taps
@@ -405,35 +363,28 @@ st.markdown(
 )
 
 # ── Global Settings Popover (accessible from sidebar) ─────────
-from utils.components import render_global_settings, render_sidebar_auth, inject_joseph_floating, render_joseph_hero_banner, render_attribution_footer
+from utils.components import render_global_settings, inject_joseph_floating, render_joseph_hero_banner
 with st.sidebar:
-    render_sidebar_auth()
     render_global_settings()
 st.session_state.setdefault("joseph_page_context", "page_analysis")
 inject_joseph_floating()
 render_joseph_hero_banner()
 
-# ── Premium Status (partial gate — free users capped by tier) ──
-from utils.auth import (
-    is_premium_user as _is_premium_user,
-    get_user_tier as _get_user_tier,
-    TIER_QAM_LIMITS,
-    TIER_PLATFORM_PICK_LIMITS,
-    TIER_QEG_LIMITS as _TIER_QEG_LIMITS,
-    TIER_FREE,
-    TIER_SHARP_IQ as _TIER_SHARP_IQ,
-    get_tier_label as _get_tier_label,
-)
+# ── Premium Status (partial gate — free users capped at 3 props) ──
+from utils.auth import is_premium_user as _is_premium_user
 try:
     from utils.stripe_manager import _PREMIUM_PAGE_PATH as _PREM_PATH
 except Exception:
-    _PREM_PATH = "/15_%F0%9F%92%8E_Subscription_Level"
-_user_tier = _get_user_tier()
+    _PREM_PATH = "/14_%F0%9F%92%8E_Subscription_Level"
+_FREE_ANALYSIS_LIMIT = 3   # Free users can analyze up to 3 props
 _user_is_premium = _is_premium_user()
 if "selected_picks" not in st.session_state:
     st.session_state["selected_picks"] = []
 if "injury_status_map" not in st.session_state:
-    st.session_state["injury_status_map"] = load_injury_status()
+    try:
+        st.session_state["injury_status_map"] = load_injury_status()
+    except Exception:
+        st.session_state["injury_status_map"] = {}
 
 st.session_state.setdefault("joseph_enabled", True)
 st.session_state.setdefault("joseph_used_fragments", set())
@@ -448,24 +399,10 @@ if not st.session_state.get("analysis_results"):
         from tracking.database import load_latest_analysis_session as _load_session
         _saved_session = _load_session()
         if _saved_session and _saved_session.get("analysis_results"):
-            # Only restore todays_games / selected_picks if the session was
-            # saved TODAY (Eastern Time).  Stale sessions from a previous
-            # day must not populate todays_games or the picks page shows
-            # yesterday's slate.
-            import datetime as _dt_check
-            try:
-                from zoneinfo import ZoneInfo as _ZI
-                _today_et = _dt_check.datetime.now(_ZI("America/New_York")).date().isoformat()
-            except Exception:
-                _today_et = _dt_check.date.today().isoformat()
-            _saved_ts = _saved_session.get("analysis_timestamp", "") or ""
-            _session_date = _saved_ts[:10] if _saved_ts else ""
-            _session_is_today = (_session_date == _today_et)
-
             st.session_state["analysis_results"] = _saved_session["analysis_results"]
-            if _session_is_today and _saved_session.get("todays_games") and not st.session_state.get("todays_games"):
+            if _saved_session.get("todays_games") and not st.session_state.get("todays_games"):
                 st.session_state["todays_games"] = _saved_session["todays_games"]
-            if _session_is_today and _saved_session.get("selected_picks") and not st.session_state.get("selected_picks"):
+            if _saved_session.get("selected_picks") and not st.session_state.get("selected_picks"):
                 st.session_state["selected_picks"] = _saved_session["selected_picks"]
             # Record the timestamp so the UI can show when the session was saved
             st.session_state["_analysis_session_reloaded_at"] = _saved_session.get("analysis_timestamp", "")
@@ -594,7 +531,6 @@ from pages.helpers.quantum_analysis_helpers import (
     deduplicate_qeg_picks as _deduplicate_qeg_picks,
     filter_qeg_picks as _filter_qeg_picks,
     render_hero_section_html as _render_hero_section_html,
-    render_platform_picks_html as _render_platform_picks_html,
     render_quick_view_html as _render_quick_view_html,
     IMPACT_COLORS as _IMP_COLORS,
     CATEGORY_EMOJI as _CAT_EMOJI,
@@ -635,7 +571,7 @@ minimum_edge     = st.session_state.get("minimum_edge_threshold", 5.0)
 # ============================================================
 
 st.markdown(
-    '<h2 style="font-family:\'Inter\',sans-serif;color:#00D559;'
+    '<h2 style="font-family:\'Orbitron\',sans-serif;color:#00ffd5;'
     'margin-bottom:4px;">⚡ Neural Analysis</h2>'
     '<p style="color:#a0b4d0;margin-top:0;font-size:0.82rem;">Quantum Matrix Engine 5.6 — Powered by N.A.N. (Neural Analysis Network)</p>',
     unsafe_allow_html=True,
@@ -711,20 +647,9 @@ if current_props:
     _status_parts.append(f"📋 **{len(current_props)} props** loaded")
 else:
     st.warning(
-        "⚠️ No props loaded. Fetch live props below or go to **🔬 Prop Scanner**."
+        "⚠️ No props loaded. Go to **🔬 Prop Scanner** → "
+        "**🤖 Auto-Generate Props for Tonight's Games** or import props manually."
     )
-    if st.button("🔄 Fetch Live Props", key="qam_auto_fetch_empty", type="primary"):
-        with st.spinner("Fetching live props from all platforms…"):
-            try:
-                from data.platform_fetcher import fetch_all_platform_props as _fap
-                _fresh = _fap()
-                if _fresh:
-                    st.session_state["platform_props"] = _fresh
-                    st.rerun()
-                else:
-                    st.error("No props returned — APIs may be unavailable. Try again.")
-            except Exception as _fe:
-                st.error(f"Fetch failed: {_fe}")
 if todays_games:
     _status_parts.append(f"🏟️ **{len(todays_games)} game{'s' if len(todays_games) != 1 else ''}** tonight")
 else:
@@ -733,22 +658,7 @@ else:
         "on the Live Games page first."
     )
 if _status_parts:
-    _scol1, _scol2 = st.columns([3, 1])
-    with _scol1:
-        st.markdown(" · ".join(_status_parts), unsafe_allow_html=True)
-    with _scol2:
-        if st.button("🔄 Refresh Props", key="qam_refresh_props", help="Fetch fresh live props from all platforms"):
-            with st.spinner("Fetching live props…"):
-                try:
-                    from data.platform_fetcher import fetch_all_platform_props as _fap
-                    _fresh = _fap()
-                    if _fresh:
-                        st.session_state["platform_props"] = _fresh
-                        st.rerun()
-                    else:
-                        st.error("No props returned.")
-                except Exception as _fe:
-                    st.error(f"Fetch failed: {_fe}")
+    st.markdown(" · ".join(_status_parts), unsafe_allow_html=True)
 
 # ============================================================
 # SECTION: Prop Pool (all available props passed to engine)
@@ -788,9 +698,7 @@ if _dedup_removed > 0:
 # SECTION: Analysis Runner
 # ============================================================
 
-# ── Auto-analysis: fire immediately if props exist but no results today ──────
-# Allows users who came from the home page auto-init (or navigated directly
-# to QAM) to see analysis start without pressing the button.
+# ── Auto-trigger: run analysis immediately if props exist but no results ──
 _qam_auto_triggered = False
 if final_props and not st.session_state.get("analysis_results") and not st.session_state.get("_qam_analysis_requested"):
     try:
@@ -815,12 +723,9 @@ run_analysis = st.button(
 # ── Feature 14: Quick Filter Chips ──────────────────────────────
 # Initialise session-state keys for filter chips (persist across reruns).
 for _chip_key in ("chip_platinum", "chip_gold_plus", "chip_high_edge",
-                  "chip_hot_form"):
+                  "chip_hot_form", "chip_hide_avoids"):
     if _chip_key not in st.session_state:
         st.session_state[_chip_key] = False
-# Hide Avoids defaults to OFF — show all picks including avoids by default
-if "chip_hide_avoids" not in st.session_state:
-    st.session_state["chip_hide_avoids"] = False
 
 # ── Feature 15: Sort selector ───────────────────────────────────
 if "qam_sort_key" not in st.session_state:
@@ -840,14 +745,7 @@ if run_analysis:
         _joseph_loader = joseph_loading_placeholder("Running Quantum Matrix Analysis")
     except Exception:
         _joseph_loader = None
-    progress_bar         = st.progress(0, text="")
-    _player_label        = st.empty()   # large player-name readout above the bar
-    _player_label.markdown(
-        '<p style="font-size:1.05rem;font-weight:600;color:#00D559;'
-        'margin:4px 0 2px;font-family:\'Inter\',sans-serif;">'
-        '&#9654; Starting analysis…</p>',
-        unsafe_allow_html=True,
-    )
+    progress_bar         = st.progress(0, text="Starting analysis...")
 
     # ── Show Joseph's animated loading screen with NBA fun facts ──
     try:
@@ -990,48 +888,20 @@ if run_analysis:
         _selected_platforms = st.session_state.get(
             "selected_platforms", ["PrizePicks", "Underdog Fantasy", "DraftKings Pick6"]
         )
-        # Build a normalised set of platform names so variants like
-        # "SPP", "Smart Pick", "prizepicks" all match "PrizePicks".
-        _PLATFORM_ALIASES = {
-            "spp": "PrizePicks", "smart pick": "PrizePicks",
-            "smart pick pro": "PrizePicks", "prizepicks": "PrizePicks",
-            "underdog": "Underdog Fantasy", "underdog fantasy": "Underdog Fantasy",
-            "draftkings": "DraftKings Pick6", "draftkings pick6": "DraftKings Pick6",
-            "dk": "DraftKings Pick6", "dk pick6": "DraftKings Pick6",
-        }
-        _selected_set = set(_selected_platforms)
-        # Also add lowercase variants and known aliases
-        for _sp in list(_selected_platforms):
-            _selected_set.add(_sp.lower())
-        for _alias, _canonical in _PLATFORM_ALIASES.items():
-            if _canonical in _selected_set:
-                _selected_set.add(_alias)
-
         if _selected_platforms:
             before_plat = len(props_to_analyze)
-            _plat_filtered = [
+            props_to_analyze = [
                 p for p in props_to_analyze
                 if not p.get("platform", "").strip()          # include props with no platform
-                or p.get("platform", "") in _selected_set
-                or p.get("platform", "").lower() in _selected_set
+                or p.get("platform", "") in _selected_platforms
             ]
-            plat_skipped = before_plat - len(_plat_filtered)
+            plat_skipped = before_plat - len(props_to_analyze)
             if plat_skipped > 0:
                 st.info(
                     f"ℹ️ Skipping **{plat_skipped}** prop(s) for platforms not in your "
                     f"selection ({', '.join(_selected_platforms)}). "
                     "Change platforms on the ⚙️ Settings page."
                 )
-            # Fallback: if platform filter removes ALL props, proceed with
-            # all of them so the user isn't blocked by a name mismatch.
-            if len(_plat_filtered) == 0 and before_plat > 0:
-                st.warning(
-                    f"⚠️ Platform filter removed all **{before_plat}** props. "
-                    f"**Proceeding with all props** so analysis isn't blocked. "
-                    "Check the ⚙️ Settings page to update your platform selection."
-                )
-            else:
-                props_to_analyze = _plat_filtered
 
         # ── Show per-platform prop count summary ─────────────────────────
         if props_to_analyze:
@@ -1050,37 +920,7 @@ if run_analysis:
             progress_bar.empty()
             st.stop()
 
-        # ── Hard cap: prevent OOM crashes on Railway with very large batches ──
-        # Raised to 2000 to allow full slate analysis without truncation.
-        _PROPS_HARD_CAP = 2000
-        if total_props_count > _PROPS_HARD_CAP:
-            st.warning(
-                f"⚠️ {total_props_count:,} props loaded — capped at **{_PROPS_HARD_CAP:,}** to "
-                f"prevent memory overload. Remove duplicate platforms or use platform filters "
-                f"(⚙️ Settings) to stay under the limit."
-            )
-            props_to_analyze = props_to_analyze[:_PROPS_HARD_CAP]
-            total_props_count = _PROPS_HARD_CAP
-
-        # ── Auto-scale simulation depth for large batches ─────────────────
-        # Reduce depth to keep memory within Railway container limits.
-        _effective_sim_depth = simulation_depth
-        if total_props_count > 1500:
-            _effective_sim_depth = min(simulation_depth, 250)
-        elif total_props_count > 800:
-            _effective_sim_depth = min(simulation_depth, 500)
-        elif total_props_count > 500:
-            _effective_sim_depth = min(simulation_depth, 750)
-        elif total_props_count > 300:
-            _effective_sim_depth = min(simulation_depth, 1000)
-        if _effective_sim_depth < simulation_depth:
-            st.caption(
-                f"ℹ️ Sim depth auto-scaled to **{_effective_sim_depth:,}** "
-                f"(from {simulation_depth:,}) for {total_props_count:,} props to avoid memory overload."
-            )
-
-        # ── Analysis runs on ALL available props regardless of tier ────────
-        # Display caps are applied to the output list after analysis completes.
+        # ── Analysis proceeds with all available props (no cap) ────
 
         # ── Change 7: Parallel data pre-fetching ────────────────────
         # Pre-fetch player bios in parallel so the main loop doesn't
@@ -1119,20 +959,11 @@ if run_analysis:
 
         _line_snapshots = st.session_state.setdefault("line_snapshots", {})
 
-        # Throttle progress bar: update at most every 10 props to avoid
-        # flooding the WebSocket with rapid-fire messages on large batches.
-        _PROGRESS_UPDATE_INTERVAL = max(1, total_props_count // 50)
-
         def _progress_cb(idx: int, total: int, name: str):
-            if idx % _PROGRESS_UPDATE_INTERVAL == 0 or idx == total - 1:
-                progress_bar.progress((idx + 1) / total, text="")
-                _player_label.markdown(
-                    f'<p style="font-size:1.05rem;font-weight:600;color:#00D559;'
-                    f'margin:4px 0 2px;font-family:\'Inter\',sans-serif;">'
-                    f'&#9654; {name} <span style="color:#a0b4d0;'
-                    f'font-weight:400;font-size:0.88rem;">({idx + 1} / {total})</span></p>',
-                    unsafe_allow_html=True,
-                )
+            progress_bar.progress(
+                (idx + 1) / total,
+                text=f"Analyzing {name}… ({idx + 1}/{total})",
+            )
 
         analysis_results_list = _analyze_batch(
             props_to_analyze,
@@ -1141,12 +972,17 @@ if run_analysis:
             injury_map=st.session_state.get("injury_status_map", {}),
             defensive_ratings_data=defensive_ratings_data,
             teams_data=teams_data,
-            simulation_depth=_effective_sim_depth,
+            simulation_depth=simulation_depth,
             prefetched_bios=_prefetched_bios,
             advanced_enrichment=st.session_state.get("advanced_enrichment", {}),
             line_snapshots=_line_snapshots,
             progress_callback=_progress_cb,
         )
+
+        # Free working memory used during analysis before rendering results
+        import gc as _gc
+        del players_data, defensive_ratings_data, teams_data, _prefetched_bios
+        _gc.collect()
         # ── Auto-trigger Smart Update if >20% of players are unmatched ─
         # Unmatched players use skeleton stats which reduces accuracy.
         # Loading fresh rosters resolves most mismatches without user action.
@@ -1225,7 +1061,6 @@ if run_analysis:
         except Exception as _persist_err:
             pass  # Non-fatal — session state still has results
         progress_bar.empty()
-        _player_label.empty()
         # Dismiss the Joseph loading screen
         if _joseph_loader is not None:
             try:
@@ -1250,7 +1085,7 @@ if run_analysis:
         # ── Auto-log all qualifying picks to the Bet Tracker ────────
         try:
             from tracking.bet_tracker import auto_log_analysis_bets as _auto_log
-            _auto_logged = _auto_log(analysis_results_list, minimum_edge=minimum_edge)
+            _auto_logged = _auto_log(analysis_results_list, minimum_edge=minimum_edge, max_bets=len(analysis_results_list))
             if _auto_logged > 0:
                 st.info(
                     f"📊 Auto-logged **{_auto_logged}** qualifying pick(s) to the Bet Tracker."
@@ -1272,10 +1107,6 @@ if run_analysis:
     finally:
         try:
             progress_bar.empty()
-        except Exception:
-            pass
-        try:
-            _player_label.empty()
         except Exception:
             pass
         if _joseph_loader is not None:
@@ -1323,65 +1154,6 @@ if analysis_results and st.session_state.get("_analysis_session_reloaded_at"):
         f"💾 **Analysis restored from saved session** (last run: {_reloaded_ts}). "
         "Results are preserved from your last analysis run — click **🚀 Run Analysis** above to refresh."
     )
-
-# ════ PLATFORM AI PICKS ════
-# Show all picks that qualify for auto-logging to the Bet Tracker,
-# matching the same criteria as auto_log_analysis_bets() so the QAM
-# section and the Bet Tracker Platform Picks tab stay in sync.
-if analysis_results:
-    _PLAT_SILVER_MIN_EDGE = 3.0
-    _PLAT_BRONZE_MIN_EDGE = 8.0
-    _PLAT_BRONZE_MIN_CONF = 60.0
-    _PLAT_DEFAULT_MIN_EDGE = float(minimum_edge)
-    _plat_pool = []
-    for _pp in analysis_results:
-        if _pp.get("should_avoid", False) or _pp.get("player_is_out", False):
-            continue
-        if not ((_pp.get("platform", "") or "").strip()):
-            continue
-        _pp_edge = float(_pp.get("edge_percentage", 0) or 0)
-        _pp_tier = _pp.get("tier", "Bronze")
-        _pp_conf = float(_pp.get("confidence_score", 0) or 0)
-        if _pp_edge <= 0 or _pp_tier not in {"Platinum", "Gold", "Silver", "Bronze"}:
-            continue
-        if _pp_tier == "Silver" and _pp_edge < _PLAT_SILVER_MIN_EDGE:
-            continue
-        if _pp_tier == "Bronze" and (_pp_edge < _PLAT_BRONZE_MIN_EDGE or _pp_conf < _PLAT_BRONZE_MIN_CONF):
-            continue
-        if _pp_tier in {"Gold", "Platinum"} and _pp_edge < _PLAT_DEFAULT_MIN_EDGE:
-            continue
-        _plat_pool.append(_pp)
-    _plat_picks_list = sorted(
-        _plat_pool,
-        key=lambda r: (r.get("confidence_score", 0), abs(r.get("edge_percentage", 0))),
-        reverse=True,
-    )
-    _plat_visible_limit = TIER_PLATFORM_PICK_LIMITS.get(_user_tier, 0)
-    if _plat_picks_list:
-        from styles.theme import get_quantum_card_matrix_css as _get_qcm_css_plat
-        from utils.tier_gate import blur_section_html as _blur_plat
-        st.markdown(_get_qcm_css_plat(), unsafe_allow_html=True)
-        if _user_tier == TIER_FREE:
-            # Free tier: blur entire section as teaser
-            st.markdown(
-                _blur_plat(_render_platform_picks_html(_plat_picks_list[:5]), "🔥 Sharp IQ"),
-                unsafe_allow_html=True,
-            )
-        elif _plat_visible_limit < 9999:
-            # Sharp IQ: show first N visible, blur the rest
-            _plat_visible = _plat_picks_list[:_plat_visible_limit]
-            _plat_hidden  = _plat_picks_list[_plat_visible_limit:]
-            if _plat_visible:
-                st.markdown(_render_platform_picks_html(_plat_visible), unsafe_allow_html=True)
-            if _plat_hidden:
-                st.markdown(
-                    _blur_plat(_render_platform_picks_html(_plat_hidden), "💰 Smart Money"),
-                    unsafe_allow_html=True,
-                )
-        else:
-            # Smart Money+: show all
-            st.markdown(_render_platform_picks_html(_plat_picks_list), unsafe_allow_html=True)
-        st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 
 # ════ JOSEPH M. SMITH LIVE BROADCAST DESK ════
 # Reduce Joseph's container size by 60% on this page per design requirements.
@@ -1539,7 +1311,7 @@ def _render_results_fragment():
         _SHOW_MODE_OPTIONS,
         horizontal=True,
         index=_SHOW_MODE_OPTIONS.index(
-            st.session_state.get("qam_show_mode", "All picks")
+            st.session_state.get("qam_show_mode", "Top picks only (edge ≥ threshold)")
         ),
         key="_qam_show_mode_radio",
     )
@@ -1582,7 +1354,7 @@ def _render_results_fragment():
         )
     with _chip_col5:
         st.session_state["chip_hide_avoids"] = st.toggle(
-            "❌ Hide Avoids", value=st.session_state.get("chip_hide_avoids", False),
+            "❌ Hide Avoids", value=st.session_state.get("chip_hide_avoids", True),
             key="_chip_hide_avoids_toggle",
         )
 
@@ -1659,8 +1431,7 @@ def _render_results_fragment():
         displayed_results = [r for r in displayed_results if r.get("tier") in _na_tier_names]
 
     # ── Quality floor: hide Bronze / Avoid by default & low-confidence picks ──
-    # Only applies when NOT in "All picks" mode and user hasn't explicitly
-    # selected Bronze in the tier filter.
+    # Unless user explicitly selected Bronze or toggled "All picks", strip them out.
     _user_wants_bronze = "Bronze 🥉" in (_na_tier_filter or [])
     if not _user_wants_bronze and _show_mode != "All picks":
         displayed_results = [
@@ -1695,23 +1466,6 @@ def _render_results_fragment():
             _seen_result_keys.add(_rkey)
             _deduped.append(_r)
     displayed_results = _deduped
-
-    # ── Per-player cap: keep only the top 5 props per player ──────
-    _MAX_PROPS_PER_PLAYER = 5
-    _player_prop_counts: dict = {}
-    _capped_results: list = []
-    for _r in displayed_results:
-        _pname = _r.get("player_name", "")
-        _player_prop_counts.setdefault(_pname, 0)
-        if _player_prop_counts[_pname] < _MAX_PROPS_PER_PLAYER:
-            _capped_results.append(_r)
-            _player_prop_counts[_pname] += 1
-    displayed_results = _capped_results
-
-    # ── Tier-based display cap (analyze all; show N per tier) ────────────
-    _qam_display_limit = TIER_QAM_LIMITS.get(_user_tier, 12)
-    if _qam_display_limit < 9999 and len(displayed_results) > _qam_display_limit:
-        displayed_results = displayed_results[:_qam_display_limit]
 
     # ── Summary metrics ────────────────────────────────────────
     total_analyzed   = len(_frag_analysis_results)
@@ -2016,34 +1770,14 @@ def _render_results_fragment():
 
     if _edge_gap_picks:
         st.markdown(_get_qcm_css(), unsafe_allow_html=True)
-        from utils.tier_gate import blur_section_html as _blur_qeg
-        _qeg_visible_limit = _TIER_QEG_LIMITS.get(_user_tier, 0)
-        if _user_tier == TIER_FREE:
-            # Free tier: blur entire section as teaser
-            _qeg_teaser_html = (
-                _render_edge_gap_banner_html(_edge_gap_picks)
-                + _render_edge_gap_grouped_html(_edge_gap_picks)
-            )
-            st.markdown(
-                _blur_qeg(_qeg_teaser_html, "🔥 Sharp IQ"),
-                unsafe_allow_html=True,
-            )
-        elif _qeg_visible_limit < 9999:
-            # Sharp IQ: show banner + first N picks; blur the rest
-            _qeg_visible = _edge_gap_picks[:_qeg_visible_limit]
-            _qeg_hidden  = _edge_gap_picks[_qeg_visible_limit:]
-            st.markdown(_render_edge_gap_banner_html(_edge_gap_picks), unsafe_allow_html=True)
-            if _qeg_visible:
-                st.markdown(_render_edge_gap_grouped_html(_qeg_visible), unsafe_allow_html=True)
-            if _qeg_hidden:
-                st.markdown(
-                    _blur_qeg(_render_edge_gap_grouped_html(_qeg_hidden), "💰 Smart Money"),
-                    unsafe_allow_html=True,
-                )
-        else:
-            # Smart Money+: show all
-            st.markdown(_render_edge_gap_banner_html(_edge_gap_picks), unsafe_allow_html=True)
-            st.markdown(_render_edge_gap_grouped_html(_edge_gap_picks), unsafe_allow_html=True)
+        st.markdown(
+            _render_edge_gap_banner_html(_edge_gap_picks),
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            _render_edge_gap_grouped_html(_edge_gap_picks),
+            unsafe_allow_html=True,
+        )
         st.divider()
 
     # ── 🏆 Best Single Bets — mark inline (no separate duplicate cards) ─
@@ -2194,14 +1928,10 @@ def _render_results_fragment():
             # Inject QCM CSS for matchup card styling
             st.markdown(_get_qcm_css(), unsafe_allow_html=True)
             st.markdown(
-                '<h3 style="font-family:\'Orbitron\',sans-serif;'
-                'background:linear-gradient(90deg,#818cf8,#06b6d4);'
-                '-webkit-background-clip:text;-webkit-text-fill-color:transparent;'
-                'background-clip:text;letter-spacing:0.08em;margin-bottom:6px;">'
-                '🧠 Quantum Analysis Matrix</h3>'
-                '<p style="color:rgba(99,102,241,0.55);font-size:0.78rem;'
-                'font-family:\'JetBrains Mono\',monospace;margin-bottom:12px;letter-spacing:0.03em;">'
-                'Select a player to expand neural prop analysis.</p>',
+                '<h3 style="font-family:\'Orbitron\',sans-serif;color:#00C6FF;'
+                'margin-bottom:8px;">🃏 Quantum Analysis Matrix</h3>'
+                '<p style="color:#94A3B8;font-size:0.82rem;margin-bottom:12px;">'
+                'Click any player to expand and view their full prop analysis.</p>',
                 unsafe_allow_html=True,
             )
 
@@ -2254,9 +1984,17 @@ def _render_results_fragment():
                         unsafe_allow_html=True,
                     )
 
-                # Render all prop cards in one horizontal row under the matchup card
-                _game_html = _compile_player_cards_flat(_game_players)
-                st.markdown(_game_html, unsafe_allow_html=True)
+                _expander_label = (
+                    f"📊 View {_gp_count} player{'s' if _gp_count != 1 else ''}"
+                    f", {_gp_prop_count} prop{'s' if _gp_prop_count != 1 else ''}"
+                ) if _gm and _game_label != _no_game else (
+                    f"🏀 {_game_label} — {_gp_count} player{'s' if _gp_count != 1 else ''}"
+                    f", {_gp_prop_count} prop{'s' if _gp_prop_count != 1 else ''}"
+                )
+
+                with st.expander(_expander_label, expanded=(_game_idx == 0)):
+                    _game_html = _compile_player_cards(_game_players)
+                    _render_card_native(_game_html)
 
     # Show OUT players in a separate collapsed section
     _out_display = [r for r in displayed_results if r.get("player_is_out", False)]
@@ -2316,7 +2054,7 @@ def _render_results_fragment():
         )
 
     if st.session_state.get("selected_picks"):
-        if st.button("🗑️ Clear Selected Picks", key="btn_clear_selected_picks"):
+        if st.button("🗑️ Clear Selected Picks"):
             st.session_state["selected_picks"] = []
             st.toast("🗑️ Selected picks cleared.")
 
@@ -2326,7 +2064,3 @@ _render_results_fragment()
 # ============================================================
 # END SECTION: Display Analysis Results
 # ============================================================
-
-# ── Attribution footer — Joseph M. Smith ─────────────────────
-render_attribution_footer()
-

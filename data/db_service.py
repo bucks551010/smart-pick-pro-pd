@@ -19,7 +19,6 @@ import datetime
 import json
 import logging
 import math
-import os
 import re
 import sqlite3
 import threading as _threading
@@ -50,27 +49,72 @@ except ImportError:
 # ── DB path ───────────────────────────────────────────────────────────────────
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = Path(os.environ.get("DB_DIR", str(_REPO_ROOT / "db"))) / "smartpicks.db"
+DB_PATH = _REPO_ROOT / "db" / "smartpicks.db"
 
 
 # ── Connection helper ─────────────────────────────────────────────────────────
 
+# Thread-local connection pool — one persistent read-only SQLite connection
+# per OS thread.  Eliminates the overhead of opening a new file handle on
+# every data call while remaining fully thread-safe (each Streamlit session
+# runs in its own worker thread).  A fresh connection is created automatically
+# if the thread-local one has been closed or is invalid.
+_tls = _threading.local()
+
+
 def _get_conn() -> sqlite3.Connection | None:
-    """Return a read-only SQLite connection, or *None* if the DB doesn't exist."""
+    """Return a per-thread read-only SQLite connection.
+
+    Reuses an existing live connection stored on the thread-local object.
+    Creates a new one if the DB file exists but no live connection is cached
+    for this thread.  Returns ``None`` if the DB file does not exist.
+    """
     if not DB_PATH.exists():
         return None
+
+    # Return cached connection if still usable
+    conn: sqlite3.Connection | None = getattr(_tls, "conn", None)
+    if conn is not None:
+        try:
+            conn.execute("SELECT 1")   # quick health-check (no table access)
+            conn.row_factory = sqlite3.Row  # re-assert in case it was reset
+            return conn
+        except Exception:
+            # Connection was closed or corrupted; create a new one below
+            _tls.conn = None
+
+    # Open a new connection for this thread
     try:
-        conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        conn = sqlite3.connect(
+            f"file:{DB_PATH}?mode=ro&cache=shared", uri=True,
+            check_same_thread=False,
+        )
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        _tls.conn = conn
         return conn
     except sqlite3.OperationalError:
         try:
-            conn = sqlite3.connect(str(DB_PATH))
+            conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
             conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA journal_mode=WAL")
+            _tls.conn = conn
             return conn
         except Exception as exc:
             _logger.warning("db_service: cannot open DB: %s", exc)
             return None
+
+
+def _close_conn(conn: sqlite3.Connection | None) -> None:
+    """Release a connection obtained from ``_get_conn()``.
+
+    For thread-local pooled connections this is a no-op — the connection
+    is kept alive for reuse on the next call within the same thread.
+    Clearing ``_tls.conn`` would force a reconnect; we intentionally
+    keep it open.  The function exists so callers that previously called
+    ``_close_conn(conn)`` directly can be updated without changing structure.
+    """
+    # Intentionally do nothing — reuse the thread-local connection
 
 
 def _rows_to_dicts(rows) -> list[dict]:
@@ -147,7 +191,7 @@ def get_player_last_n_games(player_id: int, n: int = 10) -> list[dict]:
         _logger.warning("get_player_last_n_games(%s, %s) failed: %s", player_id, n, exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_player_averages(player_id: int) -> dict:
@@ -169,7 +213,7 @@ def get_player_averages(player_id: int) -> dict:
         _logger.warning("get_player_averages(%s) failed: %s", player_id, exc)
         return {}
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_team(team_id: int) -> dict:
@@ -191,7 +235,7 @@ def get_team(team_id: int) -> dict:
         _logger.warning("get_team(%s) failed: %s", team_id, exc)
         return {}
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_defense_vs_position(
@@ -232,7 +276,7 @@ def get_defense_vs_position(
         _logger.warning("get_defense_vs_position(%s) failed: %s", team_abbrev, exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_team_recent_stats(team_id: int, n: int = 10) -> list[dict]:
@@ -262,7 +306,7 @@ def get_team_recent_stats(team_id: int, n: int = 10) -> list[dict]:
         _logger.warning("get_team_recent_stats(%s) failed: %s", team_id, exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_team_roster(team_id: int) -> list[dict]:
@@ -295,7 +339,7 @@ def get_team_roster(team_id: int) -> list[dict]:
         _logger.warning("get_team_roster(%s) failed: %s", team_id, exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_injured_players(team_id: int | None = None) -> list[dict]:
@@ -336,7 +380,7 @@ def get_injured_players(team_id: int | None = None) -> list[dict]:
         _logger.warning("get_injured_players failed: %s", exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -408,7 +452,7 @@ def get_player_game_logs(player_id: int, season: str | None = None) -> list[dict
         _logger.warning("get_player_game_logs(%s) failed: %s", player_id, exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_defensive_matchup_data(
@@ -436,7 +480,7 @@ def get_defensive_matchup_data(
         _logger.warning("get_defensive_matchup_data failed: %s", exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_player_splits(player_id: int, season: str | None = None) -> dict:
@@ -509,7 +553,7 @@ def get_player_splits(player_id: int, season: str | None = None) -> dict:
         _logger.warning("get_player_splits(%s) failed: %s", player_id, exc)
         return {}
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_advanced_box_score(game_id: str) -> dict:
@@ -620,7 +664,7 @@ def get_advanced_box_score(game_id: str) -> dict:
         _logger.warning("get_advanced_box_score(%s) failed: %s", game_id, exc)
         return {}
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 # ── from data.nba_data_service ───────────────────────────────────────────────
@@ -668,7 +712,7 @@ def get_player_estimated_metrics(season: str | None = None) -> list:
         _logger.warning("get_player_estimated_metrics failed: %s", exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_rotations(game_id: str) -> dict:
@@ -697,7 +741,7 @@ def get_rotations(game_id: str) -> dict:
         _logger.warning("get_rotations(%s) failed: %s", game_id, exc)
         return {}
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_team_game_logs(
@@ -736,7 +780,7 @@ def get_team_game_logs(
         _logger.warning("get_team_game_logs(%s) failed: %s", team_id, exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_four_factors_box_score(game_id: str) -> dict:
@@ -827,7 +871,7 @@ def get_four_factors_box_score(game_id: str) -> dict:
         _logger.warning("get_four_factors_box_score(%s) failed: %s", game_id, exc)
         return {}
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_todays_games():
@@ -875,7 +919,7 @@ def get_box_score_usage_from_db(game_id: str) -> dict:
         _logger.debug("get_box_score_usage_from_db(%s) failed: %s", game_id, exc)
         return {}
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_player_clutch_stats_from_db(season: str | None = None) -> list:
@@ -895,7 +939,7 @@ def get_player_clutch_stats_from_db(season: str | None = None) -> list:
         _logger.debug("get_player_clutch_stats_from_db failed: %s", exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_shot_chart_from_db(player_id: int, season: str | None = None) -> list:
@@ -915,7 +959,7 @@ def get_shot_chart_from_db(player_id: int, season: str | None = None) -> list:
         _logger.debug("get_shot_chart_from_db(%s) failed: %s", player_id, exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_schedule_from_db(game_date: str | None = None) -> list:
@@ -935,7 +979,7 @@ def get_schedule_from_db(game_date: str | None = None) -> list:
         _logger.debug("get_schedule_from_db(%s) failed: %s", game_date, exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_hustle_box_score_from_db(game_id: str) -> dict:
@@ -955,7 +999,7 @@ def get_hustle_box_score_from_db(game_id: str) -> dict:
         _logger.debug("get_hustle_box_score_from_db(%s) failed: %s", game_id, exc)
         return {}
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_scoring_box_score_from_db(game_id: str) -> dict:
@@ -975,7 +1019,7 @@ def get_scoring_box_score_from_db(game_id: str) -> dict:
         _logger.debug("get_scoring_box_score_from_db(%s) failed: %s", game_id, exc)
         return {}
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_box_score_matchups_from_db(game_id: str) -> dict:
@@ -995,7 +1039,7 @@ def get_box_score_matchups_from_db(game_id: str) -> dict:
         _logger.debug("get_box_score_matchups_from_db(%s) failed: %s", game_id, exc)
         return {}
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_win_probability_from_db(game_id: str) -> dict:
@@ -1015,7 +1059,7 @@ def get_win_probability_from_db(game_id: str) -> dict:
         _logger.debug("get_win_probability_from_db(%s) failed: %s", game_id, exc)
         return {}
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_play_by_play_from_db(game_id: str) -> list:
@@ -1033,7 +1077,7 @@ def get_play_by_play_from_db(game_id: str) -> list:
         _logger.debug("get_play_by_play_from_db(%s) failed: %s", game_id, exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_league_leaders_from_db(stat_category: str = "PTS", season: str | None = None) -> list:
@@ -1058,7 +1102,7 @@ def get_league_leaders_from_db(stat_category: str = "PTS", season: str | None = 
         _logger.debug("get_league_leaders_from_db failed: %s", exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_player_career_stats_from_db(player_id: int) -> list:
@@ -1081,7 +1125,7 @@ def get_player_career_stats_from_db(player_id: int) -> list:
         _logger.debug("get_player_career_stats_from_db(%s) failed: %s", player_id, exc)
         return []
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_box_score_traditional_from_db(game_id: str) -> dict:
@@ -1141,7 +1185,7 @@ def get_box_score_traditional_from_db(game_id: str) -> dict:
         _logger.debug("get_box_score_traditional_from_db(%s) failed: %s", game_id, exc)
         return {}
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_tracking_box_score_from_db(game_id: str) -> dict:
@@ -1161,7 +1205,7 @@ def get_tracking_box_score_from_db(game_id: str) -> dict:
         _logger.debug("get_tracking_box_score_from_db(%s) failed: %s", game_id, exc)
         return {}
     finally:
-        conn.close()
+        _close_conn(conn)
 
 
 def get_box_score_advanced_from_db(game_id: str) -> dict:
@@ -1184,7 +1228,7 @@ def get_box_score_advanced_from_db(game_id: str) -> dict:
         pass
     finally:
         try:
-            conn.close()
+            _close_conn(conn)
         except Exception:
             pass
     # Fall back to the approximation-based function
@@ -1211,7 +1255,7 @@ def get_box_score_four_factors_from_db(game_id: str) -> dict:
         pass
     finally:
         try:
-            conn.close()
+            _close_conn(conn)
         except Exception:
             pass
     # Fall back to the computed approximation
@@ -1503,7 +1547,7 @@ def _convert_etl_players_to_app_format(etl_players: list) -> list:
     return result
 
 
-@st.cache_data(ttl=900, show_spinner=False)
+@st.cache_data(ttl=300, show_spinner=False)
 def load_players_data() -> list:
     """
     Load all player data.
@@ -1523,13 +1567,13 @@ def load_players_data() -> list:
     return _load_csv_file(PLAYERS_CSV_PATH)
 
 
-@st.cache_data(ttl=900, show_spinner=False)
+@st.cache_data(ttl=300, show_spinner=False)
 def load_props_data():
     """Load all prop lines from props.csv."""
     return _load_csv_file(PROPS_CSV_PATH)
 
 
-@st.cache_data(ttl=900, show_spinner=False)
+@st.cache_data(ttl=300, show_spinner=False)
 def load_teams_data() -> list:
     """Load all 30 NBA teams — tries ETL database first, then CSV fallback."""
     try:
@@ -1542,7 +1586,7 @@ def load_teams_data() -> list:
     return _load_csv_file(TEAMS_CSV_PATH)
 
 
-@st.cache_data(ttl=900, show_spinner=False)
+@st.cache_data(ttl=300, show_spinner=False)
 def load_defensive_ratings_data():
     """Load team defensive ratings by position — tries ETL database first, then CSV fallback."""
     try:
@@ -1555,7 +1599,7 @@ def load_defensive_ratings_data():
     return _load_csv_file(DEFENSIVE_RATINGS_CSV_PATH)
 
 
-@st.cache_data(ttl=900, show_spinner=False)
+@st.cache_data(ttl=300, show_spinner=False)
 def load_injury_status():
     """Load the persisted player injury/availability status map from disk."""
     if not INJURY_STATUS_JSON_PATH.exists():
@@ -2337,30 +2381,7 @@ def get_box_score_matchups(game_id: str) -> dict:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_all_players(active_only: bool = True) -> list[dict]:
-    """Return all players — ETL DB first, nba_api fallback only if DB is empty."""
-    # ── DB-first path (no API call) ──────────────────────────────────────
-    try:
-        from data.etl_data_service import get_all_players as _etl_all
-        etl_rows = _etl_all()
-        if etl_rows:
-            players = [
-                {
-                    "id": int(p.get("player_id", 0)),
-                    "full_name": f"{p.get('first_name', '')} {p.get('last_name', '')}".strip(),
-                    "first_name": str(p.get("first_name", "")),
-                    "last_name": str(p.get("last_name", "")),
-                    "is_active": True,
-                    "team_id": p.get("team_id"),
-                    "team_abbreviation": str(p.get("team_abbreviation", "")),
-                }
-                for p in etl_rows
-            ]
-            _logger.info("get_all_players: loaded %d player(s) from ETL DB.", len(players))
-            return players
-    except Exception as exc:
-        _logger.debug("get_all_players ETL path failed: %s", exc)
-
-    # ── Fallback: live nba_api (only when DB has no players) ─────────────
+    """Fetch all players via nba_api CommonAllPlayers (for player_profile_service)."""
     try:
         from nba_api.stats.endpoints import commonallplayers
         import time
@@ -2392,43 +2413,7 @@ def get_all_players(active_only: bool = True) -> list[dict]:
 
 
 def get_player_info(player_id: int) -> dict:
-    """Return player bio — ETL DB first, nba_api fallback only if DB miss."""
-    # ── DB-first path (no API call) ──────────────────────────────────────
-    conn = _get_conn()
-    if conn is not None:
-        try:
-            row = conn.execute(
-                "SELECT player_id, first_name, last_name, team_id, "
-                "team_abbreviation, position FROM Players WHERE player_id = ?",
-                (int(player_id),),
-            ).fetchone()
-            if row:
-                d = dict(row)
-                _logger.info("get_player_info(%s): served from DB.", player_id)
-                return {
-                    "id": d.get("player_id", player_id),
-                    "full_name": f"{d.get('first_name', '')} {d.get('last_name', '')}".strip(),
-                    "position": d.get("position", "") or "",
-                    "height": "",
-                    "weight": "",
-                    "country": "",
-                    "birthdate": "",
-                    "draft_year": None,
-                    "draft_round": None,
-                    "draft_number": None,
-                    "school": "",
-                    "team_id": d.get("team_id"),
-                    "team_abbreviation": d.get("team_abbreviation", "") or "",
-                    "jersey": "",
-                    "from_year": None,
-                    "to_year": None,
-                }
-        except Exception as exc:
-            _logger.debug("get_player_info DB path failed: %s", exc)
-        finally:
-            conn.close()
-
-    # ── Fallback: live nba_api (only when player not in DB) ──────────────
+    """Fetch player bio/info via nba_api CommonPlayerInfo."""
     try:
         from nba_api.stats.endpoints import commonplayerinfo
         import time
@@ -2474,59 +2459,6 @@ def save_game_logs_to_cache(player_name, logs):
 def load_game_logs_from_cache(player_name, **kwargs):
     """No-op — DB is the cache now."""
     return []
-
-
-def get_defensive_ratings_from_db(season: str | None = None) -> list[dict]:
-    """
-    Return per-position defensive multipliers from Defense_Vs_Position table
-    in the wide format expected by engine/projections.py.
-
-    Returns a list of dicts with keys:
-        abbreviation, vs_PG_pts, vs_PG_reb, vs_PG_ast, vs_PG_stl, vs_PG_blk, vs_PG_3pm,
-        vs_SG_pts, ..., vs_C_pts, ...
-
-    Falls back to an empty list when the table has no data.
-    """
-    conn = _get_conn()
-    if conn is None:
-        return []
-    try:
-        if season is None:
-            season = _current_season()
-        rows = conn.execute(
-            """
-            SELECT team_abbreviation, pos,
-                   vs_pts_mult, vs_reb_mult, vs_ast_mult,
-                   vs_stl_mult, vs_blk_mult, vs_3pm_mult
-            FROM Defense_Vs_Position
-            WHERE season = ?
-            """,
-            (season,),
-        ).fetchall()
-        if not rows:
-            return []
-
-        # Pivot long → wide: one dict per team with all position columns
-        from collections import defaultdict
-        team_data: dict[str, dict] = defaultdict(lambda: {"abbreviation": ""})
-        for row in rows:
-            d = dict(row)
-            abbrev = d["team_abbreviation"]
-            pos = d["pos"].upper()  # PG, SG, SF, PF, C
-            team_data[abbrev]["abbreviation"] = abbrev
-            team_data[abbrev][f"vs_{pos}_pts"] = float(d.get("vs_pts_mult") or 1.0)
-            team_data[abbrev][f"vs_{pos}_reb"] = float(d.get("vs_reb_mult") or 1.0)
-            team_data[abbrev][f"vs_{pos}_ast"] = float(d.get("vs_ast_mult") or 1.0)
-            team_data[abbrev][f"vs_{pos}_stl"] = float(d.get("vs_stl_mult") or 1.0)
-            team_data[abbrev][f"vs_{pos}_blk"] = float(d.get("vs_blk_mult") or 1.0)
-            team_data[abbrev][f"vs_{pos}_3pm"] = float(d.get("vs_3pm_mult") or 1.0)
-
-        return list(team_data.values())
-    except Exception as exc:
-        _logger.warning("get_defensive_ratings_from_db failed: %s", exc)
-        return []
-    finally:
-        conn.close()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

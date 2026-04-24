@@ -403,6 +403,27 @@ def render_quantum_edge_gap_banner_html(
 
 _NBA_HEADSHOT_CDN = "https://cdn.nba.com/headshots/nba/latest/260x190"
 
+
+def _resolve_headshot_url(player_id: str, player_name: str = "", size: str = "260x190") -> str:
+    """Return NBA CDN headshot URL from player_id; fall back to name-based lookup.
+
+    DB-loaded picks lack player_id, so this lets card renderers resolve a photo
+    via data.player_profile_service without requiring pre-enriched picks.
+    """
+    if player_id:
+        return f"https://cdn.nba.com/headshots/nba/latest/{size}/{player_id}.png"
+    if player_name:
+        try:
+            from data.player_profile_service import get_headshot_url as _ghu
+            url = _ghu(str(player_name))
+            if url and size != "260x190":
+                url = url.replace("1040x760", size).replace("260x190", size)
+            return url or ""
+        except Exception:
+            pass
+    return ""
+
+
 # SVG circumference for the edge gauge (r=25, C=2*pi*25 ≈ 157)
 _GAUGE_CIRCUMFERENCE = 157
 
@@ -545,12 +566,8 @@ def render_quantum_edge_gap_card_html(result: dict, rank: int = 0) -> str:
     avg_display = f"{season_avg:.1f}" if season_avg > 0 else ""
 
     # Headshot
-    player_id = result.get("player_id", "")
-    headshot_url = (
-        f"{_NBA_HEADSHOT_CDN}/{player_id}.png"
-        if player_id
-        else ""
-    )
+    player_id = result.get("player_id", "") or ""
+    headshot_url = _resolve_headshot_url(player_id, player_name)
 
     # Stat type display label
     stat_display = _display_stat_name(stat_type)
@@ -839,10 +856,8 @@ def render_quantum_edge_gap_grouped_html(picks: list) -> str:
         team = _html.escape(
             str(player_picks[0].get("player_team", player_picks[0].get("team", "")))
         )
-        player_id = player_picks[0].get("player_id", "")
-        headshot_url = (
-            f"{_NBA_HEADSHOT_CDN}/{player_id}.png" if player_id else ""
-        )
+        player_id = player_picks[0].get("player_id", "") or ""
+        headshot_url = _resolve_headshot_url(player_id, player_name)
         _onerr_sum = "this.style.display='none'"
         headshot_img = (
             f'<img class="qeg-sum-head" src="{_html.escape(headshot_url)}" '
@@ -1163,10 +1178,7 @@ def _render_single_leg_html(leg_info: dict, raw_picks: list) -> str:
 
     # Headshot
     player_id = leg_info.get("player_id", "") or ""
-    headshot_url = (
-        f"{_NBA_HEADSHOT_CDN}/{player_id}.png"
-        if player_id else ""
-    )
+    headshot_url = _resolve_headshot_url(player_id, leg_info.get("player_name", "") or "")
     team_colors = get_team_colors(leg_info.get("player_team", leg_info.get("team", "")) or "")
     team_color = team_colors[0] if team_colors else "rgba(255,255,255,0.12)"
 
@@ -1440,10 +1452,7 @@ def render_hero_section_html(top_picks: list) -> str:
 
         # ── Headshot with team-colored ring ──────────────────
         player_id = r.get("player_id", "") or ""
-        headshot_url = (
-            f"https://cdn.nba.com/headshots/nba/latest/1040x760/{player_id}.png"
-            if player_id else ""
-        )
+        headshot_url = _resolve_headshot_url(player_id, name, size="1040x760")
         team_colors = get_team_colors(r.get("player_team", "") or "")
         team_color = team_colors[0] if team_colors else "rgba(255,255,255,0.12)"
         _onerror_hero = "this.style.display='none'"
@@ -1627,10 +1636,7 @@ def render_platform_picks_html(picks: list) -> str:
 
         # Headshot
         player_id = r.get("player_id", "") or ""
-        headshot_url = (
-            f"https://cdn.nba.com/headshots/nba/latest/1040x760/{player_id}.png"
-            if player_id else ""
-        )
+        headshot_url = _resolve_headshot_url(player_id, name, size="1040x760")
         _onerror_plat = "this.style.display='none'"
         headshot_html = (
             f'<div class="plat-hs-wrap">'

@@ -25,7 +25,7 @@ uvicorn[standard]==0.32.1
 psycopg2-binary==2.9.10
 SQLAlchemy==2.0.35
 # ── NBA data (headshots) ─────────────────────────────────
-nba_api==1.5.2
+nba_api==1.11.4
 # ── Utilities ────────────────────────────────────────────────
 pydantic==2.10.3
 python-multipart==0.0.17

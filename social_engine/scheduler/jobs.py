@@ -8,6 +8,7 @@ from core import data_source as ds
 from core.brand_voice import pick_cta_rotation
 from core.llm_copy import CopyVariants, generate_copy
 from core.variants import pick_random_skin
+from core.win_cards import render_win_cards_for_results
 from distribute.base import PostResult
 from distribute.campaign import deploy_campaign
 from render.headless import render_to_images
@@ -67,7 +68,32 @@ def build_and_post_morning_recap(channels=_DEFAULT_CHANNELS) -> list[PostResult]
         utm_campaign=f"morning_recap_{summary.bet_date}",
     )
     images = render_to_images(html, name_prefix=f"recap_{summary.bet_date}")
-    return deploy_campaign(images, _channel_text_map(copy, channels), channels)
+    results = deploy_campaign(images, _channel_text_map(copy, channels), channels)
+
+    # Render individual win cards for each winning prop and post to Instagram/TikTok
+    win_card_channels = tuple(c for c in channels if c in ("instagram", "tiktok", "threads"))
+    if win_card_channels and summary.wins > 0:
+        win_cards = render_win_cards_for_results(summary.bets, skin_class=skin["class"])
+        for card in win_cards:
+            # Each win card gets its own caption line: "Player OVER X.X PTS ✓ WIN"
+            stat_abbr = {"Points":"PTS","Assists":"AST","Rebounds":"REB","Steals":"STL",
+                         "Blocks":"BLK","Turnovers":"TO","3-Pointers Made":"3PM","Fantasy Score":"FPTS"}
+            stat = stat_abbr.get(card.stat_type, card.stat_type)
+            card_caption = (
+                f"✅ {card.player_name.upper()} {card.direction.upper()} "
+                f"{card.prop_line:.1f} {stat} — WIN. "
+                f"SAFE Score™ {card.confidence_score:.0f}/100. "
+                f"Receipts on file. @smartpickpro"
+            ) if card.confidence_score else (
+                f"✅ {card.player_name.upper()} {card.direction.upper()} "
+                f"{card.prop_line:.1f} {stat} — WIN. Receipts on file."
+            )
+            card_images = {"square": card.image_path}
+            text_map = {ch: card_caption for ch in win_card_channels}
+            card_results = deploy_campaign(card_images, text_map, win_card_channels)
+            results.extend(card_results)
+
+    return results
 
 
 # ── PRE-GAME SLATE PUSH ─────────────────────────────────────

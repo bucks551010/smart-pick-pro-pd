@@ -28,6 +28,26 @@ async def _render_one(html: str, width: int, height: int, out_path: Path) -> Pat
     return out_path
 
 
+async def _render_bytes(html: str, width: int, height: int) -> bytes:
+    """Render HTML to PNG bytes without writing to disk."""
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(args=["--no-sandbox"])
+        context = await browser.new_context(
+            viewport={"width": width, "height": height},
+            device_scale_factor=2,
+        )
+        page = await context.new_page()
+        await page.set_content(html, wait_until="networkidle")
+        data = await page.screenshot(full_page=False, type="png", omit_background=False)
+        await browser.close()
+    return data
+
+
+def render_png_bytes(html: str, width: int = 1080, height: int = 1080) -> bytes:
+    """Sync wrapper — render HTML to raw PNG bytes (no disk write)."""
+    return asyncio.run(_render_bytes(html, width, height))
+
+
 async def render_to_images_async(
     html: str,
     *,

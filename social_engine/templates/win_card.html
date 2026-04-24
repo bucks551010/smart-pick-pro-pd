@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800;900&family=Bebas+Neue&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+{{ base_css }}
+
+/* ── Win Card Overrides ───────────────────────────────────── */
+
+/* Hero player image — circular, large, glowing */
+.wc-player-wrap {
+  position: relative;
+  width: 32vmin; height: 32vmin;
+  flex-shrink: 0;
+}
+.wc-player-img {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  object-fit: cover; object-position: top center;
+  border: 3px solid var(--green);
+  box-shadow: 0 0 40px rgba(0,213,89,0.55), 0 0 0 6px rgba(0,213,89,0.10);
+  display: block; background: var(--panel2);
+}
+.wc-player-wrap::before {
+  content: '';
+  position: absolute; inset: -8px; border-radius: 50%; z-index: -1;
+  background: radial-gradient(circle, rgba(0,213,89,0.22) 0%, transparent 65%);
+}
+/* Portrait: use wider photo slot */
+@media (max-aspect-ratio: 3/4) {
+  .wc-player-wrap { width: 38vmin; height: 38vmin; }
+}
+/* No headshot fallback number circle */
+.wc-player-num {
+  width: 32vmin; height: 32vmin; border-radius: 50%; flex-shrink: 0;
+  background: var(--panel2);
+  border: 3px solid var(--green);
+  box-shadow: 0 0 40px rgba(0,213,89,0.40);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 8vmin; color: var(--green); letter-spacing: 0.02em;
+}
+
+/* Result stamp — "HIT" diagonal badge */
+.wc-stamp {
+  position: absolute; top: 4vmin; right: 4vmin; z-index: 20;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 5.5vmin; letter-spacing: 0.18em;
+  color: var(--green);
+  text-shadow: 0 0 30px rgba(0,213,89,0.80);
+  border: 2.5px solid var(--green);
+  padding: 0.6vmin 2.2vmin;
+  border-radius: 0.6vmin;
+  background: rgba(0,213,89,0.06);
+  transform: rotate(8deg);
+  box-shadow: 0 0 20px rgba(0,213,89,0.30), inset 0 0 12px rgba(0,213,89,0.08);
+}
+
+/* Player name + prop hero row */
+.wc-hero-row {
+  display: flex; align-items: center; gap: 5vmin;
+  justify-content: center;
+  flex: 1; z-index: 10;
+  position: relative;
+}
+.wc-hero-info {
+  display: flex; flex-direction: column; gap: 1.4vmin;
+}
+.wc-player-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 7vmin; line-height: 0.92; letter-spacing: 0.03em;
+  color: #FFFFFF;
+}
+.wc-team {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5vmin; color: var(--muted);
+  letter-spacing: 0.2em; text-transform: uppercase;
+}
+/* Prop line: direction + value + stat */
+.wc-prop-row {
+  display: flex; align-items: baseline; gap: 2.2vmin;
+}
+.wc-dir {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3.2vmin; letter-spacing: 0.12em;
+  padding: 0.3vmin 1.5vmin;
+  border-radius: 0.5vmin;
+  background: rgba(0,213,89,0.12);
+  border: 1.5px solid rgba(0,213,89,0.28);
+}
+.wc-dir.over  { color: var(--green); border-color: rgba(0,213,89,0.40); }
+.wc-dir.under { color: var(--red);   background: rgba(242,67,54,0.10); border-color: rgba(242,67,54,0.30); }
+.wc-prop-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 9.5vmin; line-height: 0.88; letter-spacing: -0.03em;
+  color: #FFFFFF;
+}
+.wc-stat {
+  font-size: 2.2vmin; color: var(--muted); font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  align-self: flex-end; margin-bottom: 0.8vmin;
+}
+/* Actual result value */
+.wc-actual-row {
+  display: flex; align-items: center; gap: 2vmin;
+}
+.wc-actual-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.4vmin; color: var(--muted);
+  letter-spacing: 0.18em; text-transform: uppercase;
+}
+.wc-actual-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 5vmin; color: var(--green);
+  text-shadow: 0 0 20px rgba(0,213,89,0.60);
+  letter-spacing: 0.06em; line-height: 1;
+}
+.wc-platform-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.3vmin; font-weight: 700; letter-spacing: 0.15em;
+  padding: 0.5vmin 1.6vmin; border-radius: 0.4vmin;
+  background: rgba(0,240,255,0.06);
+  border: 1px solid rgba(0,240,255,0.18);
+  color: var(--a2); text-transform: uppercase;
+  display: inline-block; align-self: flex-start;
+}
+
+/* Safe Score block */
+.wc-safe-row {
+  display: flex; align-items: center; gap: 2.5vmin; flex-shrink: 0;
+  background: var(--panel2);
+  border: 1px solid rgba(0,240,255,0.10);
+  border-radius: 1.5vmin;
+  padding: 2vmin 3vmin;
+  z-index: 10;
+}
+.wc-safe-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.2vmin; color: var(--muted);
+  letter-spacing: 0.2em; text-transform: uppercase; line-height: 1.3;
+}
+.wc-safe-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 5.5vmin; color: var(--a2); line-height: 1;
+  text-shadow: 0 0 20px rgba(0,240,255,0.45);
+}
+.wc-safe-unit {
+  font-size: 2.2vmin; opacity: 0.55;
+}
+/* Confidence bar in safe row */
+.wc-conf-bar {
+  flex: 1; height: 0.7vmin;
+  background: rgba(255,255,255,0.07); border-radius: 99vmin; overflow: hidden;
+  min-width: 10vmin;
+}
+.wc-conf-fill {
+  height: 100%; border-radius: 99vmin;
+  background: linear-gradient(90deg, var(--a1), var(--a2));
+}
+.wc-engine-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1vmin; color: var(--dim); letter-spacing: 0.12em;
+  text-transform: uppercase; flex-shrink: 0;
+}
+</style>
+</head>
+<body>
+<div class="poster {{ skin_class|default('skin-neural') }}">
+
+  <div class="watermark" aria-hidden="true">
+    {% for _ in range(36) %}<span>{{ watermark_text|default('SMART PICK PRO') }}</span>{% endfor %}
+  </div>
+
+  <!-- Result stamp (diagonal) -->
+  <div class="wc-stamp">HIT ✓</div>
+
+  <!-- Header -->
+  <header class="hdr">
+    <div class="brand">
+      <div class="brand-mark">SP</div>
+      <div class="brand-text">
+        <div class="brand-eyebrow">{{ eyebrow|default("WIN — RECEIPT ON FILE") }}</div>
+        <div class="brand-name">SMART PICK PRO</div>
+      </div>
+    </div>
+    <div class="date-pill">{{ date_str|default('') }}</div>
+  </header>
+
+  <!-- Hero: headshot + prop info -->
+  <div class="wc-hero-row">
+
+    {% if headshot_uri %}
+    <div class="wc-player-wrap">
+      <img class="wc-player-img" src="{{ headshot_uri }}" alt="{{ player_name }}">
+    </div>
+    {% else %}
+    <div class="wc-player-num">{{ (player_name or '?')[0] }}</div>
+    {% endif %}
+
+    <div class="wc-hero-info">
+      <div class="wc-player-name">{{ player_name|upper }}</div>
+      {% if team %}<div class="wc-team">{{ team }}</div>{% endif %}
+
+      <!-- Direction + prop line + stat -->
+      <div class="wc-prop-row">
+        <div class="wc-dir {{ direction|lower }}">{{ direction|upper }}</div>
+        <div class="wc-prop-val">{{ "%.1f"|format(prop_line) }}</div>
+        <div class="wc-stat">{{ stat_abbr.get(stat_type, stat_type) }}</div>
+      </div>
+
+      <!-- Actual result -->
+      {% if actual_value is defined and actual_value is not none %}
+      <div class="wc-actual-row">
+        <span class="wc-actual-label">ACTUAL</span>
+        <span class="wc-actual-val">{{ "%.1f"|format(actual_value) }}</span>
+      </div>
+      {% endif %}
+
+      <!-- Platform badge -->
+      {% if platform %}
+      <span class="wc-platform-badge">{{ platform }}</span>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- SAFE Score bar -->
+  {% if confidence_score is defined and confidence_score is not none %}
+  <div class="wc-safe-row">
+    <div>
+      <div class="wc-safe-label">SAFE SCORE™</div>
+      <div class="wc-safe-val">{{ "%.0f"|format(confidence_score) }}<span class="wc-safe-unit">/100</span></div>
+    </div>
+    <div class="wc-conf-bar">
+      <div class="wc-conf-fill" style="width:{{ confidence_score|int }}%"></div>
+    </div>
+    <div class="wc-engine-tag">QME v5.6</div>
+  </div>
+  {% endif %}
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="compliance">{{ compliance_footer|default("For entertainment purposes only. Not financial advice. Must be 21+. Please gamble responsibly.") }}</div>
+    <div class="brand-url">smartpickpro.app<span>RECEIPTS ALWAYS ON FILE</span></div>
+  </footer>
+
+</div>
+</body>
+</html>

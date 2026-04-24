@@ -166,6 +166,78 @@ def get_results_for_week(end_date: date | None = None) -> WeeklySummary:
 
 # ── PRE-GAME TRIGGER HELPER ──────────────────────────────────
 
+# ── PUBLIC RESULTS LEDGER ────────────────────────────────────
+
+@dataclass
+class LedgerEntry:
+    bet_date:         str
+    player_name:      str
+    stat_type:        str
+    direction:        str
+    prop_line:        float
+    platform:         str
+    result:           str   # WIN | LOSS | PUSH | PENDING
+    confidence_score: float | None = None
+    edge_pct:         float | None = None
+    payout:           float | None = None
+    headshot_url:     str | None = None
+
+
+@dataclass
+class LedgerSummary:
+    entries:     list[LedgerEntry]
+    total_wins:  int = 0
+    total_losses: int = 0
+    total_push:  int = 0
+    all_time_win_rate: float = 0.0
+    all_time_roi:      float | None = None
+
+
+def get_public_ledger(
+    days_back: int = 30,
+    limit: int = 500,
+) -> LedgerSummary:
+    """Full bet history for public results ledger — no auth required.
+
+    Returns up to `limit` bets from the last `days_back` days, most
+    recent first. All W/L results shown — wins AND losses, always.
+    """
+    if _engine is None:
+        return LedgerSummary(entries=[])
+
+    since = (date.today() - timedelta(days=days_back)).isoformat()
+    sql = text(
+        "SELECT bet_date, player_name, stat_type, direction, prop_line, "
+        "       platform, result, confidence_score, edge_pct, payout, headshot_url "
+        "FROM bets "
+        "WHERE bet_date >= :since AND result IN ('WIN','LOSS','PUSH') "
+        "ORDER BY bet_date DESC, bet_id DESC "
+        "LIMIT :lim"
+    )
+    with _engine.connect() as conn:
+        rows = _rows_to_dicts(conn.execute(sql, {"since": since, "lim": limit}))
+
+    entries = [LedgerEntry(**{k: r.get(k) for k in LedgerEntry.__dataclass_fields__}) for r in rows]
+    wins   = sum(1 for e in entries if e.result == "WIN")
+    losses = sum(1 for e in entries if e.result == "LOSS")
+    resolved = wins + losses
+    win_rate = (wins / resolved * 100.0) if resolved else 0.0
+
+    stake_total  = resolved
+    payout_total = sum((e.payout or 0.0) for e in entries if e.result == "WIN")
+    roi = ((payout_total - stake_total) / stake_total * 100.0) if stake_total else None
+
+    return LedgerSummary(
+        entries=entries,
+        total_wins=wins, total_losses=losses,
+        total_push=sum(1 for e in entries if e.result == "PUSH"),
+        all_time_win_rate=win_rate,
+        all_time_roi=roi,
+    )
+
+
+# ── PRE-GAME TRIGGER HELPER ──────────────────────────────────
+
 def get_games_starting_in(hours_window: tuple[int, int] = (1, 3)) -> list[dict[str, Any]]:
     """Games tipping off between hours_window[0] and hours_window[1] from now.
 

@@ -1192,10 +1192,17 @@ if analysis_results:
         reverse=True,
     )[:8]
     if _outer_plat_ai_pool:
-        if players_data and any(not r.get("player_id") for r in _outer_plat_ai_pool):
+        _outer_players_data = locals().get("players_data") or globals().get("players_data")
+        if not _outer_players_data:
+            try:
+                from data.data_manager import load_players_data as _lpd_outer
+                _outer_players_data = _lpd_outer() or []
+            except Exception:
+                _outer_players_data = []
+        if _outer_players_data and any(not r.get("player_id") for r in _outer_plat_ai_pool):
             _outer_pid_lookup = {
                 str(p.get("name", "")).lower(): str(p.get("player_id", ""))
-                for p in players_data
+                for p in _outer_players_data
                 if p.get("player_id")
             }
             for _op in _outer_plat_ai_pool:
@@ -1614,10 +1621,17 @@ def _render_results_fragment():
         # ── Enrich hero pool with player_id for headshots ─────────────
         # Picks loaded from the DB lack player_id; look it up from players_data
         # using a name-keyed dict so the NBA CDN headshot URL can be resolved.
-        if players_data and any(not r.get("player_id") for r in _hero_pool):
+        _hero_players_data = locals().get("players_data") or globals().get("players_data")
+        if not _hero_players_data:
+            try:
+                from data.data_manager import load_players_data as _lpd_hero
+                _hero_players_data = _lpd_hero() or []
+            except Exception:
+                _hero_players_data = []
+        if _hero_players_data and any(not r.get("player_id") for r in _hero_pool):
             _pid_lookup = {
                 str(p.get("name", "")).lower(): str(p.get("player_id", ""))
-                for p in players_data
+                for p in _hero_players_data
                 if p.get("player_id")
             }
             for _hp in _hero_pool:

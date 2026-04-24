@@ -399,6 +399,11 @@ def _initialize_pg_database() -> bool:
             ip_hash TEXT,
             user_agent TEXT
         )""",
+        """CREATE TABLE IF NOT EXISTS app_state (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+        )""",
     ]
     pg_indexes = [
         "CREATE INDEX IF NOT EXISTS idx_bets_player ON bets (player_name)",
@@ -881,6 +886,10 @@ def initialize_database():
             cursor.execute(CREATE_PAGE_STATE_TABLE_SQL)             # Page state persistence
             cursor.execute(CREATE_USER_PROFILES_TABLE_SQL)          # Premium profile onboarding
             cursor.execute(CREATE_SLATE_CACHE_TABLE_SQL)             # slate_worker run metadata
+            cursor.execute(
+                "CREATE TABLE IF NOT EXISTS app_state "
+                "(key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT)"
+            )
 
             # â”€â”€ Indexes for performance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             _TRACKING_INDEXES = (
@@ -3043,61 +3052,157 @@ def _write_latest_picks_cache(date_str: str, limit: int = 5) -> None:
     """Persist today's top analysis picks to ``cache/latest_picks.json``.
 
     Called automatically after ``insert_analysis_picks`` succeeds.
-    The auth-gate landing page reads this file when the DB query returns
-    nothing (common on Railway ephemeral deploys).
+    Supports both PostgreSQL (Railway) and SQLite (local dev).
 
-    Also attempts to git-commit the cache file so Railway picks up the latest
-    data on the next deploy without needing a manual push.
+    Also bumps the DB-backed data_version so *any* running Streamlit
+    container (not just the one that wrote picks) detects fresh data.
     """
     import json as _json
     try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute(
-                """SELECT player_name, team, stat_type, prop_line, direction,
-                          platform, confidence_score, probability_over,
-                          edge_percentage, tier
-                   FROM all_analysis_picks
-                   WHERE pick_date = ?
-                   ORDER BY confidence_score DESC
-                   LIMIT ?""",
-                (date_str, limit),
-            ).fetchall()
-            if not rows:
+        if _DATABASE_URL:
+            # ── PostgreSQL path ──────────────────────────────────────────
+            rows_data: list[dict] = []
+            try:
+                conn = _pg_conn()
+                cur = conn.cursor()
+                cur.execute(
+                    """SELECT player_name, team, stat_type, prop_line, direction,
+                              platform, confidence_score, probability_over,
+                              edge_percentage, tier
+                       FROM all_analysis_picks
+                       WHERE pick_date = %s
+                       ORDER BY confidence_score DESC
+                       LIMIT %s""",
+                    (date_str, limit),
+                )
+                cols = [d[0] for d in cur.description]
+                rows_data = [dict(zip(cols, row)) for row in cur.fetchall()]
+                conn.close()
+            except Exception as pg_err:
+                _logger.debug("_write_latest_picks_cache PG query: %s", pg_err)
+            if not rows_data:
                 return
-            cache_data = {"date": date_str, "picks": [dict(r) for r in rows]}
-            cache_path = Path(__file__).parent.parent / "cache" / "latest_picks.json"
-            cache_path.parent.mkdir(parents=True, exist_ok=True)
-            cache_path.write_text(_json.dumps(cache_data, indent=2), encoding="utf-8")
-            _logger.debug("Wrote %d picks to %s", len(rows), cache_path)
-            # Bump the shared data-version stamp so running Streamlit sessions
-            # detect the new picks and re-seed session state from the DB.
-            _bump_data_version(date_str)
-            # Auto-commit the cache file to git so Railway deploys carry today's picks.
-            _git_commit_cache(cache_path, date_str)
+            cache_data = {"date": date_str, "picks": rows_data}
+        else:
+            # ── SQLite path ──────────────────────────────────────────────
+            with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
+                conn.row_factory = sqlite3.Row
+                rows = conn.execute(
+                    """SELECT player_name, team, stat_type, prop_line, direction,
+                              platform, confidence_score, probability_over,
+                              edge_percentage, tier
+                       FROM all_analysis_picks
+                       WHERE pick_date = ?
+                       ORDER BY confidence_score DESC
+                       LIMIT ?""",
+                    (date_str, limit),
+                ).fetchall()
+                if not rows:
+                    return
+                cache_data = {"date": date_str, "picks": [dict(r) for r in rows]}
+
+        cache_path = Path(__file__).parent.parent / "cache" / "latest_picks.json"
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text(_json.dumps(cache_data, indent=2), encoding="utf-8")
+        _logger.debug("Wrote %d picks to %s", len(cache_data["picks"]), cache_path)
+        # Bump the shared data-version stamp so running Streamlit sessions
+        # detect the new picks and re-seed session state from the DB.
+        _bump_data_version(date_str)
+        # Auto-commit the cache file to git so Railway deploys carry today's picks.
+        _git_commit_cache(cache_path, date_str)
     except Exception as exc:
         _logger.debug("_write_latest_picks_cache: %s", exc)
 
 
 def _bump_data_version(date_str: str) -> None:
-    """Write ``cache/data_version.json`` with a monotonically increasing timestamp.
+    """Write a data-version stamp that any Streamlit container can detect.
 
-    Running Streamlit sessions read this file on every render cycle and compare
-    the ``version`` field against ``st.session_state["_data_version_seen"]``.
-    When the version has advanced (i.e. the scheduler wrote fresh picks or props)
-    the session clears its stale cached data keys and re-reads from the DB,
-    so users see the updated picks without having to manually reload the page.
+    Two mechanisms:
+    1. ``cache/data_version.json`` — file-based; works in-process.
+    2. DB row in ``app_state`` table — survives container restarts and is
+       readable by any container connected to the same PostgreSQL database,
+       so GitHub Actions CI runs can signal the running app to refresh.
     """
     import json as _json, time as _time
+    _ver = _time.time()
+    # ── File stamp (in-process / single-container awareness) ─────────────
     try:
         version_path = Path(__file__).parent.parent / "cache" / "data_version.json"
         version_path.parent.mkdir(parents=True, exist_ok=True)
         version_path.write_text(
-            _json.dumps({"version": _time.time(), "date": date_str}),
+            _json.dumps({"version": _ver, "date": date_str}),
             encoding="utf-8",
         )
     except Exception as exc:
-        _logger.debug("_bump_data_version: %s", exc)
+        _logger.debug("_bump_data_version (file): %s", exc)
+    # ── DB stamp (cross-container / cross-deploy awareness) ───────────────
+    # Store version as a row in app_state(key TEXT PRIMARY KEY, value TEXT).
+    # The home page reads this via get_data_version() so any container
+    # (including GitHub Actions CI) can signal a Streamlit session to refresh.
+    try:
+        if _DATABASE_URL:
+            conn = _pg_conn()
+            cur = conn.cursor()
+            # Create table if missing (idempotent)
+            cur.execute(
+                "CREATE TABLE IF NOT EXISTS app_state "
+                "(key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW())"
+            )
+            cur.execute(
+                "INSERT INTO app_state (key, value, updated_at) VALUES ('data_version', %s, NOW()) "
+                "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()",
+                (str(_ver),),
+            )
+            conn.commit()
+            conn.close()
+        else:
+            with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
+                conn.execute(
+                    "CREATE TABLE IF NOT EXISTS app_state "
+                    "(key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT)"
+                )
+                conn.execute(
+                    "INSERT OR REPLACE INTO app_state (key, value, updated_at) VALUES (?, ?, datetime('now'))",
+                    ("data_version", str(_ver)),
+                )
+    except Exception as exc:
+        _logger.debug("_bump_data_version (db): %s", exc)
+
+
+def get_data_version() -> float:
+    """Read the current data version from the DB (cross-container safe).
+
+    Returns the version as a float timestamp (seconds since epoch).
+    Falls back to reading ``cache/data_version.json`` if DB is unavailable.
+    Returns 0.0 if both sources are unavailable.
+    """
+    import json as _json
+    # ── Primary: DB (works across container restarts and CI writes) ───────
+    try:
+        if _DATABASE_URL:
+            rows = _pg_execute_read(
+                "SELECT value FROM app_state WHERE key = 'data_version'"
+            )
+            if rows:
+                return float(rows[0]["value"])
+        else:
+            with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
+                row = conn.execute(
+                    "SELECT value FROM app_state WHERE key = 'data_version'"
+                ).fetchone()
+                if row:
+                    return float(row[0])
+    except Exception:
+        pass
+    # ── Fallback: file stamp ──────────────────────────────────────────────
+    try:
+        import json as _j
+        vp = Path(__file__).parent.parent / "cache" / "data_version.json"
+        if vp.exists():
+            return float(_j.loads(vp.read_text(encoding="utf-8")).get("version", 0))
+    except Exception:
+        pass
+    return 0.0
 
 
 def _git_commit_cache(cache_path: Path, date_str: str) -> None:

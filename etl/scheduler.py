@@ -65,7 +65,7 @@ _DISABLED = os.environ.get("ETL_SCHEDULER_DISABLED", "").strip() in ("1", "true"
 
 # QAM auto-analysis config
 _QAM_DISABLED = os.environ.get("QAM_AUTO_ANALYSIS_DISABLED", "").strip() in ("1", "true", "yes")
-_QAM_HOUR_START = int(os.environ.get("QAM_ANALYSIS_HOUR_START", "12"))   # 12 PM ET — props available by midday
+_QAM_HOUR_START = int(os.environ.get("QAM_ANALYSIS_HOUR_START", "10"))   # 10 AM ET — props often available by 10 AM
 _QAM_HOUR_END = int(os.environ.get("QAM_ANALYSIS_HOUR_END", "23"))       # 11 PM ET
 _QAM_SIM_DEPTH = int(os.environ.get("QAM_SIM_DEPTH", "1000"))
 
@@ -237,12 +237,13 @@ def _run_auto_analysis(today_str: str) -> int:
 def _loop() -> None:
     """Infinite loop: sleep → ETL refresh → prop refresh → QAM analysis → repeat."""
     # Initial delay — let the app finish booting before the first refresh.
-    time.sleep(60)
+    # Reduced from 60s to 20s so picks are loaded faster on container start.
+    time.sleep(20)
 
     _last_prop_refresh = 0.0      # monotonic timestamp of last prop refresh
     _last_analysis_date = ""      # ISO date of last successful QAM auto-analysis
     _last_analysis_ts = 0.0       # monotonic timestamp of last successful QAM run
-    _ANALYSIS_RERUN_SEC = int(os.environ.get("QAM_RERUN_INTERVAL_MIN", "240")) * 60  # re-run every 4 h
+    _ANALYSIS_RERUN_SEC = int(os.environ.get("QAM_RERUN_INTERVAL_MIN", "120")) * 60  # re-run every 2 h (was 4 h)
 
     while True:
         game_window = _in_game_window()

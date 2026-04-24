@@ -3,10 +3,11 @@ name: Slate Worker — Tonight's Picks Pipeline
 # Runs slate_worker.py on a frequent schedule so the DB always has
 # tonight's pre-computed picks ready before users log in.
 #
-# Schedule window: ~12 PM ET → 1 AM ET every day (NBA game coverage).
-# Two cron blocks cover the window across midnight UTC:
-#   Block A: 16:00–23:30 UTC  (12 PM–7:30 PM ET)
-#   Block B: 00:00–05:30 UTC  (8 PM–1:30 AM ET, next UTC day)
+# Schedule window: ~9 AM ET → 2 AM ET every day (full NBA coverage).
+# Three cron blocks:
+#   Block A: 13:00–15:30 UTC  (9 AM–11:30 AM ET)  — early slate, props available by 9 AM
+#   Block B: 16:00–23:30 UTC  (12 PM–7:30 PM ET)  — afternoon/evening prep
+#   Block C: 00:00–06:00 UTC  (8 PM–2 AM ET, next UTC day) — live game window
 # Each fires every 30 minutes.
 #
 # Required repository secrets (Settings → Secrets → Actions):
@@ -15,10 +16,12 @@ name: Slate Worker — Tonight's Picks Pipeline
 
 on:
   schedule:
-    # Block A — every 30 min, 12 PM–7:30 PM ET (16:00–23:30 UTC)
+    # Block A — every 30 min, 9 AM–11:30 AM ET (13:00–15:30 UTC)
+    - cron: "0,30 13-15 * * *"
+    # Block B — every 30 min, 12 PM–7:30 PM ET (16:00–23:30 UTC)
     - cron: "0,30 16-23 * * *"
-    # Block B — every 30 min, 8 PM–1:30 AM ET (00:00–05:30 UTC, next day)
-    - cron: "0,30 0-5 * * *"
+    # Block C — every 30 min, 8 PM–2 AM ET (00:00–06:00 UTC, next day)
+    - cron: "0,30 0-6 * * *"
   workflow_dispatch:          # Manual trigger from GitHub UI
     inputs:
       dry_run:
@@ -67,3 +70,19 @@ jobs:
           QAM_SIM_DEPTH: "1000"
           SLATE_WORKER_LOG: "INFO"
           LOG_LEVEL: "INFO"
+
+      - name: Signal Streamlit containers (bump DB data_version)
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          python - <<'EOF'
+          # Write a cross-container data_version to the DB so any running
+          # Streamlit session detects fresh picks and re-queries the DB.
+          try:
+              from tracking.database import _bump_data_version, _nba_today_iso
+              _bump_data_version(_nba_today_iso())
+              print("data_version bumped in DB.")
+          except Exception as e:
+              print(f"data_version bump skipped (non-fatal): {e}")
+          EOF
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

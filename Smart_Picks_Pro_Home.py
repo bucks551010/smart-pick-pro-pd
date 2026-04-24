@@ -166,43 +166,41 @@ try:
 except Exception:
     pass  # non-critical — staleness guard above is the safety net
 
-# ─── Data-version check: clear stale session cache when scheduler writes fresh data ───
-# The background scheduler calls _bump_data_version() every time it writes new
-# picks or props to disk.  We read cache/data_version.json on every Streamlit
-# render cycle (it's a tiny file).  When the version has advanced beyond what
-# this session last saw, we reset _picks_seeded so the block below re-reads
-# the DB — giving users live data without a manual page reload.
+# ─── Data-version check: clear stale session cache when new picks are ready ───
+# Reads the data_version from the DB (cross-container safe — works when GitHub
+# Actions CI writes picks to PostgreSQL from outside the Streamlit container).
+# Falls back to cache/data_version.json for local/in-process scheduler writes.
 try:
-    import json as _jv
-    from pathlib import Path as _Pv
-    _version_path = _Pv(__file__).resolve().parent / "cache" / "data_version.json"
-    if _version_path.exists():
-        _ver_data = _jv.loads(_version_path.read_text(encoding="utf-8"))
-        _new_ver = _ver_data.get("version", 0)
-        _seen_ver = st.session_state.get("_data_version_seen", 0)
-        if _new_ver > _seen_ver:
-            # New data written by scheduler — clear stale session state so
-            # the seed block below picks up fresh picks and props from DB.
-            st.session_state["_data_version_seen"] = _new_ver
-            st.session_state.pop("_picks_seeded", None)
-            st.session_state.pop("analysis_results", None)
-            st.session_state.pop("current_props", None)
-            st.session_state.pop("platform_props", None)
-            st.session_state.pop("todays_games", None)
-            st.session_state.pop("_auto_init_date", None)
+    from tracking.database import get_data_version as _get_data_version
+    _new_ver = _get_data_version()
+    _seen_ver = st.session_state.get("_data_version_seen", 0)
+    if _new_ver > _seen_ver:
+        # New data detected — clear stale session state AND the shared
+        # @st.cache_data cache so the DB is re-queried immediately.
+        st.session_state["_data_version_seen"] = _new_ver
+        st.session_state.pop("_picks_seeded", None)
+        st.session_state.pop("analysis_results", None)
+        st.session_state.pop("current_props", None)
+        st.session_state.pop("platform_props", None)
+        st.session_state.pop("todays_games", None)
+        st.session_state.pop("_auto_init_date", None)
+        # Clear the shared process-level cache so all sessions re-query the DB
+        try:
+            _load_cached_slate.clear()
+        except Exception:
+            pass
 except Exception:
     pass
 
 # ─── Auto-seed picks & props into session on first load ───────
 # Reads ONLY from the database (pre-populated by slate_worker.py).
 # Never calls external APIs or runs analysis — instant for the user.
-@st.cache_data(ttl=300, show_spinner=False)
+@st.cache_data(ttl=60, show_spinner=False)
 def _load_cached_slate() -> tuple[list, list]:
     """Read today's pre-computed picks + props from the DB.
 
-    Wrapped in @st.cache_data(ttl=300) so concurrent logins share a
-    single DB round-trip for up to 5 minutes, preventing thundering-herd
-    hammering during peak evening traffic.
+    Wrapped in @st.cache_data(ttl=60) so concurrent logins share a single
+    DB round-trip per minute while still getting near-real-time data updates.
 
     Returns:
         (picks, props) — both may be empty lists if the worker hasn't run
@@ -230,15 +228,32 @@ if not st.session_state.get("_picks_seeded"):
         pass
 
 # ─── No picks yet — slate_worker hasn't run today ─────────────────────────
-# Show a non-blocking info banner instead of triggering a live pipeline run.
-# The etl.scheduler daemon (already running) will populate picks within its
-# next cycle; or an admin can trigger slate_worker.py manually.
+# Show a non-blocking info banner with a manual refresh button so users can
+# force-check the DB instead of waiting for the next auto-refresh cycle.
 if not st.session_state.get("analysis_results"):
-    st.info(
-        "⏳ Tonight's slate analysis is being prepared in the background. "
-        "Picks will appear automatically within a few minutes — no action needed.",
-        icon="🔄",
-    )
+    _no_picks_col1, _no_picks_col2 = st.columns([4, 1])
+    with _no_picks_col1:
+        st.info(
+            "⏳ Tonight's slate analysis is being prepared. "
+            "Picks will appear automatically — or click Refresh to check now.",
+            icon="🔄",
+        )
+    with _no_picks_col2:
+        if st.button("🔄 Refresh", key="_home_refresh_no_picks"):
+            _load_cached_slate.clear()
+            st.session_state.pop("_picks_seeded", None)
+            st.session_state.pop("analysis_results", None)
+            st.rerun()
+else:
+    # Show a small refresh button in a corner so users can always force-update
+    if st.session_state.get("_show_refresh_btn", True):
+        _r_col = st.columns([6, 1])[1]
+        with _r_col:
+            if st.button("🔄 Refresh", key="_home_refresh_top", help="Reload latest picks from DB"):
+                _load_cached_slate.clear()
+                st.session_state.pop("_picks_seeded", None)
+                st.session_state.pop("analysis_results", None)
+                st.rerun()
 
 # ─── Landing Page Theme CSS — page-level overrides ───────────
 from styles.theme import get_home_page_css as _get_home_page_css

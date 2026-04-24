@@ -17,7 +17,7 @@ import random
 # ─────────────────────────────────────────────────────────────
 
 BRAND_NAME      = "SmartPickPro"
-BRAND_URL       = "smartpickpro.app"
+BRAND_URL       = "smartpickpro.ai"
 ENGINE_NAME     = "Quantum Matrix Engine™"
 ENGINE_VERSION  = "5.6"
 SCORE_NAME      = "SAFE Score™"

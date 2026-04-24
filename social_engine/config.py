@@ -50,8 +50,8 @@ COMPLIANCE_FOOTER = (
 class Settings:
     environment:        str = os.getenv("ENVIRONMENT", "development")
     timezone:           str = os.getenv("TIMEZONE", "America/New_York")
-    brand_url:          str = os.getenv("BRAND_URL", "https://smartpickpro.app")
-    watermark_text:     str = os.getenv("WATERMARK_TEXT", "SmartPickPro.app")
+    brand_url:          str = os.getenv("BRAND_URL", "https://smartpickpro.ai")
+    watermark_text:     str = os.getenv("WATERMARK_TEXT", "smartpickpro.ai")
     database_url:       str = os.getenv("DATABASE_URL", "")
     gemini_api_key:     str = os.getenv("GEMINI_API_KEY", "")
 

@@ -34,7 +34,7 @@ _BG_COLOR = "#070A13"
 
 def _get_base_url() -> str:
     """Return the app's canonical base URL from env."""
-    return os.environ.get("APP_URL", "https://smartpickpro.app").rstrip("/")
+    return os.environ.get("APP_URL", "https://smartpickpro.ai").rstrip("/")
 
 
 def inject_seo(

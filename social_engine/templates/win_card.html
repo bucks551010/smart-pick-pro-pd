@@ -180,7 +180,7 @@
   <!-- Header -->
   <header class="hdr">
     <div class="brand">
-      <div class="brand-mark">SP</div>
+      {% if logo_uri %}<img class="brand-logo" src="{{ logo_uri }}" alt="SmartPickPro">{% else %}<div class="brand-mark">SP</div>{% endif %}
       <div class="brand-text">
         <div class="brand-eyebrow">{{ eyebrow|default("WIN — RECEIPT ON FILE") }}</div>
         <div class="brand-name">SMART PICK PRO</div>
@@ -244,7 +244,7 @@
   <!-- Footer -->
   <footer class="footer">
     <div class="compliance">{{ compliance_footer|default("For entertainment purposes only. Not financial advice. Must be 21+. Please gamble responsibly.") }}</div>
-    <div class="brand-url">smartpickpro.app<span>RECEIPTS ALWAYS ON FILE</span></div>
+    <div class="brand-url">smartpickpro.ai<span>RECEIPTS ALWAYS ON FILE</span></div>
   </footer>
 
 </div>

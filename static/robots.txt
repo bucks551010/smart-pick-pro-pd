@@ -11,7 +11,7 @@ Disallow: /component/
 Crawl-delay: 2
 
 # Sitemaps
-Sitemap: https://smartpickpro.app/sitemap.xml
+Sitemap: https://smartpickpro.ai/sitemap.xml
 
 # Common bot-specific rules
 User-agent: Googlebot

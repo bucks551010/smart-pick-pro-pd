@@ -105,7 +105,7 @@ For Railway, the simplest options:
 - Push to S3/Cloudflare R2 and set `PUBLIC_ASSET_BASE_URL=https://cdn.yourdomain.com`
 
 ```env
-PUBLIC_ASSET_BASE_URL=https://cdn.smartpickpro.app/social
+PUBLIC_ASSET_BASE_URL=https://cdn.smartpickpro.ai/social
 ```
 
 ---

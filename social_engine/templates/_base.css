@@ -154,6 +154,10 @@ html, body {
   font-size: 2.6vmin; color: var(--bg); letter-spacing: 0.05em; flex-shrink: 0;
   box-shadow: 0 0 20px var(--a1-glow), 0 0 0 1px var(--a2-dim);
 }
+.brand-logo {
+  height: 5.5vmin; width: auto; object-fit: contain; flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(0,240,255,0.25));
+}
 .brand-text { display: flex; flex-direction: column; gap: 0.1vmin; }
 .brand-eyebrow {
   font-size: 1.4vmin; font-weight: 700; color: var(--a2);

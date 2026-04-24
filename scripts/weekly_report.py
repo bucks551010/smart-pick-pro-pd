@@ -393,7 +393,7 @@ def _maybe_send_email(report: dict[str, Any], now: datetime) -> None:
         SMTP_USER          — SMTP login username
         SMTP_PASSWORD      — SMTP login password
         REPORT_RECIPIENTS  — Comma-separated list of recipient emails
-        REPORT_FROM        — Sender address (default noreply@smartpickpro.com)
+        REPORT_FROM        — Sender address (default noreply@smartpickpro.ai)
     """
     smtp_host   = os.environ.get("SMTP_HOST", "")
     smtp_user   = os.environ.get("SMTP_USER", "")
@@ -405,7 +405,7 @@ def _maybe_send_email(report: dict[str, Any], now: datetime) -> None:
         return
 
     smtp_port   = int(os.environ.get("SMTP_PORT", "587"))
-    sender      = os.environ.get("REPORT_FROM", "noreply@smartpickpro.com")
+    sender      = os.environ.get("REPORT_FROM", "noreply@smartpickpro.ai")
     subject     = f"Smart Pick Pro — Weekly Report ({now.strftime('%Y-%m-%d')})"
     body_text   = _render_executive_digest(report)
 

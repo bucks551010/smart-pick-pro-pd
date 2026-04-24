@@ -58,7 +58,7 @@
 
   <header class="hdr">
     <div class="brand">
-      <div class="brand-mark">SP</div>
+      {% if logo_uri %}<img class="brand-logo" src="{{ logo_uri }}" alt="SmartPickPro">{% else %}<div class="brand-mark">SP</div>{% endif %}
       <div class="brand-text">
         <div class="brand-eyebrow">JOIN THE EDGE</div>
         <div class="brand-name">SMART PICK PRO</div>
@@ -103,7 +103,7 @@ IT'S MATH.") }}</div>
     {% if qr_data_uri %}
     <div class="qr-block"><img src="{{ qr_data_uri }}" alt="QR"><div class="qr-cap">SCAN TO JOIN</div></div>
     {% else %}
-    <div class="brand-url">smartpickpro.app<span>FREE TRIAL · NO CREDIT CARD</span></div>
+    <div class="brand-url">smartpickpro.ai<span>FREE TRIAL · NO CREDIT CARD</span></div>
     {% endif %}
   </footer>
 

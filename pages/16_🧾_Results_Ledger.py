@@ -256,7 +256,7 @@ st.markdown("""
   </div>
   <div class="rl-verification">
     QUANTUM MATRIX ENGINE™ 5.6 &nbsp;·&nbsp; SAFE SCORE™ DRIVEN
-    &nbsp;·&nbsp; ZERO BLACK BOXES &nbsp;·&nbsp; smartpickpro.app
+    &nbsp;·&nbsp; ZERO BLACK BOXES &nbsp;·&nbsp; smartpickpro.ai
   </div>
 </div>
 """, unsafe_allow_html=True)

@@ -1,6 +1,8 @@
 """Jinja2 template rendering with brand context auto-injection."""
 from __future__ import annotations
+import base64
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -8,6 +10,17 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from config import BRAND, COMPLIANCE_FOOTER, SETTINGS, TEMPLATE_DIR
 from core.headshots import enrich_picks_with_headshots
 from core.qr import build_utm_url, qr_data_uri
+
+# ── Logo data URI — embedded once at startup ─────────────────
+_LOGO_PATH = Path(__file__).resolve().parents[2] / "assets" / "Smart_Pick_Pro_Logo.png"
+
+def _logo_data_uri() -> str | None:
+    if _LOGO_PATH.exists():
+        data = _LOGO_PATH.read_bytes()
+        return "data:image/png;base64," + base64.b64encode(data).decode()
+    return None
+
+_LOGO_URI: str | None = _logo_data_uri()
 
 
 _env = Environment(
@@ -44,6 +57,7 @@ def render_html(
         "compliance_footer":  COMPLIANCE_FOOTER,
         "qr_data_uri":        qr_data_uri(qr_target),
         "date_str":           datetime.now().strftime("%a, %b %d %Y"),
+        "logo_uri":           _LOGO_URI,
     }
     full_ctx.update(context)
 

@@ -42,10 +42,16 @@ from pages.helpers.quantum_analysis_helpers import (
 
 st.set_page_config(
     page_title="Smart Pick Pro Home",
-    page_icon="🏀",
+    page_icon="assets/Smart_Pick_Pro_Logo.png",
     layout="wide",
     initial_sidebar_state="auto",
 )
+
+# ─── Sidebar logo ──────────────────────────────────────────────────────────
+try:
+    st.logo("assets/Smart_Pick_Pro_Logo.png", link="https://smartpickpro.ai")
+except Exception:
+    pass  # st.logo available in Streamlit ≥1.31; silently skip on older builds
 
 # ─── Theme CSS — injected BEFORE login gate to prevent white flash ────────
 from utils.page_bootstrap import inject_theme_css, init_session_state

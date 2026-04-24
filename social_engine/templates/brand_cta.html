@@ -68,14 +68,14 @@
   </header>
 
   <div class="cta-inner">
-    <div class="cta-eyebrow">POWERED BY AI &bull; BUILT FOR WINNERS</div>
+    <div class="cta-eyebrow">{{ eyebrow|default("QUANTUM MATRIX ENGINE™ 5.6 · ZERO BLACK BOXES") }}</div>
     <div class="cta-headline">{{ headline|default("THE EDGE
 ISN'T LUCK.
 IT'S MATH.") }}</div>
-    <div class="cta-sub">{{ subheadline|default("1,000 Monte Carlo simulations per pick. Zero black boxes. Three platforms covered daily.") }}</div>
+    <div class="cta-sub">{{ subheadline|default("1,000 Quantum simulations per pick. Zero black boxes. Three platforms covered daily.") }}</div>
     <div class="cta-stats">
       <div class="cta-stat-item">
-        <div class="cta-stat-val">1,000</div>
+        <div class="cta-stat-val">1,000+</div>
         <div class="cta-stat-label">SIMS / PICK</div>
       </div>
       <div class="cta-stat-divider"></div>
@@ -92,7 +92,8 @@ IT'S MATH.") }}</div>
     <div class="cta-pills">
       <div class="fp fp-green">PRIZEPICKS</div>
       <div class="fp fp-gold">UNDERDOG</div>
-      <div class="fp fp-cyan">DK PICK6</div>
+      <div class="fp fp-a2">DK PICK6</div>
+      <div class="fp fp-a1">SAFE SCORE™</div>
     </div>
     <div class="cta-btn">{{ button_text|default("→ START FREE TRIAL") }}</div>
   </div>
@@ -102,7 +103,7 @@ IT'S MATH.") }}</div>
     {% if qr_data_uri %}
     <div class="qr-block"><img src="{{ qr_data_uri }}" alt="QR"><div class="qr-cap">SCAN TO JOIN</div></div>
     {% else %}
-    <div class="brand-url">smartpickpro.com<span>SCAN OR VISIT</span></div>
+    <div class="brand-url">smartpickpro.app<span>FREE TRIAL · NO CREDIT CARD</span></div>
     {% endif %}
   </footer>
 

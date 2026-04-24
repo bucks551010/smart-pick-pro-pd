@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 
 from core import data_source as ds
+from core.brand_voice import pick_cta_rotation
 from core.llm_copy import CopyVariants, generate_copy
 from core.variants import pick_random_skin
 from distribute.base import PostResult
@@ -168,7 +169,11 @@ def build_and_post_weekly_scorecard(channels=_DEFAULT_CHANNELS) -> list[PostResu
 # ── BRANDING / CTA ──────────────────────────────────────────
 
 def build_and_post_branding(channels=_DEFAULT_CHANNELS) -> list[PostResult]:
-    payload = {"product": "SmartPickPro NBA", "stage": "brand_awareness"}
+    # Rotate headline based on day-of-week so Mon/Wed/Fri each look different
+    day_index = date.today().weekday()  # 0=Mon, 2=Wed, 4=Fri → different index each time
+    headline, subheadline, button_text = pick_cta_rotation(day_index)
+
+    payload = {"product": "SmartPickPro NBA", "stage": "brand_awareness", "headline": headline}
     copy = generate_copy("brand", payload)
     skin = pick_random_skin()
 
@@ -176,10 +181,10 @@ def build_and_post_branding(channels=_DEFAULT_CHANNELS) -> list[PostResult]:
         "brand_cta.html",
         context={
             "title":        "Quant NBA Analytics",
-            "headline":     "THE EDGE ISN'T LUCK. IT'S MATH.",
-            "subheadline":  "1,000 Monte Carlo simulations per pick. Zero black boxes. Free trial.",
-            "button_text":  "\u2192 START FREE",
-            "tagline":      "Quantitative NBA Analytics",
+            "headline":     headline,
+            "subheadline":  subheadline,
+            "button_text":  button_text,
+            "tagline":      "Quantum Matrix Engine™ 5.6",
             "skin_class":   skin["class"],
         },
         utm_source="brand",

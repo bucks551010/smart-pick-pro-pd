@@ -13,6 +13,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from config import SETTINGS
+from core.brand_voice import (
+    VOICE_GUIDELINES, BRAND_NAME, ENGINE_NAME, ENGINE_VERSION, SCORE_NAME,
+    TAGLINES, get_hashtags,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -58,27 +62,32 @@ class CopyVariants:
 
 
 _PROMPT_TEMPLATE = """\
-You write social-media copy for SmartPickPro — a quantitative NBA prop-betting analytics brand.
-The voice is sharp, confident, data-driven, never reckless. NEVER promise wins.
+{voice_guidelines}
 
+═══ TASK ═══
 Asset type: {asset_type}
 Context payload (JSON): {payload}
 
 Asset type instructions:
-- "results": Morning recap of last night's bets. Highlight wins count and mention that the
-  winning props are shown so followers can verify each one. Reference win rate if strong.
-- "slate": Pre-game picks post. Mention the platforms these picks are on (PrizePicks, Underdog,
-  DK Pick6, etc.) so followers know where to act. Post goes out 2-3 hours before games tip off.
-- "brand": Brand awareness CTA. Drive follows and free trial signups. 3x per week cadence.
+- "results": Morning recap — post WINS count prominently, mention that all winning props
+  are shown publicly for verification. Reference win rate if above 60%. Lead with the
+  transparency angle ("receipts on file", "verify every one").
+- "slate": Pre-game post — mention the specific platforms (PrizePicks, Underdog, DK Pick6).
+  Reference the QME engine and edge percentages where available. Post goes out 2-3 hrs pre-tip.
+- "weekly": Sunday scorecard — full week W-L record. Emphasize the receipts/transparency angle.
+  Show the math (win rate %, ROI if positive).
+- "brand": Brand awareness — drive free trial signups & follows. Rotate angles:
+  transparency, engine authority, math/edge, no-black-box, receipts culture.
 
 Generate exactly THREE copy variations and a hashtag set. Reply with valid JSON only:
 {{
-  "hype":        "...energetic, 1-2 emoji, builds FOMO, ≤200 chars",
-  "analytical":  "...data-led tone, references the edge/numbers, ≤220 chars",
-  "direct_cta":  "...single CTA pivot to scan QR / visit link, ≤180 chars",
-  "hashtags":    ["NBA","PropBets","..."]   // 6-10 tags, no #
+  "hype":        "...high energy, 1-2 emoji max, urgency/FOMO, ≤200 chars",
+  "analytical":  "...data-led, references engine/score/edge numbers, ≤220 chars",
+  "direct_cta":  "...one clear action (link in bio / scan QR / free trial), ≤180 chars",
+  "hashtags":    ["NBA","PropBets","..."]   // 6-10 tags, no # prefix
 }}
-Compliance: no guarantees, no 'lock', no '#1 pick'. Always sound responsible.
+Hard rules: no 'lock', no 'guaranteed', no '#1 pick', no 'can\'t miss'.
+Always include a transparency or responsible gambling signal.
 """
 
 
@@ -89,7 +98,11 @@ def generate_copy(asset_type: str, payload: dict[str, Any]) -> CopyVariants:
         return _fallback(asset_type, payload)
 
     try:
-        prompt = _PROMPT_TEMPLATE.format(asset_type=asset_type, payload=json.dumps(payload)[:4000])
+        prompt = _PROMPT_TEMPLATE.format(
+            voice_guidelines=VOICE_GUIDELINES,
+            asset_type=asset_type,
+            payload=json.dumps(payload)[:4000],
+        )
         resp = model.models.generate_content(
             model="gemini-2.0-flash",
             contents=prompt,
@@ -108,41 +121,68 @@ def generate_copy(asset_type: str, payload: dict[str, Any]) -> CopyVariants:
 
 
 def _fallback(asset_type: str, payload: dict[str, Any]) -> CopyVariants:
-    """Deterministic stubs so the engine still runs without an API key."""
+    """Brand-voice-aligned stubs — used when Gemini is unavailable."""
     if asset_type == "results":
         w = payload.get("wins", 0); l = payload.get("losses", 0)
+        wr = payload.get("win_rate", 0.0)
         props = payload.get("winning_props", [])
-        prop_line = f" | {props[0].get('player_name')} {props[0].get('stat_type')} {props[0].get('direction')} {props[0].get('prop_line')} ✅" if props else ""
+        first = f" — {props[0].get('player_name')} {props[0].get('direction')} {props[0].get('prop_line')} ✅" if props else ""
+        rate_txt = f" ({wr:.0f}% win rate)" if wr >= 60 else ""
         return CopyVariants(
-            hype=f"🚀 {w}-{l} last night. All winning props shown — verify every one.{prop_line}",
-            analytical=f"Last night's slate: {w}W-{l}L. Winning props listed — full transparency, always verifiable.",
-            direct_cta=f"{w} winners last night. See the props, check the receipts. Tonight's picks drop soon.",
-            hashtags=["NBA", "PropBets", "PrizePicks", "Underdog", "DFS", "SportsBetting", "SmartPickPro"],
+            hype=f"🧾 {w}-{l} last night{rate_txt}. Every pick posted publicly — verify each one yourself.{first}",
+            analytical=(
+                f"Last night: {w}W-{l}L{rate_txt}. {ENGINE_NAME} {ENGINE_VERSION} — "
+                f"full results posted, zero hidden losses. {TAGLINES['transparency']}"
+            ),
+            direct_cta=(
+                f"{w} wins last night. All {w + l} picks shown — receipts always on file. "
+                f"Tonight's analysis drops soon → {TAGLINES['cta']}"
+            ),
+            hashtags=get_hashtags("results"),
         )
     if asset_type == "weekly":
         w = payload.get("wins", 0); l = payload.get("losses", 0)
         wr = payload.get("win_rate", 0.0)
-        props = payload.get("winning_props", [])
-        n_props = len(props)
+        roi = payload.get("roi_pct")
+        roi_txt = f" | +{roi:.1f}% ROI" if roi and roi > 0 else ""
         return CopyVariants(
-            hype=f"📊 {w}-{l} this week ({wr:.0f}% win rate). Every winning prop listed — verify them all.",
-            analytical=f"Weekly recap: {w}W-{l}L across {n_props} winning props. Full list shown for verification.",
-            direct_cta=f"{w} wins this week. See the receipts → follow for next week's picks.",
-            hashtags=["NBA", "WeeklyRecap", "PropBets", "PrizePicks", "Underdog", "SportsBetting", "SmartPickPro"],
+            hype=f"📊 {w}-{l} this week ({wr:.0f}% win rate{roi_txt}). Every pick verified — receipts on file.",
+            analytical=(
+                f"Weekly scorecard: {w}W-{l}L | {wr:.0f}% win rate{roi_txt}. "
+                f"{ENGINE_NAME} {ENGINE_VERSION}. All picks posted — wins AND losses. Always."
+            ),
+            direct_cta=f"{w} wins this week. Full record posted → {TAGLINES['transparency']}",
+            hashtags=get_hashtags("weekly"),
         )
     if asset_type == "slate":
-        n = len(payload.get("picks", []))
+        picks = payload.get("picks", [])
+        n = len(picks)
         platforms = payload.get("platforms", [])
-        plat_str = " & ".join(platforms) if platforms else "PrizePicks/Underdog"
+        plat_str = " & ".join(platforms) if platforms else "PrizePicks / Underdog"
+        top = picks[0] if picks else {}
+        top_line = (
+            f" Top edge: {top.get('player_name')} {top.get('direction')} "
+            f"{top.get('prop_line')} @ {top.get('confidence_score', 0):.0f}% SAFE Score."
+        ) if top else ""
         return CopyVariants(
-            hype=f"⚡ {n} picks LIVE on {plat_str}. Quant-driven. Receipts always shown.",
-            analytical=f"{n} prop edges flagged tonight on {plat_str} by the Monte Carlo engine.",
-            direct_cta=f"Tonight's picks on {plat_str} — scan the QR or hit the link in bio.",
-            hashtags=["NBA", "NBAProps", "PrizePicks", "Underdog", "DFS", "Picks", "SmartPickPro"],
+            hype=f"⚡ {n} Quantum edges live on {plat_str}.{top_line} Receipts always posted.",
+            analytical=(
+                f"{n} props flagged by {ENGINE_NAME} {ENGINE_VERSION} on {plat_str}. "
+                f"{SCORE_NAME} driven. {TAGLINES['authority']}"
+            ),
+            direct_cta=(
+                f"Tonight's {n} picks on {plat_str} — link in bio. "
+                f"{TAGLINES['primary']}"
+            ),
+            hashtags=get_hashtags("slate"),
         )
+    # brand / default
     return CopyVariants(
-        hype="The edge isn't luck. It's math. Join SmartPickPro 🧠⚡",
-        analytical="Quantitative NBA prop analytics. 1,000 simulations per pick. Zero black boxes.",
-        direct_cta="Free trial. Real edges. Tap the link → smartpickpro.app",
-        hashtags=["NBA", "Analytics", "SportsBetting", "PropBets", "SmartPickPro"],
+        hype=f"🧠⚡ {TAGLINES['primary']} {ENGINE_NAME} {ENGINE_VERSION} — free trial now.",
+        analytical=(
+            f"{ENGINE_NAME} {ENGINE_VERSION}: 1,000+ Quantum simulations per NBA prop. "
+            f"{SCORE_NAME}. {TAGLINES['authority']}"
+        ),
+        direct_cta=f"{TAGLINES['cta']} → {BRAND_NAME}.app",
+        hashtags=get_hashtags("brand"),
     )

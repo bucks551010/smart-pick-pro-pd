@@ -203,18 +203,42 @@ except Exception:
 # Never calls external APIs or runs analysis — instant for the user.
 @st.cache_data(ttl=60, show_spinner=False)
 def _load_cached_slate() -> tuple[list, list]:
-    """Read today's pre-computed picks + props from the DB.
+    """Read today's pre-computed picks + props from DB (or warm file cache).
 
     Wrapped in @st.cache_data(ttl=60) so concurrent logins share a single
-    DB round-trip per minute while still getting near-real-time data updates.
+    round-trip per minute while still getting near-real-time data updates.
+
+    Phase 4 — Cache Warming: checks ``cache/slate_cache.json`` first.
+    ``slate_worker.py`` writes that file after each successful run so the
+    first Streamlit user gets a sub-millisecond file read instead of a DB
+    query, eliminating the cold-start latency spike.
 
     Returns:
         (picks, props) — both may be empty lists if the worker hasn't run
         yet for today.
     """
-    from tracking.database import get_slate_picks_for_today
+    import json as _json
+    from pathlib import Path as _Path
+
+    picks: list = []
+
+    # ── Phase 4 fast-path: slate_cache.json written by slate_worker ────────
+    _cache_file = _Path(__file__).resolve().parent / "cache" / "slate_cache.json"
+    if _cache_file.exists():
+        try:
+            _blob = _json.loads(_cache_file.read_text(encoding="utf-8"))
+            from tracking.database import _nba_today_iso as _today
+            if _blob.get("date") == _today():
+                picks = _blob.get("picks") or []
+        except Exception:
+            picks = []
+
+    # ── DB fallback ─────────────────────────────────────────────────────────
+    if not picks:
+        from tracking.database import get_slate_picks_for_today
+        picks = get_slate_picks_for_today()
+
     from data.data_manager import load_platform_props_from_csv as _lpc
-    picks = get_slate_picks_for_today()
     try:
         props = _lpc() or []
     except Exception:
@@ -232,6 +256,33 @@ if not st.session_state.get("_picks_seeded"):
             st.session_state["analysis_results"] = _cached_picks
     except Exception:
         pass
+
+# ─── Phase 3 — Real-Time Polling: silent 60-second data-version fragment ───
+# Streamlit re-runs this fragment every 60 s without touching the rest of the
+# page.  When slate_worker.py writes new picks and bumps data_version, the
+# fragment detects the change and triggers a full app rerun so the user sees
+# fresh picks without ever refreshing the browser.
+@st.fragment(run_every="60s")
+def _data_version_poller() -> None:  # noqa: ANN201
+    """Poll the DB data_version every 60 s and rerun the app when it changes."""
+    try:
+        from tracking.database import get_data_version as _gv
+        _v = _gv()
+        if _v > st.session_state.get("_data_version_seen", 0):
+            st.session_state["_data_version_seen"] = _v
+            # Clear picks so the seeding gate re-runs with fresh data.
+            for _k in ("_picks_seeded", "analysis_results", "current_props",
+                       "platform_props", "todays_games", "_auto_init_date"):
+                st.session_state.pop(_k, None)
+            try:
+                _load_cached_slate.clear()
+            except Exception:
+                pass
+            st.rerun()  # full app rerun — user sees fresh picks instantly
+    except Exception:
+        pass  # never block the UI
+
+_data_version_poller()
 
 # ─── No picks yet — slate_worker hasn't run today ─────────────────────────
 # Show a non-blocking info banner with a manual refresh button so users can

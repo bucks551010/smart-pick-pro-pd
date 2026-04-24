@@ -44,6 +44,7 @@ import json
 import logging
 import os
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -67,14 +68,23 @@ _logger = logging.getLogger("slate_worker")
 
 # ── ET-anchored date helper ───────────────────────────────────────────────
 def _et_today() -> str:
-    """Return today's date in Eastern Time as YYYY-MM-DD."""
+    """Return the current NBA 'sports day' in Eastern Time as YYYY-MM-DD.
+
+    The sports day boundary is 4:00 AM ET (not midnight).  Between
+    12:00 AM and 3:59 AM ET the date is still the *previous* calendar
+    day, so West-Coast games finishing at 1–2 AM ET are attributed to
+    the correct slate date.
+    """
     try:
         from zoneinfo import ZoneInfo
-        return datetime.datetime.now(ZoneInfo("America/New_York")).date().isoformat()
+        now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
     except Exception:
         # Fallback: UTC-4 (EDT)
-        et = datetime.timezone(datetime.timedelta(hours=-4))
-        return datetime.datetime.now(et).date().isoformat()
+        now_et = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-4)))
+    # Sports day rolls over at 4 AM ET, not midnight
+    if now_et.hour < 4:
+        now_et = now_et - datetime.timedelta(days=1)
+    return now_et.date().isoformat()
 
 
 # ── Simulation depth ──────────────────────────────────────────────────────
@@ -209,7 +219,27 @@ def run_slate(dry_run: bool = False) -> int:
         except Exception as exc:
             error_msg = error_msg or str(exc)
             _logger.error("[6] insert_analysis_picks failed: %s", exc)
-    elif dry_run:
+        # Phase 4 — Cache Warming: write all picks to a JSON file so the first
+        # Streamlit user after this run gets a file read instead of a DB query.
+        if inserted > 0:
+            try:
+                import json as _json
+                _cache_dir = Path(__file__).resolve().parent / "cache"
+                _cache_dir.mkdir(parents=True, exist_ok=True)
+                (_cache_dir / "slate_cache.json").write_text(
+                    _json.dumps(
+                        {
+                            "date": today_str,
+                            "written_at": datetime.datetime.utcnow().isoformat() + "Z",
+                            "picks": results,
+                        },
+                        default=str,
+                    ),
+                    encoding="utf-8",
+                )
+                _logger.info("[6b] slate_cache.json warmed (%d picks).", inserted)
+            except Exception as exc:
+                _logger.debug("[6b] Cache file warm failed (non-fatal): %s", exc)    elif dry_run:
         inserted = len(results)
         _logger.info("[6] DRY RUN — would persist %d picks (no write).", inserted)
 
@@ -236,6 +266,53 @@ def run_slate(dry_run: bool = False) -> int:
     return inserted
 
 
+def _daemon_loop(dry_run: bool, interval_minutes: int) -> None:
+    """Run the slate pipeline on a fixed schedule until interrupted.
+
+    Designed for Railway deployments where GitHub Actions cron is not
+    available or needs a warm-standby companion process.  Gracefully
+    handles SIGTERM so Railway can shut it down cleanly.
+
+    Args:
+        dry_run:           Passed through to every ``run_slate()`` call.
+        interval_minutes:  Seconds between pipeline runs (default 30 min).
+    """
+    import signal
+
+    _shutdown = threading.Event()
+
+    def _handle_signal(signum, frame):  # noqa: ANN001
+        _logger.info("Received signal %s — daemon shutting down cleanly.", signum)
+        _shutdown.set()
+
+    signal.signal(signal.SIGTERM, _handle_signal)
+    signal.signal(signal.SIGINT, _handle_signal)
+
+    interval_sec = interval_minutes * 60
+    _logger.info(
+        "=== slate_worker DAEMON  interval=%dm  dry_run=%s ===",
+        interval_minutes, dry_run,
+    )
+
+    while not _shutdown.is_set():
+        run_start = time.monotonic()
+        try:
+            run_slate(dry_run=dry_run)
+        except Exception as exc:
+            _logger.error("Daemon run-slate failed: %s", exc, exc_info=True)
+
+        elapsed = time.monotonic() - run_start
+        wait_sec = max(0.0, interval_sec - elapsed)
+        _logger.info("Next run in %.0f s  (ctrl-C or SIGTERM to stop).", wait_sec)
+
+        # Sleep in short increments so SIGTERM is noticed promptly.
+        deadline = time.monotonic() + wait_sec
+        while not _shutdown.is_set() and time.monotonic() < deadline:
+            time.sleep(min(5.0, deadline - time.monotonic()))
+
+    _logger.info("=== slate_worker DAEMON exited cleanly. ===")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Smart Pick Pro — slate background worker")
     parser.add_argument(
@@ -243,10 +320,28 @@ def main() -> None:
         action="store_true",
         help="Run analysis but skip all database and file writes.",
     )
+    parser.add_argument(
+        "--daemon",
+        action="store_true",
+        help=(
+            "Run continuously, repeating the pipeline on a fixed schedule. "
+            "Useful as a Railway background-service alternative to GitHub Actions cron."
+        ),
+    )
+    parser.add_argument(
+        "--interval",
+        type=int,
+        default=int(os.environ.get("SLATE_WORKER_INTERVAL_MIN", "30")),
+        metavar="MIN",
+        help="Minutes between pipeline runs in daemon mode (default 30, or $SLATE_WORKER_INTERVAL_MIN).",
+    )
     args = parser.parse_args()
 
-    picks = run_slate(dry_run=args.dry_run)
-    sys.exit(0 if picks >= 0 else 1)
+    if args.daemon:
+        _daemon_loop(dry_run=args.dry_run, interval_minutes=args.interval)
+    else:
+        picks = run_slate(dry_run=args.dry_run)
+        sys.exit(0 if picks >= 0 else 1)
 
 
 if __name__ == "__main__":

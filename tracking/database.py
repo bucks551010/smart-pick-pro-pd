@@ -152,8 +152,18 @@ def _get_eastern_tz():
 
 
 def _nba_today_iso() -> str:
-    """Return today's date anchored to NBA's Eastern Time day boundary."""
-    return datetime.datetime.now(_get_eastern_tz()).date().isoformat()
+    """Return the current NBA 'sports day' anchored to Eastern Time.
+
+    The sports day boundary is 4:00 AM ET (not midnight).  Between
+    12:00 AM and 3:59 AM ET the running slate is still attributed to
+    the *previous* calendar day, matching how sportsbooks treat West-
+    Coast games that finish at 1–2 AM ET.
+    """
+    now_et = datetime.datetime.now(_get_eastern_tz())
+    # Before 4 AM ET → still the previous sports day
+    if now_et.hour < 4:
+        now_et = now_et - datetime.timedelta(days=1)
+    return now_et.date().isoformat()
 
 # Automatic backup configuration.
 BACKUP_DIRECTORY = DB_DIRECTORY / "backups"

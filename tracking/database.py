@@ -2903,6 +2903,21 @@ def load_latest_analysis_session():
             if not row:
                 return None
             row_dict = dict(row)
+            # Discard sessions saved on a prior day so yesterday's players
+            # never populate today's QAM or analysis pages.
+            _ts = row_dict.get("analysis_timestamp") or row_dict.get("created_at") or ""
+            if _ts:
+                try:
+                    _session_date = datetime.datetime.fromisoformat(_ts.rstrip("Z")).astimezone(_get_eastern_tz()).date().isoformat()
+                    if _session_date != _nba_today_iso():
+                        _logger.info(
+                            "load_latest_analysis_session: discarding stale session from %s (today=%s)",
+                            _session_date,
+                            _nba_today_iso(),
+                        )
+                        return None
+                except Exception:
+                    pass
             # Deserialize JSON blobs
             try:
                 row_dict["analysis_results"] = json.loads(row_dict.get("analysis_results_json") or "[]")
@@ -3428,6 +3443,8 @@ def save_page_state(session_dict):
         # that aren't present in this render are preserved.
         existing = load_page_state()
         merged = {**existing, **filtered}
+        # Stamp the date so load_page_state() can discard next-day stale state.
+        merged["_page_state_date"] = _nba_today_iso()
         _state_json = json.dumps(merged, default=str)
         _execute_write(
             """INSERT OR REPLACE INTO page_state (state_id, state_json, updated_at)
@@ -3459,6 +3476,16 @@ def load_page_state():
             if not row or not row[0]:
                 return {}
             raw = json.loads(row[0])
+            # Discard state saved on a prior day — prevents yesterday's players
+            # from appearing after the NBA Eastern Time day boundary rolls over.
+            saved_date = raw.get("_page_state_date", "")
+            if saved_date and saved_date != _nba_today_iso():
+                _logger.info(
+                    "load_page_state: discarding stale state from %s (today=%s)",
+                    saved_date,
+                    _nba_today_iso(),
+                )
+                return {}
             # Only return recognised keys to avoid injecting stale/unknown state
             return {
                 k: v for k, v in raw.items()

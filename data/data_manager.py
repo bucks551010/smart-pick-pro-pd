@@ -1730,7 +1730,23 @@ def load_platform_props_from_csv(file_path=None):
     if not Path(file_path).exists():
         return []  # File not yet created
 
-    return _load_csv_file(file_path)
+    rows = _load_csv_file(file_path)
+    # Discard rows from a prior day so yesterday's props never surface.
+    try:
+        import datetime as _dt
+        try:
+            from zoneinfo import ZoneInfo as _ZI
+            _et = _ZI("America/New_York")
+        except Exception:
+            _et = _dt.timezone(_dt.timedelta(hours=-4))
+        _today = _dt.datetime.now(_et).date().isoformat()
+        _dated = [r for r in rows if r.get("game_date", "") == _today]
+        # Only apply the date filter when at least some rows carry a game_date.
+        if any(r.get("game_date") for r in rows):
+            return _dated
+    except Exception:
+        pass
+    return rows
 
 # ============================================================
 # END SECTION: Platform Props — Save / Load helpers

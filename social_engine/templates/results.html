@@ -1,74 +1,80 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<title>{{ title }}</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Bebas+Neue&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <style>{{ base_css }}</style>
 </head>
 <body>
 <div class="poster">
+
   <div class="watermark" aria-hidden="true">
-    {% for _ in range(40) %}<span>{{ watermark_text }}</span>{% endfor %}
+    {% for _ in range(36) %}<span>{{ watermark_text|default('SMART PICK PRO') }}</span>{% endfor %}
   </div>
 
   <header class="hdr">
     <div class="brand">
       <div class="brand-mark">SP</div>
-      <div>
-        <div class="eyebrow">{{ eyebrow|default("LAST NIGHT'S RESULTS") }}</div>
-        <div>SMART PICK PRO</div>
+      <div class="brand-text">
+        <div class="brand-eyebrow">{{ eyebrow|default("LAST NIGHT'S RESULTS") }}</div>
+        <div class="brand-name">SMART PICK PRO</div>
       </div>
     </div>
-    <div class="date-pill">📅 {{ date_str }}</div>
+    <div class="date-pill">{{ date_str|default('') }}</div>
   </header>
 
-  <h1 class="title">{{ title }}</h1>
-  <div class="subtitle">{{ subtitle }}</div>
+  <div class="section-title">{{ title|default("Results") }}</div>
+  <div class="section-sub">{{ subtitle|default("Receipts always shown.") }}</div>
 
-  <div class="score">
-    <div class="score-cell">
-      <div class="score-num win">{{ wins }}</div>
+  <div class="score-row">
+    <div class="score-cell score-cell-wins">
+      <div class="score-num sn-win">{{ wins|default(0) }}</div>
       <div class="score-label">WINS</div>
     </div>
-    <div class="score-cell">
-      <div class="score-num loss">{{ losses }}</div>
+    <div class="score-cell score-cell-loss">
+      <div class="score-num sn-loss">{{ losses|default(0) }}</div>
       <div class="score-label">LOSSES</div>
     </div>
-    <div class="score-cell">
-      <div class="score-num" style="color: var(--accent)">{{ "%.0f"|format(win_rate) }}%</div>
+    <div class="score-cell score-cell-rate">
+      <div class="score-num sn-rate">{{ "%.0f"|format(win_rate|default(0)) }}%</div>
       <div class="score-label">WIN RATE</div>
     </div>
-    {% if roi_pct is not none %}
-    <div class="score-cell">
-      <div class="score-num" style="color: {% if roi_pct >= 0 %}var(--win){% else %}var(--loss){% endif %}">
-        {{ "%+.1f"|format(roi_pct) }}%
-      </div>
+    {% if roi_pct is defined and roi_pct is not none %}
+    <div class="score-cell score-cell-roi">
+      <div class="score-num {% if roi_pct >= 0 %}sn-roi{% else %}sn-loss{% endif %}">{{ "%+.1f"|format(roi_pct) }}%</div>
       <div class="score-label">ROI</div>
     </div>
     {% endif %}
   </div>
 
-  <div class="grid cols-{{ cols|default(2) }}">
+  <div class="picks-grid cols-{{ cols|default(2) }}">
     {% for p in picks %}
-    <div class="pick">
-      <div class="pick-row">
-        <div>
+    <div class="pick-card" style="--stripe: linear-gradient(180deg,#00D559,#00a846)">
+      <div class="pick-top">
+        <div style="flex:1">
           <div class="pick-player">{{ p.player_name }}</div>
-          <div class="pick-team">{{ p.direction }} {{ "%.1f"|format(p.prop_line) }} {{ p.stat_type }}</div>
+          <div class="pick-team">{{ p.direction }} {{ "%.1f"|format(p.prop_line) }} {{ p.stat_type }}{% if p.platform %} &bull; {{ p.platform }}{% endif %}</div>
         </div>
-        <div class="result-badge result-{{ p.result|lower }}">{{ p.result }}</div>
+        <div class="result-badge rb-{{ p.result|lower|default('win') }}">{{ p.result|default('WIN') }}</div>
       </div>
     </div>
     {% endfor %}
   </div>
 
   <footer class="footer">
-    <div class="compliance">{{ compliance_footer }}</div>
-    <div class="qr">
-      <img src="{{ qr_data_uri }}" alt="QR" />
+    <div class="compliance">{{ compliance_footer|default("For entertainment purposes only. Not financial advice. Must be 21+. Please gamble responsibly.") }}</div>
+    {% if qr_data_uri %}
+    <div class="qr-block">
+      <img src="{{ qr_data_uri }}" alt="QR Code">
       <div class="qr-cap">TONIGHT'S SLATE</div>
     </div>
+    {% else %}
+    <div class="brand-url">smartpickpro.com<span>FREE PICKS DAILY</span></div>
+    {% endif %}
   </footer>
+
 </div>
 </body>
 </html>

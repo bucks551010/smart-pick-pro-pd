@@ -1,62 +1,76 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<title>{{ title }}</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Bebas+Neue&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <style>{{ base_css }}</style>
 </head>
 <body>
 <div class="poster">
 
-  <!-- Anti-theft watermark -->
   <div class="watermark" aria-hidden="true">
-    {% for _ in range(40) %}<span>{{ watermark_text }}</span>{% endfor %}
+    {% for _ in range(36) %}<span>{{ watermark_text|default('SMART PICK PRO') }}</span>{% endfor %}
   </div>
 
   <header class="hdr">
     <div class="brand">
       <div class="brand-mark">SP</div>
-      <div>
-        <div class="eyebrow">{{ eyebrow }}</div>
-        <div>SMART PICK PRO</div>
+      <div class="brand-text">
+        <div class="brand-eyebrow">{{ eyebrow|default("TONIGHT'S PICKS") }}</div>
+        <div class="brand-name">SMART PICK PRO</div>
       </div>
     </div>
-    <div class="date-pill">📅 {{ date_str }}</div>
+    <div class="date-pill">{{ date_str|default('') }}</div>
   </header>
 
-  <h1 class="title">{{ title }}</h1>
-  <div class="subtitle">{{ subtitle }}</div>
+  <div class="section-title">{{ title|default("Platform Picks") }}</div>
+  <div class="section-sub">{{ subtitle|default("Quantitative edge. Zero guesswork.") }}</div>
 
-  <div class="grid cols-{{ cols|default(1) }}">
+  {%- set plat_map = {
+    'PrizePicks':       ('rgba(0,213,89,0.12)',   'rgba(0,213,89,0.40)',   '#00D559', 'linear-gradient(180deg,#00D559,#00a846)'),
+    'Underdog':         ('rgba(249,198,43,0.10)',  'rgba(249,198,43,0.38)', '#F9C62B', 'linear-gradient(180deg,#F9C62B,#d4a217)'),
+    'Underdog Fantasy': ('rgba(249,198,43,0.10)',  'rgba(249,198,43,0.38)', '#F9C62B', 'linear-gradient(180deg,#F9C62B,#d4a217)'),
+    'DK Pick6':         ('rgba(45,158,255,0.10)',  'rgba(45,158,255,0.38)', '#2D9EFF', 'linear-gradient(180deg,#2D9EFF,#0a7bdb)'),
+  } -%}
+
+  <div class="picks-grid cols-{{ cols|default(2) }}">
     {% for p in picks %}
-    <div class="pick">
-      <div class="pick-row">
+    {%- set pc = plat_map.get(p.platform, ('rgba(160,170,190,0.08)', 'rgba(160,170,190,0.30)', '#A0AABE', 'linear-gradient(180deg,#A0AABE,#6B7A9A)')) -%}
+    <div class="pick-card" style="--stripe: {{ pc[3] }}">
+      <div class="pick-top">
         <div>
           <div class="pick-player">{{ p.player_name }}</div>
-          <div class="pick-team">{{ p.team }} {% if p.opponent %}vs {{ p.opponent }}{% endif %}</div>
+          <div class="pick-team">{{ p.team|default('') }}{% if p.opponent %} vs {{ p.opponent }}{% endif %}</div>
         </div>
-        {% if p.tier %}<div class="tier-badge tier-{{ p.tier|lower }}">{{ p.tier }}</div>{% endif %}
+        {% if p.platform %}
+        <div class="plat-badge" style="background:{{ pc[0] }};border:1px solid {{ pc[1] }};color:{{ pc[2] }}">{{ p.platform }}</div>
+        {% endif %}
       </div>
-      <div class="pick-row">
+      <div class="pick-bottom">
         <div class="pick-line dir-{{ p.direction|lower }}">
           {{ p.direction }} {{ "%.1f"|format(p.prop_line) }} {{ p.stat_type }}
         </div>
-        {% if p.platform %}<div class="pick-team">{{ p.platform }}</div>{% endif %}
-      </div>
-      <div class="confidence">
-        <div class="conf-bar"><div class="conf-fill" style="width: {{ p.confidence_score }}%"></div></div>
-        <div>{{ "%.0f"|format(p.confidence_score) }}%{% if p.edge_pct %} • {{ "%.1f"|format(p.edge_pct) }}% edge{% endif %}</div>
+        <div class="conf-track">
+          <div class="conf-bar"><div class="conf-fill" style="width:{{ p.confidence_score|default(75) }}%"></div></div>
+          <div class="conf-pct">{{ "%.0f"|format(p.confidence_score|default(75)) }}%</div>
+        </div>
       </div>
     </div>
     {% endfor %}
   </div>
 
   <footer class="footer">
-    <div class="compliance">{{ compliance_footer }}</div>
-    <div class="qr">
-      <img src="{{ qr_data_uri }}" alt="QR" />
+    <div class="compliance">{{ compliance_footer|default("For entertainment purposes only. Not financial advice. Must be 21+. Please gamble responsibly.") }}</div>
+    {% if qr_data_uri %}
+    <div class="qr-block">
+      <img src="{{ qr_data_uri }}" alt="QR Code">
       <div class="qr-cap">SCAN FOR FREE PICKS</div>
     </div>
+    {% else %}
+    <div class="brand-url">smartpickpro.com<span>FREE PICKS DAILY</span></div>
+    {% endif %}
   </footer>
 
 </div>

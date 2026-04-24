@@ -1,40 +1,59 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<title>{{ title }}</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Bebas+Neue&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <style>{{ base_css }}</style>
 </head>
 <body>
 <div class="poster">
+
   <div class="watermark" aria-hidden="true">
-    {% for _ in range(40) %}<span>{{ watermark_text }}</span>{% endfor %}
+    {% for _ in range(36) %}<span>{{ watermark_text|default('SMART PICK PRO') }}</span>{% endfor %}
   </div>
+
+  <!-- Green glow orb behind headline -->
+  <div class="cta-glow-orb" aria-hidden="true"></div>
 
   <header class="hdr">
     <div class="brand">
       <div class="brand-mark">SP</div>
-      <div>
-        <div class="eyebrow">JOIN THE EDGE</div>
-        <div>SMART PICK PRO</div>
+      <div class="brand-text">
+        <div class="brand-eyebrow">JOIN THE EDGE</div>
+        <div class="brand-name">SMART PICK PRO</div>
       </div>
     </div>
     <div class="date-pill">{{ tagline|default("Quantitative NBA Analytics") }}</div>
   </header>
 
-  <div class="cta-hero">
-    <div class="cta-headline">{{ headline }}</div>
-    <div class="cta-sub">{{ subheadline }}</div>
-    <div class="cta-button">{{ button_text|default("→ START FREE TRIAL") }}</div>
+  <div class="cta-inner">
+    <div class="cta-eyebrow">POWERED BY AI &bull; BUILT FOR WINNERS</div>
+    <div class="cta-headline">{{ headline|default("THE EDGE
+ISN'T LUCK.
+IT'S MATH.") }}</div>
+    <div class="cta-sub">{{ subheadline|default("1,000 Monte Carlo simulations per pick. Zero black boxes. Three platforms tracked daily.") }}</div>
+    <div class="feature-pills">
+      <div class="fp fp-green">1,000 SIMS / PICK</div>
+      <div class="fp fp-gold">PRIZEPICKS &bull; UNDERDOG &bull; DK</div>
+      <div class="fp fp-blue">FREE TRIAL</div>
+    </div>
+    <div class="cta-btn">{{ button_text|default("→ START FREE TRIAL") }}</div>
   </div>
 
   <footer class="footer">
-    <div class="compliance">{{ compliance_footer }}</div>
-    <div class="qr">
-      <img src="{{ qr_data_uri }}" alt="QR" />
+    <div class="compliance">{{ compliance_footer|default("For entertainment purposes only. Not financial advice. Must be 21+. Please gamble responsibly.") }}</div>
+    {% if qr_data_uri %}
+    <div class="qr-block">
+      <img src="{{ qr_data_uri }}" alt="QR Code">
       <div class="qr-cap">SCAN TO JOIN</div>
     </div>
+    {% else %}
+    <div class="brand-url">smartpickpro.com<span>SCAN OR VISIT</span></div>
+    {% endif %}
   </footer>
+
 </div>
 </body>
 </html>

@@ -8,7 +8,7 @@
 <style>{{ base_css }}</style>
 </head>
 <body>
-<div class="poster">
+<div class="poster {{ skin_class|default('skin-neural') }}">
 
   <div class="watermark" aria-hidden="true">
     {% for _ in range(36) %}<span>{{ watermark_text|default('SMART PICK PRO') }}</span>{% endfor %}

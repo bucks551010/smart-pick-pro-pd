@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Bebas+Neue&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800;900&family=Bebas+Neue&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
 <style>{{ base_css }}</style>
 </head>
 <body>
@@ -26,36 +26,39 @@
   </header>
 
   <div class="section-title">{{ title|default("Results") }}</div>
-  <div class="section-sub">{{ subtitle|default("Receipts always shown.") }}</div>
+  <div class="section-sub">{{ subtitle|default("RECEIPTS ALWAYS ON FILE — ZERO HIDDEN LOSSES") }}</div>
 
   <div class="score-row">
-    <div class="score-cell score-cell-wins">
+    <div class="score-cell sc-wins">
       <div class="score-num sn-win">{{ wins|default(0) }}</div>
       <div class="score-label">WINS</div>
     </div>
-    <div class="score-cell score-cell-loss">
+    <div class="score-cell sc-loss">
       <div class="score-num sn-loss">{{ losses|default(0) }}</div>
       <div class="score-label">LOSSES</div>
     </div>
-    <div class="score-cell score-cell-rate">
+    <div class="score-cell sc-rate">
       <div class="score-num sn-rate">{{ "%.0f"|format(win_rate|default(0)) }}%</div>
       <div class="score-label">WIN RATE</div>
     </div>
     {% if roi_pct is defined and roi_pct is not none %}
-    <div class="score-cell score-cell-roi">
+    <div class="score-cell sc-roi">
       <div class="score-num {% if roi_pct >= 0 %}sn-roi{% else %}sn-loss{% endif %}">{{ "%+.1f"|format(roi_pct) }}%</div>
       <div class="score-label">ROI</div>
     </div>
     {% endif %}
   </div>
 
+  {%- set stat_abbr = {'Points':'PTS','Assists':'AST','Rebounds':'REB','Steals':'STL','Blocks':'BLK','Turnovers':'TO','3-Pointers Made':'3PM','Fantasy Score':'FPTS'} -%}
+
   <div class="picks-grid cols-{{ cols|default(2) }}">
     {% for p in picks %}
-    <div class="pick-card" style="--stripe: linear-gradient(180deg,#00D559,#00a846)">
-      <div class="pick-top">
-        <div style="flex:1">
-          <div class="pick-player">{{ p.player_name }}</div>
-          <div class="pick-team">{{ p.direction }} {{ "%.1f"|format(p.prop_line) }} {{ p.stat_type }}{% if p.platform %} &bull; {{ p.platform }}{% endif %}</div>
+    <div class="pick-card {% if p.result|lower == 'win' %}card-win{% endif %}" style="--sc: var(--green)">
+      <div class="pc-head" style="align-items:center">
+        <div class="pc-num">#{{ "%02d" % loop.index }}</div>
+        <div class="pc-info" style="flex:1">
+          <div class="pc-player">{{ p.player_name }}</div>
+          <div class="pc-context">{{ p.direction }} {{ "%.1f"|format(p.prop_line) }} {{ stat_abbr.get(p.stat_type, p.stat_type) }}{% if p.platform %} &bull; {{ p.platform }}{% endif %}</div>
         </div>
         <div class="result-badge rb-{{ p.result|lower|default('win') }}">{{ p.result|default('WIN') }}</div>
       </div>
@@ -63,13 +66,24 @@
     {% endfor %}
   </div>
 
+  <div class="intel-bar">
+    <div class="ib-line"></div>
+    <div class="intel-items">
+      {% set total = wins|default(0) + losses|default(0) %}
+      <div class="intel-item"><div class="intel-val">{{ total }}</div><div class="intel-label">TOTAL PICKS</div></div>
+      <div class="intel-item"><div class="intel-val">{{ "%.1f"|format(win_rate|default(0)) }}%</div><div class="intel-label">WIN RATE</div></div>
+      {% if roi_pct is defined and roi_pct is not none %}
+      <div class="intel-item"><div class="intel-val">{{ "%+.1f"|format(roi_pct) }}%</div><div class="intel-label">ROI</div></div>
+      {% endif %}
+      <div class="intel-item"><div class="intel-val">QME v5.6</div><div class="intel-label">ENGINE</div></div>
+    </div>
+    <div class="ib-line"></div>
+  </div>
+
   <footer class="footer">
     <div class="compliance">{{ compliance_footer|default("For entertainment purposes only. Not financial advice. Must be 21+. Please gamble responsibly.") }}</div>
     {% if qr_data_uri %}
-    <div class="qr-block">
-      <img src="{{ qr_data_uri }}" alt="QR Code">
-      <div class="qr-cap">TONIGHT'S SLATE</div>
-    </div>
+    <div class="qr-block"><img src="{{ qr_data_uri }}" alt="QR"><div class="qr-cap">TONIGHT'S SLATE</div></div>
     {% else %}
     <div class="brand-url">smartpickpro.com<span>FREE PICKS DAILY</span></div>
     {% endif %}

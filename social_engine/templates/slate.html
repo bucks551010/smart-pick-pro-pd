@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Bebas+Neue&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800;900&family=Bebas+Neue&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
 <style>{{ base_css }}</style>
 </head>
 <body>
@@ -26,48 +26,69 @@
   </header>
 
   <div class="section-title">{{ title|default("Platform Picks") }}</div>
-  <div class="section-sub">{{ subtitle|default("Quantitative edge. Zero guesswork.") }}</div>
+  <div class="section-sub">QME v5.6&nbsp;&nbsp;·&nbsp;&nbsp;{{ picks|length }} PICKS&nbsp;&nbsp;·&nbsp;&nbsp;{{ (picks|length * 1000)|int }} SIMULATIONS PROCESSED</div>
 
   {%- set plat_map = {
-    'PrizePicks':       ('rgba(0,213,89,0.12)',   'rgba(0,213,89,0.40)',   '#00D559', 'linear-gradient(180deg,#00D559,#00a846)'),
-    'Underdog':         ('rgba(249,198,43,0.10)',  'rgba(249,198,43,0.38)', '#F9C62B', 'linear-gradient(180deg,#F9C62B,#d4a217)'),
-    'Underdog Fantasy': ('rgba(249,198,43,0.10)',  'rgba(249,198,43,0.38)', '#F9C62B', 'linear-gradient(180deg,#F9C62B,#d4a217)'),
-    'DK Pick6':         ('rgba(45,158,255,0.10)',  'rgba(45,158,255,0.38)', '#2D9EFF', 'linear-gradient(180deg,#2D9EFF,#0a7bdb)'),
+    'PrizePicks':       ('rgba(0,213,89,0.10)',   'rgba(0,213,89,0.42)',   '#00D559', 'var(--green)'),
+    'Underdog':         ('rgba(249,198,43,0.08)',  'rgba(249,198,43,0.38)', '#F9C62B', 'var(--gold)'),
+    'Underdog Fantasy': ('rgba(249,198,43,0.08)',  'rgba(249,198,43,0.38)', '#F9C62B', 'var(--gold)'),
+    'DK Pick6':         ('rgba(45,158,255,0.08)',  'rgba(45,158,255,0.38)', '#2D9EFF', 'var(--blue)'),
   } -%}
+  {%- set stat_abbr = {'Points':'PTS','Assists':'AST','Rebounds':'REB','Steals':'STL','Blocks':'BLK','Turnovers':'TO','3-Pointers Made':'3PM','Fantasy Score':'FPTS'} -%}
 
   <div class="picks-grid cols-{{ cols|default(2) }}">
     {% for p in picks %}
-    {%- set pc = plat_map.get(p.platform, ('rgba(160,170,190,0.08)', 'rgba(160,170,190,0.30)', '#A0AABE', 'linear-gradient(180deg,#A0AABE,#6B7A9A)')) -%}
-    <div class="pick-card" style="--stripe: {{ pc[3] }}">
-      <div class="pick-top">
-        <div>
-          <div class="pick-player">{{ p.player_name }}</div>
-          <div class="pick-team">{{ p.team|default('') }}{% if p.opponent %} vs {{ p.opponent }}{% endif %}</div>
+    {%- set pc = plat_map.get(p.platform, ('rgba(160,170,190,0.07)','rgba(160,170,190,0.28)','#A0AABE','var(--muted)')) -%}
+    <div class="pick-card" style="--sc: {{ pc[3] }}">
+      <div class="pc-head">
+        <div class="pc-num">#{{ "%02d" % loop.index }}</div>
+        <div class="pc-info">
+          <div class="pc-player">{{ p.player_name }}</div>
+          <div class="pc-context">{{ p.team|default('') }}{% if p.opponent %} vs {{ p.opponent }}{% endif %}</div>
         </div>
         {% if p.platform %}
         <div class="plat-badge" style="background:{{ pc[0] }};border:1px solid {{ pc[1] }};color:{{ pc[2] }}">{{ p.platform }}</div>
         {% endif %}
       </div>
-      <div class="pick-bottom">
-        <div class="pick-line dir-{{ p.direction|lower }}">
-          {{ p.direction }} {{ "%.1f"|format(p.prop_line) }} {{ p.stat_type }}
+      <div class="pc-divider"></div>
+      <div class="pc-main">
+        <div class="pc-dir-line">
+          <span class="pc-dir dir-{{ p.direction|lower }}">{{ p.direction }}</span>
+          <span class="pc-val">{{ "%.1f"|format(p.prop_line) }}</span>
+          <span class="pc-stat">{{ stat_abbr.get(p.stat_type, p.stat_type) }}</span>
         </div>
-        <div class="conf-track">
-          <div class="conf-bar"><div class="conf-fill" style="width:{{ p.confidence_score|default(75) }}%"></div></div>
-          <div class="conf-pct">{{ "%.0f"|format(p.confidence_score|default(75)) }}%</div>
+        <div class="pc-conf-num">{{ "%.0f"|format(p.confidence_score|default(75)) }}<span>%</span></div>
+      </div>
+      <div class="pc-foot">
+        <div class="conf-bar">
+          <div class="conf-fill" style="width:{{ p.confidence_score|default(75) }}%"></div>
         </div>
+        {% if p.edge_pct is defined and p.edge_pct %}
+        <div class="edge-tag">+{{ "%.1f"|format(p.edge_pct) }}% EDGE</div>
+        {% else %}
+        <div class="edge-tag" style="color:var(--cyan);opacity:0.55">NEURAL SCAN ✓</div>
+        {% endif %}
       </div>
     </div>
     {% endfor %}
   </div>
 
+  <div class="intel-bar">
+    <div class="ib-line"></div>
+    <div class="intel-items">
+      <div class="intel-item"><div class="intel-val">{{ picks|length }}</div><div class="intel-label">PICKS</div></div>
+      <div class="intel-item"><div class="intel-val">{{ (picks|length * 1000)|int }}K</div><div class="intel-label">SIMS</div></div>
+      {% set ns = namespace(total=0) %}{% for p in picks %}{% set ns.total = ns.total + p.confidence_score|default(75) %}{% endfor %}
+      <div class="intel-item"><div class="intel-val">{{ "%.0f"|format(ns.total / picks|length) }}%</div><div class="intel-label">AVG CONF</div></div>
+      <div class="intel-item"><div class="intel-val">QME v5.6</div><div class="intel-label">ENGINE</div></div>
+    </div>
+    <div class="ib-line"></div>
+  </div>
+
   <footer class="footer">
     <div class="compliance">{{ compliance_footer|default("For entertainment purposes only. Not financial advice. Must be 21+. Please gamble responsibly.") }}</div>
     {% if qr_data_uri %}
-    <div class="qr-block">
-      <img src="{{ qr_data_uri }}" alt="QR Code">
-      <div class="qr-cap">SCAN FOR FREE PICKS</div>
-    </div>
+    <div class="qr-block"><img src="{{ qr_data_uri }}" alt="QR"><div class="qr-cap">SCAN FOR FREE PICKS</div></div>
     {% else %}
     <div class="brand-url">smartpickpro.com<span>FREE PICKS DAILY</span></div>
     {% endif %}

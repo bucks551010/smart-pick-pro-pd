@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Bebas+Neue&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800;900&family=Bebas+Neue&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
 <style>{{ base_css }}</style>
 </head>
 <body>
@@ -14,7 +14,46 @@
     {% for _ in range(36) %}<span>{{ watermark_text|default('SMART PICK PRO') }}</span>{% endfor %}
   </div>
 
-  <!-- Green glow orb behind headline -->
+  <!-- Neural network SVG -->
+  <svg class="neural-svg" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <g opacity="0.07" stroke="#00D559" stroke-width="1.5" fill="none">
+      <line x1="95"  y1="195" x2="260" y2="345"/>
+      <line x1="260" y1="345" x2="455" y2="225"/>
+      <line x1="455" y1="225" x2="685" y2="315"/>
+      <line x1="685" y1="315" x2="955" y2="185"/>
+      <line x1="155" y1="545" x2="365" y2="475"/>
+      <line x1="365" y1="475" x2="545" y2="555"/>
+      <line x1="545" y1="555" x2="785" y2="485"/>
+      <line x1="785" y1="485" x2="985" y2="595"/>
+      <line x1="105" y1="815" x2="305" y2="745"/>
+      <line x1="305" y1="745" x2="505" y2="825"/>
+      <line x1="505" y1="825" x2="755" y2="755"/>
+      <line x1="755" y1="755" x2="990" y2="845"/>
+      <line x1="260" y1="345" x2="155" y2="545"/>
+      <line x1="455" y1="225" x2="365" y2="475"/>
+      <line x1="685" y1="315" x2="545" y2="555"/>
+      <line x1="955" y1="185" x2="785" y2="485"/>
+      <line x1="305" y1="745" x2="155" y2="545"/>
+      <line x1="505" y1="825" x2="545" y2="555"/>
+      <line x1="755" y1="755" x2="785" y2="485"/>
+    </g>
+    <g fill="#00D559" opacity="0.20">
+      <circle cx="95"  cy="195" r="4"/><circle cx="260" cy="345" r="3"/>
+      <circle cx="455" cy="225" r="5"/><circle cx="685" cy="315" r="3"/>
+      <circle cx="955" cy="185" r="4"/><circle cx="155" cy="545" r="3"/>
+      <circle cx="365" cy="475" r="5"/><circle cx="545" cy="555" r="3"/>
+      <circle cx="785" cy="485" r="4"/><circle cx="985" cy="595" r="3"/>
+      <circle cx="105" cy="815" r="4"/><circle cx="305" cy="745" r="3"/>
+      <circle cx="505" cy="825" r="5"/><circle cx="755" cy="755" r="3"/>
+      <circle cx="990" cy="845" r="4"/>
+    </g>
+    <g fill="#00F0FF" opacity="0.35">
+      <circle cx="455" cy="225" r="6"/>
+      <circle cx="365" cy="475" r="6"/>
+      <circle cx="505" cy="825" r="6"/>
+    </g>
+  </svg>
+
   <div class="cta-glow-orb" aria-hidden="true"></div>
 
   <header class="hdr">
@@ -33,11 +72,27 @@
     <div class="cta-headline">{{ headline|default("THE EDGE
 ISN'T LUCK.
 IT'S MATH.") }}</div>
-    <div class="cta-sub">{{ subheadline|default("1,000 Monte Carlo simulations per pick. Zero black boxes. Three platforms tracked daily.") }}</div>
-    <div class="feature-pills">
-      <div class="fp fp-green">1,000 SIMS / PICK</div>
-      <div class="fp fp-gold">PRIZEPICKS &bull; UNDERDOG &bull; DK</div>
-      <div class="fp fp-blue">FREE TRIAL</div>
+    <div class="cta-sub">{{ subheadline|default("1,000 Monte Carlo simulations per pick. Zero black boxes. Three platforms covered daily.") }}</div>
+    <div class="cta-stats">
+      <div class="cta-stat-item">
+        <div class="cta-stat-val">1,000</div>
+        <div class="cta-stat-label">SIMS / PICK</div>
+      </div>
+      <div class="cta-stat-divider"></div>
+      <div class="cta-stat-item">
+        <div class="cta-stat-val">87%</div>
+        <div class="cta-stat-label">AVG CONF</div>
+      </div>
+      <div class="cta-stat-divider"></div>
+      <div class="cta-stat-item">
+        <div class="cta-stat-val">3</div>
+        <div class="cta-stat-label">PLATFORMS</div>
+      </div>
+    </div>
+    <div class="cta-pills">
+      <div class="fp fp-green">PRIZEPICKS</div>
+      <div class="fp fp-gold">UNDERDOG</div>
+      <div class="fp fp-cyan">DK PICK6</div>
     </div>
     <div class="cta-btn">{{ button_text|default("→ START FREE TRIAL") }}</div>
   </div>
@@ -45,10 +100,7 @@ IT'S MATH.") }}</div>
   <footer class="footer">
     <div class="compliance">{{ compliance_footer|default("For entertainment purposes only. Not financial advice. Must be 21+. Please gamble responsibly.") }}</div>
     {% if qr_data_uri %}
-    <div class="qr-block">
-      <img src="{{ qr_data_uri }}" alt="QR Code">
-      <div class="qr-cap">SCAN TO JOIN</div>
-    </div>
+    <div class="qr-block"><img src="{{ qr_data_uri }}" alt="QR"><div class="qr-cap">SCAN TO JOIN</div></div>
     {% else %}
     <div class="brand-url">smartpickpro.com<span>SCAN OR VISIT</span></div>
     {% endif %}

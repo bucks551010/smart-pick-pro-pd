@@ -692,10 +692,93 @@ st.markdown("""
     height: 98px; /* 34px ticker + 64px nav */
 }
 
+/* Hamburger button — hidden on desktop */
+.lp-nav-hamburger {
+    display: none;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 7px 10px;
+    cursor: pointer;
+    color: rgba(255,255,255,0.7);
+    font-size: 1.1rem;
+    line-height: 1;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.lp-nav-hamburger:hover {
+    background: rgba(255,255,255,0.07);
+    color: #fff;
+    border-color: rgba(255,255,255,0.3);
+}
+
+/* Mobile dropdown menu */
+.lp-nav-mobile {
+    display: none;
+    position: fixed;
+    top: 98px; /* below ticker + nav */
+    left: 0; right: 0;
+    background: rgba(2,6,14,0.97);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid rgba(0,213,89,0.15);
+    padding: 16px 20px 20px;
+    z-index: 9997;
+    animation: lpMobileMenuIn 0.22s cubic-bezier(0.16,1,0.3,1) both;
+}
+.lp-nav-mobile.open { display: block; }
+@keyframes lpMobileMenuIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.lp-nav-mobile ul {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: 4px;
+}
+.lp-nav-mobile ul li a {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem; font-weight: 600;
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    padding: 11px 14px;
+    border-radius: 10px;
+    transition: all 0.18s;
+}
+.lp-nav-mobile ul li a:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.06);
+}
+.lp-nav-mobile-ctas {
+    display: flex; gap: 10px; margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+.lp-nav-mobile-ctas a {
+    flex: 1; text-align: center;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.82rem; font-weight: 700;
+    text-decoration: none;
+    padding: 11px 18px;
+    border-radius: 100px;
+    transition: all 0.2s;
+}
+.lp-nav-mobile-ctas .m-login {
+    color: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.15);
+}
+.lp-nav-mobile-ctas .m-signup {
+    color: #020C07;
+    background: linear-gradient(135deg, #00E865, #00D559);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 0 18px rgba(0,213,89,0.3);
+}
+
 /* Hide on mobile */
 @media (max-width: 760px) {
     .lp-nav-links { display: none; }
     .lp-nav { padding: 0 20px; }
+    .lp-nav-hamburger { display: flex; align-items: center; justify-content: center; }
 }
 @media (max-width: 480px) {
     .lp-nav-login { display: none; }
@@ -743,8 +826,24 @@ st.markdown(f"""
   <div class="lp-nav-ctas">
     <a class="lp-nav-login"  href="?auth=login">🔒 Log In</a>
     <a class="lp-nav-signup" href="?auth=signup">Sign Up Free</a>
+    <button class="lp-nav-hamburger" id="lp-hamburger" aria-label="Open menu" aria-expanded="false">☰</button>
   </div>
 </nav>
+
+<!-- Mobile dropdown menu -->
+<div class="lp-nav-mobile" id="lp-nav-mobile" role="navigation" aria-label="Mobile navigation">
+  <ul>
+    <li><a href="#lp-how" onclick="lpCloseMobile()">How It Works</a></li>
+    <li><a href="#lp-features" onclick="lpCloseMobile()">Features</a></li>
+    <li><a href="#lp-picks" onclick="lpCloseMobile()">Picks</a></li>
+    <li><a href="#lp-pricing" onclick="lpCloseMobile()">Pricing</a></li>
+    <li><a href="#lp-faq" onclick="lpCloseMobile()">FAQ</a></li>
+  </ul>
+  <div class="lp-nav-mobile-ctas">
+    <a class="m-login" href="?auth=login">🔒 Log In</a>
+    <a class="m-signup" href="?auth=signup">⚡ Sign Up Free</a>
+  </div>
+</div>
 
 <!-- Push page content below fixed ticker+nav -->
 <div class="lp-page-offset"></div>
@@ -808,6 +907,55 @@ st.markdown("""
   else tryAll();
   setTimeout(tryAll, 700);
 })();
+
+/* ── Hamburger toggle ──────────────────────────────── */
+function lpToggleMobile() {
+  var btn  = document.getElementById('lp-hamburger');
+  var menu = document.getElementById('lp-nav-mobile');
+  if (!btn || !menu) {
+    try {
+      btn  = window.parent.document.getElementById('lp-hamburger');
+      menu = window.parent.document.getElementById('lp-nav-mobile');
+    } catch(e) { return; }
+  }
+  if (!btn || !menu) return;
+  var open = menu.classList.toggle('open');
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  btn.textContent = open ? '✕' : '☰';
+}
+function lpCloseMobile() {
+  var btn  = document.getElementById('lp-hamburger');
+  var menu = document.getElementById('lp-nav-mobile');
+  try {
+    if (!btn) btn  = window.parent.document.getElementById('lp-hamburger');
+    if (!menu) menu = window.parent.document.getElementById('lp-nav-mobile');
+  } catch(e) {}
+  if (menu) menu.classList.remove('open');
+  if (btn)  { btn.setAttribute('aria-expanded','false'); btn.textContent = '☰'; }
+}
+(function attachHamburger(){
+  function bind(doc){
+    if (!doc) return;
+    try {
+      var b = doc.getElementById('lp-hamburger');
+      if (b && !b._lpBound) {
+        b._lpBound = true;
+        b.addEventListener('click', lpToggleMobile);
+        /* Close menu when clicking outside */
+        doc.addEventListener('click', function(e){
+          if (!e.target.closest('#lp-hamburger') && !e.target.closest('#lp-nav-mobile')) lpCloseMobile();
+        });
+      }
+    } catch(e){}
+  }
+  function tryBind(){
+    bind(document);
+    try { bind(window.parent.document); } catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', tryBind);
+  else tryBind();
+  setTimeout(tryBind, 700);
+})();
 </script>
 """, unsafe_allow_html=True)
 
@@ -838,6 +986,17 @@ st.markdown("""
     text-align: center;
     padding: 80px 24px 100px;
     overflow: hidden;
+}
+@media (max-width: 767px) {
+    .lp-hero {
+        padding: 48px 20px 56px;
+        min-height: 100svh; /* small viewport height avoids mobile browser chrome */
+    }
+    .lp-hero-h1 { font-size: clamp(2.6rem, 12vw, 4rem) !important; letter-spacing: -0.04em !important; }
+    .lp-hero-sub { font-size: 0.95rem !important; margin: 20px auto 32px !important; }
+    .lp-hero-logo-img { width: 80px !important; height: 80px !important; }
+    .lp-hero-ctas { gap: 10px; }
+    .lp-hero-corner { display: none; }
 }
 
 /* Animated grid mesh background */
@@ -2504,6 +2663,125 @@ st.markdown("""
       </div>
     </div><!-- /lp-tool-split -->
 
+    <!-- Divider between tools -->
+    <div style="margin-bottom:80px;"><div class="lp-divider"></div></div>
+
+    <!-- ═══ BET TRACKER DASHBOARD ════════════════════════════ -->
+    <div class="lp-tool-split lp-reveal">
+      <!-- Copy -->
+      <div class="lp-tool-copy" style="--tool-color:#c084fc;--tool-color2:#d8b4fe;">
+        <div class="lp-tool-eyebrow">📊 Bet Tracker Dashboard</div>
+        <h3 class="lp-tool-h">Every Bet.<br><span>Full Accountability.</span></h3>
+        <p class="lp-tool-p">
+          Stop guessing if you're profitable. The Bet Tracker logs every pick the Neural Engine
+          surfaces — platform, stat type, line, direction, and result — and builds your full
+          P&amp;L history automatically. Filter by tier, platform, date, or player. Know exactly
+          where your edge is coming from.
+        </p>
+        <ul class="lp-tool-bullets" style="--tool-color:#c084fc;">
+          <li><b>Auto-Logged Picks</b> — Every qualifying AI analysis result is stored instantly. No manual entry.</li>
+          <li><b>Model Health Tab</b> — Win rate by tier (Platinum → Bronze) with tilt alerts and streak detection.</li>
+          <li><b>Platform Picks Tab</b> — Filter by PrizePicks, DraftKings, or Underdog. See which book gives you the most edge.</li>
+          <li><b>Full P&amp;L History</b> — ROI over time, rolling 14-day win rate, and a calendar heatmap of your results.</li>
+          <li><b>Auto-Resolve</b> — Results are pulled from live game logs. Wins and losses recorded without lifting a finger.</li>
+        </ul>
+        <a href="?auth=signup" class="lp-tool-cta-link" style="--tool-color:#c084fc;">Track Your First Picks Free</a>
+      </div>
+
+      <!-- Mock UI -->
+      <div class="lp-tool-mockup" style="--tool-color:#c084fc;--tool-color2:#d8b4fe;">
+        <div class="lp-mock-chrome">
+          <div class="lp-mock-dots"><span></span><span></span><span></span></div>
+          <div class="lp-mock-url">smartpickpro.ai · Bet Tracker</div>
+        </div>
+        <div class="lp-mock-body" style="padding:16px;">
+
+          <!-- Stat summary grid -->
+          <div style="
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:8px;
+            margin-bottom:14px;
+          ">
+            <div style="background:rgba(192,132,252,0.07);border:1px solid rgba(192,132,252,0.18);border-radius:10px;padding:10px 12px;text-align:center;">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:1.4rem;font-weight:900;color:#c084fc;letter-spacing:-0.04em;line-height:1;">62.4%</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:0.48rem;font-weight:700;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.09em;margin-top:4px;">Win Rate</div>
+            </div>
+            <div style="background:rgba(0,213,89,0.06);border:1px solid rgba(0,213,89,0.18);border-radius:10px;padding:10px 12px;text-align:center;">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:1.4rem;font-weight:900;color:#00D559;letter-spacing:-0.04em;line-height:1;">127</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:0.48rem;font-weight:700;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.09em;margin-top:4px;">Total Picks</div>
+            </div>
+            <div style="background:rgba(0,213,89,0.05);border:1px solid rgba(0,213,89,0.14);border-radius:10px;padding:10px 12px;text-align:center;">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:1.4rem;font-weight:900;color:#00D559;letter-spacing:-0.04em;line-height:1;">✅ 79</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:0.48rem;font-weight:700;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.09em;margin-top:4px;">Wins</div>
+            </div>
+            <div style="background:rgba(255,68,68,0.05);border:1px solid rgba(255,68,68,0.14);border-radius:10px;padding:10px 12px;text-align:center;">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:1.4rem;font-weight:900;color:#ff6b6b;letter-spacing:-0.04em;line-height:1;">❌ 48</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:0.48rem;font-weight:700;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.09em;margin-top:4px;">Losses</div>
+            </div>
+          </div>
+
+          <!-- Filters toggle row -->
+          <div style="
+            display:flex;align-items:center;justify-content:space-between;
+            background:rgba(255,255,255,0.03);
+            border:1px solid rgba(255,255,255,0.07);
+            border-radius:8px;padding:7px 12px;
+            margin-bottom:12px;cursor:pointer;
+          ">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:0.55rem;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.08em;">⚙️ Filters</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:rgba(255,255,255,0.2);">▼</span>
+          </div>
+
+          <!-- Tab row — horizontal scrollable -->
+          <div style="
+            display:flex;gap:6px;
+            overflow-x:auto;
+            scrollbar-width:none;
+            padding-bottom:2px;
+            margin-bottom:12px;
+            white-space:nowrap;
+            -webkit-overflow-scrolling:touch;
+          ">
+            <div style="flex-shrink:0;font-family:'Space Grotesk',sans-serif;font-size:0.6rem;font-weight:800;padding:5px 12px;border-radius:100px;background:rgba(192,132,252,0.15);border:1px solid rgba(192,132,252,0.3);color:#c084fc;letter-spacing:.04em;text-transform:uppercase;">📊 Health</div>
+            <div style="flex-shrink:0;font-family:'Space Grotesk',sans-serif;font-size:0.6rem;font-weight:700;padding:5px 12px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.35);letter-spacing:.04em;text-transform:uppercase;">🤖 AI Picks</div>
+            <div style="flex-shrink:0;font-family:'Space Grotesk',sans-serif;font-size:0.6rem;font-weight:700;padding:5px 12px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.35);letter-spacing:.04em;text-transform:uppercase;">📋 All Picks</div>
+            <div style="flex-shrink:0;font-family:'Space Grotesk',sans-serif;font-size:0.6rem;font-weight:700;padding:5px 12px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.35);letter-spacing:.04em;text-transform:uppercase;">🎙️ Joseph</div>
+            <div style="flex-shrink:0;font-family:'Space Grotesk',sans-serif;font-size:0.6rem;font-weight:700;padding:5px 12px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.35);letter-spacing:.04em;text-transform:uppercase;">📅 History</div>
+          </div>
+
+          <!-- Recent picks rows -->
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;background:rgba(0,213,89,0.04);border:1px solid rgba(0,213,89,0.12);border-radius:8px;padding:8px 10px;">
+              <div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:0.68rem;font-weight:800;color:#fff;">J. Tatum — Points</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.5rem;color:rgba(255,255,255,0.3);margin-top:2px;">OVER 27.5 · PrizePicks</div>
+              </div>
+              <span style="font-family:'Space Grotesk',sans-serif;font-size:0.62rem;font-weight:800;color:#00D559;background:rgba(0,213,89,0.1);border:1px solid rgba(0,213,89,0.2);border-radius:6px;padding:3px 8px;">✅ WIN</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:rgba(255,255,255,0.2);">92</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;background:rgba(255,68,68,0.04);border:1px solid rgba(255,68,68,0.10);border-radius:8px;padding:8px 10px;">
+              <div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:0.68rem;font-weight:800;color:#fff;">N. Jokic — Rebounds</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.5rem;color:rgba(255,255,255,0.3);margin-top:2px;">OVER 12.5 · DraftKings</div>
+              </div>
+              <span style="font-family:'Space Grotesk',sans-serif;font-size:0.62rem;font-weight:800;color:#ff6b6b;background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.2);border-radius:6px;padding:3px 8px;">❌ LOSS</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:rgba(255,255,255,0.2);">87</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;background:rgba(0,213,89,0.04);border:1px solid rgba(0,213,89,0.12);border-radius:8px;padding:8px 10px;">
+              <div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-size:0.68rem;font-weight:800;color:#fff;">S. Curry — Threes</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.5rem;color:rgba(255,255,255,0.3);margin-top:2px;">UNDER 3.5 · Underdog</div>
+              </div>
+              <span style="font-family:'Space Grotesk',sans-serif;font-size:0.62rem;font-weight:800;color:#00D559;background:rgba(0,213,89,0.1);border:1px solid rgba(0,213,89,0.2);border-radius:6px;padding:3px 8px;">✅ WIN</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:rgba(255,255,255,0.2);">84</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div><!-- /lp-tool-split -->
+
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -2673,16 +2951,28 @@ st.markdown("""
     font-size: 0.8rem; color: rgba(255,255,255,0.35);
     line-height: 1.6; margin-bottom: 20px;
 }
+/* Player headshot avatar */
+.lp-pick-headshot {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid color-mix(in srgb, var(--pick-color, #00D559) 35%, transparent);
+    background: rgba(255,255,255,0.04);
+    flex-shrink: 0;
+    display: block;
+}
+
 /* Responsive: collapse prop + dir on small screens */
 @media (max-width: 680px) {
     .lp-pick-row {
         grid-template-columns: 36px 1fr auto 88px;
     }
     .lp-pick-dir { display: none; }
+    .lp-pick-headshot { width: 32px; height: 32px; }
 }
 @media (max-width: 480px) {
     .lp-pick-row { grid-template-columns: 1fr auto; padding: 14px 16px; }
-    .lp-pick-rank { display: none; }
+    .lp-pick-headshot { display: none; }
     .lp-pick-safe-bar-wrap { width: 56px; }
 }
 </style>
@@ -2701,7 +2991,7 @@ st.markdown("""
 
       <!-- Pick 1 — green, top SAFE -->
       <div class="lp-pick-row" style="--pick-color:#00D559;--pick-glow:rgba(0,213,89,0.3);--pick-color-2:#00FF85;">
-        <div class="lp-pick-rank">#1</div>
+        <img class="lp-pick-headshot" src="https://cdn.nba.com/headshots/nba/latest/1040x760/1628369.png" alt="Jayson Tatum" onerror="this.style.display='none'">
         <div class="lp-pick-info">
           <div class="lp-pick-name">Jayson Tatum — Points</div>
           <div class="lp-pick-meta">
@@ -2726,7 +3016,7 @@ st.markdown("""
 
       <!-- Pick 2 — gold -->
       <div class="lp-pick-row" style="--pick-color:#F9C62B;--pick-glow:rgba(249,198,43,0.3);--pick-color-2:#FFE066;">
-        <div class="lp-pick-rank">#2</div>
+        <img class="lp-pick-headshot" src="https://cdn.nba.com/headshots/nba/latest/1040x760/203999.png" alt="Nikola Jokic" onerror="this.style.display='none'">
         <div class="lp-pick-info">
           <div class="lp-pick-name">Nikola Jokic — Rebounds</div>
           <div class="lp-pick-meta">
@@ -2751,7 +3041,7 @@ st.markdown("""
 
       <!-- Pick 3 — blue -->
       <div class="lp-pick-row" style="--pick-color:#2D9EFF;--pick-glow:rgba(45,158,255,0.3);--pick-color-2:#60b4ff;">
-        <div class="lp-pick-rank">#3</div>
+        <img class="lp-pick-headshot" src="https://cdn.nba.com/headshots/nba/latest/1040x760/201939.png" alt="Stephen Curry" onerror="this.style.display='none'">
         <div class="lp-pick-info">
           <div class="lp-pick-name">Stephen Curry — 3-Pointers Made</div>
           <div class="lp-pick-meta">
@@ -2776,7 +3066,7 @@ st.markdown("""
 
       <!-- Locked rows -->
       <div class="lp-pick-row locked" style="--pick-color:#c084fc;--pick-glow:rgba(192,132,252,0.3);">
-        <div class="lp-pick-rank">#4</div>
+        <img class="lp-pick-headshot" src="https://cdn.nba.com/headshots/nba/latest/1040x760/1629029.png" alt="Luka Doncic" onerror="this.style.display='none'">
         <div class="lp-pick-info">
           <div class="lp-pick-name">Luka Doncic — Assists</div>
           <div class="lp-pick-meta"><span class="lp-pick-plat lp-plat-pp">PP</span><span class="lp-pick-meta-sep">|</span><span>DAL vs OKC</span></div>
@@ -2786,7 +3076,7 @@ st.markdown("""
         <div class="lp-pick-safe"><div class="lp-pick-safe-score">81</div></div>
       </div>
       <div class="lp-pick-row locked" style="--pick-color:#00D559;--pick-glow:rgba(0,213,89,0.2);">
-        <div class="lp-pick-rank">#5</div>
+        <img class="lp-pick-headshot" src="https://cdn.nba.com/headshots/nba/latest/1040x760/1630162.png" alt="Anthony Edwards" onerror="this.style.display='none'">
         <div class="lp-pick-info">
           <div class="lp-pick-name">Anthony Edwards — Points + Rebounds</div>
           <div class="lp-pick-meta"><span class="lp-pick-plat lp-plat-dk">DK</span><span class="lp-pick-meta-sep">|</span><span>MIN vs DEN</span></div>

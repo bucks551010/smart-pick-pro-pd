@@ -531,6 +531,7 @@ from pages.helpers.quantum_analysis_helpers import (
     deduplicate_qeg_picks as _deduplicate_qeg_picks,
     filter_qeg_picks as _filter_qeg_picks,
     render_hero_section_html as _render_hero_section_html,
+    render_platform_picks_html as _render_platform_picks_html,
     render_quick_view_html as _render_quick_view_html,
     IMPACT_COLORS as _IMP_COLORS,
     CATEGORY_EMOJI as _CAT_EMOJI,
@@ -1557,6 +1558,21 @@ def _render_results_fragment():
         reverse=True,
     )[:3]
     if _hero_pool:
+        # ── Enrich hero pool with player_id for headshots ─────────────
+        # Picks loaded from the DB lack player_id; look it up from players_data
+        # using a name-keyed dict so the NBA CDN headshot URL can be resolved.
+        if players_data and any(not r.get("player_id") for r in _hero_pool):
+            _pid_lookup = {
+                str(p.get("name", "")).lower(): str(p.get("player_id", ""))
+                for p in players_data
+                if p.get("player_id")
+            }
+            for _hp in _hero_pool:
+                if not _hp.get("player_id"):
+                    _hp["player_id"] = _pid_lookup.get(
+                        str(_hp.get("player_name", "")).lower(), ""
+                    )
+
         # Try to attach Joseph short takes to hero picks
         _joseph_results = st.session_state.get("joseph_results", [])
         if _joseph_results:
@@ -1572,6 +1588,39 @@ def _render_results_fragment():
 
         st.markdown(
             _render_hero_section_html(_hero_pool),
+            unsafe_allow_html=True,
+        )
+
+    # ── ⚡ Platform AI Picks ────────────────────────────────────────
+    # Show picks that have a specific platform attached, sorted by confidence.
+    # These are the picks that map directly to active sportsbook lines.
+    _plat_ai_pool = [
+        r for r in displayed_results
+        if r.get("platform", "").strip()
+        and not r.get("should_avoid", False)
+        and not r.get("player_is_out", False)
+        and float(r.get("confidence_score", 0)) >= 60
+    ]
+    _plat_ai_pool = sorted(
+        _plat_ai_pool,
+        key=lambda r: float(r.get("confidence_score", 0)),
+        reverse=True,
+    )[:8]
+    if _plat_ai_pool:
+        # Enrich with player_id for headshots (same as hero pool above)
+        if players_data and any(not r.get("player_id") for r in _plat_ai_pool):
+            _pid_lookup_plat = {
+                str(p.get("name", "")).lower(): str(p.get("player_id", ""))
+                for p in players_data
+                if p.get("player_id")
+            }
+            for _pp in _plat_ai_pool:
+                if not _pp.get("player_id"):
+                    _pp["player_id"] = _pid_lookup_plat.get(
+                        str(_pp.get("player_name", "")).lower(), ""
+                    )
+        st.markdown(
+            _render_platform_picks_html(_plat_ai_pool),
             unsafe_allow_html=True,
         )
 

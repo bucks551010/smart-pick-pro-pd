@@ -9094,9 +9094,9 @@ QUANTUM_CARD_MATRIX_CSS = """
 /* ── Card shell — AI neural theme ─────────────────────── */
 .qam-hero-card {
     position: relative;
-    flex: 1 1 280px;
-    min-width: 280px;
-    max-width: 420px;
+    flex: 1 1 238px;
+    min-width: 238px;
+    max-width: 357px;
     background: linear-gradient(168deg, rgba(3,4,16,0.97) 0%, rgba(6,8,28,0.96) 40%, rgba(3,4,16,0.97) 100%);
     border: 1.5px solid rgba(99,102,241,0.20);
     border-radius: 22px;
@@ -9900,7 +9900,7 @@ QUANTUM_CARD_MATRIX_CSS = """
 @media (max-width: 768px) {
     /* --- Hero cards — horizontal scroll on mobile (mirrors Platform AI Picks) --- */
     .qam-hero-grid { flex-direction: row; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; align-items: flex-start; gap: 10px; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: rgba(99,102,241,0.60) transparent; }
-    .qam-hero-card { flex: 0 0 200px; min-width: 200px; max-width: 200px; width: 200px; }
+    .qam-hero-card { flex: 0 0 170px; min-width: 170px; max-width: 170px; width: 170px; }
     .qam-hero-hs-wrap, .qam-hero-headshot { width: 64px; height: 64px; }
     .qam-hero-name { font-size: 0.92rem; }
     .qam-hero-line { font-size: 2.2rem; }

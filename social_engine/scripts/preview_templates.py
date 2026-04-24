@@ -7,6 +7,7 @@ from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from core.variants import SKINS
+from core.headshots import enrich_picks_with_headshots
 
 env      = Environment(loader=FileSystemLoader(str(ROOT / "templates")))
 base_css = (ROOT / "templates" / "_base.css").read_text(encoding="utf-8")
@@ -15,12 +16,16 @@ out_dir.mkdir(exist_ok=True)
 
 today = datetime.date.today().strftime("%b %d, %Y").upper()
 
-sample_picks = [
+_raw_picks = [
     {"player_name": "LeBron James",  "stat_type": "Points",   "prop_line": 25.5, "direction": "OVER",  "platform": "PrizePicks", "confidence_score": 87, "edge_pct": 12.4, "result": "WIN", "team": "LAL", "opponent": "GSW"},
     {"player_name": "Stephen Curry", "stat_type": "Assists",  "prop_line": 6.5,  "direction": "OVER",  "platform": "Underdog",   "confidence_score": 82, "edge_pct":  9.1, "result": "WIN", "team": "GSW", "opponent": "LAL"},
     {"player_name": "Jayson Tatum",  "stat_type": "Rebounds", "prop_line": 8.5,  "direction": "UNDER", "platform": "PrizePicks", "confidence_score": 78, "edge_pct":  7.3, "result": "WIN", "team": "BOS", "opponent": "MIA"},
     {"player_name": "Kevin Durant",  "stat_type": "Points",   "prop_line": 28.5, "direction": "OVER",  "platform": "DK Pick6",   "confidence_score": 75, "edge_pct":  8.8, "result": "WIN", "team": "PHX", "opponent": "DEN"},
 ]
+print("Fetching player headshots (cached after first run)...")
+sample_picks = enrich_picks_with_headshots(_raw_picks)
+found = sum(1 for p in sample_picks if p.get("headshot_uri"))
+print(f"  {found}/{len(sample_picks)} headshots resolved")
 
 TEMPLATES = {
     "slate.html": {

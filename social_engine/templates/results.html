@@ -55,7 +55,13 @@
     {% for p in picks %}
     <div class="pick-card {% if p.result|lower == 'win' %}card-win{% endif %}" style="--sc: var(--green)">
       <div class="pc-head" style="align-items:center">
+        {% if p.headshot_uri %}
+        <div class="pc-headshot-wrap">
+          <img class="pc-headshot" src="{{ p.headshot_uri }}" alt="{{ p.player_name }}">
+        </div>
+        {% else %}
         <div class="pc-num">#{{ "%02d" % loop.index }}</div>
+        {% endif %}
         <div class="pc-info" style="flex:1">
           <div class="pc-player">{{ p.player_name }}</div>
           <div class="pc-context">{{ p.direction }} {{ "%.1f"|format(p.prop_line) }} {{ stat_abbr.get(p.stat_type, p.stat_type) }}{% if p.platform %} &bull; {{ p.platform }}{% endif %}</div>

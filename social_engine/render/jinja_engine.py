@@ -6,6 +6,7 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from config import BRAND, COMPLIANCE_FOOTER, SETTINGS, TEMPLATE_DIR
+from core.headshots import enrich_picks_with_headshots
 from core.qr import build_utm_url, qr_data_uri
 
 
@@ -45,5 +46,9 @@ def render_html(
         "date_str":           datetime.now().strftime("%a, %b %d %Y"),
     }
     full_ctx.update(context)
+
+    # Enrich any picks list with NBA headshots (cached after first fetch)
+    if "picks" in full_ctx and isinstance(full_ctx["picks"], list):
+        full_ctx["picks"] = enrich_picks_with_headshots(full_ctx["picks"])
 
     return _env.get_template(template_name).render(**full_ctx)

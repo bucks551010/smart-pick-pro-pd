@@ -41,7 +41,13 @@
     {%- set pc = plat_map.get(p.platform, ('rgba(160,170,190,0.07)','rgba(160,170,190,0.28)','#A0AABE','var(--muted)')) -%}
     <div class="pick-card" style="--sc: {{ pc[3] }}">
       <div class="pc-head">
+        {% if p.headshot_uri %}
+        <div class="pc-headshot-wrap">
+          <img class="pc-headshot" src="{{ p.headshot_uri }}" alt="{{ p.player_name }}">
+        </div>
+        {% else %}
         <div class="pc-num">#{{ "%02d" % loop.index }}</div>
+        {% endif %}
         <div class="pc-info">
           <div class="pc-player">{{ p.player_name }}</div>
           <div class="pc-context">{{ p.team|default('') }}{% if p.opponent %} vs {{ p.opponent }}{% endif %}</div>

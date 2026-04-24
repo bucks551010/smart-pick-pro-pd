@@ -97,6 +97,7 @@ app = FastAPI(title="SmartPickPro Social Engine", lifespan=lifespan)
 # Serve rendered images publicly so Instagram / Threads / TikTok can fetch them.
 # Set PUBLIC_ASSET_BASE_URL=https://<railway-host>/static in .env.
 from config import OUTPUT_DIR
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=OUTPUT_DIR), name="static")
 
 

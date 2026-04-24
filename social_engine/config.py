@@ -69,7 +69,8 @@ class Settings:
     tiktok_token:       str = os.getenv("TIKTOK_ACCESS_TOKEN", "")
     tiktok_open_id:     str = os.getenv("TIKTOK_OPEN_ID", "")
 
-    webhook_secret:     str = os.getenv("WEBHOOK_SHARED_SECRET", "")
+    webhook_secret:       str = os.getenv("WEBHOOK_SHARED_SECRET", "")
+    public_asset_base_url: str = os.getenv("PUBLIC_ASSET_BASE_URL", "")  # e.g. https://xxx.up.railway.app/static
     scheduler_enabled:  bool = os.getenv("SCHEDULER_ENABLED", "true").lower() == "true"
     recap_hour:         int  = int(os.getenv("RECAP_HOUR_LOCAL", "9"))
     pregame_lead_hours: int  = int(os.getenv("PREGAME_LEAD_HOURS", "2"))

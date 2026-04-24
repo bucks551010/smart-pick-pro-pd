@@ -18,6 +18,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from fastapi import FastAPI, Header, HTTPException, Query
+from fastapi.staticfiles import StaticFiles
 
 from config import SETTINGS
 from core import data_source as ds
@@ -92,6 +93,11 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="SmartPickPro Social Engine", lifespan=lifespan)
+
+# Serve rendered images publicly so Instagram / Threads / TikTok can fetch them.
+# Set PUBLIC_ASSET_BASE_URL=https://<railway-host>/static in .env.
+from config import OUTPUT_DIR
+app.mount("/static", StaticFiles(directory=OUTPUT_DIR), name="static")
 
 
 def _auth(secret: str | None) -> None:

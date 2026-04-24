@@ -21,14 +21,13 @@ _API = "https://graph.facebook.com/v21.0"
 def _public_image_url(image_path: Path) -> str:
     """Return a public URL for the given local image.
 
-    PRODUCTION: serve _out/ via a CDN, signed URL, or your main app's static route.
-    Set PUBLIC_ASSET_BASE_URL in env to override.
+    Set PUBLIC_ASSET_BASE_URL=https://<your-railway-app>.up.railway.app/static
+    in .env. The webhook/api.py FastAPI app serves _out/ at /static/.
     """
-    import os
-    base = os.getenv("PUBLIC_ASSET_BASE_URL", "").rstrip("/")
+    base = SETTINGS.public_asset_base_url.rstrip("/")
     if base:
         return f"{base}/{image_path.name}"
-    # Dev fallback — Streamlit's static directory if mounted at /app/static
+    # Fallback — brand URL /static/ (only works if you have a static server)
     return f"{SETTINGS.brand_url.rstrip('/')}/static/{image_path.name}"
 
 

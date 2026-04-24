@@ -119,6 +119,45 @@ def build_and_post_pregame_slate(
     return deploy_campaign(images, _channel_text_map(copy, channels), channels)
 
 
+# ── WEEKLY SCORECARD ────────────────────────────────────────
+
+def build_and_post_weekly_scorecard(channels=_DEFAULT_CHANNELS) -> list[PostResult]:
+    """Sunday post: wins-only scorecard for the past 7 days."""
+    summary = ds.get_results_for_week()
+    if summary.wins == 0:
+        _log.info("Weekly scorecard skipped: no wins for week ending %s", summary.week_end)
+        return []
+
+    payload = {
+        "wins": summary.wins,
+        "losses": summary.losses,
+        "win_rate": summary.win_rate,
+        "roi_pct": summary.roi_pct,
+        "week_start": summary.week_start,
+        "week_end": summary.week_end,
+        "winning_props": summary.winning_bets,
+    }
+    copy = generate_copy("weekly", payload)
+
+    html = render_html(
+        "results.html",
+        context={
+            "title":    f"Week of {summary.week_start}",
+            "subtitle": f"{summary.wins}W - {summary.losses}L | {summary.win_rate:.0f}% Win Rate",
+            "wins":     summary.wins,
+            "losses":   summary.losses,
+            "win_rate": summary.win_rate,
+            "roi_pct":  summary.roi_pct,
+            "picks":    summary.winning_bets,  # winning props only
+            "cols":     2,
+        },
+        utm_source="weekly",
+        utm_campaign=f"weekly_scorecard_{summary.week_end}",
+    )
+    images = render_to_images(html, name_prefix=f"weekly_{summary.week_end}")
+    return deploy_campaign(images, _channel_text_map(copy, channels), channels)
+
+
 # ── BRANDING / CTA ──────────────────────────────────────────
 
 def build_and_post_branding(channels=_DEFAULT_CHANNELS) -> list[PostResult]:

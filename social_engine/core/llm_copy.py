@@ -119,6 +119,17 @@ def _fallback(asset_type: str, payload: dict[str, Any]) -> CopyVariants:
             direct_cta=f"{w} winners last night. See the props, check the receipts. Tonight's picks drop soon.",
             hashtags=["NBA", "PropBets", "PrizePicks", "Underdog", "DFS", "SportsBetting", "SmartPickPro"],
         )
+    if asset_type == "weekly":
+        w = payload.get("wins", 0); l = payload.get("losses", 0)
+        wr = payload.get("win_rate", 0.0)
+        props = payload.get("winning_props", [])
+        n_props = len(props)
+        return CopyVariants(
+            hype=f"📊 {w}-{l} this week ({wr:.0f}% win rate). Every winning prop listed — verify them all.",
+            analytical=f"Weekly recap: {w}W-{l}L across {n_props} winning props. Full list shown for verification.",
+            direct_cta=f"{w} wins this week. See the receipts → follow for next week's picks.",
+            hashtags=["NBA", "WeeklyRecap", "PropBets", "PrizePicks", "Underdog", "SportsBetting", "SmartPickPro"],
+        )
     if asset_type == "slate":
         n = len(payload.get("picks", []))
         platforms = payload.get("platforms", [])

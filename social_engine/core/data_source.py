@@ -108,6 +108,62 @@ def get_results_for_date(bet_date: date | None = None) -> ResultsSummary:
     )
 
 
+# ── WEEKLY RESULTS READER ───────────────────────────────────────────
+
+@dataclass
+class WeeklySummary:
+    week_start:   str
+    week_end:     str
+    wins:         int = 0
+    losses:       int = 0
+    win_rate:     float = 0.0
+    roi_pct:      float | None = None
+    winning_bets: list[dict[str, Any]] = field(default_factory=list)
+
+
+def get_results_for_week(end_date: date | None = None) -> WeeklySummary:
+    """Aggregate W/L/ROI for the 7-day window ending on end_date (default: yesterday).
+    Only winning bets are returned for social display.
+    """
+    end_date = end_date or (date.today() - timedelta(days=1))
+    start_date = end_date - timedelta(days=6)  # Mon–Sun or rolling 7 days
+
+    if _engine is None:
+        return WeeklySummary(
+            week_start=start_date.isoformat(),
+            week_end=end_date.isoformat(),
+        )
+
+    sql = text(
+        "SELECT * FROM bets "
+        "WHERE bet_date BETWEEN :start AND :end "
+        "ORDER BY result DESC, bet_date ASC"
+    )
+    with _engine.connect() as conn:
+        bets = _rows_to_dicts(
+            conn.execute(sql, {"start": start_date.isoformat(), "end": end_date.isoformat()})
+        )
+
+    wins   = [b for b in bets if (b.get("result") or "").upper() == "WIN"]
+    losses = [b for b in bets if (b.get("result") or "").upper() == "LOSS"]
+    resolved = len(wins) + len(losses)
+    win_rate = (len(wins) / resolved * 100.0) if resolved else 0.0
+
+    stake_total  = resolved
+    payout_total = sum(float(b.get("payout") or 0) for b in wins)
+    roi_pct = ((payout_total - stake_total) / stake_total * 100.0) if stake_total else None
+
+    return WeeklySummary(
+        week_start=start_date.isoformat(),
+        week_end=end_date.isoformat(),
+        wins=len(wins),
+        losses=len(losses),
+        win_rate=win_rate,
+        roi_pct=roi_pct,
+        winning_bets=wins,  # full detail so post can list each prop
+    )
+
+
 # ── PRE-GAME TRIGGER HELPER ──────────────────────────────────
 
 def get_games_starting_in(hours_window: tuple[int, int] = (1, 3)) -> list[dict[str, Any]]:

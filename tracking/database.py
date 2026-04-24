@@ -3488,10 +3488,15 @@ def load_page_state():
             raw = json.loads(row[0])
             # Discard state saved on a prior day — prevents yesterday's players
             # from appearing after the NBA Eastern Time day boundary rolls over.
+            # NOTE: if saved_date is "" (state written before the date-stamp
+            # feature was added), that also fails the equality check and is
+            # correctly treated as stale.  Do NOT add an `and saved_date`
+            # guard here — that would allow un-stamped old state to bypass
+            # the check and re-inject yesterday's analysis_results.
             saved_date = raw.get("_page_state_date", "")
-            if saved_date and saved_date != _nba_today_iso():
+            if saved_date != _nba_today_iso():
                 _logger.info(
-                    "load_page_state: discarding stale state from %s (today=%s)",
+                    "load_page_state: discarding stale state from '%s' (today=%s)",
                     saved_date,
                     _nba_today_iso(),
                 )

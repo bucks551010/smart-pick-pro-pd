@@ -27,9 +27,8 @@ def _get_model():
     if not SETTINGS.gemini_api_key:
         return None
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=SETTINGS.gemini_api_key)
-        _model = genai.GenerativeModel("gemini-1.5-flash")
+        from google import genai
+        _model = genai.Client(api_key=SETTINGS.gemini_api_key)
         return _model
     except Exception as e:
         _log.warning("Gemini init failed: %s", e)
@@ -65,6 +64,13 @@ The voice is sharp, confident, data-driven, never reckless. NEVER promise wins.
 Asset type: {asset_type}
 Context payload (JSON): {payload}
 
+Asset type instructions:
+- "results": Morning recap of last night's bets. Highlight wins count and mention that the
+  winning props are shown so followers can verify each one. Reference win rate if strong.
+- "slate": Pre-game picks post. Mention the platforms these picks are on (PrizePicks, Underdog,
+  DK Pick6, etc.) so followers know where to act. Post goes out 2-3 hours before games tip off.
+- "brand": Brand awareness CTA. Drive follows and free trial signups. 3x per week cadence.
+
 Generate exactly THREE copy variations and a hashtag set. Reply with valid JSON only:
 {{
   "hype":        "...energetic, 1-2 emoji, builds FOMO, ≤200 chars",
@@ -72,7 +78,7 @@ Generate exactly THREE copy variations and a hashtag set. Reply with valid JSON 
   "direct_cta":  "...single CTA pivot to scan QR / visit link, ≤180 chars",
   "hashtags":    ["NBA","PropBets","..."]   // 6-10 tags, no #
 }}
-Compliance: no guarantees, no '#1', no 'lock'. Always sound responsible.
+Compliance: no guarantees, no 'lock', no '#1 pick'. Always sound responsible.
 """
 
 
@@ -84,7 +90,11 @@ def generate_copy(asset_type: str, payload: dict[str, Any]) -> CopyVariants:
 
     try:
         prompt = _PROMPT_TEMPLATE.format(asset_type=asset_type, payload=json.dumps(payload)[:4000])
-        resp = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
+        resp = model.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+            config={"response_mime_type": "application/json"},
+        )
         data = json.loads(resp.text)
         return CopyVariants(
             hype=data.get("hype", "").strip(),
@@ -101,18 +111,22 @@ def _fallback(asset_type: str, payload: dict[str, Any]) -> CopyVariants:
     """Deterministic stubs so the engine still runs without an API key."""
     if asset_type == "results":
         w = payload.get("wins", 0); l = payload.get("losses", 0)
+        props = payload.get("winning_props", [])
+        prop_line = f" | {props[0].get('player_name')} {props[0].get('stat_type')} {props[0].get('direction')} {props[0].get('prop_line')} ✅" if props else ""
         return CopyVariants(
-            hype=f"🚀 {w}-{l} on the night. The model keeps cooking.",
-            analytical=f"Yesterday's slate closed {w}W-{l}L. Edge-weighted picks continue to outperform baseline.",
-            direct_cta="Tonight's slate drops in 3 hrs. Scan to lock in.",
+            hype=f"🚀 {w}-{l} last night. All winning props shown — verify every one.{prop_line}",
+            analytical=f"Last night's slate: {w}W-{l}L. Winning props listed — full transparency, always verifiable.",
+            direct_cta=f"{w} winners last night. See the props, check the receipts. Tonight's picks drop soon.",
             hashtags=["NBA", "PropBets", "PrizePicks", "Underdog", "DFS", "SportsBetting", "SmartPickPro"],
         )
     if asset_type == "slate":
         n = len(payload.get("picks", []))
+        platforms = payload.get("platforms", [])
+        plat_str = " & ".join(platforms) if platforms else "PrizePicks/Underdog"
         return CopyVariants(
-            hype=f"⚡ Tonight's {n}-leg edge slate is LIVE. Quant-driven. Receipts always shown.",
-            analytical=f"{n} prop edges flagged tonight by the Monte Carlo engine. All confidence ≥75%.",
-            direct_cta="Today's free picks — scan the QR or hit the link in bio.",
+            hype=f"⚡ {n} picks LIVE on {plat_str}. Quant-driven. Receipts always shown.",
+            analytical=f"{n} prop edges flagged tonight on {plat_str} by the Monte Carlo engine.",
+            direct_cta=f"Tonight's picks on {plat_str} — scan the QR or hit the link in bio.",
             hashtags=["NBA", "NBAProps", "PrizePicks", "Underdog", "DFS", "Picks", "SmartPickPro"],
         )
     return CopyVariants(

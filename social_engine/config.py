@@ -73,7 +73,7 @@ class Settings:
     scheduler_enabled:  bool = os.getenv("SCHEDULER_ENABLED", "true").lower() == "true"
     recap_hour:         int  = int(os.getenv("RECAP_HOUR_LOCAL", "9"))
     pregame_lead_hours: int  = int(os.getenv("PREGAME_LEAD_HOURS", "2"))
-    branding_cron:      str  = os.getenv("BRANDING_CRON", "0 14 * * 2,5")
+    branding_cron:      str  = os.getenv("BRANDING_CRON", "0 14 * * 1,3,5")  # Mon/Wed/Fri 2pm
 
 
 SETTINGS = Settings()

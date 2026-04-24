@@ -24,7 +24,8 @@ uvicorn[standard]==0.32.1
 # ── Database (shared with main app) ──────────────────────────
 psycopg2-binary==2.9.10
 SQLAlchemy==2.0.35
-
+# ── NBA data (headshots) ─────────────────────────────────
+nba_api==1.5.2
 # ── Utilities ────────────────────────────────────────────────
 pydantic==2.10.3
 python-multipart==0.0.17

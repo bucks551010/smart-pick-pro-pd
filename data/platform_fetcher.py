@@ -1547,10 +1547,79 @@ def fetch_all_platform_props(
     all_props = parse_alt_lines_from_platform_props(all_props)
 
     _logger.info(f"[Master] Total props fetched: {len(all_props)}")
+
+    # ── Slate cache write-through ─────────────────────────────────
+    # Persist each platform's props to the slate_cache table so the
+    # worker / Streamlit pages can hydrate without re-hitting APIs.
+    # Worker re-fetches every 30 minutes; pages read fresh-within-30-min cache.
+    try:
+        from tracking.database import save_props_to_cache
+        from datetime import datetime as _dt
+        _today = _dt.now().date().isoformat()
+        # Group by platform for per-platform cache rows.
+        by_plat: dict = {}
+        for p in all_props:
+            plat = (p.get("platform") or "Unknown").lower().replace(" ", "_")
+            by_plat.setdefault(plat, []).append(p)
+        for plat, plist in by_plat.items():
+            try:
+                save_props_to_cache(_today, plat, plist)
+            except Exception as _e:
+                _logger.debug(f"[Master] slate_cache save failed for {plat}: {_e}")
+    except Exception as _exc:
+        _logger.debug(f"[Master] slate_cache integration unavailable: {_exc}")
+
     return all_props
 
 # ============================================================
 # END SECTION: Master Fetch Function
+# ============================================================
+
+
+# ============================================================
+# SECTION: Slate-Cache Convenience Wrappers
+# ============================================================
+
+def fetch_all_platform_props_cached(
+    *,
+    max_age_minutes=30,
+    include_prizepicks=True,
+    include_underdog=True,
+    include_draftkings=True,
+    odds_api_key=None,
+    progress_callback=None,
+):
+    """Cache-first wrapper around `fetch_all_platform_props`.
+
+    Reads slate_cache for today first; if any platform-row is fresh
+    within `max_age_minutes`, it's used.  Otherwise a live fetch is
+    triggered (which itself write-throughs to the cache).
+
+    Returns:
+        list[dict]: aggregated props (cached or freshly fetched).
+    """
+    try:
+        from tracking.database import load_props_from_cache
+        from datetime import datetime as _dt
+        today = _dt.now().date().isoformat()
+        cached = load_props_from_cache(today, platform=None, max_age_minutes=max_age_minutes)
+        if cached:
+            _logger.info(f"[Master] Using slate_cache: {len(cached)} props (≤{max_age_minutes}m old).")
+            return cached
+    except Exception as exc:
+        _logger.debug(f"[Master] slate_cache load skipped: {exc}")
+
+    # Cache miss → live fetch (write-through happens inside).
+    return fetch_all_platform_props(
+        include_prizepicks=include_prizepicks,
+        include_underdog=include_underdog,
+        include_draftkings=include_draftkings,
+        odds_api_key=odds_api_key,
+        progress_callback=progress_callback,
+    )
+
+# ============================================================
+# END SECTION: Slate-Cache Convenience Wrappers
 # ============================================================
 
 

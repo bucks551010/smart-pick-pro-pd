@@ -2249,80 +2249,12 @@ st.markdown(
 easy_money_picks = _filter_zone_picks(all_props, players_data, "goblin", _EASY_MONEY_MIN_DEV)
 smart_risk_picks = _filter_zone_picks(all_props, players_data, "demon", _SMART_RISK_MIN_DEV)
 
-# ── Auto-log Smart Money picks to Bet Tracker ─────────────────
-# Sync every page load so today's tracker rows always mirror today's slate.
-from tracking.database import _db_write as _tracking_db_write, _db_read as _tracking_db_read
-
-# Keep Smart Money auto-logs synced to today's slate only.
-# This clears stale pending rows (including future-game leftovers logged as today)
-# and then rehydrates from the current today-only slate.
-_sync_ok = False
-try:
-    _tracking_db_write(
-        "DELETE FROM bets "
-        "WHERE bet_date = ? "
-        "AND auto_logged = 1 "
-        "AND platform = 'Smart Money' "
-        "AND (bet_type IN ('goblin', 'demon') OR notes LIKE 'Smart Money %') "
-        "AND (result IS NULL OR result = '')",
-        (_today_str,),
-        caller="sm_sync_delete",
-    )
-    _sync_ok = True
-except Exception:
-    pass
-
-_existing: set = set()
-if _sync_ok:
-    try:
-        _rows = _tracking_db_read(
-            "SELECT player_name, stat_type, prop_line, direction "
-            "FROM bets WHERE bet_date = ?",
-            (_today_str,),
-        )
-        _existing = {
-            (r["player_name"].lower(), r["stat_type"], float(r["prop_line"] or 0), r["direction"])
-            for r in _rows
-        }
-    except Exception:
-        _existing = set()
-
-_sm_logged = 0
-for _pick in easy_money_picks + smart_risk_picks:
-    # Safety gate: never log Smart Money props for non-today game dates.
-    if not _is_today_game_prop(_pick, _today_str):
-        continue
-    _p_name = _pick.get("player_name", "")
-    _p_stat = (_pick.get("stat_type", "") or "").lower().replace(" ", "_")
-    _p_line = float(_pick.get("line", 0))
-    _p_dir = "OVER"
-    _dk = (_p_name.lower(), _p_stat, _p_line, _p_dir)
-    if _dk in _existing:
-        continue
-    _dev = abs(_pick.get("line_vs_avg_pct", 0))
-    _bt = _pick.get("odds_type", "goblin")
-    _tier = "Platinum" if _dev >= 80 else "Gold" if _dev >= 65 else "Silver" if _dev >= 50 else "Bronze"
-    _conf = min(99.0, 50 + _dev * 0.5)
-    _prob = min(0.99, 0.5 + _dev / 200)
-    ok, _ = log_new_bet(
-        player_name=_p_name,
-        stat_type=_p_stat,
-        prop_line=_p_line,
-        direction=_p_dir,
-        platform="Smart Money",
-        confidence_score=_conf,
-        probability_over=_prob,
-        edge_percentage=_dev,
-        tier=_tier,
-        team=str(_pick.get("player_team", _pick.get("team", ""))),
-        notes=f"Smart Money {_bt.title()} | GAP: -{_dev:.1f}%",
-        auto_logged=1,
-        bet_type=_bt,
-        std_devs_from_line=_dev / 15.0,
-    )
-    if ok:
-        _existing.add(_dk)
-        _sm_logged += 1
+# ── Bet Tracker logging is now handled by the worker ──────────
+# slate_worker.py runs `auto_log_smart_money_bets` ~2 hours before
+# the day's first tip-off. The page no longer auto-logs/auto-syncs
+# bets — that delete-and-rehydrate-on-every-page-load behaviour
+# caused churn and could erase user-edited rows. The page now reads
+# from `bets` only; the worker is the single writer.
 
 
 # Clear loading skeleton — picks are ready, render the real content now

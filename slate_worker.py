@@ -239,7 +239,8 @@ def run_slate(dry_run: bool = False) -> int:
                 )
                 _logger.info("[6b] slate_cache.json warmed (%d picks).", inserted)
             except Exception as exc:
-                _logger.debug("[6b] Cache file warm failed (non-fatal): %s", exc)    elif dry_run:
+                _logger.debug("[6b] Cache file warm failed (non-fatal): %s", exc)
+    elif dry_run:
         inserted = len(results)
         _logger.info("[6] DRY RUN — would persist %d picks (no write).", inserted)
 
@@ -267,17 +268,25 @@ def run_slate(dry_run: bool = False) -> int:
 
 
 def _daemon_loop(dry_run: bool, interval_minutes: int) -> None:
-    """Run the slate pipeline on a fixed schedule until interrupted.
+    """Multi-job scheduler — replaces the legacy fixed-interval loop.
 
-    Designed for Railway deployments where GitHub Actions cron is not
-    available or needs a warm-standby companion process.  Gracefully
-    handles SIGTERM so Railway can shut it down cleanly.
+    Jobs (all ET-anchored, scheduled per "sports day"):
+      • props_refresh   every  30 min (fetch props + analyze + persist picks)
+      • etl_refresh     daily at 06:00 ET (advanced metrics + defensive ratings)
+      • bet_logging     2h before first tip (qeg + smart_money + platform_ai + quantum)
+      • auto_resolve    every 30 min during/after game window
+                        + final sweep at 02:00 ET
+      • nightly_sweep   02:30 ET (postponements + retry-cleanup + props_cache cleanup
+                                  + daily snapshot)
 
-    Args:
-        dry_run:           Passed through to every ``run_slate()`` call.
-        interval_minutes:  Seconds between pipeline runs (default 30 min).
+    Catch-up: on startup, each job's worker_state is read; jobs whose last
+    successful run is older than its interval (or whose target time today
+    has already passed) run immediately.
+
+    `interval_minutes` only controls the polling tick; individual jobs
+    have their own schedules.
     """
-    import signal
+    import signal as _signal
 
     _shutdown = threading.Event()
 
@@ -285,32 +294,269 @@ def _daemon_loop(dry_run: bool, interval_minutes: int) -> None:
         _logger.info("Received signal %s — daemon shutting down cleanly.", signum)
         _shutdown.set()
 
-    signal.signal(signal.SIGTERM, _handle_signal)
-    signal.signal(signal.SIGINT, _handle_signal)
+    _signal.signal(_signal.SIGTERM, _handle_signal)
+    try:
+        _signal.signal(_signal.SIGINT, _handle_signal)
+    except (ValueError, OSError):
+        # SIGINT isn't always available in containerised threads.
+        pass
 
-    interval_sec = interval_minutes * 60
     _logger.info(
-        "=== slate_worker DAEMON  interval=%dm  dry_run=%s ===",
+        "=== slate_worker DAEMON v2  tick=%dm  dry_run=%s ===",
         interval_minutes, dry_run,
     )
 
+    poll_sec = max(60, interval_minutes * 60)
     while not _shutdown.is_set():
-        run_start = time.monotonic()
+        loop_start = time.monotonic()
         try:
-            run_slate(dry_run=dry_run)
+            _run_due_jobs(dry_run=dry_run)
         except Exception as exc:
-            _logger.error("Daemon run-slate failed: %s", exc, exc_info=True)
+            _logger.error("Scheduler tick failed: %s", exc, exc_info=True)
 
-        elapsed = time.monotonic() - run_start
-        wait_sec = max(0.0, interval_sec - elapsed)
-        _logger.info("Next run in %.0f s  (ctrl-C or SIGTERM to stop).", wait_sec)
-
-        # Sleep in short increments so SIGTERM is noticed promptly.
+        elapsed = time.monotonic() - loop_start
+        wait_sec = max(0.0, poll_sec - elapsed)
         deadline = time.monotonic() + wait_sec
+        _logger.debug("Next scheduler tick in %.0f s.", wait_sec)
         while not _shutdown.is_set() and time.monotonic() < deadline:
             time.sleep(min(5.0, deadline - time.monotonic()))
 
     _logger.info("=== slate_worker DAEMON exited cleanly. ===")
+
+
+# =================================================================
+# Multi-Job Scheduler
+# =================================================================
+
+def _now_et() -> datetime.datetime:
+    """Return current Eastern Time as a tz-aware datetime."""
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.datetime.now(ZoneInfo("America/New_York"))
+    except Exception:
+        return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-4)))
+
+
+def _parse_iso(ts: str | None) -> datetime.datetime | None:
+    if not ts:
+        return None
+    try:
+        # Strip trailing Z and parse as UTC.
+        s = ts.rstrip("Z")
+        dt = datetime.datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt
+    except Exception:
+        return None
+
+
+def _job_due(
+    job_name: str,
+    *,
+    interval_min: int | None = None,
+    daily_at_hour: int | None = None,
+    daily_at_minute: int = 0,
+) -> bool:
+    """Decide whether a job should run now.
+
+    interval_min:  run if last_run_at older than `interval_min` minutes.
+    daily_at_hour: run if today's scheduled time (ET) has passed and we
+                   haven't run since.
+    """
+    try:
+        from tracking.database import get_worker_state
+        rows = get_worker_state(job_name)
+    except Exception:
+        rows = []
+    last_run = _parse_iso(rows[0]["last_run_at"]) if rows else None
+
+    now_et = _now_et()
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+
+    if interval_min is not None:
+        if last_run is None:
+            return True
+        delta_min = (now_utc - last_run).total_seconds() / 60.0
+        return delta_min >= interval_min
+
+    if daily_at_hour is not None:
+        target_et = now_et.replace(
+            hour=daily_at_hour, minute=daily_at_minute, second=0, microsecond=0
+        )
+        if now_et < target_et:
+            return False  # Not yet time today.
+        if last_run is None:
+            return True
+        last_run_et = last_run.astimezone(now_et.tzinfo)
+        return last_run_et < target_et
+
+    return False
+
+
+def _first_tip_et_today() -> datetime.datetime | None:
+    """Earliest scheduled tip-off for the current sports day, in ET.
+
+    Returns None if no games scheduled or the schedule cannot be read.
+    """
+    try:
+        from data.nba_data_service import get_todays_games
+        games = get_todays_games() or []
+    except Exception as exc:
+        _logger.debug("first_tip lookup failed: %s", exc)
+        return None
+    if not games:
+        return None
+    try:
+        from zoneinfo import ZoneInfo
+        et = ZoneInfo("America/New_York")
+    except Exception:
+        et = datetime.timezone(datetime.timedelta(hours=-4))
+    earliest: datetime.datetime | None = None
+    for g in games:
+        ts = g.get("game_time_et") or g.get("start_time") or g.get("tip_off") or g.get("game_time")
+        dt = _parse_iso(ts) if isinstance(ts, str) else None
+        if dt is None:
+            continue
+        dt = dt.astimezone(et)
+        if earliest is None or dt < earliest:
+            earliest = dt
+    return earliest
+
+
+def _run_job(name: str, fn, *, dry_run: bool = False) -> None:
+    """Wrap a job call with worker_state stamping."""
+    if dry_run:
+        _logger.info("[scheduler] DRY-RUN — would run job %s", name)
+        return
+    _logger.info("[scheduler] >>> %s", name)
+    try:
+        fn()
+        try:
+            from tracking.database import update_worker_state
+            update_worker_state(name, status="ok")
+        except Exception:
+            pass
+        _logger.info("[scheduler] <<< %s ok", name)
+    except Exception as exc:
+        _logger.exception("[scheduler] %s failed: %s", name, exc)
+        try:
+            from tracking.database import update_worker_state
+            update_worker_state(name, status="error", error=str(exc)[:500])
+        except Exception:
+            pass
+
+
+def _job_props_refresh() -> None:
+    run_slate(dry_run=False)
+
+
+def _job_etl_refresh() -> None:
+    """Daily ETL refresh — defensive ratings, advanced metrics."""
+    try:
+        from etl.scheduler import run_daily_etl  # type: ignore
+        run_daily_etl()
+    except ImportError:
+        # Fallback to whatever ETL entrypoint exists.
+        try:
+            from etl.scheduler import main as _etl_main  # type: ignore
+            _etl_main()
+        except Exception as exc:
+            _logger.warning("ETL entrypoint not found, skipping: %s", exc)
+
+
+def _job_bet_logging() -> None:
+    """Auto-log all 4 bet sources from today's analysis_picks."""
+    from tracking.database import _db_read
+    from tracking.bet_tracker import (
+        auto_log_analysis_bets,
+        auto_log_qeg_bets,
+        auto_log_smart_money_bets,
+        auto_log_platform_ai_bets,
+    )
+    today = _et_today()
+    rows = _db_read(
+        "SELECT * FROM all_analysis_picks WHERE for_date = ?", (today,)
+    ) or []
+    if not rows:
+        _logger.warning("[bet_logging] no picks in all_analysis_picks for %s", today)
+        return
+    picks = [dict(r) for r in rows]
+    n_qam = auto_log_analysis_bets(picks, source="quantum")
+    n_qeg = auto_log_qeg_bets(picks)
+    n_sm = auto_log_smart_money_bets(picks)
+    n_pa = auto_log_platform_ai_bets(picks)
+    _logger.info(
+        "[bet_logging] quantum=%d qeg=%d smart_money=%d platform_ai=%d",
+        n_qam, n_qeg, n_sm, n_pa,
+    )
+
+
+def _job_auto_resolve() -> None:
+    """Resolve finished games' bets with full CLV/distance tracking."""
+    try:
+        from tracking.bet_tracker import auto_resolve_bet_results
+        n = auto_resolve_bet_results()
+        _logger.info("[auto_resolve] resolved=%s", n)
+    except Exception as exc:
+        _logger.error("[auto_resolve] failed: %s", exc)
+
+
+def _job_nightly_sweep() -> None:
+    """Postponements + retry cleanup + props_cache cleanup + snapshot."""
+    from tracking.bet_tracker import (
+        detect_and_void_postponed_games,
+        cleanup_unresolved_bets,
+    )
+    voided, postponed = detect_and_void_postponed_games()
+    _logger.info("[sweep] postponements: voided=%d games=%s", voided, postponed)
+
+    deleted = cleanup_unresolved_bets()
+    _logger.info("[sweep] retry-cleanup deleted=%d", deleted)
+
+    try:
+        from tracking.database import cleanup_props_cache
+        cleanup_props_cache(30)
+    except Exception as exc:
+        _logger.warning("[sweep] cleanup_props_cache failed: %s", exc)
+
+    try:
+        from tracking.database import save_daily_snapshot
+        save_daily_snapshot()
+    except Exception as exc:
+        _logger.warning("[sweep] save_daily_snapshot failed: %s", exc)
+
+
+def _run_due_jobs(*, dry_run: bool = False) -> None:
+    """One scheduler tick — runs any job whose schedule is due.
+
+    Order matters: ETL before bet_logging, bet_logging before auto_resolve.
+    """
+    # 1. ETL refresh — daily at 06:00 ET.
+    if _job_due("etl_refresh", daily_at_hour=6, daily_at_minute=0):
+        _run_job("etl_refresh", _job_etl_refresh, dry_run=dry_run)
+
+    # 2. Props refresh + analysis — every 30 min.
+    if _job_due("props_refresh", interval_min=30):
+        _run_job("props_refresh", _job_props_refresh, dry_run=dry_run)
+
+    # 3. Bet logging — fires once per day, 2h before first tip.
+    first_tip = _first_tip_et_today()
+    if first_tip is not None:
+        log_target = first_tip - datetime.timedelta(hours=2)
+        now_et = _now_et()
+        if now_et >= log_target:
+            # Run if we haven't run yet today.
+            if _job_due("bet_logging", daily_at_hour=log_target.hour, daily_at_minute=log_target.minute):
+                _run_job("bet_logging", _job_bet_logging, dry_run=dry_run)
+
+    # 4. Auto-resolve — every 30 min.
+    if _job_due("auto_resolve", interval_min=30):
+        _run_job("auto_resolve", _job_auto_resolve, dry_run=dry_run)
+
+    # 5. Nightly sweep — daily at 02:30 ET.
+    if _job_due("nightly_sweep", daily_at_hour=2, daily_at_minute=30):
+        _run_job("nightly_sweep", _job_nightly_sweep, dry_run=dry_run)
 
 
 def main() -> None:

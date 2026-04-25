@@ -1118,7 +1118,7 @@ def log_new_bet(
     # ============================================================
 
 
-def record_bet_result(bet_id, result, actual_value):
+def record_bet_result(bet_id, result, actual_value, *, closing_line=None, void_reason=None):
     """
     Record the outcome of a previously logged bet.
 
@@ -1140,7 +1140,15 @@ def record_bet_result(bet_id, result, actual_value):
     if result.upper() not in VALID_RESULTS:
         return False, f"Result must be WIN, LOSS, EVEN, or VOID (got '{result}')"
 
-    success = update_bet_result(bet_id, result.upper(), float(actual_value))
+    try:
+        from tracking.database import update_bet_resolution_full
+        success, _msg = update_bet_resolution_full(
+            bet_id, result.upper(), float(actual_value),
+            closing_line=closing_line, void_reason=void_reason,
+        )
+    except Exception as exc:
+        _logger.warning('[BetTracker] full resolution unavailable, falling back: %s', exc)
+        success = update_bet_result(bet_id, result.upper(), float(actual_value))
 
     if success:
         # Sync result to matching all_analysis_picks row
@@ -1331,7 +1339,7 @@ def _calculate_win_rate_by_field(bets_list, field_name):
 
 _MAX_UNCERTAIN_REASONS = 2   # max risk_flags to include in notes for uncertain picks
 
-def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15):
+def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, source="quantum"):
     """
     Automatically log bet records for analysis results that have a positive
     edge in the model's recommended direction.
@@ -1349,11 +1357,17 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15):
             Neural Analysis engine (as stored in session_state).
         minimum_edge (float): Skip picks whose edge_percentage is below
             this value for Gold/Platinum tiers. Silver picks only require
-            Ã¢â€°Â¥3% edge. Bronze picks require Ã¢â€°Â¥8% edge AND Ã¢â€°Â¥60 confidence.
+            >=3% edge. Bronze picks require >=8% edge AND >=60 confidence.
             Defaults to 5.0.  Only picks with edge > 0
             (model favours the recommended direction) are ever logged.
         max_bets (int): Maximum number of new bets to log in a single
             analysis run. Defaults to 15.
+        source (str): System tag stored in `bets.source` so the tracker
+            can split performance per system. One of:
+            ``"quantum"`` (QAM full slate), ``"qeg"`` (Quantum Edge Gap),
+            ``"smart_money"`` (Smart Money Bets), ``"platform_ai"``
+            (Platform AI / Live Games Neural Analysis).
+            Defaults to ``"quantum"``.
 
     Returns:
         int: Number of new bets logged.
@@ -1465,7 +1479,7 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15):
             auto_logged=1,
             bet_type=bet_type,
             std_devs_from_line=float(res.get("std_devs_from_line", 0.0)),
-            source="qeg_auto",
+            source=source,
         )
         if ok:
             existing_keys.add(dedup_key)
@@ -1504,7 +1518,7 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15):
             auto_logged=1,
             bet_type="risky",
             std_devs_from_line=float(res.get("std_devs_from_line", 0.0)),
-            source="qeg_auto",
+            source=source,
         )
         if ok:
             existing_keys.add(dedup_key)
@@ -3518,3 +3532,235 @@ def log_props_to_tracker(props_list, direction="OVER"):
 # ============================================================
 # END SECTION: Bulk-Log Platform Props
 # ============================================================
+
+
+# ============================================================
+# SECTION: Pipeline Overhaul — Per-System Auto-Logging,
+#          Postponement Handling, Retry-Window Cleanup
+# ============================================================
+
+# Default 3-day retry window before deleting unresolved bets.
+PENDING_RETRY_DAYS = int(os.environ.get("BET_PENDING_RETRY_DAYS", "3"))
+
+
+def auto_log_qeg_bets(analysis_results, *, max_bets=15):
+    """Filter QAM analysis_results to QEG picks and log them with source='qeg'.
+
+    QEG = Quantum Edge Gap: standard-line picks where the line deviates
+    >=20% from the season average in the qualifying direction OR
+    |edge_percentage| >= 20%.  Goblins/demons are excluded.
+    """
+    try:
+        from pages.helpers.quantum_analysis_helpers import (
+            filter_qeg_picks,
+            deduplicate_qeg_picks,
+        )
+    except ImportError as exc:
+        _logger.warning("auto_log_qeg_bets: helper import failed: %s", exc)
+        return 0
+    qeg = deduplicate_qeg_picks(filter_qeg_picks(analysis_results or []))
+    return auto_log_analysis_bets(
+        qeg, minimum_edge=5.0, max_bets=max_bets, source="qeg"
+    )
+
+
+def auto_log_smart_money_bets(analysis_results, *, max_bets=20):
+    """Filter analysis_results to Smart Money picks and log with source='smart_money'.
+
+    Reuses the Smart Money page's _filter_zone_picks if available so the
+    auto-logged picks match exactly what the page renders.  Falls back to
+    a deviation-based filter if the page module can't be imported (worker
+    runs outside Streamlit).
+    """
+    if not analysis_results:
+        return 0
+    smart_picks: list = []
+    try:
+        # Page module is only importable inside Streamlit; guard with a
+        # broad except so the worker doesn't crash if Streamlit is absent.
+        # The deviation-based fallback below covers that case.
+        from pages.helpers.smart_money_helpers import filter_smart_money_picks  # type: ignore
+        smart_picks = filter_smart_money_picks(analysis_results) or []
+    except Exception:
+        # Fallback: deviation-based standard-line filter (line >=10% from avg
+        # OR |edge| >= 10%, exclude player_is_out, min 14 season minutes).
+        for r in analysis_results:
+            if r.get("player_is_out"):
+                continue
+            odds_type = str(r.get("odds_type", "standard")).strip().lower()
+            if odds_type not in ("standard", ""):
+                # Goblin/demon picks go through here too — line deviation
+                # already captures them, but allow the page-helper path to
+                # be the source of truth when available.
+                pass
+            line_dev = abs(float(r.get("line_vs_avg_pct", 0) or 0))
+            edge_pct = abs(float(r.get("edge_percentage", 0) or 0))
+            season_min = float(r.get("season_minutes", 0) or 0)
+            if season_min and season_min < 14.0:
+                continue
+            if line_dev >= 10.0 or edge_pct >= 10.0:
+                smart_picks.append(r)
+    return auto_log_analysis_bets(
+        smart_picks, minimum_edge=5.0, max_bets=max_bets, source="smart_money"
+    )
+
+
+def auto_log_platform_ai_bets(analysis_results, *, max_bets=20, prizepicks_only=True):
+    """Auto-log Platform AI picks with source='platform_ai'.
+
+    Filters:
+      - Only PrizePicks platform (per Phase 5 design)
+      - Only Gold/Platinum tier picks (high-quality only)
+      - edge > 0 (model favours the direction)
+    """
+    if not analysis_results:
+        return 0
+    filtered: list = []
+    for r in analysis_results:
+        plat = (r.get("platform") or "").strip().lower()
+        if prizepicks_only and "prizepicks" not in plat and "prize picks" not in plat:
+            continue
+        if r.get("player_is_out"):
+            continue
+        tier = r.get("tier", "Bronze")
+        if tier not in ("Gold", "Platinum"):
+            continue
+        if float(r.get("edge_percentage", 0) or 0) <= 0:
+            continue
+        filtered.append(r)
+    return auto_log_analysis_bets(
+        filtered, minimum_edge=5.0, max_bets=max_bets, source="platform_ai"
+    )
+
+
+def detect_and_void_postponed_games(date_str=None):
+    """Detect NBA games that never reached Final on date_str and VOID their bets.
+
+    A game is treated as postponed if ESPN reports the date had scheduled
+    games but specific games never reached status=Final by the time this
+    runs (worker runs the daily sweep). For each postponed game, both
+    teams' pending bets on that date are marked VOID with reason
+    "postponed".
+
+    Returns:
+        tuple: (voided_count: int, postponed_games: list[(home, away)])
+    """
+    import datetime as _dt
+    if date_str is None:
+        date_str = (_nba_today_et() - _dt.timedelta(days=1)).isoformat()
+
+    # ESPN scoreboard
+    try:
+        import requests
+        try:
+            from utils.headers import get_espn_headers
+            headers = get_espn_headers()
+        except ImportError:
+            headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
+        url = (
+            "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
+            f"?dates={date_str.replace('-', '')}"
+        )
+        resp = requests.get(url, headers=headers, timeout=10)
+        resp.raise_for_status()
+        events = resp.json().get("events", []) or []
+    except Exception as exc:
+        _logger.warning("[BetTracker] postponement check failed: %s", exc)
+        return 0, []
+
+    postponed: list = []
+    for ev in events:
+        status_id = str(ev.get("status", {}).get("type", {}).get("id", ""))
+        status_name = str(ev.get("status", {}).get("type", {}).get("name", "")).upper()
+        # ESPN status: 1=scheduled, 2=in progress, 3=final, 5=cancelled, 6=postponed
+        is_postponed = status_id in {"5", "6"} or "POSTPONE" in status_name or "CANCEL" in status_name
+        if not is_postponed:
+            continue
+        comps = ev.get("competitions", [{}])[0].get("competitors", []) or []
+        teams = [
+            c.get("team", {}).get("abbreviation") or c.get("team", {}).get("displayName", "")
+            for c in comps
+        ]
+        teams = [t for t in teams if t]
+        if teams:
+            postponed.append(tuple(teams))
+
+    if not postponed:
+        return 0, []
+
+    flat_teams = list({t for pair in postponed for t in pair})
+    try:
+        from tracking.database import void_team_bets
+        voided = void_team_bets(date_str, flat_teams, reason="postponed")
+    except Exception as exc:
+        _logger.error("[BetTracker] void_team_bets failed: %s", exc)
+        voided = 0
+
+    _logger.info(
+        "[BetTracker] postponement sweep: %s — %d games postponed, %d bets VOIDED (%s)",
+        date_str, len(postponed), voided, flat_teams,
+    )
+    return voided, postponed
+
+
+def cleanup_unresolved_bets(retry_days=None):
+    """Delete pending bets whose bet_date is older than the retry window.
+
+    Implements "if we couldn't resolve it, it never happened". Default
+    window = PENDING_RETRY_DAYS (env BET_PENDING_RETRY_DAYS, default 3).
+    """
+    if retry_days is None:
+        retry_days = PENDING_RETRY_DAYS
+    try:
+        from tracking.database import delete_unresolved_bets_older_than
+        return delete_unresolved_bets_older_than(retry_days)
+    except Exception as exc:
+        _logger.error("[BetTracker] cleanup_unresolved_bets failed: %s", exc)
+        return 0
+
+
+def get_pipeline_performance_stats():
+    """Per-source performance: WIN/LOSS/EVEN/VOID + win-rate per system.
+
+    Returns a dict keyed by source ('quantum', 'qeg', 'smart_money',
+    'platform_ai', 'manual', 'qeg_auto') with totals + win_rate.
+    """
+    from tracking.database import _db_read
+    rows = _db_read(
+        "SELECT COALESCE(source, 'manual') AS source, "
+        "       UPPER(COALESCE(result, 'PENDING')) AS result, "
+        "       COUNT(*) AS n "
+        "FROM bets "
+        "GROUP BY COALESCE(source, 'manual'), UPPER(COALESCE(result, 'PENDING'))",
+        (),
+    ) or []
+    by_source: dict = {}
+    for r in rows:
+        src = r["source"]
+        res = r["result"]
+        n = int(r["n"] or 0)
+        bucket = by_source.setdefault(
+            src,
+            {"wins": 0, "losses": 0, "evens": 0, "voids": 0, "pending": 0, "total": 0},
+        )
+        bucket["total"] += n
+        if res == "WIN":
+            bucket["wins"] += n
+        elif res == "LOSS":
+            bucket["losses"] += n
+        elif res == "EVEN":
+            bucket["evens"] += n
+        elif res == "VOID":
+            bucket["voids"] += n
+        else:
+            bucket["pending"] += n
+    for src, b in by_source.items():
+        decided = b["wins"] + b["losses"]
+        b["win_rate"] = (b["wins"] / decided) if decided else 0.0
+    return by_source
+
+
+# ============================================================
+# END SECTION: Pipeline Overhaul
+# ============================================================
+

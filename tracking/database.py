@@ -520,6 +520,12 @@ def _pg_initialize_database() -> bool:
             standard_line REAL,
             entry_id INTEGER,
             source TEXT DEFAULT 'manual',
+            closing_line REAL,
+            clv_value REAL,
+            distance_from_line REAL,
+            void_reason TEXT,
+            resolve_attempts INTEGER DEFAULT 0,
+            last_resolve_attempt TEXT,
             created_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
         )""",
         """CREATE TABLE IF NOT EXISTS entries (
@@ -674,6 +680,22 @@ def _pg_initialize_database() -> bool:
             error_message TEXT,
             duration_seconds REAL
         )""",
+        """CREATE TABLE IF NOT EXISTS props_cache (
+            id SERIAL PRIMARY KEY,
+            for_date TEXT NOT NULL,
+            platform TEXT NOT NULL,
+            fetched_at TEXT NOT NULL,
+            props_json TEXT NOT NULL,
+            prop_count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(for_date, platform)
+        )""",
+        """CREATE TABLE IF NOT EXISTS worker_state (
+            job_name TEXT PRIMARY KEY,
+            last_run_at TEXT NOT NULL,
+            last_status TEXT,
+            last_error TEXT,
+            run_count INTEGER DEFAULT 0
+        )""",
         """CREATE TABLE IF NOT EXISTS app_state (
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL,
@@ -712,6 +734,23 @@ def _pg_initialize_database() -> bool:
         cur = conn.cursor()
         for stmt in _PG_STMTS:
             cur.execute(stmt)
+
+        # ── Pipeline-overhaul ALTER TABLE migrations for existing PG DBs ──
+        _PG_ALTERS = [
+            "ALTER TABLE bets ADD COLUMN IF NOT EXISTS closing_line REAL",
+            "ALTER TABLE bets ADD COLUMN IF NOT EXISTS clv_value REAL",
+            "ALTER TABLE bets ADD COLUMN IF NOT EXISTS distance_from_line REAL",
+            "ALTER TABLE bets ADD COLUMN IF NOT EXISTS void_reason TEXT",
+            "ALTER TABLE bets ADD COLUMN IF NOT EXISTS resolve_attempts INTEGER DEFAULT 0",
+            "ALTER TABLE bets ADD COLUMN IF NOT EXISTS last_resolve_attempt TEXT",
+        ]
+        for _alter in _PG_ALTERS:
+            try:
+                cur.execute(_alter)
+            except Exception as _alter_exc:
+                _logger.debug("PG ALTER skipped: %s — %s", _alter, _alter_exc)
+                conn.rollback()
+
         # Unique index: delete dups first if needed
         try:
             cur.execute(_UNIQUE_IDX)
@@ -1022,7 +1061,7 @@ def initialize_database():
                     "ON bets (bet_date, player_name, stat_type, direction, platform) "
                     "WHERE auto_logged = 1"
                 )
-            except sqlite3.OperationalError:
+            except (sqlite3.OperationalError, sqlite3.IntegrityError):
                 pass  # Duplicates already exist -- app dedup cleans them going forward
 
             # -- source column migration (track bet origin) --
@@ -1036,7 +1075,50 @@ def initialize_database():
                 )
             except sqlite3.OperationalError:
                 pass  # Column already exists
-            # â”€â”€ Rename retrieved_at column in player_game_logs â”€â”€
+
+            # ── Pipeline-overhaul resolution columns (closing_line, CLV, etc.) ──
+            for _col_sql in (
+                "ALTER TABLE bets ADD COLUMN closing_line REAL",
+                "ALTER TABLE bets ADD COLUMN clv_value REAL",
+                "ALTER TABLE bets ADD COLUMN distance_from_line REAL",
+                "ALTER TABLE bets ADD COLUMN void_reason TEXT",
+                "ALTER TABLE bets ADD COLUMN resolve_attempts INTEGER DEFAULT 0",
+                "ALTER TABLE bets ADD COLUMN last_resolve_attempt TEXT",
+            ):
+                try:
+                    cursor.execute(_col_sql)
+                except sqlite3.OperationalError:
+                    pass
+
+            # ── Props cache table (prop JSON storage by date+platform) ──
+            try:
+                cursor.execute(
+                    "CREATE TABLE IF NOT EXISTS props_cache ("
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    "for_date TEXT NOT NULL, "
+                    "platform TEXT NOT NULL, "
+                    "fetched_at TEXT NOT NULL, "
+                    "props_json TEXT NOT NULL, "
+                    "prop_count INTEGER NOT NULL DEFAULT 0, "
+                    "UNIQUE(for_date, platform))"
+                )
+            except sqlite3.OperationalError:
+                pass
+
+            # ── Worker state (job name → last run / status) ──
+            try:
+                cursor.execute(
+                    "CREATE TABLE IF NOT EXISTS worker_state ("
+                    "job_name TEXT PRIMARY KEY, "
+                    "last_run_at TEXT NOT NULL, "
+                    "last_status TEXT, "
+                    "last_error TEXT, "
+                    "run_count INTEGER DEFAULT 0)"
+                )
+            except sqlite3.OperationalError:
+                pass
+
+            # ── Rename retrieved_at column in player_game_logs ──
             # Older databases have the column named with old terminology; new schema
             # uses retrieved_at.  SQLite â‰¥ 3.25 supports ALTER TABLE RENAME
             # COLUMN, but we guard with try/except for older builds.
@@ -1058,7 +1140,7 @@ def initialize_database():
                     "ON all_analysis_picks "
                     "(pick_date, player_name, stat_type, prop_line, direction)"
                 )
-            except sqlite3.OperationalError:
+            except (sqlite3.OperationalError, sqlite3.IntegrityError):
                 # May fail if existing data already has duplicates.
                 # Clean up duplicates first, then retry.
                 try:
@@ -1077,8 +1159,8 @@ def initialize_database():
                         "ON all_analysis_picks "
                         "(pick_date, player_name, stat_type, prop_line, direction)"
                     )
-                except sqlite3.OperationalError:
-                    pass  # Best-effort â€” app-level dedup still protects
+                except (sqlite3.OperationalError, sqlite3.IntegrityError):
+                    pass  # Best-effort -- app-level dedup still protects
 
             # ── Stale data cleanup ─────────────────────────────────────
             # player_game_logs: keep only the last 3 days of cache rows.
@@ -3984,3 +4066,296 @@ def load_page_state():
 # ============================================================
 # END SECTION: Database CRUD Operations
 # ============================================================
+
+
+# ============================================================
+# SECTION: Pipeline Overhaul Helpers
+# (props_cache, worker_state, full bet resolution, retry/cleanup)
+# ============================================================
+
+def save_props_to_cache(for_date: str, platform: str, props: list) -> bool:
+    """Persist a list of props for a given date+platform.
+
+    Used by the worker to save fresh PrizePicks/Underdog/DK props into
+    the DB so the Streamlit app reads them without hitting the upstream
+    API on every page load. Replaces any existing row for the same
+    (for_date, platform) pair.
+
+    Args:
+        for_date: ISO date the props are valid for (NBA day, ET).
+        platform: Platform name ("PrizePicks", "Underdog Fantasy", ...).
+        props: List of prop dicts to JSON-encode and store.
+
+    Returns:
+        True on success, False on error.
+    """
+    try:
+        payload = json.dumps(props, default=str)
+        now_iso = datetime.datetime.utcnow().isoformat() + "Z"
+        if _DATABASE_URL:
+            sql = (
+                "INSERT INTO props_cache (for_date, platform, fetched_at, props_json, prop_count) "
+                "VALUES (?, ?, ?, ?, ?) "
+                "ON CONFLICT (for_date, platform) DO UPDATE "
+                "SET fetched_at = EXCLUDED.fetched_at, "
+                "    props_json = EXCLUDED.props_json, "
+                "    prop_count = EXCLUDED.prop_count"
+            )
+        else:
+            sql = (
+                "INSERT INTO props_cache (for_date, platform, fetched_at, props_json, prop_count) "
+                "VALUES (?, ?, ?, ?, ?) "
+                "ON CONFLICT(for_date, platform) DO UPDATE SET "
+                "    fetched_at = excluded.fetched_at, "
+                "    props_json = excluded.props_json, "
+                "    prop_count = excluded.prop_count"
+            )
+        cur = _db_write(
+            sql,
+            (for_date, platform, now_iso, payload, len(props)),
+            caller="save_props_to_cache",
+        )
+        return cur is not None
+    except Exception as exc:
+        _logger.error("save_props_to_cache failed (%s/%s): %s", for_date, platform, exc)
+        return False
+
+
+def load_props_from_cache(
+    for_date: str,
+    platform: str | None = None,
+    *,
+    max_age_minutes: int = 30,
+) -> list:
+    """Return cached props for date (and optional platform) if fresh.
+
+    Args:
+        for_date: NBA day in ET ('YYYY-MM-DD').
+        platform: Single platform to filter on (None = all platforms).
+        max_age_minutes: Age cutoff. Older rows are ignored (stale).
+
+    Returns:
+        Flat list of prop dicts (merged across platforms if platform is None).
+        Empty list if nothing fresh is cached.
+    """
+    try:
+        cutoff = (
+            datetime.datetime.utcnow() - datetime.timedelta(minutes=max_age_minutes)
+        ).isoformat() + "Z"
+        if platform:
+            rows = _db_read(
+                "SELECT props_json, fetched_at FROM props_cache "
+                "WHERE for_date = ? AND platform = ? AND fetched_at >= ?",
+                (for_date, platform, cutoff),
+            )
+        else:
+            rows = _db_read(
+                "SELECT props_json, fetched_at FROM props_cache "
+                "WHERE for_date = ? AND fetched_at >= ?",
+                (for_date, cutoff),
+            )
+        merged: list = []
+        for r in rows or []:
+            try:
+                merged.extend(json.loads(r["props_json"]))
+            except Exception:
+                continue
+        return merged
+    except Exception as exc:
+        _logger.debug("load_props_from_cache failed (%s/%s): %s", for_date, platform, exc)
+        return []
+
+
+def update_worker_state(
+    job_name: str,
+    *,
+    status: str = "ok",
+    error: str | None = None,
+) -> None:
+    """Stamp a job run in the worker_state table.
+
+    Used by the slate worker so it can see which jobs need to catch up
+    after a restart and so the operator can audit the schedule.
+    """
+    now_iso = datetime.datetime.utcnow().isoformat() + "Z"
+    if _DATABASE_URL:
+        sql = (
+            "INSERT INTO worker_state (job_name, last_run_at, last_status, last_error, run_count) "
+            "VALUES (?, ?, ?, ?, 1) "
+            "ON CONFLICT (job_name) DO UPDATE "
+            "SET last_run_at = EXCLUDED.last_run_at, "
+            "    last_status = EXCLUDED.last_status, "
+            "    last_error = EXCLUDED.last_error, "
+            "    run_count = worker_state.run_count + 1"
+        )
+    else:
+        sql = (
+            "INSERT INTO worker_state (job_name, last_run_at, last_status, last_error, run_count) "
+            "VALUES (?, ?, ?, ?, 1) "
+            "ON CONFLICT(job_name) DO UPDATE SET "
+            "    last_run_at = excluded.last_run_at, "
+            "    last_status = excluded.last_status, "
+            "    last_error = excluded.last_error, "
+            "    run_count = worker_state.run_count + 1"
+        )
+    _db_write(sql, (job_name, now_iso, status, error), caller="update_worker_state")
+
+
+def get_worker_state(job_name: str | None = None) -> list[dict]:
+    """Read worker_state. If job_name is given, returns just that one row."""
+    if job_name:
+        rows = _db_read(
+            "SELECT job_name, last_run_at, last_status, last_error, run_count "
+            "FROM worker_state WHERE job_name = ?",
+            (job_name,),
+        )
+    else:
+        rows = _db_read(
+            "SELECT job_name, last_run_at, last_status, last_error, run_count FROM worker_state",
+            (),
+        )
+    return [dict(r) for r in (rows or [])]
+
+
+def update_bet_resolution_full(
+    bet_id: int,
+    result: str,
+    actual_value: float,
+    *,
+    closing_line: float | None = None,
+    void_reason: str | None = None,
+) -> tuple[bool, str]:
+    """Record a full resolution (WIN/LOSS/EVEN/VOID) with derived metrics.
+
+    Computes:
+        distance_from_line = actual_value - prop_line  (signed)
+        clv_value          = (closing_line - prop_line) * (+1 OVER, -1 UNDER)
+                             — positive CLV = line moved toward your bet.
+
+    Increments resolve_attempts and stamps last_resolve_attempt regardless
+    of the outcome so the worker's retry policy can see the history.
+    """
+    try:
+        # Pull the bet so we know prop_line / direction for derived metrics.
+        rows = _db_read(
+            "SELECT prop_line, direction FROM bets WHERE bet_id = ?", (bet_id,)
+        )
+        if not rows:
+            return False, f"bet_id {bet_id} not found"
+        prop_line = float(rows[0]["prop_line"] or 0)
+        direction = (rows[0]["direction"] or "OVER").upper()
+
+        distance = float(actual_value) - prop_line
+        clv = None
+        if closing_line is not None:
+            sign = 1.0 if direction == "OVER" else -1.0
+            clv = (float(closing_line) - prop_line) * sign
+
+        now_iso = datetime.datetime.utcnow().isoformat() + "Z"
+        cur = _db_write(
+            "UPDATE bets SET "
+            "  result = ?, actual_value = ?, distance_from_line = ?, "
+            "  closing_line = COALESCE(?, closing_line), "
+            "  clv_value = COALESCE(?, clv_value), "
+            "  void_reason = COALESCE(?, void_reason), "
+            "  resolve_attempts = COALESCE(resolve_attempts, 0) + 1, "
+            "  last_resolve_attempt = ? "
+            "WHERE bet_id = ?",
+            (result, float(actual_value), distance, closing_line, clv, void_reason, now_iso, bet_id),
+            caller="update_bet_resolution_full",
+        )
+        return (cur is not None), "ok" if cur is not None else "db error"
+    except Exception as exc:
+        _logger.error("update_bet_resolution_full failed (#%s): %s", bet_id, exc)
+        return False, str(exc)
+
+
+def stamp_resolve_attempt(bet_id: int, error: str | None = None) -> None:
+    """Increment resolve_attempts/last_resolve_attempt without resolving.
+
+    Called when an attempt fails (no game log, API down, etc.) so the
+    retry-window cleanup can decide when to give up.
+    """
+    now_iso = datetime.datetime.utcnow().isoformat() + "Z"
+    _db_write(
+        "UPDATE bets SET "
+        "  resolve_attempts = COALESCE(resolve_attempts, 0) + 1, "
+        "  last_resolve_attempt = ? "
+        "WHERE bet_id = ?",
+        (now_iso, bet_id),
+        caller="stamp_resolve_attempt",
+    )
+
+
+def delete_unresolved_bets_older_than(days: int = 3) -> int:
+    """Delete pending bets whose bet_date is older than ``days`` ago.
+
+    Implements the "if we couldn't resolve it, it never happened" rule.
+    Only removes bets that still have NULL/empty result. Returns the
+    deleted row count (best-effort — SQLite/PG cursor.rowcount).
+    """
+    cutoff = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+    cur = _db_write(
+        "DELETE FROM bets WHERE bet_date < ? AND (result IS NULL OR result = '')",
+        (cutoff,),
+        caller="delete_unresolved_bets_older_than",
+    )
+    try:
+        return int(cur.rowcount or 0) if cur is not None else 0
+    except Exception:
+        return 0
+
+
+def void_team_bets(date_str: str, teams: list[str], reason: str) -> int:
+    """VOID all pending bets on ``date_str`` for any of the given teams.
+
+    Used by the postponement handler: ESPN reports a game never reached
+    Final, so neither team's bets can be resolved. Marks them VOID with
+    the supplied reason. Returns the number of rows updated.
+    """
+    if not teams:
+        return 0
+    try:
+        # Build placeholder list for the IN clause.
+        placeholders = ",".join(["?"] * len(teams))
+        sql = (
+            f"UPDATE bets SET result = 'VOID', void_reason = ?, "
+            f"  last_resolve_attempt = ? "
+            f"WHERE bet_date = ? AND (result IS NULL OR result = '') "
+            f"  AND team IN ({placeholders})"
+        )
+        now_iso = datetime.datetime.utcnow().isoformat() + "Z"
+        params = (reason, now_iso, date_str, *teams)
+        cur = _db_write(sql, params, caller="void_team_bets")
+        try:
+            return int(cur.rowcount or 0) if cur is not None else 0
+        except Exception:
+            return 0
+    except Exception as exc:
+        _logger.error("void_team_bets failed (%s, teams=%s): %s", date_str, teams, exc)
+        return 0
+
+
+def cleanup_props_cache(days: int = 30) -> None:
+    """Trim the props_cache table to the last ``days`` days."""
+    cutoff = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+    _db_write(
+        "DELETE FROM props_cache WHERE for_date < ?",
+        (cutoff,),
+        caller="cleanup_props_cache",
+    )
+
+
+def get_pending_bets_for_date(date_str: str) -> list[dict]:
+    """Return all pending bets (no result yet) for the given NBA day."""
+    rows = _db_read(
+        "SELECT * FROM bets WHERE bet_date = ? AND (result IS NULL OR result = '')",
+        (date_str,),
+    )
+    return [dict(r) for r in (rows or [])]
+
+
+# ============================================================
+# END SECTION: Pipeline Overhaul Helpers
+# ============================================================
+

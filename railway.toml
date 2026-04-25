@@ -8,3 +8,11 @@ healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
 # redeploy trigger: 2026-04-22
+
+# ──────────────────────────────────────────────────────────────
+# NOTE: This file configures the `web` service only.  The
+# pipeline `worker` service must be added manually via the
+# Railway dashboard — see WORKER_SETUP.md for step-by-step
+# instructions.  Worker start command:
+#     python slate_worker.py --daemon
+# ──────────────────────────────────────────────────────────────

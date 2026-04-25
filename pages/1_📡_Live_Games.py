@@ -676,7 +676,49 @@ if load_players_clicked:
 # 5. Auto-logs top picks to the Bet Tracker
 # ============================================================
 
+# ── Display cached picks from a PREVIOUS completed run (never mid-load) ──
+# Picks are stored in session state only after loading finishes and
+# st.rerun() is called, so they never render while loading is in progress.
+_platform_picks_cached = st.session_state.get("_platform_picks_display")
+if _platform_picks_cached and not platform_props_clicked:
+    from styles.theme import get_bet_card_css, get_bet_card_html
+    st.markdown(get_bet_card_css(), unsafe_allow_html=True)
+    st.divider()
+    st.subheader("📊 Platform Props — Results")
+    _disp_props   = _platform_picks_cached
+    _disp_total   = len(_disp_props)
+    _disp_plat    = sum(1 for p in _disp_props if p["tier"] == "Platinum")
+    _disp_gold    = sum(1 for p in _disp_props if p["tier"] == "Gold")
+    st.success(
+        f"✅ **{_disp_total} qualifying picks** found across platforms | "
+        f"💎 {_disp_plat} Platinum · 🥇 {_disp_gold} Gold"
+    )
+    _disp_order   = ["PrizePicks", "Underdog Fantasy", "DraftKings Pick6"]
+    _disp_all_plats = sorted({p["platform"] for p in _disp_props})
+    _disp_ordered = [pl for pl in _disp_order if pl in _disp_all_plats]
+    _disp_ordered += [pl for pl in _disp_all_plats if pl not in _disp_order]
+    for _disp_platform in _disp_ordered:
+        _disp_picks = [p for p in _disp_props if p["platform"] == _disp_platform]
+        if not _disp_picks:
+            continue
+        _lwr = _disp_platform.lower()
+        _icon  = "🟢" if "prize" in _lwr else "🔵" if "draft" in _lwr else "🟡" if "under" in _lwr else "🎰"
+        _color = "#00c853" if "prize" in _lwr else "#2196f3" if "draft" in _lwr else "#ffb300" if "under" in _lwr else "#607d8b"
+        st.markdown(
+            f'<h3 style="color:{_color};margin-top:20px;">'
+            f'{_icon} {_disp_platform} — {len(_disp_picks)} Pick(s)</h3>',
+            unsafe_allow_html=True,
+        )
+        _col_a, _col_b = st.columns(2)
+        for _di, _dp in enumerate(_disp_picks):
+            if _dp["edge_percentage"] <= 0:
+                continue
+            with (_col_a if _di % 2 == 0 else _col_b):
+                st.markdown(get_bet_card_html(_dp), unsafe_allow_html=True)
+
 if platform_props_clicked:
+    # Clear any stale cached picks immediately so nothing renders mid-load
+    st.session_state.pop("_platform_picks_display", None)
     st.divider()
     st.subheader("📊 Platform Props & Neural Analysis")
 
@@ -1306,7 +1348,11 @@ if platform_props_clicked:
         pp_bar.empty()
         pp_status.empty()
 
-        # ── Step 5: Display results grouped by platform ──────────────────
+        # ── Step 5: Cache picks then rerun so they display on a clean page ──
+        # Storing in session state and calling st.rerun() means the pick cards
+        # are never rendered mid-load (which caused the theme flash).  The
+        # cached display block above reads _platform_picks_display on the
+        # clean rerun and shows the fully-formed cards.
         if not analyzed_props:
             st.warning(
                 "⚠️ No qualifying picks found from platform props. "
@@ -1316,62 +1362,8 @@ if platform_props_clicked:
                 "- No player data loaded — try clicking **Auto-Load Tonight's Games** first"
             )
         else:
-            st.success("✅ Props retrieved and merged! Go to ⚡ Neural Analysis to run analysis on all loaded props.")
-            from styles.theme import get_bet_card_css, get_bet_card_html, get_summary_cards_html
-            st.markdown(get_bet_card_css(), unsafe_allow_html=True)
-
-            # Summary
-            total_picks = len(analyzed_props)
-            plat_count  = sum(1 for p in analyzed_props if p["tier"] == "Platinum")
-            gold_count  = sum(1 for p in analyzed_props if p["tier"] == "Gold")
-            st.success(
-                f"✅ **{total_picks} qualifying picks** found across platforms | "
-                f"💎 {plat_count} Platinum · 🥇 {gold_count} Gold"
-            )
-
-            # Group by platform
-            platforms_order = [
-                "PrizePicks", "Underdog Fantasy", "DraftKings Pick6",
-            ]
-            all_platforms = sorted({p["platform"] for p in analyzed_props})
-            # Show known platforms first, then any others
-            ordered_platforms = [pl for pl in platforms_order if pl in all_platforms]
-            ordered_platforms += [pl for pl in all_platforms if pl not in platforms_order]
-
-            for platform_name in ordered_platforms:
-                plat_picks = [p for p in analyzed_props if p["platform"] == platform_name]
-                if not plat_picks:
-                    continue
-
-                plat_lower = platform_name.lower()
-                if "prize" in plat_lower:
-                    icon = "🟢"
-                    badge_color = "#00c853"
-                elif "draft" in plat_lower:
-                    icon = "🔵"
-                    badge_color = "#2196f3"
-                else:
-                    icon = "🎰"
-                    badge_color = "#607d8b"
-
-                st.markdown(
-                    f'<h3 style="color:{badge_color};margin-top:20px;">'
-                    f'{icon} {platform_name} — {len(plat_picks)} Pick(s)</h3>',
-                    unsafe_allow_html=True,
-                )
-
-                # Two-column grid of bet cards
-                col_a, col_b = st.columns(2)
-                for idx, pick in enumerate(plat_picks):
-                    # Only show picks with positive edge
-                    if pick["edge_percentage"] <= 0:
-                        continue
-                    col = col_a if idx % 2 == 0 else col_b
-                    with col:
-                        st.markdown(
-                            get_bet_card_html(pick),
-                            unsafe_allow_html=True,
-                        )
+            st.session_state["_platform_picks_display"] = analyzed_props
+            st.rerun()
 
     except Exception as _platform_err:
         pp_bar.empty()

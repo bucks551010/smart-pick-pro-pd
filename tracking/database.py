@@ -2333,26 +2333,17 @@ def purge_old_snapshots(days=30):
     import datetime as _dt
 
     cutoff = (_dt.date.today() - _dt.timedelta(days=days)).isoformat()
-    conn = None
     try:
-        conn = get_database_connection()
-        cursor = conn.cursor()
-        cursor.execute(
+        cur = _db_write(
             "DELETE FROM daily_snapshots WHERE snapshot_date < ?",
             (cutoff,),
+            caller="purge_old_snapshots",
         )
-        deleted = cursor.rowcount
-        conn.commit()
+        deleted = cur.rowcount if cur is not None else 0
         return deleted
     except Exception as exc:
         _logger.error(f"[database] purge_old_snapshots error: {exc}")
         return 0
-    finally:
-        try:
-            if conn is not None:
-                conn.close()
-        except Exception:
-            pass
 
 
 def purge_stale_game_logs(days=30):
@@ -2371,27 +2362,18 @@ def purge_stale_game_logs(days=30):
     cutoff = (_dt.datetime.now() - _dt.timedelta(days=days)).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
-    conn = None
     try:
-        conn = get_database_connection()
-        cursor = conn.cursor()
-        cursor.execute(
+        cur = _db_write(
             "DELETE FROM player_game_logs WHERE retrieved_at < ?",
             (cutoff,),
+            caller="purge_stale_game_logs",
         )
-        deleted = cursor.rowcount
-        conn.commit()
+        deleted = cur.rowcount if cur is not None else 0
         _logger.info("[database] purge_stale_game_logs: removed %d rows", deleted)
         return deleted
     except Exception as exc:
         _logger.error("[database] purge_stale_game_logs error: %s", exc)
         return 0
-    finally:
-        try:
-            if conn is not None:
-                conn.close()
-        except Exception:
-            pass
 
 
 def purge_old_sessions(days=90):
@@ -2408,27 +2390,18 @@ def purge_old_sessions(days=90):
     cutoff = (_dt.datetime.now() - _dt.timedelta(days=days)).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
-    conn = None
     try:
-        conn = get_database_connection()
-        cursor = conn.cursor()
-        cursor.execute(
+        cur = _db_write(
             "DELETE FROM analysis_sessions WHERE created_at < ?",
             (cutoff,),
+            caller="purge_old_sessions",
         )
-        deleted = cursor.rowcount
-        conn.commit()
+        deleted = cur.rowcount if cur is not None else 0
         _logger.info("[database] purge_old_sessions: removed %d rows", deleted)
         return deleted
     except Exception as exc:
         _logger.error("[database] purge_old_sessions error: %s", exc)
         return 0
-    finally:
-        try:
-            if conn is not None:
-                conn.close()
-        except Exception:
-            pass
 
 
 def purge_old_backtest_results(keep=50):
@@ -2437,29 +2410,20 @@ def purge_old_backtest_results(keep=50):
     Returns:
         int: Number of rows deleted.
     """
-    conn = None
     try:
-        conn = get_database_connection()
-        cursor = conn.cursor()
-        cursor.execute(
+        cur = _db_write(
             "DELETE FROM backtest_results WHERE backtest_id NOT IN "
             "(SELECT backtest_id FROM backtest_results "
             "ORDER BY created_at DESC LIMIT ?)",
             (keep,),
+            caller="purge_old_backtest_results",
         )
-        deleted = cursor.rowcount
-        conn.commit()
+        deleted = cur.rowcount if cur is not None else 0
         _logger.info("[database] purge_old_backtest_results: removed %d rows", deleted)
         return deleted
     except Exception as exc:
         _logger.error("[database] purge_old_backtest_results error: %s", exc)
         return 0
-    finally:
-        try:
-            if conn is not None:
-                conn.close()
-        except Exception:
-            pass
 
 
 # â”€â”€ Maintenance defaults â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -2499,20 +2463,25 @@ def run_maintenance(
         "backtests": purge_old_backtest_results(keep=backtest_keep),
         "vacuumed": False,
     }
-    conn = None
-    try:
-        conn = get_database_connection()
-        conn.execute("VACUUM")
-        result["vacuumed"] = True
-        _logger.info("[database] run_maintenance: VACUUM completed")
-    except Exception as exc:
-        _logger.error("[database] run_maintenance VACUUM error: %s", exc)
-    finally:
+    # VACUUM is SQLite-only (reclaims freed pages). Skip on PostgreSQL —
+    # Postgres auto-vacuums, and running VACUUM inside a transaction is not supported.
+    if not _DATABASE_URL:
+        conn = None
         try:
-            if conn is not None:
-                conn.close()
-        except Exception:
-            pass
+            conn = sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False, timeout=30)
+            conn.execute("VACUUM")
+            result["vacuumed"] = True
+            _logger.info("[database] run_maintenance: VACUUM completed")
+        except Exception as exc:
+            _logger.error("[database] run_maintenance VACUUM error: %s", exc)
+        finally:
+            try:
+                if conn is not None:
+                    conn.close()
+            except Exception:
+                pass
+    else:
+        result["vacuumed"] = True  # PG auto-vacuums
     _logger.info("[database] run_maintenance complete: %s", result)
     return result
 

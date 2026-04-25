@@ -30,9 +30,17 @@ except ImportError:
     _logger = logging.getLogger(__name__)
 
 # ── DB path ───────────────────────────────────────────────────────────────────
+# Use DB_DIR env var (set to /data in Railway/Docker) so reads go to the same
+# persistent volume that etl/setup_db.py and data_updater.py write to.
+# Falls back to repo-relative db/ for local development.
 
+import os as _os
 _REPO_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = _REPO_ROOT / "db" / "smartpicks.db"
+_DB_DIR = _os.environ.get("DB_DIR", "")
+if _DB_DIR:
+    DB_PATH = Path(_DB_DIR) / "smartpicks.db"
+else:
+    DB_PATH = _REPO_ROOT / "db" / "smartpicks.db"
 
 
 # ── Connection helper ─────────────────────────────────────────────────────────

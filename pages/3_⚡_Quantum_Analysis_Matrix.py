@@ -785,7 +785,9 @@ if run_analysis:
         _joseph_loader = joseph_loading_placeholder("Running Quantum Matrix Analysis")
     except Exception:
         _joseph_loader = None
-    progress_bar         = st.progress(0, text="Starting analysis...")
+    _progress_status = st.empty()
+    _progress_status.caption("Starting analysis…")
+    progress_bar         = st.progress(0)
 
     # ── Show Joseph's animated loading screen with NBA fun facts ──
     try:
@@ -957,6 +959,7 @@ if run_analysis:
         total_props_count    = len(props_to_analyze)
         if total_props_count == 0:
             st.warning("⚠️ No props remain after filtering to tonight's teams / injury status. Check your games and props.")
+            _progress_status.empty()
             progress_bar.empty()
             st.stop()
 
@@ -1000,10 +1003,8 @@ if run_analysis:
         _line_snapshots = st.session_state.setdefault("line_snapshots", {})
 
         def _progress_cb(idx: int, total: int, name: str):
-            progress_bar.progress(
-                (idx + 1) / total,
-                text=f"Analyzing {name}… ({idx + 1}/{total})",
-            )
+            _progress_status.caption(f"Analyzing {name}… ({idx + 1}/{total})")
+            progress_bar.progress((idx + 1) / total)
 
         analysis_results_list = _analyze_batch(
             props_to_analyze,
@@ -1107,6 +1108,7 @@ if run_analysis:
                 st.session_state.pop("_qam_db_restored", None)
         except Exception as _persist_err:
             pass  # Non-fatal — session state still has results
+        _progress_status.empty()
         progress_bar.empty()
         # Dismiss the Joseph loading screen
         if _joseph_loader is not None:
@@ -1151,7 +1153,8 @@ if run_analysis:
         _err_str = str(_analysis_err)
         if "WebSocketClosedError" not in _err_str and "StreamClosedError" not in _err_str:
             st.error(f"❌ Analysis failed: {_analysis_err}")
-    finally:
+    finally:_progress_status.empty()
+            
         try:
             progress_bar.empty()
         except Exception:

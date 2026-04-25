@@ -695,6 +695,9 @@ def _pg_initialize_database() -> bool:
         "CREATE INDEX IF NOT EXISTS idx_pgl_player_date ON player_game_logs (player_id, game_date)",
         "CREATE INDEX IF NOT EXISTS idx_ph_date ON prediction_history (prediction_date)",
         "CREATE INDEX IF NOT EXISTS idx_ph_stat ON prediction_history (stat_type)",
+        # Prevent duplicate auto-logged bets on Railway (ephemeral filesystem means
+        # in-process dedup can't be relied upon — DB-level guard is the real protection).
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_bets_auto_dedup ON bets (bet_date, LOWER(player_name), stat_type, direction, platform) WHERE auto_logged = 1",
     ]
     # The unique index on all_analysis_picks may fail if duplicates exist;
     # handle that gracefully.
@@ -951,16 +954,29 @@ def initialize_database():
             except sqlite3.OperationalError:
                 pass
 
-            # â”€â”€ entry_id column migration (link bets to parlay entries) â”€â”€
+            # -- entry_id column migration (link bets to parlay entries) --
             try:
                 cursor.execute(
                     "ALTER TABLE bets ADD COLUMN entry_id INTEGER"
                 )
             except sqlite3.OperationalError:
-                pass  # Column already exists â€” safe to ignore
+                pass  # Column already exists -- safe to ignore
 
+            # -- auto-logged bet dedup index --
+            # Prevents duplicate auto-logged bets at the DB level -- same guard
+            # that _PG_STMTS creates on PostgreSQL.  SQLite supports partial
+            # indexes with a WHERE clause.  If existing duplicates prevent
+            # creation, we skip silently (app-level dedup still runs first).
+            try:
+                cursor.execute(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS idx_bets_auto_dedup "
+                    "ON bets (bet_date, player_name, stat_type, direction, platform) "
+                    "WHERE auto_logged = 1"
+                )
+            except sqlite3.OperationalError:
+                pass  # Duplicates already exist -- app dedup cleans them going forward
 
-            # ── source column migration (track bet origin) ──
+            # -- source column migration (track bet origin) --
             try:
                 cursor.execute(
                     "ALTER TABLE bets ADD COLUMN source TEXT DEFAULT 'manual'"

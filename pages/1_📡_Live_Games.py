@@ -1290,18 +1290,24 @@ if platform_props_clicked:
                 if _picks_stored:
                     st.toast(f"💾 Stored {_picks_stored} new pick(s) to All Analysis Picks.")
 
-                # 5b. Build dedup set from today's existing bets to avoid duplicates
+                # 5b. Build dedup set from today's existing bets to avoid duplicates.
+                # Use _db_read so it works on PostgreSQL (Railway) — raw sqlite3.connect
+                # always reads zero rows on Railway, causing every re-run to duplicate bets.
                 _existing_bet_keys: set = set()
                 try:
-                    from tracking.database import DB_FILE_PATH as _DB_PATH_LG
-                    with _sqlite3.connect(str(_DB_PATH_LG)) as _conn_lg:
-                        for _row in _conn_lg.execute(
-                            "SELECT lower(player_name), stat_type, prop_line, direction "
-                            "FROM bets WHERE bet_date = ?", (_today,),
-                        ).fetchall():
-                            _existing_bet_keys.add((_row[0], _row[1], float(_row[2] or 0), _row[3]))
+                    from tracking.database import _db_read as _lg_db_read
+                    for _row in _lg_db_read(
+                        "SELECT player_name, stat_type, prop_line, direction "
+                        "FROM bets WHERE bet_date = ?", (_today,),
+                    ):
+                        _existing_bet_keys.add((
+                            _row["player_name"].lower(),
+                            _row["stat_type"],
+                            float(_row["prop_line"] or 0),
+                            _row["direction"],
+                        ))
                 except Exception:
-                    pass  # If dedup query fails, log without dedup (same as before)
+                    pass  # If dedup query fails, log without dedup (unique index protects)
 
                 _logged = 0
                 # Log top 5 per platform — with dedup

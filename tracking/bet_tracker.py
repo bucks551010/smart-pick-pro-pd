@@ -1351,21 +1351,22 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15):
 
     today_str = _nba_today_et().isoformat()
 
-    # Build today-scoped deduplication set using a direct, date-filtered query
-    # to avoid loading the entire bet history.
+    # Build today-scoped deduplication set.  Use _db_read so it works on
+    # PostgreSQL (Railway) as well as local SQLite -- raw sqlite3.connect
+    # would always read zero rows on Railway and create duplicates.
     existing_keys: set = set()
     try:
-        with _sqlite3.connect(str(_DB_PATH)) as _conn:
-            _rows = _conn.execute(
-                "SELECT player_name, stat_type, prop_line, direction FROM bets WHERE bet_date = ?",
-                (today_str,),
-            ).fetchall()
+        from tracking.database import _db_read as _tdb_read
+        _rows = _tdb_read(
+            "SELECT player_name, stat_type, prop_line, direction FROM bets WHERE bet_date = ?",
+            (today_str,),
+        )
         existing_keys = {
-            (row[0].lower(), row[1], float(row[2] or 0), row[3])
+            (row["player_name"].lower(), row["stat_type"], float(row["prop_line"] or 0), row["direction"])
             for row in _rows
         }
     except Exception:
-        pass  # If query fails, log without dedup (safe Ã¢â‚¬â€ unique constraint absent)
+        pass  # If query fails, log without dedup (safe -- unique index protects)
 
     logged = 0
     # Silver, Gold, and Platinum tiers qualify for auto-logging.

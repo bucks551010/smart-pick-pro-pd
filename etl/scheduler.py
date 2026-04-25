@@ -69,6 +69,15 @@ _QAM_HOUR_START = int(os.environ.get("QAM_ANALYSIS_HOUR_START", "10"))   # 10 AM
 _QAM_HOUR_END = int(os.environ.get("QAM_ANALYSIS_HOUR_END", "23"))       # 11 PM ET
 _QAM_SIM_DEPTH = int(os.environ.get("QAM_SIM_DEPTH", "1000"))
 
+# End-of-night cleanup config
+# Runs once per calendar day during 2 AM–8 AM ET, after the last games finish.
+# Resolves pending bets/picks for the completed sports day, clears the slate
+# cache, and bumps data_version so running Streamlit sessions reset to a clean
+# slate awaiting the next day's props and analysis.
+_EON_DISABLED     = os.environ.get("EON_CLEANUP_DISABLED", "").strip() in ("1", "true", "yes")
+_EON_WINDOW_START = int(os.environ.get("EON_WINDOW_START", "2"))   # 2 AM ET
+_EON_WINDOW_END   = int(os.environ.get("EON_WINDOW_END",   "8"))   # 8 AM ET
+
 # DST-aware Eastern Time via zoneinfo (falls back to UTC-4 hardcoded if unavailable).
 # Using a fixed offset like UTC-5 would shift QAM/game-window checks by 1 hour during EDT.
 try:
@@ -98,6 +107,114 @@ def _in_game_window() -> bool:
     else:
         # Wraps midnight: e.g. 6 PM → 2 AM  ⇒  hour >= 18 OR hour < 2
         return et_hour >= _GAME_WINDOW_START or et_hour < _GAME_WINDOW_END
+
+
+def _et_sports_day() -> str:
+    """Return the current NBA sports day as YYYY-MM-DD (4 AM ET boundary).
+
+    Between midnight and 3:59 AM ET the sports day is still the *previous*
+    calendar date — West-Coast games finishing at 1–2 AM ET belong to the
+    slate that started the previous evening.
+    """
+    now = _et_now()
+    if now.hour < 4:
+        now = now - timedelta(hours=now.hour + 1)  # step back past midnight
+    return now.strftime("%Y-%m-%d")
+
+
+def _run_end_of_night_cleanup(sports_date: str) -> dict:
+    """Resolve last night's bets/picks and reset the slate cache.
+
+    Called automatically once per calendar day during the post-game
+    cleanup window (2 AM – 8 AM ET):
+
+    1. ``auto_resolve_bet_results(sports_date)``
+       — Grades every pending row in the ``bets`` table for that night.
+    2. ``resolve_all_analysis_picks(sports_date, include_today=True)``
+       — Grades every pending row in ``all_analysis_picks`` for that night.
+    3. Deletes ``cache/slate_cache.json`` and ``cache/latest_picks.json``
+       — The next page load returns an empty slate ("awaiting next day").
+    4. ``_bump_data_version`` — notifies all running Streamlit sessions to
+       clear their session-state caches and reload from scratch.
+
+    Args:
+        sports_date: ISO date "YYYY-MM-DD" of the completed NBA sports day.
+
+    Returns:
+        Summary dict: ``{"bets_resolved": int, "picks_resolved": int, "errors": list}``.
+    """
+    summary: dict = {"bets_resolved": 0, "picks_resolved": 0, "errors": []}
+    _logger.info("[EON] Starting end-of-night cleanup for sports date %s", sports_date)
+
+    # 1. Resolve bets table
+    try:
+        from tracking.bet_tracker import auto_resolve_bet_results
+        resolved, errors = auto_resolve_bet_results(date_str=sports_date)
+        summary["bets_resolved"] = resolved
+        if errors:
+            summary["errors"].extend(errors[:10])  # cap noisy error lists
+        _logger.info("[EON] Bets resolved: %d  (errors: %d)", resolved, len(errors))
+    except Exception:
+        _logger.exception("[EON] auto_resolve_bet_results failed (non-fatal)")
+        summary["errors"].append("auto_resolve_bet_results raised an exception")
+
+    # 2. Resolve analysis picks table
+    try:
+        from tracking.bet_tracker import resolve_all_analysis_picks
+        result = resolve_all_analysis_picks(date_str=sports_date, include_today=True)
+        summary["picks_resolved"] = result.get("resolved", 0)
+        summary["errors"].extend(result.get("errors", [])[:10])
+        _logger.info(
+            "[EON] Analysis picks resolved: %d  (W:%d  L:%d  P:%d)",
+            result.get("resolved", 0),
+            result.get("wins", 0),
+            result.get("losses", 0),
+            result.get("evens", 0),
+        )
+    except Exception:
+        _logger.exception("[EON] resolve_all_analysis_picks failed (non-fatal)")
+        summary["errors"].append("resolve_all_analysis_picks raised an exception")
+
+    # 3. Clear slate cache files so app shows a clean "awaiting next day" state
+    try:
+        import json as _json
+        from pathlib import Path as _Path
+        _cache_dir = _Path(__file__).resolve().parent.parent / "cache"
+        for _fname in ("slate_cache.json", "latest_picks.json"):
+            _f = _cache_dir / _fname
+            if _f.exists():
+                _f.unlink()
+                _logger.info("[EON] Deleted %s", _fname)
+        # Write an explicit "no picks" marker so _load_cached_slate returns []
+        # and the date guard treats this as a stale slate from yesterday.
+        _marker = {
+            "date": sports_date,          # yesterday's date → stale tomorrow
+            "written_at": __import__("datetime").datetime.utcnow().isoformat() + "Z",
+            "picks": [],
+            "_eon_cleared": True,
+        }
+        (_cache_dir / "slate_cache.json").write_text(
+            _json.dumps(_marker, indent=2), encoding="utf-8"
+        )
+        _logger.info("[EON] Wrote empty slate_cache.json (date=%s)", sports_date)
+    except Exception as exc:
+        summary["errors"].append(f"cache_clear: {exc}")
+        _logger.warning("[EON] Cache clear failed (non-fatal): %s", exc)
+
+    # 4. Bump data_version so every running Streamlit session detects the change
+    try:
+        from tracking.database import _bump_data_version
+        _bump_data_version(sports_date + "_eon")
+        _logger.info("[EON] Bumped data_version — Streamlit sessions will rerun.")
+    except Exception as exc:
+        summary["errors"].append(f"bump_data_version: {exc}")
+        _logger.warning("[EON] _bump_data_version failed (non-fatal): %s", exc)
+
+    _logger.info(
+        "[EON] Cleanup complete — bets=%d  picks=%d  errors=%d",
+        summary["bets_resolved"], summary["picks_resolved"], len(summary["errors"]),
+    )
+    return summary
 
 
 _PROP_FAST_INTERVAL = int(os.environ.get("PROP_FAST_INTERVAL_MIN", "15")) * 60   # seconds
@@ -244,6 +361,7 @@ def _loop() -> None:
     _last_analysis_date = ""      # ISO date of last successful QAM auto-analysis
     _last_analysis_ts = 0.0       # monotonic timestamp of last successful QAM run
     _ANALYSIS_RERUN_SEC = int(os.environ.get("QAM_RERUN_INTERVAL_MIN", "120")) * 60  # re-run every 2 h (was 4 h)
+    _last_cleanup_date = ""       # calendar date of last end-of-night cleanup run
 
     while True:
         game_window = _in_game_window()
@@ -328,6 +446,24 @@ def _loop() -> None:
                     _logger.info("[ETL Scheduler] Drip emails sent: %d", _drip_sent)
             except Exception:
                 _logger.debug("[ETL Scheduler] send_pending_drip_emails skipped", exc_info=True)
+
+        # ── End-of-night cleanup (once per calendar day, 2 AM–8 AM ET) ───
+        # After the last games finish (~2 AM ET), resolve all pending bets
+        # and analysis picks for the completed sports day, wipe the slate
+        # cache, and bump data_version so every active Streamlit session
+        # resets to a clean state awaiting the next day's data.
+        if not _EON_DISABLED:
+            et_hour = _et_now().hour
+            _in_eon_window = _EON_WINDOW_START <= et_hour < _EON_WINDOW_END
+            if _in_eon_window and _last_cleanup_date != today_str:
+                sports_date = _et_sports_day()  # 4 AM boundary → yesterday's slate
+                _logger.info(
+                    "[EON] Post-game cleanup window detected "
+                    "(ET hour=%d, sports_date=%s) — starting cleanup.",
+                    et_hour, sports_date,
+                )
+                _run_end_of_night_cleanup(sports_date)
+                _last_cleanup_date = today_str   # mark done for this calendar day
 
         time.sleep(interval)
 

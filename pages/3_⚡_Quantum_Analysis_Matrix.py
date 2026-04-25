@@ -421,6 +421,30 @@ if not st.session_state.get("analysis_results"):
     except Exception:
         pass  # Non-fatal — just show empty state
 
+# ─── Restore todays_games independently if still missing ────────────────────
+# The session bridge above only fires when analysis_results is absent.
+# But the home page now seeds analysis_results from get_slate_picks_for_today()
+# without also setting todays_games.  When the user navigates directly to QAM
+# after the home-page slate seed, analysis_results is populated but
+# todays_games is empty → all players fall into "Other" with no game headers.
+# This block repairs that by loading games from the latest saved session
+# whenever todays_games is missing, independently of analysis_results state.
+if not st.session_state.get("todays_games"):
+    try:
+        from tracking.database import (
+            load_latest_analysis_session as _load_session_for_games,
+            load_analysis_session_by_id as _load_session_by_id_for_games,
+        )
+        _qam_sid_games = st.query_params.get("sid")
+        if _qam_sid_games:
+            _games_session = _load_session_by_id_for_games(int(_qam_sid_games))
+        else:
+            _games_session = _load_session_for_games()
+        if _games_session and _games_session.get("todays_games"):
+            st.session_state["todays_games"] = _games_session["todays_games"]
+    except Exception:
+        pass  # Non-fatal
+
 # ─── Auto-refresh injury data if empty or stale (>4 hours) ──
 # Use a 30-minute in-session cooldown to avoid re-loading on every
 # page navigation, while still updating when data is genuinely stale.

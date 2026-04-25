@@ -2580,15 +2580,31 @@ def get_analysis_pick_dates(days=30):
 # ============================================================
 
 def _pg_insert_analysis_picks(analysis_results: list, today_str: str) -> int:
-    """PostgreSQL UPSERT for all_analysis_picks (ON CONFLICT DO UPDATE)."""
+    """PostgreSQL UPSERT for all_analysis_picks (ON CONFLICT DO UPDATE).
+
+    Enforces the same 5-props-per-player cap as analysis_orchestrator.py so
+    that even if the caller passes un-capped results no player leaks >5 rows.
+    """
     if not analysis_results:
         return 0
+
+    # Apply per-player cap before hitting the DB (results already sorted by
+    # quality from the orchestrator, so first 5 per player are best ones).
+    _MAX_PICKS_PER_PLAYER = 5
+    _pcounts: dict = {}
+    capped_results = []
+    for r in analysis_results:
+        pname = str(r.get("player_name", "")).lower()
+        _pcounts[pname] = _pcounts.get(pname, 0) + 1
+        if _pcounts[pname] <= _MAX_PICKS_PER_PLAYER:
+            capped_results.append(r)
+
     inserted = 0
     conn = None
     try:
         conn = _pg_conn()
         cur = conn.cursor()
-        for r in analysis_results:
+        for r in capped_results:
             _line = round(float(r.get("line", 0) or 0), 2)
             _platform = str(r.get("platform", "") or "").strip()
             cur.execute(
@@ -2816,7 +2832,12 @@ def get_slate_picks_for_today() -> list:
 
     Uses the NBA ET-anchored date so Railway (UTC server) queries the right day.
     Designed to be wrapped in @st.cache_data(ttl=60).
+
+    Enforces a 5-props-per-player cap (matching analysis_orchestrator.py) on
+    the read path so that multiple worker runs or multi-platform rows in the DB
+    never leak more than 5 picks per player to the UI.
     """
+    _MAX_PICKS_PER_PLAYER = 5
     today_str = _nba_today_iso()
     try:
         if _DATABASE_URL:
@@ -2834,16 +2855,26 @@ def get_slate_picks_for_today() -> list:
             cols = [d[0] for d in cur.description]
             rows = [dict(zip(cols, row)) for row in cur.fetchall()]
             conn.close()
-            return rows
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False, timeout=10) as conn:
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute(
-                "SELECT * FROM all_analysis_picks "
-                "WHERE pick_date = ? "
-                "ORDER BY confidence_score DESC",
-                (today_str,),
-            ).fetchall()
-            return [dict(r) for r in rows]
+        else:
+            with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False, timeout=10) as conn:
+                conn.row_factory = sqlite3.Row
+                rows = [dict(r) for r in conn.execute(
+                    "SELECT * FROM all_analysis_picks "
+                    "WHERE pick_date = ? "
+                    "ORDER BY confidence_score DESC",
+                    (today_str,),
+                ).fetchall()]
+
+        # Enforce per-player cap: results are already sorted by confidence_score DESC
+        # so we keep the best picks for each player.
+        _player_counts: dict = {}
+        capped: list = []
+        for r in rows:
+            pname = str(r.get("player_name", "")).lower()
+            _player_counts[pname] = _player_counts.get(pname, 0) + 1
+            if _player_counts[pname] <= _MAX_PICKS_PER_PLAYER:
+                capped.append(r)
+        return capped
     except Exception as exc:
         _logger.debug("get_slate_picks_for_today failed: %s", exc)
         return []

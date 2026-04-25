@@ -521,7 +521,10 @@ def _build_prop_card(result, player_info=None):
     confidence = float(r.get("confidence_score") or 0)
     safe_score = f"{min(10.0, confidence / 10.0):.1f}"
     stat_type = (r.get("stat_type") or "").replace("_", " ").title()
-    line = _fmt(r.get("line"))
+    _line_raw = r.get("line")
+    if _line_raw is None:
+        _line_raw = r.get("prop_line")
+    line = _fmt(_line_raw)
     true_line = _fmt(r.get("adjusted_projection"))
     prob_over = float(r.get("probability_over") or 0.5)
     edge = float(r.get("edge_percentage") or 0)

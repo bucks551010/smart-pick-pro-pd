@@ -179,6 +179,7 @@ from data.platform_mappings import COMBO_STATS, FANTASY_SCORING
 from utils.renderers import compile_card_matrix as _compile_card_matrix
 from utils.renderers import build_horizontal_card_html as _build_h_card
 from utils.player_card_renderer import compile_player_card_matrix as _compile_player_cards
+from utils.player_card_renderer import compile_player_cards_flat as _compile_cards_flat
 from styles.theme import get_quantum_card_matrix_css as _get_qcm_css
 
 # ── Glassmorphic Trading-Card imports ────────────────────────────────────────
@@ -2067,17 +2068,43 @@ def _render_results_fragment():
                         unsafe_allow_html=True,
                     )
 
-                _expander_label = (
-                    f"📊 View {_gp_count} player{'s' if _gp_count != 1 else ''}"
-                    f", {_gp_prop_count} prop{'s' if _gp_prop_count != 1 else ''}"
-                ) if _gm and _game_label != _no_game else (
-                    f"🏀 {_game_label} — {_gp_count} player{'s' if _gp_count != 1 else ''}"
-                    f", {_gp_prop_count} prop{'s' if _gp_prop_count != 1 else ''}"
+                # Render player cards as horizontal scroll rows (one row per team — no collapsible).
+                _team_lbl_css = (
+                    'font-size:0.78rem;font-weight:700;color:#94A3B8;'
+                    'text-transform:uppercase;letter-spacing:0.08em;margin:10px 0 4px;'
                 )
-
-                with st.expander(_expander_label, expanded=(_game_idx == 0)):
-                    _game_html = _compile_player_cards(_game_players)
-                    _render_card_native(_game_html)
+                if _gm and _game_label != _no_game:
+                    # Split players into away-team row and home-team row
+                    _away_row: dict = {}
+                    _home_row: dict = {}
+                    _other_row: dict = {}
+                    for _pn, _pd in _game_players.items():
+                        _pt = (
+                            (_pd.get("vitals") or {}).get("team", "")
+                            or (_pd["props"][0].get("player_team", "") if _pd.get("props") else "")
+                            or (_pd["props"][0].get("team", "") if _pd.get("props") else "")
+                        ).upper().strip()
+                        if _pt == _mc_at:
+                            _away_row[_pn] = _pd
+                        elif _pt == _mc_ht:
+                            _home_row[_pn] = _pd
+                        else:
+                            _other_row[_pn] = _pd
+                    if _away_row:
+                        st.markdown(f'<div style="{_team_lbl_css}">{_mc_at}</div>', unsafe_allow_html=True)
+                        _render_card_native(_compile_cards_flat(_away_row))
+                    if _home_row:
+                        st.markdown(f'<div style="{_team_lbl_css}">{_mc_ht}</div>', unsafe_allow_html=True)
+                        _render_card_native(_compile_cards_flat(_home_row))
+                    if _other_row:
+                        _render_card_native(_compile_cards_flat(_other_row))
+                else:
+                    # No game meta — render all players in one flat row
+                    st.markdown(
+                        f'<div style="{_team_lbl_css}">{_game_label}</div>',
+                        unsafe_allow_html=True,
+                    )
+                    _render_card_native(_compile_cards_flat(_game_players))
 
     # Show OUT players in a separate collapsed section
     _out_display = [r for r in displayed_results if r.get("player_is_out", False)]

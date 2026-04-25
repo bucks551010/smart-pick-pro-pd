@@ -119,6 +119,7 @@ class WeeklySummary:
     win_rate:     float = 0.0
     roi_pct:      float | None = None
     winning_bets: list[dict[str, Any]] = field(default_factory=list)
+    all_bets:     list[dict[str, Any]] = field(default_factory=list)  # wins + losses for ledger thread
 
 
 def get_results_for_week(end_date: date | None = None) -> WeeklySummary:
@@ -160,7 +161,8 @@ def get_results_for_week(end_date: date | None = None) -> WeeklySummary:
         losses=len(losses),
         win_rate=win_rate,
         roi_pct=roi_pct,
-        winning_bets=wins,  # full detail so post can list each prop
+        winning_bets=wins,    # wins only (used by scorecard image)
+        all_bets=bets,        # all resolved bets for ledger thread
     )
 
 

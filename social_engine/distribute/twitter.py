@@ -41,3 +41,30 @@ class TwitterPoster:
             post_id=str(tweet_id),
             url=f"https://x.com/i/web/status/{tweet_id}",
         )
+
+    def post_thread(self, tweets: list[str]) -> list["PostResult"]:
+        """Post a text-only Twitter thread. First tweet is standalone; the rest are chained replies."""
+        if not tweets:
+            return []
+        client = tweepy.Client(
+            consumer_key=SETTINGS.twitter_key,
+            consumer_secret=SETTINGS.twitter_secret,
+            access_token=SETTINGS.twitter_token,
+            access_token_secret=SETTINGS.twitter_token_sec,
+            bearer_token=SETTINGS.twitter_bearer or None,
+        )
+        results: list[PostResult] = []
+        reply_to_id: str | None = None
+        for text in tweets:
+            kwargs: dict = {"text": text[:280]}
+            if reply_to_id:
+                kwargs["in_reply_to_tweet_id"] = reply_to_id
+            resp = client.create_tweet(**kwargs)
+            tweet_id = str(resp.data["id"])
+            reply_to_id = tweet_id
+            results.append(PostResult(
+                ok=True, channel=self.channel,
+                post_id=tweet_id,
+                url=f"https://x.com/i/web/status/{tweet_id}",
+            ))
+        return results

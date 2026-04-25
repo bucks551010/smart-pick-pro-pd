@@ -24,6 +24,7 @@ from config import SETTINGS
 from core import data_source as ds
 from scheduler.jobs import (
     build_and_post_branding,
+    build_and_post_ledger_thread,
     build_and_post_morning_recap,
     build_and_post_pregame_slate,
     build_and_post_weekly_scorecard,
@@ -60,11 +61,17 @@ def _start_scheduler() -> BackgroundScheduler:
         IntervalTrigger(minutes=15),
         id="pregame_scan", replace_existing=True,
     )
-    # 3. Weekly scorecard — every Sunday at 10am local
+    # 3. Weekly scorecard image — every Sunday at 10am local
     sched.add_job(
         build_and_post_weekly_scorecard,
         CronTrigger(hour=10, minute=0, day_of_week="sun", timezone=SETTINGS.timezone),
         id="weekly_scorecard", replace_existing=True,
+    )
+    # 3b. Weekly ledger thread (text) — every Sunday at 10:30am local
+    sched.add_job(
+        build_and_post_ledger_thread,
+        CronTrigger(hour=10, minute=30, day_of_week="sun", timezone=SETTINGS.timezone),
+        id="ledger_thread", replace_existing=True,
     )
     # 4. Branding cadence — cron expression
     parts = SETTINGS.branding_cron.split()
@@ -77,8 +84,11 @@ def _start_scheduler() -> BackgroundScheduler:
             id="branding", replace_existing=True,
         )
     sched.start()
-    _log.info("APScheduler started — recap=%02d:00 %s | pregame=every 15min | branding=%s | weekly=Sun 10:00",
-              SETTINGS.recap_hour, SETTINGS.timezone, SETTINGS.branding_cron)
+    _log.info(
+        "APScheduler started — recap=%02d:00 %s | pregame=every 15min "
+        "| branding=%s | weekly=Sun 10:00 | ledger_thread=Sun 10:30",
+        SETTINGS.recap_hour, SETTINGS.timezone, SETTINGS.branding_cron,
+    )
     return sched
 
 
@@ -136,6 +146,14 @@ def trigger_pregame(
 def trigger_branding(x_webhook_secret: str | None = Header(default=None)):
     _auth(x_webhook_secret)
     results = build_and_post_branding()
+    return {"results": [r.__dict__ for r in results]}
+
+
+@app.post("/trigger/ledger")
+def trigger_ledger(x_webhook_secret: str | None = Header(default=None)):
+    """Manually fire the Sunday ledger thread immediately."""
+    _auth(x_webhook_secret)
+    results = build_and_post_ledger_thread()
     return {"results": [r.__dict__ for r in results]}
 
 

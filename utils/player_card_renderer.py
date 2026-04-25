@@ -1231,6 +1231,7 @@ def compile_player_cards_flat(grouped_players):
     """
     if not grouped_players:
         return (
+            f"<style>{PLAYER_CARD_CSS}</style>"
             '<div style="text-align:center;color:#64748b;padding:40px;">'
             "No analysis results to display.</div>"
         )
@@ -1256,6 +1257,7 @@ def compile_player_cards_flat(grouped_players):
             all_cards.append(_build_prop_card(p, player_info=player_info))
 
     return (
+        f"<style>{PLAYER_CARD_CSS}</style>"
         '<div style="overflow-x:auto;overflow-y:visible;width:100%;max-width:100%;">'
         f'<div class="pc-props-scroll" style="padding:10px 0 16px;">{"".join(all_cards)}</div>'
         '</div>'

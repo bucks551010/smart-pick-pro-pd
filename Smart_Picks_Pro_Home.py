@@ -25,7 +25,7 @@ except ImportError:
 
 from data.data_manager import load_players_data, load_props_data, load_teams_data
 from data.nba_data_service import load_last_updated
-from tracking.database import initialize_database, load_user_settings, load_page_state
+from tracking.database import initialize_database, load_user_settings, load_page_state, _nba_today_iso as _nba_today_iso_fn
 from styles.theme import get_global_css, get_quantum_card_matrix_css as _get_qcm_css
 from pages.helpers.quantum_analysis_helpers import (
     QEG_EDGE_THRESHOLD as _QEG_EDGE_THRESHOLD,
@@ -244,6 +244,27 @@ def _load_cached_slate() -> tuple[list, list]:
     except Exception:
         props = []
     return picks, props
+
+# ─── Sports-day boundary guard ───────────────────────────────────────────────
+# The _picks_seeded gate fires once per Streamlit session.  If the user keeps
+# their browser open overnight the session carries over to the next sports day
+# while _picks_seeded=True stays set, so yesterday's picks never clear even
+# after the data-version bump.  This check compares the stored init date to
+# the current ET sports day and wipes all prior-day state proactively.
+_today_iso = _nba_today_iso_fn()
+if st.session_state.get("_auto_init_date") != _today_iso:
+    # New sports day — clear everything so the seeding gate re-runs fresh.
+    for _k in (
+        "_picks_seeded", "analysis_results", "current_props",
+        "platform_props", "todays_games", "session_props",
+        "_page_state_restored",
+    ):
+        st.session_state.pop(_k, None)
+    st.session_state["_auto_init_date"] = _today_iso
+    try:
+        _load_cached_slate.clear()
+    except Exception:
+        pass
 
 if not st.session_state.get("_picks_seeded"):
     st.session_state["_picks_seeded"] = True

@@ -1832,8 +1832,21 @@ def _filter_zone_picks(all_props: list, players_data: dict,
     """
     # Pre-filter: only pass the relevant odds_type to the batch enricher
     typed_props = [p for p in all_props if p.get("odds_type", "standard") == odds_type]
+
+    # Mirror fallback: the enkday mirror only has standard-odds props (no goblin/demon).
+    # When Railway falls back to the mirror after a PrizePicks rate-limit, typed_props
+    # will be empty. In that case, use standard-odds props and rely entirely on
+    # line_vs_avg_pct deviation to identify the same value plays.
+    _mirror_fallback = False
     if not typed_props:
-        return []
+        standard_props = [p for p in all_props if p.get("odds_type", "standard") == "standard"]
+        if standard_props and players_data:
+            # Only enter mirror-fallback when we have player stats to compute deviation.
+            # Without stats we cannot tell which standard lines are goblin/demon equivalents.
+            typed_props = standard_props
+            _mirror_fallback = True
+        else:
+            return []
 
     # Batch enrich: one player-index build + per-player stat memo across all props
     enriched_batch = enrich_props_batch(typed_props, players_data)

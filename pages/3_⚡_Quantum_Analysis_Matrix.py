@@ -1153,8 +1153,8 @@ if run_analysis:
         _err_str = str(_analysis_err)
         if "WebSocketClosedError" not in _err_str and "StreamClosedError" not in _err_str:
             st.error(f"❌ Analysis failed: {_analysis_err}")
-    finally:_progress_status.empty()
-            
+    finally:
+        _progress_status.empty()
         try:
             progress_bar.empty()
         except Exception:

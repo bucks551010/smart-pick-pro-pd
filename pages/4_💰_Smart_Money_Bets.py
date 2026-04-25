@@ -2162,6 +2162,33 @@ st.markdown(
 # ── Education / Intelligence Briefing ───────────────────────
 st.markdown(_render_education_section(), unsafe_allow_html=True)
 
+# ── Loading skeleton — reserves space while props fetch so the page
+# layout does not shift/flash when pick cards appear after loading.
+_picks_placeholder = st.empty()
+with _picks_placeholder.container():
+    st.markdown(
+        '<div style="'
+        'min-height:320px;'
+        'display:flex;align-items:center;justify-content:center;'
+        'background:rgba(13,18,40,0.6);'
+        'border:1px solid rgba(0,240,255,0.12);'
+        'border-radius:16px;margin:18px 0;'
+        'animation:s15CardShimmer 1.5s ease infinite;'
+        'background-size:200% 100%;'
+        'background-image:linear-gradient('
+        '90deg,rgba(13,18,40,0.6) 0%,'
+        'rgba(0,240,255,0.04) 40%,'
+        'rgba(0,240,255,0.08) 50%,'
+        'rgba(0,240,255,0.04) 60%,'
+        'rgba(13,18,40,0.6) 100%'
+        ');">'
+        '<span style="color:#00f0ff;font-family:Orbitron,sans-serif;'
+        'font-size:0.9rem;opacity:0.7;letter-spacing:0.12em;">'
+        '⚡ LOADING PICKS…</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
 # ── Load data ─────────────────────────────────────────────────
 with st.spinner("Fetching live PrizePicks props…"):
     all_props = fetch_prizepicks_props()
@@ -2289,6 +2316,9 @@ for _pick in easy_money_picks + smart_risk_picks:
         _existing.add(_dk)
         _sm_logged += 1
 
+
+# Clear loading skeleton — picks are ready, render the real content now
+_picks_placeholder.empty()
 
 # ============================================================
 # TABBED SECTIONS — Easy Money / Smart Risk / Both

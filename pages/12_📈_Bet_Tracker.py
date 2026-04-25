@@ -131,7 +131,8 @@ if bg_resolve_results.get("done"):
 # ============================================================
 
 import datetime as _dt_title
-_today_display = tracker_today_date().strftime("%A, %B %-d")
+_td = tracker_today_date()
+_today_display = f"{_td.strftime('%A, %B')} {_td.day}"
 st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,700;0,800;0,900;1,700;1,800;1,900&family=Barlow:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700;800&display=swap');

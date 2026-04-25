@@ -699,11 +699,12 @@ def _pg_initialize_database() -> bool:
         # in-process dedup can't be relied upon — DB-level guard is the real protection).
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_bets_auto_dedup ON bets (bet_date, LOWER(player_name), stat_type, direction, platform) WHERE auto_logged = 1",
     ]
-    # The unique index on all_analysis_picks may fail if duplicates exist;
-    # handle that gracefully.
+    # The unique index on all_analysis_picks must match the ON CONFLICT clause
+    # in _pg_insert_analysis_picks exactly (including LOWER/COALESCE expressions).
+    # Mismatch causes PostgreSQL to raise a constraint error on every insert.
     _UNIQUE_IDX = (
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_aap_unique_pick "
-        "ON all_analysis_picks (pick_date, player_name, stat_type, prop_line, direction)"
+        "ON all_analysis_picks (pick_date, LOWER(player_name), stat_type, prop_line, direction, COALESCE(platform, ''))"
     )
     conn = None
     try:
@@ -792,6 +793,40 @@ def initialize_database():
             _db_write(
                 "DELETE FROM analysis_sessions WHERE analysis_timestamp < ?",
                 (_nba_today_iso(),),
+                caller="pg_stale_cleanup",
+            )
+            # all_analysis_picks: keep only the last 60 days.
+            _cutoff_60d = (datetime.date.today() - datetime.timedelta(days=60)).isoformat()
+            _db_write(
+                "DELETE FROM all_analysis_picks WHERE pick_date < ?",
+                (_cutoff_60d,),
+                caller="pg_stale_cleanup",
+            )
+            # prediction_history: keep only the last 90 days.
+            _cutoff_90d = (datetime.date.today() - datetime.timedelta(days=90)).isoformat()
+            _db_write(
+                "DELETE FROM prediction_history WHERE prediction_date < ?",
+                (_cutoff_90d,),
+                caller="pg_stale_cleanup",
+            )
+            # daily_snapshots: keep only the last 90 days.
+            _db_write(
+                "DELETE FROM daily_snapshots WHERE snapshot_date < ?",
+                (_cutoff_90d,),
+                caller="pg_stale_cleanup",
+            )
+            # backtest_results: keep only the most recent 50 runs.
+            _db_write(
+                "DELETE FROM backtest_results WHERE backtest_id NOT IN "
+                "(SELECT backtest_id FROM backtest_results ORDER BY created_at DESC LIMIT 50)",
+                (),
+                caller="pg_stale_cleanup",
+            )
+            # slate_cache: keep only the last 30 days.
+            _cutoff_30d = (datetime.date.today() - datetime.timedelta(days=30)).isoformat()
+            _db_write(
+                "DELETE FROM slate_cache WHERE for_date < ?",
+                (_cutoff_30d,),
                 caller="pg_stale_cleanup",
             )
         return ok
@@ -1581,7 +1616,6 @@ def get_entry_legs(entry_id):
     ORDER BY created_at ASC
     """
     return _db_read(select_sql, (entry_id,))
-        return []
 
 
 def resolve_entry_from_legs(entry_id):
@@ -3055,6 +3089,7 @@ def _write_latest_picks_cache(date_str: str, limit: int = 5) -> None:
     try:
         if _DATABASE_URL:
             rows_data: list = []
+            conn = None
             try:
                 conn = _pg_conn()
                 cur = conn.cursor()
@@ -3070,9 +3105,11 @@ def _write_latest_picks_cache(date_str: str, limit: int = 5) -> None:
                 )
                 cols = [d[0] for d in cur.description]
                 rows_data = [dict(zip(cols, row)) for row in cur.fetchall()]
-                conn.close()
             except Exception as pg_err:
                 _logger.debug("_write_latest_picks_cache PG query: %s", pg_err)
+            finally:
+                if conn is not None:
+                    _pg_putconn(conn)
             if not rows_data:
                 return
             cache_data = {"date": date_str, "picks": rows_data}
@@ -3630,24 +3667,6 @@ def save_player_game_logs_to_db(player_id, player_name, game_logs):
             inserted += 1
 
     return inserted
-            break  # success â€” exit retry loop
-        except sqlite3.OperationalError as op_err:
-            if "locked" in str(op_err).lower() and _attempt < _WRITE_RETRY_ATTEMPTS - 1:
-                _logger.warning(
-                    f"save_player_game_logs_to_db: database locked, retry "
-                    f"{_attempt + 1}/{_WRITE_RETRY_ATTEMPTS}"
-                )
-                time.sleep(_WRITE_RETRY_DELAY * (2 ** _attempt))
-                # Reset: INSERT OR REPLACE handles deduplication, so
-                # re-inserting the same rows is idempotent.
-                inserted = 0
-                continue
-            _logger.warning(f"save_player_game_logs_to_db error (non-fatal): {op_err}")
-        except Exception as err:
-            _logger.warning(f"save_player_game_logs_to_db error (non-fatal): {err}")
-            break  # non-retryable error
-
-    return inserted
 
 
 def _safe_float(value, default=None):
@@ -3920,36 +3939,21 @@ def load_page_state():
         if not rows or not rows[0].get("state_json"):
             return {}
         raw = json.loads(rows[0]["state_json"])
+        # Discard state saved on a prior NBA day — prevents yesterday's players
+        # from appearing after the Eastern Time day boundary rolls over.
         saved_date = raw.get("_page_state_date", "")
         if saved_date != _nba_today_iso():
             _logger.info(
                 "load_page_state: discarding stale state from '%s' (today=%s)",
-                saved_date, _nba_today_iso(),
+                saved_date,
+                _nba_today_iso(),
             )
             return {}
-        return {k: v for k, v in raw.items() if k in _PERSISTED_PAGE_STATE_KEYS}
-    except Exception as _err:
-        _logger.warning("load_page_state error (non-fatal): %s", _err)
-        return {} — prevents yesterday's players
-            # from appearing after the NBA Eastern Time day boundary rolls over.
-            # NOTE: if saved_date is "" (state written before the date-stamp
-            # feature was added), that also fails the equality check and is
-            # correctly treated as stale.  Do NOT add an `and saved_date`
-            # guard here — that would allow un-stamped old state to bypass
-            # the check and re-inject yesterday's analysis_results.
-            saved_date = raw.get("_page_state_date", "")
-            if saved_date != _nba_today_iso():
-                _logger.info(
-                    "load_page_state: discarding stale state from '%s' (today=%s)",
-                    saved_date,
-                    _nba_today_iso(),
-                )
-                return {}
-            # Only return recognised keys to avoid injecting stale/unknown state
-            return {
-                k: v for k, v in raw.items()
-                if k in _PERSISTED_PAGE_STATE_KEYS
-            }
+        # Only return recognised keys to avoid injecting stale/unknown state
+        return {
+            k: v for k, v in raw.items()
+            if k in _PERSISTED_PAGE_STATE_KEYS
+        }
     except Exception as _err:
         _logger.warning("load_page_state error (non-fatal): %s", _err)
         return {}

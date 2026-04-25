@@ -458,6 +458,295 @@ CREATE TABLE IF NOT EXISTS page_state (
 
 
 # ============================================================
+# SECTION: Unified DB Helpers (PostgreSQL / SQLite routing)
+# All write/read operations should use _db_write / _db_read so
+# they automatically route to the correct backend.
+# ============================================================
+
+def _db_write(sql: str, params=(), *, caller: str = "write"):
+    """Route a write to PostgreSQL (Railway) or SQLite (local dev)."""
+    if _DATABASE_URL:
+        return _pg_execute_write(sql, params, caller=caller)
+    return _execute_write(sql, params, caller=caller)
+
+
+def _db_read(sql: str, params=()) -> list:
+    """Route a SELECT to PostgreSQL (Railway) or SQLite (local dev).
+
+    Always returns a list of plain dicts.
+    """
+    if _DATABASE_URL:
+        return _pg_execute_read(sql, params)
+    try:
+        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False, timeout=10) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(sql, params if params else ()).fetchall()
+            return [dict(r) for r in rows]
+    except sqlite3.Error as err:
+        _logger.warning("_db_read error: %s", err)
+        return []
+
+
+def _pg_initialize_database() -> bool:
+    """Create all required tables and indexes on PostgreSQL (idempotent).
+
+    Called from initialize_database() when DATABASE_URL is set.
+    Uses PostgreSQL-compatible DDL (SERIAL primary keys, NOW() defaults).
+    """
+    _PG_STMTS = [
+        # ── Core tables ────────────────────────────────────────────────
+        """CREATE TABLE IF NOT EXISTS bets (
+            bet_id SERIAL PRIMARY KEY,
+            bet_date TEXT NOT NULL,
+            player_name TEXT NOT NULL,
+            team TEXT,
+            stat_type TEXT NOT NULL,
+            prop_line REAL NOT NULL,
+            direction TEXT NOT NULL,
+            platform TEXT,
+            confidence_score REAL,
+            probability_over REAL,
+            edge_percentage REAL,
+            tier TEXT,
+            entry_type TEXT,
+            entry_fee REAL,
+            result TEXT,
+            actual_value REAL,
+            notes TEXT,
+            auto_logged INTEGER DEFAULT 0,
+            bet_type TEXT DEFAULT 'normal',
+            std_devs_from_line REAL DEFAULT 0.0,
+            line_category TEXT DEFAULT '50_50',
+            standard_line REAL,
+            entry_id INTEGER,
+            source TEXT DEFAULT 'manual',
+            created_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
+        )""",
+        """CREATE TABLE IF NOT EXISTS entries (
+            entry_id SERIAL PRIMARY KEY,
+            entry_date TEXT NOT NULL,
+            platform TEXT NOT NULL,
+            entry_type TEXT,
+            entry_fee REAL,
+            expected_value REAL,
+            result TEXT,
+            payout REAL,
+            pick_count INTEGER,
+            notes TEXT,
+            created_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
+        )""",
+        """CREATE TABLE IF NOT EXISTS prediction_history (
+            prediction_id SERIAL PRIMARY KEY,
+            prediction_date TEXT NOT NULL,
+            player_name TEXT NOT NULL,
+            stat_type TEXT NOT NULL,
+            prop_line REAL NOT NULL,
+            direction TEXT NOT NULL,
+            confidence_score REAL,
+            probability_predicted REAL,
+            was_correct INTEGER,
+            actual_value REAL,
+            notes TEXT,
+            created_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
+        )""",
+        """CREATE TABLE IF NOT EXISTS daily_snapshots (
+            snapshot_id SERIAL PRIMARY KEY,
+            snapshot_date TEXT NOT NULL UNIQUE,
+            total_picks INTEGER DEFAULT 0,
+            wins INTEGER DEFAULT 0,
+            losses INTEGER DEFAULT 0,
+            pushes INTEGER DEFAULT 0,
+            pending INTEGER DEFAULT 0,
+            win_rate REAL DEFAULT 0.0,
+            platform_breakdown TEXT,
+            tier_breakdown TEXT,
+            stat_type_breakdown TEXT,
+            best_pick TEXT,
+            worst_pick TEXT,
+            created_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
+        )""",
+        """CREATE TABLE IF NOT EXISTS all_analysis_picks (
+            pick_id SERIAL PRIMARY KEY,
+            pick_date TEXT NOT NULL,
+            player_name TEXT NOT NULL,
+            team TEXT,
+            stat_type TEXT NOT NULL,
+            prop_line REAL NOT NULL,
+            direction TEXT NOT NULL,
+            platform TEXT,
+            confidence_score REAL,
+            probability_over REAL,
+            edge_percentage REAL,
+            tier TEXT,
+            result TEXT,
+            actual_value REAL,
+            notes TEXT,
+            bet_type TEXT DEFAULT 'normal',
+            std_devs_from_line REAL DEFAULT 0.0,
+            is_risky INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
+        )""",
+        """CREATE TABLE IF NOT EXISTS subscriptions (
+            subscription_id TEXT PRIMARY KEY,
+            customer_id TEXT NOT NULL,
+            customer_email TEXT,
+            status TEXT NOT NULL DEFAULT 'active',
+            plan_name TEXT DEFAULT 'Premium',
+            current_period_start TEXT,
+            current_period_end TEXT,
+            created_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS'),
+            updated_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
+        )""",
+        """CREATE TABLE IF NOT EXISTS analysis_sessions (
+            session_id SERIAL PRIMARY KEY,
+            analysis_timestamp TEXT NOT NULL,
+            analysis_results_json TEXT NOT NULL,
+            todays_games_json TEXT,
+            selected_picks_json TEXT,
+            prop_count INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
+        )""",
+        """CREATE TABLE IF NOT EXISTS backtest_results (
+            backtest_id SERIAL PRIMARY KEY,
+            run_timestamp TEXT NOT NULL,
+            season TEXT NOT NULL,
+            stat_types_json TEXT NOT NULL,
+            min_edge REAL NOT NULL,
+            tier_filter TEXT,
+            total_picks INTEGER NOT NULL DEFAULT 0,
+            wins INTEGER NOT NULL DEFAULT 0,
+            losses INTEGER NOT NULL DEFAULT 0,
+            win_rate REAL NOT NULL DEFAULT 0.0,
+            roi REAL NOT NULL DEFAULT 0.0,
+            total_pnl REAL NOT NULL DEFAULT 0.0,
+            tier_win_rates_json TEXT,
+            stat_win_rates_json TEXT,
+            edge_win_rates_json TEXT,
+            pick_log_json TEXT,
+            created_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
+        )""",
+        """CREATE TABLE IF NOT EXISTS player_game_logs (
+            log_id SERIAL PRIMARY KEY,
+            player_id TEXT NOT NULL,
+            player_name TEXT NOT NULL,
+            game_date TEXT NOT NULL,
+            opponent TEXT,
+            minutes REAL,
+            points INTEGER,
+            rebounds INTEGER,
+            assists INTEGER,
+            threes INTEGER,
+            steals INTEGER,
+            blocks INTEGER,
+            turnovers INTEGER,
+            fg_pct REAL,
+            ft_pct REAL,
+            plus_minus INTEGER,
+            retrieved_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS'),
+            UNIQUE(player_id, game_date)
+        )""",
+        """CREATE TABLE IF NOT EXISTS bet_audit_log (
+            audit_id SERIAL PRIMARY KEY,
+            bet_id INTEGER NOT NULL,
+            action TEXT NOT NULL,
+            old_values TEXT,
+            new_values TEXT,
+            changed_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
+        )""",
+        """CREATE TABLE IF NOT EXISTS user_settings (
+            settings_id INTEGER PRIMARY KEY CHECK (settings_id = 1),
+            settings_json TEXT NOT NULL,
+            updated_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
+        )""",
+        """CREATE TABLE IF NOT EXISTS page_state (
+            state_id INTEGER PRIMARY KEY CHECK (state_id = 1),
+            state_json TEXT NOT NULL,
+            updated_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
+        )""",
+        """CREATE TABLE IF NOT EXISTS slate_cache (
+            id SERIAL PRIMARY KEY,
+            for_date TEXT NOT NULL,
+            run_at TEXT NOT NULL,
+            pick_count INTEGER NOT NULL DEFAULT 0,
+            props_fetched INTEGER NOT NULL DEFAULT 0,
+            games_count INTEGER NOT NULL DEFAULT 0,
+            status TEXT NOT NULL DEFAULT 'ok',
+            error_message TEXT,
+            duration_seconds REAL
+        )""",
+        """CREATE TABLE IF NOT EXISTS app_state (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TEXT
+        )""",
+        # ── Indexes ────────────────────────────────────────────────────
+        "CREATE INDEX IF NOT EXISTS idx_bets_player ON bets (player_name)",
+        "CREATE INDEX IF NOT EXISTS idx_bets_date ON bets (bet_date)",
+        "CREATE INDEX IF NOT EXISTS idx_bets_created ON bets (created_at)",
+        "CREATE INDEX IF NOT EXISTS idx_bets_stat_type ON bets (stat_type)",
+        "CREATE INDEX IF NOT EXISTS idx_bets_platform ON bets (platform)",
+        "CREATE INDEX IF NOT EXISTS idx_bets_date_result ON bets (bet_date, result)",
+        "CREATE INDEX IF NOT EXISTS idx_aap_date ON all_analysis_picks (pick_date)",
+        "CREATE INDEX IF NOT EXISTS idx_aap_player ON all_analysis_picks (player_name)",
+        "CREATE INDEX IF NOT EXISTS idx_aap_stat_type ON all_analysis_picks (stat_type)",
+        "CREATE INDEX IF NOT EXISTS idx_aap_date_result ON all_analysis_picks (pick_date, result)",
+        "CREATE INDEX IF NOT EXISTS idx_pgl_player_id ON player_game_logs (player_id)",
+        "CREATE INDEX IF NOT EXISTS idx_pgl_game_date ON player_game_logs (game_date)",
+        "CREATE INDEX IF NOT EXISTS idx_pgl_player_date ON player_game_logs (player_id, game_date)",
+        "CREATE INDEX IF NOT EXISTS idx_ph_date ON prediction_history (prediction_date)",
+        "CREATE INDEX IF NOT EXISTS idx_ph_stat ON prediction_history (stat_type)",
+    ]
+    # The unique index on all_analysis_picks may fail if duplicates exist;
+    # handle that gracefully.
+    _UNIQUE_IDX = (
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_aap_unique_pick "
+        "ON all_analysis_picks (pick_date, player_name, stat_type, prop_line, direction)"
+    )
+    conn = None
+    try:
+        conn = _pg_conn()
+        cur = conn.cursor()
+        for stmt in _PG_STMTS:
+            cur.execute(stmt)
+        # Unique index: delete dups first if needed
+        try:
+            cur.execute(_UNIQUE_IDX)
+        except Exception:
+            conn.rollback()
+            cur.execute(
+                """DELETE FROM all_analysis_picks
+                   WHERE pick_id NOT IN (
+                       SELECT MIN(pick_id)
+                       FROM all_analysis_picks
+                       GROUP BY pick_date, player_name, stat_type, prop_line, direction
+                   )"""
+            )
+            try:
+                cur.execute(_UNIQUE_IDX)
+            except Exception:
+                pass  # Best-effort
+        conn.commit()
+        _logger.info("PostgreSQL schema initialized successfully")
+        return True
+    except Exception as exc:
+        _logger.error("_pg_initialize_database failed: %s", exc)
+        try:
+            if conn:
+                conn.rollback()
+        except Exception:
+            pass
+        return False
+    finally:
+        if conn:
+            _pg_putconn(conn)
+
+
+# ============================================================
+# END SECTION: Unified DB Helpers
+# ============================================================
+
+
+# ============================================================
 # SECTION: Database Initialization
 # ============================================================
 
@@ -481,6 +770,16 @@ def initialize_database():
     if _DB_INITIALIZED:
         return True
 
+    # ── PostgreSQL path (Railway / production) ────────────────────────
+    # When DATABASE_URL is set, create all tables on PostgreSQL and skip
+    # the SQLite path entirely.  No local file is needed on Railway.
+    if _DATABASE_URL:
+        ok = _pg_initialize_database()
+        if ok:
+            _DB_INITIALIZED = True
+        return ok
+
+    # ── SQLite path (local development) ───────────────────────────────
     # Make sure the db directory exists
     # exist_ok=True means don't error if it already exists
     DB_DIRECTORY.mkdir(parents=True, exist_ok=True)
@@ -716,6 +1015,30 @@ def initialize_database():
                 except sqlite3.OperationalError:
                     pass  # Best-effort â€” app-level dedup still protects
 
+            # ── Stale data cleanup ─────────────────────────────────────
+            # player_game_logs: keep only the last 3 days of cache rows.
+            # Older entries are regenerated on demand and just waste space.
+            try:
+                cursor.execute(
+                    "DELETE FROM player_game_logs "
+                    "WHERE retrieved_at < date('now', '-3 days')"
+                )
+            except sqlite3.OperationalError:
+                pass
+
+            # analysis_sessions: keep only sessions from today (ET-anchored).
+            # Prior-day sessions are discarded on read anyway (load_latest_analysis_session),
+            # so we prune them at startup to keep the table lean.
+            try:
+                _today_str = _nba_today_iso()
+                cursor.execute(
+                    "DELETE FROM analysis_sessions "
+                    "WHERE analysis_timestamp < ?",
+                    (_today_str,),
+                )
+            except sqlite3.OperationalError:
+                pass
+
             # Save the changes
             connection.commit()
 
@@ -872,6 +1195,34 @@ def insert_bet(bet_data):
         bet_data.get("source", "manual"),
     )
 
+    # ── PostgreSQL path (Railway) ─────────────────────────────────────
+    if _DATABASE_URL:
+        pg_insert_sql = insert_sql.replace(
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ") VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING bet_id",
+        )
+        conn = None
+        try:
+            import psycopg2
+            conn = _pg_conn()
+            cur = conn.cursor()
+            cur.execute(pg_insert_sql, values)
+            row = cur.fetchone()
+            conn.commit()
+            return row[0] if row else None
+        except Exception as _pg_err:
+            _logger.error("insert_bet PG error: %s", _pg_err)
+            try:
+                if conn:
+                    conn.rollback()
+            except Exception:
+                pass
+            return None
+        finally:
+            if conn:
+                _pg_putconn(conn)
+
+    # ── SQLite path (local dev) ───────────────────────────────────────
     for _attempt in range(_WRITE_RETRY_ATTEMPTS):
         try:
             with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as connection:
@@ -912,6 +1263,12 @@ def update_bet_result(bet_id, result, actual_value):
     WHERE bet_id = ?
     """
 
+    # ── PostgreSQL path ───────────────────────────────────────────────
+    if _DATABASE_URL:
+        cur = _pg_execute_write(update_sql, (result, actual_value, bet_id), caller="update_bet_result")
+        return cur is not None and cur.rowcount > 0
+
+    # ── SQLite path ───────────────────────────────────────────────────
     for _attempt in range(_WRITE_RETRY_ATTEMPTS):
         try:
             with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as connection:
@@ -945,26 +1302,20 @@ def delete_bet(bet_id):
         tuple[bool, str]: (success, message)
     """
     # First, fetch the bet for audit purposes
-    try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.row_factory = sqlite3.Row
-            row = conn.execute("SELECT * FROM bets WHERE bet_id = ?", (bet_id,)).fetchone()
-            if not row:
-                return False, f"Bet #{bet_id} not found."
-            bet_snapshot = dict(row)
-    except sqlite3.Error as err:
-        _logger.error(f"delete_bet: lookup error: {err}")
-        return False, f"Error looking up bet: {err}"
+    rows = _db_read("SELECT * FROM bets WHERE bet_id = ?", (bet_id,))
+    if not rows:
+        return False, f"Bet #{bet_id} not found."
+    bet_snapshot = rows[0]
 
     # Delete the bet
-    cursor = _execute_write(
+    cursor = _db_write(
         "DELETE FROM bets WHERE bet_id = ?", (bet_id,), caller="delete_bet"
     )
     if cursor is None or cursor.rowcount == 0:
         return False, f"Failed to delete bet #{bet_id}."
 
     # Log audit record
-    _execute_write(
+    _db_write(
         """INSERT INTO bet_audit_log (bet_id, action, old_values, new_values, changed_at)
            VALUES (?, 'DELETE', ?, NULL, datetime('now'))""",
         (bet_id, json.dumps(bet_snapshot, default=str)),
@@ -991,28 +1342,22 @@ def update_bet_fields(bet_id, updates):
         return False, "No valid fields to update."
 
     # Fetch old values for audit
-    try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.row_factory = sqlite3.Row
-            row = conn.execute("SELECT * FROM bets WHERE bet_id = ?", (bet_id,)).fetchone()
-            if not row:
-                return False, f"Bet #{bet_id} not found."
-            old_values = {k: dict(row).get(k) for k in filtered}
-    except sqlite3.Error as err:
-        _logger.error(f"update_bet_fields: lookup error: {err}")
-        return False, f"Error looking up bet: {err}"
+    rows = _db_read("SELECT * FROM bets WHERE bet_id = ?", (bet_id,))
+    if not rows:
+        return False, f"Bet #{bet_id} not found."
+    old_values = {k: rows[0].get(k) for k in filtered}
 
     # Build SET clause
     set_parts = [f"{k} = ?" for k in filtered]
     values = list(filtered.values()) + [bet_id]
     sql = f"UPDATE bets SET {', '.join(set_parts)} WHERE bet_id = ?"
 
-    cursor = _execute_write(sql, tuple(values), caller="update_bet_fields")
+    cursor = _db_write(sql, tuple(values), caller="update_bet_fields")
     if cursor is None or cursor.rowcount == 0:
         return False, f"Failed to update bet #{bet_id}."
 
     # Log audit record
-    _execute_write(
+    _db_write(
         """INSERT INTO bet_audit_log (bet_id, action, old_values, new_values, changed_at)
            VALUES (?, 'EDIT', ?, ?, datetime('now'))""",
         (bet_id, json.dumps(old_values, default=str), json.dumps(filtered, default=str)),
@@ -1041,14 +1386,7 @@ def search_bets_by_player(query, limit=200):
     ORDER BY created_at DESC
     LIMIT ?
     """
-    try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute(sql, (f"%{query.strip().lower()}%", limit)).fetchall()
-            return [dict(r) for r in rows]
-    except sqlite3.Error as err:
-        _logger.error(f"search_bets_by_player error: {err}")
-        return []
+    return _db_read(sql, (f"%{query.strip().lower()}%", limit))
 
 
 def load_bets_by_date_range(start_date, end_date, limit=10000):
@@ -1070,14 +1408,7 @@ def load_bets_by_date_range(start_date, end_date, limit=10000):
     ORDER BY created_at DESC
     LIMIT ?
     """
-    try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute(sql, (start_date, end_date, limit)).fetchall()
-            return [dict(r) for r in rows]
-    except sqlite3.Error as err:
-        _logger.error(f"load_bets_by_date_range error: {err}")
-        return []
+    return _db_read(sql, (start_date, end_date, limit))
 
 
 def export_bets_csv(bets):
@@ -1403,16 +1734,7 @@ def load_bets_page(
         ORDER BY created_at DESC
         LIMIT ? OFFSET ?
     """
-
-    try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as connection:
-            connection.row_factory = sqlite3.Row
-            cursor = connection.cursor()
-            cursor.execute(query_sql, tuple(params + [int(limit), int(offset)]))
-            return [dict(row) for row in cursor.fetchall()]
-    except sqlite3.Error as database_error:
-        _logger.error(f"Error loading paged bets: {database_error}")
-        return []
+    return _db_read(query_sql, tuple(params + [int(limit), int(offset)]))
 
 
 def count_bets(
@@ -1441,13 +1763,11 @@ def count_bets(
     )
 
     query_sql = f"SELECT COUNT(*) AS total_count FROM bets {where_sql}"
-    try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as connection:
-            row = connection.execute(query_sql, tuple(params)).fetchone()
-            return int(row[0] or 0) if row else 0
-    except sqlite3.Error as database_error:
-        _logger.error(f"Error counting bets: {database_error}")
-        return 0
+    rows = _db_read(query_sql, tuple(params))
+    if rows:
+        val = rows[0].get("total_count") or rows[0].get("count") or list(rows[0].values())[0]
+        return int(val or 0)
+    return 0
 
 
 def get_bets_summary(
@@ -1535,29 +1855,24 @@ def get_performance_summary():
       AND entry_id IS NULL
     """
 
+    rows = _db_read(summary_sql)
     try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as connection:
-            connection.row_factory = sqlite3.Row
-            cursor = connection.cursor()
-            cursor.execute(summary_sql)
-            row = cursor.fetchone()
-
-            if row:
-                total = row["total_bets"] or 0
-                wins = row["wins"] or 0
-                losses = row["losses"] or 0
-                pushes = row["pushes"] or 0
-                win_rate = row["win_rate"] or 0.0
-
-                return {
-                    "total_bets": total,
-                    "wins": wins,
-                    "losses": losses,
-                    "pushes": pushes,
-                    "win_rate": round(win_rate * 100, 1),
-                }
-
-    except sqlite3.Error as database_error:
+        row = rows[0] if rows else {}
+        total    = int(row.get("total_bets") or 0)
+        wins     = int(row.get("wins") or 0)
+        losses   = int(row.get("losses") or 0)
+        pushes   = int(row.get("pushes") or 0)
+        win_rate = float(row.get("win_rate") or 0.0)
+        return {
+            "total_bets": total,
+            "wins": wins,
+            "losses": losses,
+            "pushes": pushes,
+            "win_rate": round(win_rate * 100, 1),
+        }
+    except Exception as database_error:
+        _logger.error(f"Error summarizing bets: {database_error}")
+        return {"total": 0, "wins": 0, "losses": 0, "evens": 0, "pending": 0}
         _logger.error(f"Error getting performance summary: {database_error}")
 
     return {
@@ -2908,7 +3223,7 @@ def save_analysis_session(analysis_results, todays_games=None, selected_picks=No
         _games_json = json.dumps(todays_games or [], default=str)
         _picks_json = json.dumps(selected_picks or [], default=str)
         _prop_count = len(analysis_results)
-        cursor = _execute_write(
+        cursor = _db_write(
             """INSERT INTO analysis_sessions
                (analysis_timestamp, analysis_results_json, todays_games_json,
                 selected_picks_json, prop_count)
@@ -2916,7 +3231,13 @@ def save_analysis_session(analysis_results, todays_games=None, selected_picks=No
             (_ts, _results_json, _games_json, _picks_json, _prop_count),
             caller="save_analysis_session",
         )
-        return cursor.lastrowid if cursor else -1
+        if cursor is None:
+            return -1
+        # PostgreSQL returns lastrowid via RETURNING; SQLite via cursor.lastrowid
+        try:
+            return cursor.lastrowid if cursor.lastrowid else -1
+        except Exception:
+            return -1
     except Exception as _err:
         _logger.warning(f"save_analysis_session error (non-fatal): {_err}")
         return -1
@@ -2933,17 +3254,12 @@ def load_latest_analysis_session():
         Returns None if no session found or on error.
     """
     try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
-                """SELECT * FROM analysis_sessions
-                   ORDER BY session_id DESC LIMIT 1"""
-            )
-            row = cursor.fetchone()
-            if not row:
-                return None
-            row_dict = dict(row)
+        rows = _db_read(
+            "SELECT * FROM analysis_sessions ORDER BY session_id DESC LIMIT 1"
+        )
+        if not rows:
+            return None
+        row_dict = rows[0]
             # Discard sessions saved on a prior day so yesterday's players
             # never populate today's QAM or analysis pages.
             _ts = row_dict.get("analysis_timestamp") or row_dict.get("created_at") or ""

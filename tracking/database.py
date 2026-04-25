@@ -1454,6 +1454,24 @@ def search_bets_by_player(query, limit=200):
     return _db_read(sql, (f"%{query.strip().lower()}%", limit))
 
 
+def load_all_bets(*, limit=10000, exclude_linked=True):
+    """
+    Load all bets, optionally excluding those linked to a parlay entry.
+
+    Args:
+        limit (int): Maximum number of rows to return.
+        exclude_linked (bool): If True, exclude bets with an entry_id set.
+
+    Returns:
+        list[dict]: Bet rows.
+    """
+    if exclude_linked:
+        sql = "SELECT * FROM bets WHERE entry_id IS NULL ORDER BY created_at DESC LIMIT ?"
+    else:
+        sql = "SELECT * FROM bets ORDER BY created_at DESC LIMIT ?"
+    return _db_read(sql, (limit,))
+
+
 def load_bets_by_date_range(start_date, end_date, limit=10000):
     """
     Load bets within a date range (inclusive).

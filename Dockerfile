@@ -56,8 +56,8 @@ RUN groupadd --gid 1000 appuser \
 COPY --chown=appuser:appuser . .
 
 # Writable runtime directories — mounted as Azure volumes in production
-RUN mkdir -p /app/db /app/logs /app/cache /data \
- && chown -R appuser:appuser /app/db /app/logs /app/cache /data
+RUN mkdir -p /app/db /app/logs /app/cache /data /app/_out \
+ && chown -R appuser:appuser /app/db /app/logs /app/cache /data /app/_out
 
 # ── Build metadata (available at runtime via os.environ) ─────
 ARG BUILD_DATE="unknown"

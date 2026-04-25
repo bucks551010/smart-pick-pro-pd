@@ -17,6 +17,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN playwright install --with-deps chromium
 
 COPY . .
+# Pre-create _out so it exists with correct ownership regardless of run user
+RUN mkdir -p /app/_out
 
 EXPOSE 8000
 

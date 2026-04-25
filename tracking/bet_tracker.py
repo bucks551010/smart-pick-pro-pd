@@ -1143,9 +1143,25 @@ def record_bet_result(bet_id, result, actual_value):
     success = update_bet_result(bet_id, result.upper(), float(actual_value))
 
     if success:
-        return True, f"Result recorded: Bet #{bet_id} Ã¢â€ â€™ {result.upper()}"
+        # Sync result to matching all_analysis_picks row
+        try:
+            from tracking.database import _db_read as _tdb_read, sync_picks_with_bet_result
+            bet_rows = _tdb_read(
+                "SELECT bet_date, player_name, stat_type, prop_line, direction FROM bets WHERE bet_id = ?",
+                (bet_id,),
+            )
+            if bet_rows:
+                b = bet_rows[0]
+                sync_picks_with_bet_result(
+                    b.get("bet_date", ""), b.get("player_name", ""),
+                    b.get("stat_type", ""), b.get("prop_line", 0),
+                    b.get("direction", "OVER"), result.upper(), float(actual_value),
+                )
+        except Exception:
+            pass  # Non-fatal
+        return True, f"Result recorded: Bet #{bet_id} → {result.upper()}"
     else:
-        return False, f"Could not update bet #{bet_id} Ã¢â‚¬â€ not found?"
+        return False, f"Could not update bet #{bet_id} — not found?"
 
 
 # ============================================================
@@ -1784,6 +1800,14 @@ def auto_resolve_bet_results(date_str=None):
             f"[BetTracker] auto_resolve_bet_results: resolved {_tier12_resolved} bet(s) "
             f"via Tier 1/2 (bulk BoxScore) for {date_str}"
         )
+
+    # Auto-update daily snapshot after resolution
+    if resolved_count > 0:
+        try:
+            from tracking.database import save_daily_snapshot as _save_snapshot
+            _save_snapshot(date_str)
+        except Exception as _snap_exc:
+            _logger.debug("auto_resolve_bet_results: snapshot update failed: %s", _snap_exc)
 
     return resolved_count, errors_list
 

@@ -1498,7 +1498,7 @@ def insert_entry(entry_data):
         entry_data.get("pick_count", 0),
         entry_data.get("notes", ""),
     )
-    cursor = _execute_write(insert_sql, values, caller="insert_entry")
+    cursor = _db_write(insert_sql, values, caller="insert_entry")
     if cursor is not None:
         return cursor.lastrowid
     return None
@@ -1516,16 +1516,7 @@ def load_all_entries(limit=500):
     ORDER BY created_at DESC
     LIMIT ?
     """
-    try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as connection:
-            connection.row_factory = sqlite3.Row
-            cursor = connection.cursor()
-            cursor.execute(select_sql, (limit,))
-            rows = cursor.fetchall()
-            return [dict(row) for row in rows]
-    except sqlite3.Error as database_error:
-        _logger.error(f"Error loading entries: {database_error}")
-        return []
+    return _db_read(select_sql, (limit,))
 
 
 def update_entry_result(entry_id, result, payout=None):
@@ -1545,10 +1536,10 @@ def update_entry_result(entry_id, result, payout=None):
     SET result = ?, payout = ?
     WHERE entry_id = ?
     """
-    cursor = _execute_write(
+    cursor = _db_write(
         update_sql, (result, payout, entry_id), caller="update_entry_result"
     )
-    return cursor is not None and cursor.rowcount > 0
+    return cursor is not None
 
 
 def link_bets_to_entry(bet_ids, entry_id):
@@ -1564,12 +1555,12 @@ def link_bets_to_entry(bet_ids, entry_id):
     """
     linked = 0
     for bet_id in bet_ids:
-        cursor = _execute_write(
+        cursor = _db_write(
             "UPDATE bets SET entry_id = ? WHERE bet_id = ?",
             (entry_id, bet_id),
             caller="link_bets_to_entry",
         )
-        if cursor is not None and cursor.rowcount > 0:
+        if cursor is not None:
             linked += 1
     return linked
 
@@ -1589,15 +1580,7 @@ def get_entry_legs(entry_id):
     WHERE entry_id = ?
     ORDER BY created_at ASC
     """
-    try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as connection:
-            connection.row_factory = sqlite3.Row
-            cursor = connection.cursor()
-            cursor.execute(select_sql, (entry_id,))
-            rows = cursor.fetchall()
-            return [dict(row) for row in rows]
-    except sqlite3.Error as database_error:
-        _logger.error(f"Error loading entry legs: {database_error}")
+    return _db_read(select_sql, (entry_id,))
         return []
 
 
@@ -1649,12 +1632,12 @@ def delete_entry(entry_id):
         tuple[bool, str]: (success, message)
     """
     # Unlink legs first
-    _execute_write(
+    _db_write(
         "UPDATE bets SET entry_id = NULL WHERE entry_id = ?",
         (entry_id,),
         caller="delete_entry_unlink",
     )
-    cursor = _execute_write(
+    cursor = _db_write(
         "DELETE FROM entries WHERE entry_id = ?",
         (entry_id,),
         caller="delete_entry",
@@ -1837,26 +1820,20 @@ def get_bets_summary(
     """
 
     try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as connection:
-            connection.row_factory = sqlite3.Row
-            row = connection.execute(query_sql, tuple(params)).fetchone()
-            if not row:
-                return {"total": 0, "wins": 0, "losses": 0, "evens": 0, "pending": 0}
-            return {
-                "total": int(row["total"] or 0),
-                "wins": int(row["wins"] or 0),
-                "losses": int(row["losses"] or 0),
-                "evens": int(row["evens"] or 0),
-                "pending": int(row["pending"] or 0),
-            }
-    except sqlite3.Error as database_error:
+        rows = _db_read(query_sql, tuple(params))
+        if not rows:
+            return {"total": 0, "wins": 0, "losses": 0, "evens": 0, "pending": 0}
+        row = rows[0]
+        return {
+            "total": int(row.get("total") or 0),
+            "wins": int(row.get("wins") or 0),
+            "losses": int(row.get("losses") or 0),
+            "evens": int(row.get("evens") or 0),
+            "pending": int(row.get("pending") or 0),
+        }
+    except Exception as database_error:
         _logger.error(f"Error summarizing bets: {database_error}")
         return {"total": 0, "wins": 0, "losses": 0, "evens": 0, "pending": 0}
-
-
-def load_all_bets(limit=10000, exclude_linked=True):
-    """Backward-compatible wrapper around paged bet loading."""
-    return load_bets_page(limit=limit, offset=0, exclude_linked=exclude_linked)
 
 
 def get_performance_summary():
@@ -1953,7 +1930,7 @@ def insert_prediction(prediction_data):
         prediction_data.get("probability_predicted", 0.5),
         prediction_data.get("notes", ""),
     )
-    cursor = _execute_write(insert_sql, values, caller="insert_prediction")
+    cursor = _db_write(insert_sql, values, caller="insert_prediction")
     return cursor.lastrowid if cursor else None
 
 
@@ -1996,16 +1973,7 @@ def load_recent_predictions(days=90):
     WHERE prediction_date >= ?
     ORDER BY prediction_date DESC
     """
-    try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute(query_sql, (cutoff,))
-            rows = cursor.fetchall()
-            return [dict(r) for r in rows]
-    except sqlite3.Error as exc:
-        _logger.error("[database] load_recent_predictions error: %s", exc)
-        return []
+    return _db_read(query_sql, (cutoff,))
 
 
 def update_prediction_outcome(prediction_id, was_correct, actual_value):
@@ -2025,7 +1993,7 @@ def update_prediction_outcome(prediction_id, was_correct, actual_value):
     SET was_correct = ?, actual_value = ?
     WHERE prediction_id = ?
     """
-    cursor = _execute_write(
+    cursor = _db_write(
         update_sql,
         (1 if was_correct else 0, actual_value, prediction_id),
         caller="update_prediction_outcome",
@@ -2081,15 +2049,12 @@ def get_calibration_adjustment(stat_type=None, min_samples=20):
         params = ()
 
     try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as connection:
-            connection.row_factory = sqlite3.Row
-            cursor = connection.cursor()
-            cursor.execute(query_sql, params)
-            row = cursor.fetchone()
-
-            if row and row["sample_count"] >= min_samples:
-                avg_predicted = row["avg_predicted_prob"] or 0.5
-                actual_rate = row["actual_hit_rate"] or 0.5
+        rows = _db_read(query_sql, params)
+        if rows:
+            row = rows[0]
+            if (row.get("sample_count") or 0) >= min_samples:
+                avg_predicted = row.get("avg_predicted_prob") or 0.5
+                actual_rate = row.get("actual_hit_rate") or 0.5
                 # Overconfidence = model probability higher than actual hit rate
                 # Convert probability gap to confidence score adjustment
                 # (1% probability gap â‰ˆ 2 confidence score points)
@@ -2098,7 +2063,7 @@ def get_calibration_adjustment(stat_type=None, min_samples=20):
                 # Cap adjustment to Â±15 points to avoid extreme corrections
                 return round(max(-15.0, min(15.0, adjustment)), 1)
 
-    except sqlite3.Error as database_error:
+    except Exception as database_error:
         _logger.error(f"Error computing calibration: {database_error}")
 
     return 0.0  # No adjustment if insufficient data
@@ -2140,16 +2105,13 @@ def get_calibration_report():
     """
 
     try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as connection:
-            connection.row_factory = sqlite3.Row
-            cursor = connection.cursor()
-
-            # Overall calibration
-            cursor.execute(query_all)
-            row = cursor.fetchone()
-            if row and row["sample_count"]:
-                avg_p = row["avg_predicted_prob"] or 0.5
-                actual = row["actual_hit_rate"] or 0.5
+        # Overall calibration
+        all_rows = _db_read(query_all)
+        if all_rows:
+            row = all_rows[0]
+            if row.get("sample_count"):
+                avg_p = row.get("avg_predicted_prob") or 0.5
+                actual = row.get("actual_hit_rate") or 0.5
                 report["overall"] = {
                     "avg_predicted_prob": round(avg_p * 100, 1),
                     "actual_hit_rate": round(actual * 100, 1),
@@ -2162,21 +2124,20 @@ def get_calibration_report():
                     f"hits {actual*100:.1f}% ({row['sample_count']} graded predictions)"
                 )
 
-            # By stat type
-            cursor.execute(query_overall)
-            rows = cursor.fetchall()
-            for r in rows:
-                if r["sample_count"] and r["sample_count"] >= 5:
-                    avg_p = r["avg_predicted_prob"] or 0.5
-                    actual = r["actual_hit_rate"] or 0.5
-                    report["by_stat"][r["stat_type"]] = {
-                        "avg_predicted_prob": round(avg_p * 100, 1),
-                        "actual_hit_rate": round(actual * 100, 1),
-                        "sample_count": r["sample_count"],
-                        "calibration_adjustment": round((avg_p - actual) * 100 * 2, 1),
-                    }
+        # By stat type
+        stat_rows = _db_read(query_overall)
+        for r in stat_rows:
+            if r.get("sample_count") and r["sample_count"] >= 5:
+                avg_p = r.get("avg_predicted_prob") or 0.5
+                actual = r.get("actual_hit_rate") or 0.5
+                report["by_stat"][r["stat_type"]] = {
+                    "avg_predicted_prob": round(avg_p * 100, 1),
+                    "actual_hit_rate": round(actual * 100, 1),
+                    "sample_count": r["sample_count"],
+                    "calibration_adjustment": round((avg_p - actual) * 100 * 2, 1),
+                }
 
-    except sqlite3.Error as database_error:
+    except Exception as database_error:
         _logger.error(f"Error building calibration report: {database_error}")
 
     return report
@@ -2205,31 +2166,14 @@ def save_daily_snapshot(date_str=None):
     if date_str is None:
         date_str = _dt.date.today().isoformat()
 
-    conn = None
     try:
-        conn = get_database_connection()
-        cursor = conn.cursor()
-
-        # Retrieve all bets for that date, excluding parlay legs.
-        # Bets with entry_id IS NOT NULL are linked to a parlay entry and
-        # should not be double-counted alongside the entry itself, so we
-        # filter for entry_id IS NULL to keep only standalone bets.
-        cursor.execute(
+        bets = _db_read(
             "SELECT * FROM bets WHERE bet_date = ? AND (entry_id IS NULL)",
             (date_str,),
         )
-        rows = cursor.fetchall()
-        cols = [d[0] for d in cursor.description]
-        bets = [dict(zip(cols, row)) for row in rows]
     except Exception as exc:
         _logger.error(f"[database] save_daily_snapshot read error: {exc}")
         return False
-    finally:
-        try:
-            if conn is not None:
-                conn.close()
-        except Exception:
-            pass
 
     try:
         total = len(bets)
@@ -2341,7 +2285,7 @@ def save_daily_snapshot(date_str=None):
             best_pick,
             worst_pick,
         )
-        result = _execute_write(_upsert_sql, _upsert_params, caller="save_daily_snapshot")
+        result = _db_write(_upsert_sql, _upsert_params, caller="save_daily_snapshot")
         return result is not None
     except Exception as exc:
         _logger.error(f"[database] save_daily_snapshot error: {exc}")
@@ -2356,25 +2300,13 @@ def load_daily_snapshots(days=14):
     """
     import json
 
-    conn = None
     try:
-        conn = get_database_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT * FROM daily_snapshots
-            ORDER BY snapshot_date DESC
-            LIMIT ?
-            """,
+        rows = _db_read(
+            "SELECT * FROM daily_snapshots ORDER BY snapshot_date DESC LIMIT ?",
             (days,),
         )
-        rows = cursor.fetchall()
-        cols = [d[0] for d in cursor.description]
-        conn.close()
-        conn = None
         snapshots = []
-        for row in rows:
-            s = dict(zip(cols, row))
+        for s in rows:
             for field in ("platform_breakdown", "tier_breakdown", "stat_type_breakdown"):
                 try:
                     s[field] = json.loads(s.get(field) or "{}")
@@ -2390,12 +2322,6 @@ def load_daily_snapshots(days=14):
     except Exception as exc:
         _logger.error(f"[database] load_daily_snapshots error: {exc}")
         return []
-    finally:
-        try:
-            if conn is not None:
-                conn.close()
-        except Exception:
-            pass
 
 
 def purge_old_snapshots(days=30):
@@ -2792,19 +2718,14 @@ def load_all_analysis_picks(days=30):
     """
     import datetime as _dt
     cutoff = (_dt.date.today() - _dt.timedelta(days=days)).isoformat()
-    rows = []
     try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
-                "SELECT * FROM all_analysis_picks WHERE pick_date >= ? ORDER BY pick_date DESC, confidence_score DESC",
-                (cutoff,),
-            )
-            rows = [dict(row) for row in cursor.fetchall()]
+        return _db_read(
+            "SELECT * FROM all_analysis_picks WHERE pick_date >= ? ORDER BY pick_date DESC, confidence_score DESC",
+            (cutoff,),
+        )
     except Exception as err:
         _logger.warning(f"load_all_analysis_picks error (non-fatal): {err}")
-    return rows
+        return []
 
 def update_analysis_pick_result(pick_id, result, actual_value):
     """
@@ -2819,14 +2740,12 @@ def update_analysis_pick_result(pick_id, result, actual_value):
         bool: True if a row was updated, False otherwise.
     """
     try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            cursor = conn.execute(
-                "UPDATE all_analysis_picks SET result = ?, actual_value = ? WHERE pick_id = ?",
-                (result, float(actual_value), int(pick_id)),
-            )
-            conn.commit()
-            return cursor.rowcount > 0
+        cur = _db_write(
+            "UPDATE all_analysis_picks SET result = ?, actual_value = ? WHERE pick_id = ?",
+            (result, float(actual_value), int(pick_id)),
+            caller="update_analysis_pick_result",
+        )
+        return cur is not None
     except Exception as err:
         _logger.warning(f"update_analysis_pick_result error (non-fatal): {err}")
         return False
@@ -2843,22 +2762,17 @@ def load_pending_analysis_picks(limit=2000):
     Returns:
         list[dict]: Pending pick rows as dicts.
     """
-    rows = []
     try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
-                """SELECT * FROM all_analysis_picks
-                   WHERE (result IS NULL OR result = '')
-                   ORDER BY pick_date ASC
-                   LIMIT ?""",
-                (limit,),
-            )
-            rows = [dict(row) for row in cursor.fetchall()]
+        return _db_read(
+            """SELECT * FROM all_analysis_picks
+               WHERE (result IS NULL OR result = '')
+               ORDER BY pick_date ASC
+               LIMIT ?""",
+            (limit,),
+        )
     except Exception as err:
         _logger.warning(f"load_pending_analysis_picks error (non-fatal): {err}")
-    return rows
+        return []
 
 
 def load_analysis_picks_for_date(date_str):
@@ -2872,19 +2786,14 @@ def load_analysis_picks_for_date(date_str):
     Returns:
         list[dict]: Pick rows for that date ordered by confidence_score DESC.
     """
-    rows = []
     try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
-                "SELECT * FROM all_analysis_picks WHERE pick_date = ? ORDER BY confidence_score DESC",
-                (date_str,),
-            )
-            rows = [dict(row) for row in cursor.fetchall()]
+        return _db_read(
+            "SELECT * FROM all_analysis_picks WHERE pick_date = ? ORDER BY confidence_score DESC",
+            (date_str,),
+        )
     except Exception as err:
         _logger.warning(f"load_analysis_picks_for_date error (non-fatal): {err}")
-    return rows
+        return []
 
 
 def get_analysis_pick_dates(days=30):
@@ -2900,18 +2809,182 @@ def get_analysis_pick_dates(days=30):
     """
     import datetime as _dt
     cutoff = (_dt.date.today() - _dt.timedelta(days=days)).isoformat()
-    dates = []
     try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            rows = conn.execute(
-                "SELECT DISTINCT pick_date FROM all_analysis_picks WHERE pick_date >= ? ORDER BY pick_date DESC",
-                (cutoff,),
-            ).fetchall()
-            dates = [r[0] for r in rows]
+        rows = _db_read(
+            "SELECT DISTINCT pick_date FROM all_analysis_picks WHERE pick_date >= ? ORDER BY pick_date DESC",
+            (cutoff,),
+        )
+        return [r["pick_date"] for r in rows]
     except Exception as err:
         _logger.warning(f"get_analysis_pick_dates error (non-fatal): {err}")
-    return dates
+        return []
+
+
+def sync_picks_with_bet_result(bet_date, player_name, stat_type, prop_line, direction, result, actual_value):
+    """Sync a resolved bet result to any matching all_analysis_picks row.
+
+    When a bet is resolved (WIN/LOSS/EVEN/VOID), find the matching pick in
+    all_analysis_picks and update its result so both tables stay in sync.
+    Uses a fuzzy prop_line match (±0.15) to tolerate minor line movements.
+
+    Args:
+        bet_date (str): ISO date string "YYYY-MM-DD".
+        player_name (str): Player name.
+        stat_type (str): Stat type (e.g. 'points').
+        prop_line (float): The prop line value.
+        direction (str): 'OVER' or 'UNDER'.
+        result (str): 'WIN', 'LOSS', 'EVEN', or 'VOID'.
+        actual_value (float): The player's actual stat value.
+
+    Returns:
+        int: Number of pick rows updated.
+    """
+    try:
+        pick_result = result.upper()
+        prop_line_f = float(prop_line or 0)
+        rows = _db_read(
+            """SELECT pick_id FROM all_analysis_picks
+               WHERE pick_date = ?
+                 AND LOWER(player_name) = LOWER(?)
+                 AND stat_type = ?
+                 AND direction = ?
+                 AND ABS(prop_line - ?) < 0.15
+                 AND (result IS NULL OR result = '')""",
+            (bet_date, str(player_name), str(stat_type), str(direction).upper(), prop_line_f),
+        )
+        updated = 0
+        for row in rows:
+            cur = _db_write(
+                "UPDATE all_analysis_picks SET result = ?, actual_value = ? WHERE pick_id = ?",
+                (pick_result, float(actual_value or 0), row["pick_id"]),
+                caller="sync_picks_with_bet_result",
+            )
+            if cur is not None:
+                updated += 1
+        return updated
+    except Exception as exc:
+        _logger.debug("sync_picks_with_bet_result error (non-fatal): %s", exc)
+        return 0
+
+
+def sync_player_game_logs_from_etl(player_ids=None, limit_per_player=20):
+    """Populate tracking DB player_game_logs cache from the ETL database.
+
+    Reads Player_Game_Logs from smartpicks.db (ETL / NBA-data database)
+    and writes them into the tracking database's player_game_logs table.
+    This keeps both databases in sync so bet resolution and display have
+    up-to-date box-score data even if the per-player API fetcher has not run.
+
+    Args:
+        player_ids (list[int] | None): Specific player IDs to sync.
+            None syncs all players present in the ETL DB.
+        limit_per_player (int): Max recent games per player. Defaults to 20.
+
+    Returns:
+        int: Total rows written (inserted or updated).
+    """
+    import os as _os
+    import pathlib as _pathlib
+
+    db_dir = _os.environ.get("DB_DIR", "")
+    etl_db = _pathlib.Path(db_dir) / "smartpicks.db" if db_dir else None
+    if not etl_db or not etl_db.exists():
+        _logger.debug("sync_player_game_logs_from_etl: ETL DB not found at %s", etl_db)
+        return 0
+
+    import datetime as _dt
+    retrieved_at = _dt.datetime.now(_dt.timezone.utc).isoformat()
+    total_written = 0
+
+    if _DATABASE_URL:
+        upsert_sql = (
+            "INSERT INTO player_game_logs "
+            "    (player_id, player_name, game_date, opponent, minutes, points, rebounds, "
+            "     assists, threes, steals, blocks, turnovers, fg_pct, ft_pct, plus_minus, retrieved_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT (player_id, game_date) DO UPDATE SET "
+            "    player_name=EXCLUDED.player_name, minutes=EXCLUDED.minutes, "
+            "    points=EXCLUDED.points, rebounds=EXCLUDED.rebounds, assists=EXCLUDED.assists, "
+            "    threes=EXCLUDED.threes, steals=EXCLUDED.steals, blocks=EXCLUDED.blocks, "
+            "    turnovers=EXCLUDED.turnovers, fg_pct=EXCLUDED.fg_pct, ft_pct=EXCLUDED.ft_pct, "
+            "    plus_minus=EXCLUDED.plus_minus, retrieved_at=EXCLUDED.retrieved_at"
+        )
+    else:
+        upsert_sql = (
+            "INSERT OR REPLACE INTO player_game_logs "
+            "    (player_id, player_name, game_date, opponent, minutes, points, rebounds, "
+            "     assists, threes, steals, blocks, turnovers, fg_pct, ft_pct, plus_minus, retrieved_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+
+    try:
+        import sqlite3 as _sqlite3
+        etl_conn = _sqlite3.connect(str(etl_db), check_same_thread=False, timeout=10)
+        etl_conn.row_factory = _sqlite3.Row
+
+        if player_ids:
+            _ph = ",".join(["?" for _ in player_ids])
+            sql = (
+                f"SELECT p.player_id, p.first_name, p.last_name, g.game_date, "
+                f"       l.pts, l.reb, l.ast, l.stl, l.blk, l.tov, l.fg3m, "
+                f"       l.fg_pct, l.ft_pct, l.plus_minus, l.min "
+                f"FROM Player_Game_Logs l "
+                f"JOIN Games g ON l.game_id = g.game_id "
+                f"JOIN Players p ON l.player_id = p.player_id "
+                f"WHERE l.player_id IN ({_ph}) "
+                f"ORDER BY l.player_id, g.game_date DESC"
+            )
+            etl_rows = etl_conn.execute(sql, list(player_ids)).fetchall()
+        else:
+            etl_rows = etl_conn.execute(
+                "SELECT p.player_id, p.first_name, p.last_name, g.game_date, "
+                "       l.pts, l.reb, l.ast, l.stl, l.blk, l.tov, l.fg3m, "
+                "       l.fg_pct, l.ft_pct, l.plus_minus, l.min "
+                "FROM Player_Game_Logs l "
+                "JOIN Games g ON l.game_id = g.game_id "
+                "JOIN Players p ON l.player_id = p.player_id "
+                "ORDER BY l.player_id, g.game_date DESC"
+            ).fetchall()
+
+        _seen: dict = {}
+        for r in etl_rows:
+            pid = str(r["player_id"])
+            _seen[pid] = _seen.get(pid, 0) + 1
+            if _seen[pid] > limit_per_player:
+                continue
+
+            def _n(v, as_int=False):
+                try:
+                    f = float(v or 0)
+                    return int(f) if as_int else f
+                except (TypeError, ValueError):
+                    return 0 if as_int else 0.0
+
+            min_raw = str(r["min"] or "0")
+            try:
+                minutes_f = float(min_raw.split(":")[0]) if ":" in min_raw else float(min_raw)
+            except (ValueError, TypeError):
+                minutes_f = 0.0
+
+            pname = f"{r['first_name'] or ''} {r['last_name'] or ''}".strip()
+            cur = _db_write(upsert_sql, (
+                pid, pname, str(r["game_date"] or ""), "",
+                minutes_f, _n(r["pts"], True), _n(r["reb"], True), _n(r["ast"], True),
+                _n(r["fg3m"], True), _n(r["stl"], True), _n(r["blk"], True), _n(r["tov"], True),
+                _n(r["fg_pct"]), _n(r["ft_pct"]), _n(r["plus_minus"], True),
+                retrieved_at,
+            ), caller="sync_player_game_logs_from_etl")
+            if cur is not None:
+                total_written += 1
+
+        etl_conn.close()
+    except Exception as exc:
+        _logger.warning("sync_player_game_logs_from_etl error: %s", exc)
+
+    if total_written:
+        _logger.info("sync_player_game_logs_from_etl: wrote %d rows to tracking DB", total_written)
+    return total_written
+
 
 # ============================================================
 # END SECTION: All Analysis Picks
@@ -3433,7 +3506,7 @@ def save_backtest_result(backtest_result):
         edge_win_rates_json = json.dumps(backtest_result.get("edge_win_rates", {}))
         pick_log_json = json.dumps(backtest_result.get("pick_log", []))
 
-        cursor = _execute_write(
+        cursor = _db_write(
             """
             INSERT INTO backtest_results (
                 run_timestamp, season, stat_types_json, min_edge, tier_filter,
@@ -3483,36 +3556,25 @@ def load_backtest_results(limit=20):
             print(r["season"], r["win_rate"])
     """
     try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT * FROM backtest_results
-                ORDER BY created_at DESC
-                LIMIT ?
-                """,
-                (limit,)
-            )
-            rows = cursor.fetchall()
-            results = []
-            for row in rows:
-                row_dict = dict(row)
-                # Deserialize JSON fields â€” handle None, empty string, and invalid JSON
-                for json_field in ("stat_types_json", "tier_win_rates_json",
-                                   "stat_win_rates_json", "edge_win_rates_json",
-                                   "pick_log_json"):
-                    raw_value = row_dict.get(json_field)
-                    if raw_value:
-                        try:
-                            row_dict[json_field] = json.loads(raw_value)
-                        except (json.JSONDecodeError, TypeError):
-                            row_dict[json_field] = None
-                    else:
+        rows = _db_read(
+            "SELECT * FROM backtest_results ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        )
+        results = []
+        for row_dict in rows:
+            for json_field in ("stat_types_json", "tier_win_rates_json",
+                               "stat_win_rates_json", "edge_win_rates_json",
+                               "pick_log_json"):
+                raw_value = row_dict.get(json_field)
+                if raw_value:
+                    try:
+                        row_dict[json_field] = json.loads(raw_value)
+                    except (json.JSONDecodeError, TypeError):
                         row_dict[json_field] = None
-                results.append(row_dict)
-            return results
+                else:
+                    row_dict[json_field] = None
+            results.append(row_dict)
+        return results
     except Exception as _err:
         _logger.warning(f"load_backtest_results error (non-fatal): {_err}")
         return []
@@ -3553,41 +3615,52 @@ def save_player_game_logs_to_db(player_id, player_name, game_logs):
     retrieved_at = _dt.datetime.now(_dt.timezone.utc).isoformat()
     inserted = 0
 
-    for _attempt in range(_WRITE_RETRY_ATTEMPTS):
-        try:
-            with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-                conn.execute("PRAGMA journal_mode=WAL")
-                for g in game_logs:
-                    conn.execute(
-                        """
-                        INSERT OR REPLACE INTO player_game_logs
-                            (player_id, player_name, game_date, opponent,
-                             minutes, points, rebounds, assists, threes,
-                             steals, blocks, turnovers, fg_pct, ft_pct,
-                             plus_minus, retrieved_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            str(player_id),
-                            str(player_name),
-                            str(g.get("game_date", g.get("GAME_DATE", ""))),
-                            str(g.get("opponent", g.get("MATCHUP", ""))),
-                            _safe_float(g.get("minutes", g.get("MIN", g.get("min")))),
-                            _safe_int(g.get("points",    g.get("PTS", g.get("pts")))),
-                            _safe_int(g.get("rebounds",  g.get("REB", g.get("reb")))),
-                            _safe_int(g.get("assists",   g.get("AST", g.get("ast")))),
-                            _safe_int(g.get("threes",    g.get("FG3M", g.get("fg3m")))),
-                            _safe_int(g.get("steals",    g.get("STL", g.get("stl")))),
-                            _safe_int(g.get("blocks",    g.get("BLK", g.get("blk")))),
-                            _safe_int(g.get("turnovers", g.get("TOV", g.get("tov")))),
-                            _safe_float(g.get("fg_pct",  g.get("FG_PCT", g.get("fg_pct")))),
-                            _safe_float(g.get("ft_pct",  g.get("FT_PCT", g.get("ft_pct")))),
-                            _safe_int(g.get("plus_minus", g.get("PLUS_MINUS", g.get("plus_minus")))),
-                            retrieved_at,
-                        ),
-                    )
-                    inserted += 1
-                conn.commit()
+    # Choose INSERT syntax based on backend (ON CONFLICT for PG, INSERT OR REPLACE for SQLite)
+    if _DATABASE_URL:
+        upsert_sql = (
+            "INSERT INTO player_game_logs "
+            "    (player_id, player_name, game_date, opponent, minutes, points, rebounds, "
+            "     assists, threes, steals, blocks, turnovers, fg_pct, ft_pct, plus_minus, retrieved_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT (player_id, game_date) DO UPDATE SET "
+            "    player_name=EXCLUDED.player_name, minutes=EXCLUDED.minutes, "
+            "    points=EXCLUDED.points, rebounds=EXCLUDED.rebounds, assists=EXCLUDED.assists, "
+            "    threes=EXCLUDED.threes, steals=EXCLUDED.steals, blocks=EXCLUDED.blocks, "
+            "    turnovers=EXCLUDED.turnovers, fg_pct=EXCLUDED.fg_pct, ft_pct=EXCLUDED.ft_pct, "
+            "    plus_minus=EXCLUDED.plus_minus, retrieved_at=EXCLUDED.retrieved_at"
+        )
+    else:
+        upsert_sql = (
+            "INSERT OR REPLACE INTO player_game_logs "
+            "    (player_id, player_name, game_date, opponent, minutes, points, rebounds, "
+            "     assists, threes, steals, blocks, turnovers, fg_pct, ft_pct, plus_minus, retrieved_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+
+    inserted = 0
+    for g in game_logs:
+        cur = _db_write(upsert_sql, (
+            str(player_id),
+            str(player_name),
+            str(g.get("game_date", g.get("GAME_DATE", ""))),
+            str(g.get("opponent", g.get("MATCHUP", ""))),
+            _safe_float(g.get("minutes", g.get("MIN", g.get("min")))),
+            _safe_int(g.get("points",    g.get("PTS", g.get("pts")))),
+            _safe_int(g.get("rebounds",  g.get("REB", g.get("reb")))),
+            _safe_int(g.get("assists",   g.get("AST", g.get("ast")))),
+            _safe_int(g.get("threes",    g.get("FG3M", g.get("fg3m")))),
+            _safe_int(g.get("steals",    g.get("STL", g.get("stl")))),
+            _safe_int(g.get("blocks",    g.get("BLK", g.get("blk")))),
+            _safe_int(g.get("turnovers", g.get("TOV", g.get("tov")))),
+            _safe_float(g.get("fg_pct",  g.get("FG_PCT", g.get("fg_pct")))),
+            _safe_float(g.get("ft_pct",  g.get("FT_PCT", g.get("ft_pct")))),
+            _safe_int(g.get("plus_minus", g.get("PLUS_MINUS", g.get("plus_minus")))),
+            retrieved_at,
+        ), caller="save_player_game_logs_to_db")
+        if cur is not None:
+            inserted += 1
+
+    return inserted
             break  # success â€” exit retry loop
         except sqlite3.OperationalError as op_err:
             if "locked" in str(op_err).lower() and _attempt < _WRITE_RETRY_ATTEMPTS - 1:
@@ -3642,23 +3715,14 @@ def load_player_game_logs_from_db(player_id, days=60):
     """
     import datetime as _dt
     cutoff = (_dt.date.today() - _dt.timedelta(days=days)).isoformat()
-    rows = []
     try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
-                """
-                SELECT * FROM player_game_logs
-                WHERE player_id = ? AND game_date >= ?
-                ORDER BY game_date DESC
-                """,
-                (str(player_id), cutoff),
-            )
-            rows = [dict(row) for row in cursor.fetchall()]
+        return _db_read(
+            "SELECT * FROM player_game_logs WHERE player_id = ? AND game_date >= ? ORDER BY game_date DESC",
+            (str(player_id), cutoff),
+        )
     except Exception as err:
         _logger.warning(f"load_player_game_logs_from_db error (non-fatal): {err}")
-    return rows
+        return []
 
 
 def is_game_log_cache_stale(player_id, max_age_hours=24):
@@ -3674,22 +3738,18 @@ def is_game_log_cache_stale(player_id, max_age_hours=24):
     """
     import datetime as _dt
     try:
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            row = conn.execute(
-                "SELECT MAX(retrieved_at) FROM player_game_logs WHERE player_id = ?",
-                (str(player_id),),
-            ).fetchone()
-            if not row or not row[0]:
-                return True
-            latest_ts = _dt.datetime.fromisoformat(str(row[0]))
-            # Ensure both sides are tz-aware (UTC) to avoid
-            # "can't subtract offset-naive and offset-aware datetimes"
-            now_utc = _dt.datetime.now(_dt.timezone.utc)
-            if latest_ts.tzinfo is None:
-                latest_ts = latest_ts.replace(tzinfo=_dt.timezone.utc)
-            age_hours = (now_utc - latest_ts).total_seconds() / 3600.0
-            return age_hours > max_age_hours
+        rows = _db_read(
+            "SELECT MAX(retrieved_at) AS latest_ts FROM player_game_logs WHERE player_id = ?",
+            (str(player_id),),
+        )
+        if not rows or not rows[0].get("latest_ts"):
+            return True
+        latest_ts = _dt.datetime.fromisoformat(str(rows[0]["latest_ts"]))
+        now_utc = _dt.datetime.now(_dt.timezone.utc)
+        if latest_ts.tzinfo is None:
+            latest_ts = latest_ts.replace(tzinfo=_dt.timezone.utc)
+        age_hours = (now_utc - latest_ts).total_seconds() / 3600.0
+        return age_hours > max_age_hours
     except Exception:
         return True  # If we can't check, assume stale and re-retrieve
 
@@ -3744,12 +3804,22 @@ def save_user_settings(settings_dict):
         if not filtered:
             return True  # Nothing to save
         _settings_json = json.dumps(filtered, default=str)
-        _execute_write(
-            """INSERT OR REPLACE INTO user_settings (settings_id, settings_json, updated_at)
-               VALUES (1, ?, datetime('now'))""",
-            (_settings_json,),
-            caller="save_user_settings",
-        )
+        if _DATABASE_URL:
+            _db_write(
+                "INSERT INTO user_settings (settings_id, settings_json, updated_at) "
+                "VALUES (1, ?, to_char(now(), 'YYYY-MM-DD HH24:MI:SS')) "
+                "ON CONFLICT (settings_id) DO UPDATE SET "
+                "    settings_json=EXCLUDED.settings_json, updated_at=EXCLUDED.updated_at",
+                (_settings_json,),
+                caller="save_user_settings",
+            )
+        else:
+            _db_write(
+                "INSERT OR REPLACE INTO user_settings (settings_id, settings_json, updated_at) "
+                "VALUES (1, ?, datetime('now'))",
+                (_settings_json,),
+                caller="save_user_settings",
+            )
         return True
     except Exception as _err:
         _logger.warning("save_user_settings error (non-fatal): %s", _err)
@@ -3766,19 +3836,11 @@ def load_user_settings():
     """
     try:
         initialize_database()
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            row = conn.execute(
-                "SELECT settings_json FROM user_settings WHERE settings_id = 1"
-            ).fetchone()
-            if not row or not row[0]:
-                return {}
-            raw = json.loads(row[0])
-            # Only return recognised keys to avoid injecting stale/unknown state
-            return {
-                k: v for k, v in raw.items()
-                if k in _PERSISTED_SETTINGS_KEYS
-            }
+        rows = _db_read("SELECT settings_json FROM user_settings WHERE settings_id = 1")
+        if not rows or not rows[0].get("settings_json"):
+            return {}
+        raw = json.loads(rows[0]["settings_json"])
+        return {k: v for k, v in raw.items() if k in _PERSISTED_SETTINGS_KEYS}
     except Exception as _err:
         _logger.warning("load_user_settings error (non-fatal): %s", _err)
         return {}
@@ -3853,12 +3915,22 @@ def save_page_state(session_dict):
         # Stamp the date so load_page_state() can discard next-day stale state.
         merged["_page_state_date"] = _nba_today_iso()
         _state_json = json.dumps(merged, default=str)
-        _execute_write(
-            """INSERT OR REPLACE INTO page_state (state_id, state_json, updated_at)
-               VALUES (1, ?, datetime('now'))""",
-            (_state_json,),
-            caller="save_page_state",
-        )
+        if _DATABASE_URL:
+            _db_write(
+                "INSERT INTO page_state (state_id, state_json, updated_at) "
+                "VALUES (1, ?, to_char(now(), 'YYYY-MM-DD HH24:MI:SS')) "
+                "ON CONFLICT (state_id) DO UPDATE SET "
+                "    state_json=EXCLUDED.state_json, updated_at=EXCLUDED.updated_at",
+                (_state_json,),
+                caller="save_page_state",
+            )
+        else:
+            _db_write(
+                "INSERT OR REPLACE INTO page_state (state_id, state_json, updated_at) "
+                "VALUES (1, ?, datetime('now'))",
+                (_state_json,),
+                caller="save_page_state",
+            )
         return True
     except Exception as _err:
         _logger.warning("save_page_state error (non-fatal): %s", _err)
@@ -3875,15 +3947,21 @@ def load_page_state():
     """
     try:
         initialize_database()
-        with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            row = conn.execute(
-                "SELECT state_json FROM page_state WHERE state_id = 1"
-            ).fetchone()
-            if not row or not row[0]:
-                return {}
-            raw = json.loads(row[0])
-            # Discard state saved on a prior day — prevents yesterday's players
+        rows = _db_read("SELECT state_json FROM page_state WHERE state_id = 1")
+        if not rows or not rows[0].get("state_json"):
+            return {}
+        raw = json.loads(rows[0]["state_json"])
+        saved_date = raw.get("_page_state_date", "")
+        if saved_date != _nba_today_iso():
+            _logger.info(
+                "load_page_state: discarding stale state from '%s' (today=%s)",
+                saved_date, _nba_today_iso(),
+            )
+            return {}
+        return {k: v for k, v in raw.items() if k in _PERSISTED_PAGE_STATE_KEYS}
+    except Exception as _err:
+        _logger.warning("load_page_state error (non-fatal): %s", _err)
+        return {} — prevents yesterday's players
             # from appearing after the NBA Eastern Time day boundary rolls over.
             # NOTE: if saved_date is "" (state written before the date-stamp
             # feature was added), that also fails the equality check and is

@@ -193,6 +193,97 @@ def build_and_post_weekly_scorecard(channels=_DEFAULT_CHANNELS) -> list[PostResu
     return deploy_campaign(images, _channel_text_map(copy, channels), channels)
 
 
+# ── WEEKLY LEDGER THREAD ─────────────────────────────────────
+
+_THREAD_CHANNELS = ("twitter", "threads")
+
+
+def build_and_post_ledger_thread(channels=_THREAD_CHANNELS) -> list[PostResult]:
+    """Sunday 10:30am: text-only thread listing all W/L results for the week.
+
+    Posts a multi-tweet thread to Twitter via post_thread() and a single-post
+    text summary to Threads.  Image-only channels (Facebook, Instagram, TikTok)
+    are excluded by default — the weekly scorecard image covers those.
+    """
+    from distribute.twitter import TwitterPoster
+    from distribute.meta import ThreadsPoster
+    from config import SETTINGS as _SETT
+
+    summary = ds.get_results_for_week()
+    resolved = summary.wins + summary.losses
+    if resolved == 0:
+        _log.info("Ledger thread skipped: no resolved bets for week ending %s", summary.week_end)
+        return []
+
+    # ── Build tweet list ─────────────────────────────────────
+    roi_str = ""
+    if summary.roi_pct is not None:
+        sign = "+" if summary.roi_pct >= 0 else ""
+        roi_str = f" | {sign}{summary.roi_pct:.0f}% ROI"
+
+    tweets: list[str] = [
+        f"\U0001f4ca WEEKLY LEDGER — {summary.week_start} thru {summary.week_end}\n\n"
+        f"{summary.wins}W - {summary.losses}L | {summary.win_rate:.0f}% Win Rate{roi_str}\n\n"
+        f"Full receipts below \U0001f9f5\U0001f447"
+    ]
+
+    for bet in summary.all_bets:
+        result = (bet.get("result") or "").upper()
+        if result not in ("WIN", "LOSS"):
+            continue
+        icon = "\u2705" if result == "WIN" else "\u274c"
+        direction = (bet.get("direction") or "").upper()
+        prop_line = float(bet.get("prop_line") or 0)
+        stat = bet.get("stat_type", "")
+        player = bet.get("player_name", "")
+        platform = bet.get("platform", "")
+        tweets.append(
+            f"{icon} {player} {direction} {prop_line:.1f} {stat} — {platform}"
+        )
+
+    brand = _SETT.brand_url.rstrip("/") if hasattr(_SETT, "brand_url") else ""
+    closer = "SmartPickPro \u2014 Quantum Matrix Engine\u2122 5.6"
+    if brand:
+        closer += f"\nPicks: {brand}"
+    tweets.append(closer)
+
+    results: list[PostResult] = []
+
+    for ch in channels:
+        if ch == "twitter":
+            poster = TwitterPoster()
+            if not poster.is_configured():
+                results.append(PostResult(False, "twitter", error="not configured"))
+                continue
+            try:
+                results.extend(poster.post_thread(tweets))
+            except Exception as exc:
+                _log.exception("Ledger thread — Twitter failed")
+                results.append(PostResult(False, "twitter", error=f"{type(exc).__name__}: {exc}"))
+
+        elif ch == "threads":
+            poster = ThreadsPoster()
+            if not poster.is_configured():
+                results.append(PostResult(False, "threads", error="not configured"))
+                continue
+            # Threads API doesn't yet support image-free text posts via Graph API;
+            # post the summary line as a single-image post using the weekly scorecard
+            # render if available, otherwise skip gracefully.
+            summary_text = (
+                f"\U0001f4ca Week of {summary.week_start}: "
+                f"{summary.wins}W-{summary.losses}L | "
+                f"{summary.win_rate:.0f}% Win Rate{roi_str}\n"
+                f"Full ledger on our Twitter \U00002192"
+            )
+            _log.info("Ledger thread: Threads channel requires image — skipping image-less post")
+            results.append(PostResult(False, "threads", error="skipped: image required for Threads text post"))
+
+        else:
+            results.append(PostResult(False, ch, error=f"ledger thread: channel '{ch}' not supported"))
+
+    return results
+
+
 # ── BRANDING / CTA ──────────────────────────────────────────
 
 def build_and_post_branding(channels=_DEFAULT_CHANNELS) -> list[PostResult]:

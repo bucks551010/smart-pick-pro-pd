@@ -1351,9 +1351,47 @@ def _render_results_fragment():
             st.session_state.pop("analysis_results", None)
             _frag_analysis_results = []
 
+    # ── Scrub results to today's active teams ─────────────────────
+    # Runs before any rendering so stale picks (from a prior analysis
+    # run that included teams not playing today) are dropped at the
+    # earliest possible point — before counts, filters, or cards.
+    if _frag_analysis_results:
+        try:
+            from data.nba_data_service import get_todays_games as _get_tg_scrub
+            _scrub_games = st.session_state.get("todays_games") or _get_tg_scrub() or []
+            _scrub_abbrs: set[str] = set()
+            for _sg in _scrub_games:
+                _sh = (_sg.get("home_team") or "").upper().strip()
+                _sa = (_sg.get("away_team") or "").upper().strip()
+                if _sh:
+                    _scrub_abbrs.add(_sh)
+                if _sa:
+                    _scrub_abbrs.add(_sa)
+            if _scrub_abbrs:
+                _frag_analysis_results = [
+                    r for r in _frag_analysis_results
+                    if (
+                        (r.get("player_team") or r.get("team") or "")
+                        .upper().strip()
+                    ) in _scrub_abbrs
+                ]
+                st.session_state["analysis_results"] = _frag_analysis_results
+        except Exception:
+            pass
+
     _frag_current_props = load_props_from_session(st.session_state)
     _frag_minimum_edge = st.session_state.get("minimum_edge_threshold", 5.0)
     _frag_todays_games = st.session_state.get("todays_games", [])
+    # Fallback: if session state has no game data, fetch directly so game
+    # banners always render even when the user navigates straight to QAM.
+    if not _frag_todays_games:
+        try:
+            from data.nba_data_service import get_todays_games as _get_games_direct
+            _frag_todays_games = _get_games_direct() or []
+            if _frag_todays_games:
+                st.session_state["todays_games"] = _frag_todays_games
+        except Exception:
+            pass
     _frag_players_data = load_players_data()
 
     # Build player → news lookup inside the fragment (was a closure before).
@@ -1552,6 +1590,27 @@ def _render_results_fragment():
             _seen_result_keys.add(_rkey)
             _deduped.append(_r)
     displayed_results = _deduped
+
+    # ── Filter to today's active teams only ──────────────────────
+    # Prevents stale results from previous days (e.g. CHI, ATL) from
+    # bleeding through when the DB session is older than today's schedule.
+    if _frag_todays_games:
+        _todays_abbrs: set[str] = set()
+        for _tg in _frag_todays_games:
+            _tg_h = (_tg.get("home_team") or "").upper().strip()
+            _tg_a = (_tg.get("away_team") or "").upper().strip()
+            if _tg_h:
+                _todays_abbrs.add(_tg_h)
+            if _tg_a:
+                _todays_abbrs.add(_tg_a)
+        if _todays_abbrs:
+            displayed_results = [
+                r for r in displayed_results
+                if (
+                    (r.get("player_team") or r.get("team") or "")
+                    .upper().strip()
+                ) in _todays_abbrs
+            ]
 
     # ── Summary metrics ────────────────────────────────────────
     total_analyzed   = len(_frag_analysis_results)
@@ -1950,23 +2009,95 @@ def _render_results_fragment():
         # ── Full Analysis view ─────────────────────────────────────
 
         # ── 🎯 Strongly Suggested Parlays (at TOP for maximum visibility) ─
-        # Rendered natively via st.html() so content is part of the normal
-        # page flow — no iframe to capture scroll events on desktop.
+        # Grouped by game with horizontal scrolling for each matchup
         strategy_entries = _build_entry_strategy(displayed_results)
         if strategy_entries:
+            # Group parlays by game matchup
+            _parlays_by_game = {}
+            for entry in strategy_entries:
+                # Extract teams from raw_picks
+                teams = set()
+                for pick in entry.get("raw_picks", []):
+                    team = (pick.get("player_team") or pick.get("team") or "").upper().strip()
+                    if team:
+                        teams.add(team)
+                
+                # Use teams as game key; if no teams found, use "Mixed" as fallback
+                if len(teams) >= 2:
+                    game_key = " vs ".join(sorted(teams))
+                elif len(teams) == 1:
+                    game_key = list(teams)[0]
+                else:
+                    game_key = "Mixed"
+                
+                if game_key not in _parlays_by_game:
+                    _parlays_by_game[game_key] = []
+                _parlays_by_game[game_key].append(entry)
+            
+            # Render header and game-by-game sections with horizontal scrolling
             st.markdown(
                 _render_parlays_header_html(),
                 unsafe_allow_html=True,
             )
-            _parlay_cards = "".join(
-                _render_parlay_card_html(entry, _i)
-                for _i, entry in enumerate(strategy_entries)
-            )
-            _parlay_html = (
-                f'<div class="qam-parlay-container">{_parlay_cards}</div>'
-            )
-            _parlay_css = _get_qcm_css()
-            _render_card_native(_parlay_css + _parlay_html)
+            
+            # Render each game's parlays in a horizontally scrollable container
+            _global_card_idx = 0
+            for _game_idx, (_game_key, _game_parlays) in enumerate(_parlays_by_game.items()):
+                _game_cards = ""
+                for _i, entry in enumerate(_game_parlays):
+                    _game_cards += _render_parlay_card_html(entry, _global_card_idx)
+                    _global_card_idx += 1
+                
+                # Horizontal scroll container for this game's parlays
+                _game_html = (
+                    f'<div class="qam-game-section">'
+                    f'  <div class="qam-game-title">{_html.escape(_game_key)}</div>'
+                    f'  <div class="qam-parlay-scroll-container">'
+                    f'    <div class="qam-parlay-container">{_game_cards}</div>'
+                    f'  </div>'
+                    f'</div>'
+                )
+                _parlay_css = _get_qcm_css() + """
+                <style>
+                .qam-game-section {
+                    margin: 16px 0;
+                    border-radius: 8px;
+                    background: rgba(255,255,255,0.02);
+                    padding: 12px;
+                }
+                .qam-game-title {
+                    font-weight: 600;
+                    font-size: 14px;
+                    margin-bottom: 8px;
+                    color: #a78bfa;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .qam-parlay-scroll-container {
+                    overflow-x: auto;
+                    overflow-y: hidden;
+                    -webkit-overflow-scrolling: touch;
+                    padding-bottom: 8px;
+                    scrollbar-width: thin;
+                    scrollbar-color: rgba(167,139,250,0.4) rgba(255,255,255,0.05);
+                }
+                .qam-parlay-scroll-container::-webkit-scrollbar {
+                    height: 6px;
+                }
+                .qam-parlay-scroll-container::-webkit-scrollbar-track {
+                    background: rgba(255,255,255,0.02);
+                    border-radius: 3px;
+                }
+                .qam-parlay-scroll-container::-webkit-scrollbar-thumb {
+                    background: rgba(167,139,250,0.4);
+                    border-radius: 3px;
+                }
+                .qam-parlay-scroll-container::-webkit-scrollbar-thumb:hover {
+                    background: rgba(167,139,250,0.6);
+                }
+                </style>
+                """
+                _render_card_native(_parlay_css + _game_html)
         else:
             st.info("Not enough high-edge picks to build parlay combinations. Lower the edge threshold or add more props.")
 
@@ -2059,8 +2190,13 @@ def _render_results_fragment():
             _game_groups: dict[str, dict[str, dict]] = {}
             _no_game = "Other"
             for _pname, _pdata in _grouped.items():
+                _vitals_team = (_pdata.get("vitals") or {}).get("team", "") or ""
+                # "N/A" is returned when enrich_player_data can't find the player —
+                # treat it as missing and fall back to the raw prop team fields.
+                if _vitals_team.upper().strip() in ("", "N/A", "NA"):
+                    _vitals_team = ""
                 _pteam = (
-                    (_pdata.get("vitals") or {}).get("team", "")
+                    _vitals_team
                     or (_pdata["props"][0].get("player_team", "") if _pdata.get("props") else "")
                     or (_pdata["props"][0].get("team", "") if _pdata.get("props") else "")
                 ).upper().strip()
@@ -2097,38 +2233,33 @@ def _render_results_fragment():
                     'font-size:0.78rem;font-weight:700;color:#94A3B8;'
                     'text-transform:uppercase;letter-spacing:0.08em;margin:10px 0 4px;'
                 )
+                # Group players by actual team from player data (robust — no reliance on meta match)
+                _teams_in_group: dict = {}
+                for _pn, _pd in _game_players.items():
+                    _vt = (_pd.get("vitals") or {}).get("team", "") or ""
+                    if _vt.upper().strip() in ("", "N/A", "NA"):
+                        _vt = ""
+                    _pt = (
+                        _vt
+                        or (_pd["props"][0].get("player_team", "") if _pd.get("props") else "")
+                        or (_pd["props"][0].get("team", "") if _pd.get("props") else "")
+                    ).upper().strip() or "UNK"
+                    _teams_in_group.setdefault(_pt, {})[_pn] = _pd
+
+                # Order: away team first, home team second (when game meta known), then others alpha
+                _t_order: list = []
                 if _gm and _game_label != _no_game:
-                    # Split players into away-team row and home-team row
-                    _away_row: dict = {}
-                    _home_row: dict = {}
-                    _other_row: dict = {}
-                    for _pn, _pd in _game_players.items():
-                        _pt = (
-                            (_pd.get("vitals") or {}).get("team", "")
-                            or (_pd["props"][0].get("player_team", "") if _pd.get("props") else "")
-                            or (_pd["props"][0].get("team", "") if _pd.get("props") else "")
-                        ).upper().strip()
-                        if _pt == _mc_at:
-                            _away_row[_pn] = _pd
-                        elif _pt == _mc_ht:
-                            _home_row[_pn] = _pd
-                        else:
-                            _other_row[_pn] = _pd
-                    if _away_row:
-                        st.markdown(f'<div style="{_team_lbl_css}">{_mc_at}</div>', unsafe_allow_html=True)
-                        _render_card_native(_compile_cards_flat(_away_row))
-                    if _home_row:
-                        st.markdown(f'<div style="{_team_lbl_css}">{_mc_ht}</div>', unsafe_allow_html=True)
-                        _render_card_native(_compile_cards_flat(_home_row))
-                    if _other_row:
-                        _render_card_native(_compile_cards_flat(_other_row))
-                else:
-                    # No game meta — render all players in one flat row
-                    st.markdown(
-                        f'<div style="{_team_lbl_css}">{_game_label}</div>',
-                        unsafe_allow_html=True,
-                    )
-                    _render_card_native(_compile_cards_flat(_game_players))
+                    for _t_pref in [_mc_at, _mc_ht]:
+                        if _t_pref in _teams_in_group:
+                            _t_order.append(_t_pref)
+                for _t in sorted(_teams_in_group.keys()):
+                    if _t not in _t_order:
+                        _t_order.append(_t)
+
+                for _t in _t_order:
+                    _t_players = _teams_in_group[_t]
+                    st.markdown(f'<div style="{_team_lbl_css}">{_t}</div>', unsafe_allow_html=True)
+                    _render_card_native(_compile_cards_flat(_t_players))
 
     # Show OUT players in a separate collapsed section
     _out_display = [r for r in displayed_results if r.get("player_is_out", False)]

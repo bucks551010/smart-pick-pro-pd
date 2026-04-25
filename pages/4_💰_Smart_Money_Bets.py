@@ -79,8 +79,8 @@ from data.player_profile_service import get_headshot_url, get_team_logo_url
 from tracking.bet_tracker import log_new_bet
 
 # ── Thresholds ────────────────────────────────────────────────
-_EASY_MONEY_MIN_DEV = 50.0    # Goblin: line_vs_avg_pct <= -50%
-_SMART_RISK_MIN_DEV = 30.0    # Demon:  line_vs_avg_pct <= -30%
+_EASY_MONEY_MIN_DEV = 10.0    # Goblin: line_vs_avg_pct <= -10% (line set below avg)
+_SMART_RISK_MIN_DEV = 10.0    # Demon:  line_vs_avg_pct >= +10% (line set above avg)
 _SM_MIN_SEASON_MINUTES = 14.0
 _SM_MAX_PICKS_PER_PLAYER = 2
 _SM_MAX_PICKS_PER_TEAM = 4
@@ -1027,16 +1027,22 @@ _PAGE_CSS = """
 /* Headshot + team logo */
 .s15-headshot-wrap {
     position: relative;
+    flex: 0 0 auto;
     flex-shrink: 0;
     width: 72px; height: 72px;
+    min-width: 72px; min-height: 72px;
 }
 .s15-card-headshot {
     width: 72px; height: 72px;
+    min-width: 72px; min-height: 72px;
     border-radius: 50%;
     object-fit: cover;
+    object-position: top center;
     border: 2.5px solid;
     background: linear-gradient(145deg, #0a0e0c, #060906);
     box-shadow: 0 6px 20px rgba(0,0,0,0.55);
+    display: block;
+    aspect-ratio: 1 / 1;
 }
 .s15-card-goblin .s15-card-headshot {
     border-color: rgba(46,204,64,0.25);
@@ -1467,8 +1473,9 @@ _PAGE_CSS = """
         gap: 10px;
         padding: 14px 16px;
     }
-    .s15-rank { width: 34px; height: 34px; font-size: 0.64rem; border-radius: 10px; }
-    .s15-headshot-wrap, .s15-card-headshot { width: 56px; height: 56px; }
+    .s15-rank { width: 34px; height: 34px; font-size: 0.64rem; border-radius: 10px; flex: 0 0 auto; }
+    .s15-headshot-wrap { width: 56px; height: 56px; min-width: 56px; min-height: 56px; flex: 0 0 56px; }
+    .s15-card-headshot { width: 56px; height: 56px; min-width: 56px; min-height: 56px; aspect-ratio: 1/1; }
     .s15-card-team-logo { width: 22px; height: 22px; }
     .s15-card-player { font-size: 0.92rem; }
     .s15-card-meta { font-size: 0.60rem; }
@@ -1527,8 +1534,9 @@ _PAGE_CSS = """
     /* Cards — fully stacked */
     .s15-card { border-radius: 16px; margin-bottom: 10px; }
     .s15-card-top { padding: 12px 14px; gap: 8px; }
-    .s15-rank { width: 30px; height: 30px; font-size: 0.58rem; border-radius: 8px; }
-    .s15-headshot-wrap, .s15-card-headshot { width: 48px; height: 48px; }
+    .s15-rank { width: 30px; height: 30px; font-size: 0.58rem; border-radius: 8px; flex: 0 0 auto; }
+    .s15-headshot-wrap { width: 48px; height: 48px; min-width: 48px; min-height: 48px; flex: 0 0 48px; }
+    .s15-card-headshot { width: 48px; height: 48px; min-width: 48px; min-height: 48px; aspect-ratio: 1/1; }
     .s15-card-team-logo { width: 20px; height: 20px; bottom: -3px; right: -3px; }
     .s15-card-player { font-size: 0.84rem; }
     .s15-card-meta { font-size: 0.56rem; }
@@ -1837,15 +1845,28 @@ def _filter_zone_picks(all_props: list, players_data: dict,
     for enriched in enriched_batch:
         dev = float(enriched.get("line_vs_avg_pct", 0) or 0)
         if not _fallback_mode:
-            # Normal mode: require confirmed negative deviation
-            if dev > -min_dev:
-                continue
+            if odds_type == "goblin":
+                # Goblin: line is set BELOW average — easy OVER opportunity.
+                # Require the line to be at least min_dev% below season avg.
+                if dev > -min_dev:
+                    continue
+            else:
+                # Demon: line is set ABOVE average — high-risk OVER.
+                # PrizePicks sets demon lines higher than avg, so line_vs_avg_pct
+                # is positive.  Require at least min_dev% above season avg.
+                if dev < min_dev:
+                    continue
             if not _passes_smart_money_quality_gate(enriched):
                 continue
         # Fallback mode: PrizePicks labelled this as goblin/demon → include it
         results.append(enriched)
 
-    results.sort(key=lambda x: x.get("line_vs_avg_pct", 0))
+    # Goblin: sort ascending (most negative dev first = biggest bargain).
+    # Demon: sort descending (most positive dev first = highest line above avg).
+    results.sort(
+        key=lambda x: x.get("line_vs_avg_pct", 0),
+        reverse=(odds_type == "demon"),
+    )
     limited = []
     by_player = {}
     by_team = {}
@@ -2045,9 +2066,14 @@ def _render_card(pick: dict, card_class: str, rank: int) -> str:
     headshot_html = (
         f'<img class="s15-card-headshot" '
         f'src="{_html.escape(headshot_url)}" '
-        f'alt="{player}" loading="lazy">'
+        f'alt="{player}" loading="lazy" '
+        f'style="width:72px;height:72px;min-width:72px;min-height:72px;'
+        f'border-radius:50%;object-fit:cover;object-position:top center;'
+        f'aspect-ratio:1/1;display:block;flex-shrink:0;">'
         if headshot_url else
-        '<div class="s15-card-headshot"></div>'
+        '<div class="s15-card-headshot" '
+        'style="width:72px;height:72px;min-width:72px;min-height:72px;'
+        'border-radius:50%;flex-shrink:0;"></div>'
     )
 
     # Team logo
@@ -2072,7 +2098,8 @@ def _render_card(pick: dict, card_class: str, rank: int) -> str:
         # ─── Single row: rank + headshot + info + prop + data chips + gauge ───
         f'<div class="s15-card-top">'
         f'<div class="s15-rank">#{rank + 1}</div>'
-        f'<div class="s15-headshot-wrap">'
+        f'<div class="s15-headshot-wrap" '
+        f'style="position:relative;flex:0 0 auto;flex-shrink:0;width:72px;height:72px;min-width:72px;min-height:72px;">'
         f'{headshot_html}'
         f'{team_logo_html}'
         f'</div>'
@@ -2146,7 +2173,24 @@ try:
 except Exception:
     _today_str = datetime.date.today().isoformat()
 
-all_props = [p for p in all_props if _is_today_game_prop(p, _today_str)]
+# PrizePicks often posts tomorrow's lines in the evening before today's
+# games are even finished.  If filtering to _today_str yields nothing,
+# use the earliest game_date actually present in the returned props so
+# the page always shows the next live slate rather than nothing.
+_today_filtered = [p for p in all_props if _is_today_game_prop(p, _today_str)]
+if not _today_filtered and all_props:
+    _dates_in_props = sorted(
+        d for d in (
+            _extract_iso_date(p.get("game_date") or p.get("start_date") or p.get("date"))
+            for p in all_props
+        )
+        if d and d >= _today_str
+    )
+    if _dates_in_props:
+        _today_str = _dates_in_props[0]
+        _today_filtered = [p for p in all_props if _is_today_game_prop(p, _today_str)]
+
+all_props = _today_filtered
 
 total_goblin = sum(1 for p in all_props if p.get("odds_type") == "goblin")
 total_demon = sum(1 for p in all_props if p.get("odds_type") == "demon")

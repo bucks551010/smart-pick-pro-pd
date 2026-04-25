@@ -238,6 +238,32 @@ def _load_cached_slate() -> tuple[list, list]:
         from tracking.database import get_slate_picks_for_today
         picks = get_slate_picks_for_today()
 
+    # ── Scrub to today's active teams ───────────────────────────────────────
+    # Ensures picks from prior-day analyses (teams not playing today) are
+    # never seeded into session state, even if they sneak through DB guards.
+    if picks:
+        try:
+            from data.nba_data_service import get_todays_games as _gtg_home
+            _home_games = _gtg_home() or []
+            _home_abbrs: set[str] = set()
+            for _hg in _home_games:
+                _hh = (_hg.get("home_team") or "").upper().strip()
+                _ha = (_hg.get("away_team") or "").upper().strip()
+                if _hh:
+                    _home_abbrs.add(_hh)
+                if _ha:
+                    _home_abbrs.add(_ha)
+            if _home_abbrs:
+                picks = [
+                    p for p in picks
+                    if (
+                        (p.get("player_team") or p.get("team") or "")
+                        .upper().strip()
+                    ) in _home_abbrs
+                ]
+        except Exception:
+            pass
+
     from data.data_manager import load_platform_props_from_csv as _lpc
     try:
         props = _lpc() or []

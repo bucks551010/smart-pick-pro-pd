@@ -3016,6 +3016,26 @@ def load_analysis_session_by_id(session_id: int):
                 row_dict = dict(row) if row else None
         if not row_dict:
             return None
+        # Discard sessions saved on a prior day — same guard as load_latest_analysis_session.
+        _ts = row_dict.get("analysis_timestamp") or row_dict.get("created_at") or ""
+        if _ts:
+            try:
+                _session_date = (
+                    datetime.datetime.fromisoformat(_ts.rstrip("Z"))
+                    .astimezone(_get_eastern_tz())
+                    .date()
+                    .isoformat()
+                )
+                if _session_date != _nba_today_iso():
+                    _logger.info(
+                        "load_analysis_session_by_id(%s): discarding stale session from %s (today=%s)",
+                        session_id,
+                        _session_date,
+                        _nba_today_iso(),
+                    )
+                    return None
+            except Exception:
+                pass
         try:
             row_dict["analysis_results"] = json.loads(row_dict.get("analysis_results_json") or "[]")
         except Exception:

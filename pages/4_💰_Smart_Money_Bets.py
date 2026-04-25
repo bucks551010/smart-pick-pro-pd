@@ -2238,43 +2238,38 @@ smart_risk_picks = _filter_zone_picks(all_props, players_data, "demon", _SMART_R
 
 # ── Auto-log Smart Money picks to Bet Tracker ─────────────────
 # Sync every page load so today's tracker rows always mirror today's slate.
-import sqlite3 as _sqlite3
-from tracking.database import DB_FILE_PATH as _DB_PATH
+from tracking.database import _db_write as _tracking_db_write, _db_read as _tracking_db_read
 
 # Keep Smart Money auto-logs synced to today's slate only.
 # This clears stale pending rows (including future-game leftovers logged as today)
 # and then rehydrates from the current today-only slate.
 _sync_ok = False
-for _attempt in range(3):
-    try:
-        with _sqlite3.connect(str(_DB_PATH), timeout=30) as _conn:
-            _conn.execute("PRAGMA journal_mode=WAL")
-            _conn.execute(
-                "DELETE FROM bets "
-                "WHERE bet_date = ? "
-                "AND auto_logged = 1 "
-                "AND platform = 'Smart Money' "
-                "AND (bet_type IN ('goblin', 'demon') OR notes LIKE 'Smart Money %') "
-                "AND (result IS NULL OR result = '')",
-                (_today_str,),
-            )
-            _conn.commit()
-        _sync_ok = True
-        break
-    except Exception:
-        _time.sleep(0.25 * (2 ** _attempt))
+try:
+    _tracking_db_write(
+        "DELETE FROM bets "
+        "WHERE bet_date = ? "
+        "AND auto_logged = 1 "
+        "AND platform = 'Smart Money' "
+        "AND (bet_type IN ('goblin', 'demon') OR notes LIKE 'Smart Money %') "
+        "AND (result IS NULL OR result = '')",
+        (_today_str,),
+        caller="sm_sync_delete",
+    )
+    _sync_ok = True
+except Exception:
+    pass
 
 _existing: set = set()
 if _sync_ok:
     try:
-        with _sqlite3.connect(str(_DB_PATH), timeout=30) as _conn:
-            _rows = _conn.execute(
-                "SELECT player_name, stat_type, prop_line, direction "
-                "FROM bets WHERE bet_date = ?",
-                (_today_str,),
-            ).fetchall()
+        _rows = _tracking_db_read(
+            "SELECT player_name, stat_type, prop_line, direction "
+            "FROM bets WHERE bet_date = ?",
+            (_today_str,),
+        )
         _existing = {
-            (r[0].lower(), r[1], float(r[2] or 0), r[3]) for r in _rows
+            (r["player_name"].lower(), r["stat_type"], float(r["prop_line"] or 0), r["direction"])
+            for r in _rows
         }
     except Exception:
         _existing = set()

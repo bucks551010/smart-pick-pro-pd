@@ -780,6 +780,20 @@ def initialize_database():
         ok = _pg_initialize_database()
         if ok:
             _DB_INITIALIZED = True
+            # ── Stale data cleanup for PostgreSQL (mirrors SQLite init) ──
+            # player_game_logs: keep only the last 3 days of cache rows.
+            _cutoff_3d = (datetime.date.today() - datetime.timedelta(days=3)).strftime("%Y-%m-%d")
+            _db_write(
+                "DELETE FROM player_game_logs WHERE retrieved_at < ?",
+                (_cutoff_3d,),
+                caller="pg_stale_cleanup",
+            )
+            # analysis_sessions: keep only today's sessions.
+            _db_write(
+                "DELETE FROM analysis_sessions WHERE analysis_timestamp < ?",
+                (_nba_today_iso(),),
+                caller="pg_stale_cleanup",
+            )
         return ok
 
     # ── SQLite path (local development) ───────────────────────────────

@@ -89,8 +89,59 @@ def _pg_putconn(conn):
 
 
 def _to_pg_sql(sql: str) -> str:
-    """Convert SQLite-style ? placeholders to psycopg2 %s."""
-    return sql.replace("?", "%s")
+    """Convert SQLite-style SQL to psycopg2-compatible PostgreSQL.
+
+    Translates:
+    - ? placeholders → %s
+    - strftime('%H'/'%w', col) → EXTRACT expressions
+    - datetime('now', '±N days/hours/years') → NOW() ± INTERVAL
+    - datetime('now') → NOW()
+    - sqlite_master → information_schema.tables
+    """
+    import re
+
+    sql = sql.replace("?", "%s")
+
+    # strftime translations
+    sql = re.sub(
+        r"strftime\('%H',\s*([\w.]+)\)",
+        r"EXTRACT(HOUR FROM \1::timestamp)::int",
+        sql,
+    )
+    sql = re.sub(
+        r"strftime\('%w',\s*([\w.]+)\)",
+        r"EXTRACT(DOW FROM \1::timestamp)::int",
+        sql,
+    )
+    sql = re.sub(
+        r"strftime\('%Y-%m-%d',\s*([\w.]+)\)",
+        r"TO_CHAR(\1::timestamp, 'YYYY-MM-DD')",
+        sql,
+    )
+    sql = re.sub(
+        r"strftime\('%Y-%m',\s*([\w.]+)\)",
+        r"TO_CHAR(\1::timestamp, 'YYYY-MM')",
+        sql,
+    )
+
+    # datetime('now', '±N days') / hours / years
+    def _interval(m):
+        sign, n, unit = m.group(1), m.group(2), m.group(3).lower().rstrip("s")
+        op = "-" if sign == "-" else "+"
+        return f"NOW() {op} INTERVAL '{n} {unit}s'"
+
+    sql = re.sub(
+        r"datetime\('now',\s*'([+-])(\d+)\s+(day|hour|year)s?'\)",
+        _interval,
+        sql,
+        flags=re.IGNORECASE,
+    )
+    sql = re.sub(r"datetime\('now'\)", "NOW()", sql, flags=re.IGNORECASE)
+
+    # sqlite_master → information_schema.tables
+    sql = re.sub(r"\bsqlite_master\b", "information_schema.tables", sql, flags=re.IGNORECASE)
+
+    return sql
 
 
 def _pg_execute_write(sql: str, params=(), *, caller: str = "write"):

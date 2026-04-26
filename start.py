@@ -208,6 +208,29 @@ def _seed_subscriptions_from_env():
         _logger.error("SEED_SUBSCRIPTIONS: unexpected error — %s", exc)
 
 
+def _run_startup_slate_bg() -> None:
+    """Run the full slate pipeline once at startup in a background thread.
+
+    This ensures ``all_analysis_picks`` is populated for today as soon as the
+    app boots — whether or not the ETL scheduler's QAM window has been reached.
+    Also initialises the tracking DB schema (creates tables if missing) before
+    the scheduler or any Streamlit page attempts a write.
+    """
+    import threading
+
+    def _worker():
+        try:
+            _logger.info("Startup slate run starting (background)\u2026")
+            from slate_worker import run_slate
+            inserted = run_slate()
+            _logger.info("Startup slate run complete \u2014 %d picks inserted.", inserted)
+        except Exception as exc:
+            _logger.warning("Startup slate run failed (non-fatal): %s", exc)
+
+    t = threading.Thread(target=_worker, name="startup-slate", daemon=True)
+    t.start()
+
+
 def _run_daily_update_bg() -> None:
     """Run the ETL daily updater in a background thread so Streamlit starts immediately."""
     import threading
@@ -250,6 +273,7 @@ if __name__ == "__main__":
 
     _seed_user_from_env()
     _seed_subscriptions_from_env()
+    _run_startup_slate_bg()   # populate all_analysis_picks immediately on boot
     _run_daily_update_bg()
 
     # Start the background ETL scheduler (keeps games, props, and analysis fresh)

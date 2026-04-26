@@ -126,17 +126,10 @@ def run_slate(dry_run: bool = False) -> int:
 
         games = get_todays_games() or []
         if not games:
-            _logger.warning("[1] No NBA games scheduled for %s — exiting.", today_str)
-            if not dry_run:
-                record_slate_run(
-                    for_date=today_str,
-                    pick_count=0,
-                    props_fetched=0,
-                    games_count=0,
-                    status="no_games",
-                    duration_seconds=time.perf_counter() - start_ts,
-                )
-            return 0
+            _logger.warning(
+                "[1] get_todays_games() returned empty for %s — continuing without game "
+                "context (props will still be fetched and analysed).", today_str
+            )
         _logger.info("[1] %d games today.", len(games))
 
         # ── Step 2: Active rosters + injury map ──────────────────────────
@@ -164,7 +157,24 @@ def run_slate(dry_run: bool = False) -> int:
         ) or []
 
         if not props:
-            _logger.warning("[3] No props returned — exiting.")
+            # Fall back to the cached CSV if the live API returned nothing.
+            _logger.warning("[3] Live props API returned empty — trying live_props.csv fallback.")
+            try:
+                import pandas as _pd
+                from pathlib import Path as _Path
+                _csv_path = _Path(__file__).resolve().parent / "data" / "live_props.csv"
+                if _csv_path.exists():
+                    _df = _pd.read_csv(_csv_path)
+                    if "game_date" in _df.columns:
+                        _today_rows = _df[_df["game_date"] == today_str]
+                        if not _today_rows.empty:
+                            props = _today_rows.to_dict("records")
+                            _logger.info("[3] CSV fallback: %d props loaded from live_props.csv.", len(props))
+            except Exception as _csv_exc:
+                _logger.debug("[3] CSV fallback failed (non-fatal): %s", _csv_exc)
+
+        if not props:
+            _logger.warning("[3] No props available (live API + CSV fallback) — exiting.")
             if not dry_run:
                 record_slate_run(
                     for_date=today_str,

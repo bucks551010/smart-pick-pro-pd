@@ -281,8 +281,10 @@ def _run_auto_analysis(today_str: str) -> int:
         from data.nba_data_service import get_todays_games
         todays_games = get_todays_games()
         if not todays_games:
-            _logger.info("[ETL Scheduler] QAM auto-analysis: no games today, skipping.")
-            return 0
+            _logger.warning(
+                "[ETL Scheduler] QAM auto-analysis: get_todays_games() returned empty — "
+                "proceeding without game context (props will still be analysed)."
+            )
 
         # ── 2. Load players on today's rosters ──
         from data.nba_data_service import get_todays_players

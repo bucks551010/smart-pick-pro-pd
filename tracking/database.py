@@ -889,7 +889,8 @@ def _pg_initialize_database() -> bool:
                        WHERE pick_id NOT IN (
                            SELECT MIN(pick_id)
                            FROM all_analysis_picks
-                           GROUP BY pick_date, player_name, stat_type, prop_line, direction
+                           GROUP BY pick_date, LOWER(player_name), stat_type,
+                                    prop_line, direction, COALESCE(platform, '')
                        )"""
                 )
                 cur.execute(_UNIQUE_IDX)
@@ -1409,14 +1410,15 @@ def initialize_database():
                         WHERE pick_id NOT IN (
                             SELECT MIN(pick_id)
                             FROM all_analysis_picks
-                            GROUP BY pick_date, player_name, stat_type, prop_line, direction
+                            GROUP BY pick_date, LOWER(player_name), stat_type,
+                                     prop_line, direction, COALESCE(platform, '')
                         )
                         """
                     )
                     cursor.execute(
                         "CREATE UNIQUE INDEX IF NOT EXISTS idx_aap_unique_pick "
                         "ON all_analysis_picks "
-                        "(pick_date, player_name, stat_type, prop_line, direction)"
+                        "(pick_date, LOWER(player_name), stat_type, prop_line, direction, COALESCE(platform, ''))"
                     )
                 except (sqlite3.OperationalError, sqlite3.IntegrityError):
                     pass  # Best-effort -- app-level dedup still protects
@@ -3521,7 +3523,11 @@ def sync_player_game_logs_from_etl(player_ids=None, limit_per_player=20):
 # ============================================================
 
 def _pg_insert_analysis_picks(analysis_results: list, today_str: str) -> int:
-    """PostgreSQL UPSERT for all_analysis_picks (ON CONFLICT DO UPDATE).
+    """PostgreSQL UPSERT for all_analysis_picks.
+
+    Primary path uses ON CONFLICT (requires idx_aap_unique_pick).
+    Falls back to per-row INSERT with duplicate-skip on UniqueViolation when
+    the unique index is missing (e.g. first deploy or failed index creation).
 
     Enforces the same 5-props-per-player cap as analysis_orchestrator.py so
     that even if the caller passes un-capped results no player leaks >5 rows.
@@ -3540,55 +3546,99 @@ def _pg_insert_analysis_picks(analysis_results: list, today_str: str) -> int:
         if _pcounts[pname] <= _MAX_PICKS_PER_PLAYER:
             capped_results.append(r)
 
+    def _build_params(r):
+        _line = round(float(r.get("line", 0) or 0), 2)
+        _platform = str(r.get("platform", "") or "").strip()
+        return (
+            today_str,
+            r.get("player_name", ""),
+            r.get("player_team", r.get("team", "")),
+            r.get("stat_type", ""),
+            _line,
+            r.get("direction", "OVER"),
+            _platform,
+            float(r.get("confidence_score", 0) or 0),
+            float(r.get("probability_over", 0.5) or 0.5),
+            float(r.get("edge_percentage", 0) or 0),
+            r.get("tier", "Bronze"),
+            f"Auto-stored by Smart Pick Pro. SAFE Score: {r.get('confidence_score', 0):.0f}",
+            r.get("bet_type", "normal"),
+            float(r.get("std_devs_from_line", 0.0)),
+            1 if r.get("should_avoid", False) else 0,
+            str(r.get("odds_type", "standard") or "standard").strip().lower(),
+        )
+
+    _UPSERT_SQL = """
+        INSERT INTO all_analysis_picks
+            (pick_date, player_name, team, stat_type, prop_line, direction,
+             platform, confidence_score, probability_over, edge_percentage,
+             tier, notes, bet_type, std_devs_from_line, is_risky, odds_type)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (pick_date, LOWER(player_name), stat_type, prop_line, direction, COALESCE(platform, ''))
+        DO UPDATE SET
+            confidence_score   = EXCLUDED.confidence_score,
+            probability_over   = EXCLUDED.probability_over,
+            edge_percentage    = EXCLUDED.edge_percentage,
+            tier               = EXCLUDED.tier,
+            notes              = EXCLUDED.notes,
+            bet_type           = EXCLUDED.bet_type,
+            std_devs_from_line = EXCLUDED.std_devs_from_line,
+            is_risky           = EXCLUDED.is_risky,
+            odds_type          = EXCLUDED.odds_type
+    """
+
+    _INSERT_SQL = """
+        INSERT INTO all_analysis_picks
+            (pick_date, player_name, team, stat_type, prop_line, direction,
+             platform, confidence_score, probability_over, edge_percentage,
+             tier, notes, bet_type, std_devs_from_line, is_risky, odds_type)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+
     inserted = 0
     conn = None
     try:
         conn = _pg_conn()
         cur = conn.cursor()
-        for r in capped_results:
-            _line = round(float(r.get("line", 0) or 0), 2)
-            _platform = str(r.get("platform", "") or "").strip()
-            cur.execute(
-                """
-                INSERT INTO all_analysis_picks
-                    (pick_date, player_name, team, stat_type, prop_line, direction,
-                     platform, confidence_score, probability_over, edge_percentage,
-                     tier, notes, bet_type, std_devs_from_line, is_risky, odds_type)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (pick_date, LOWER(player_name), stat_type, prop_line, direction, COALESCE(platform, ''))
-                DO UPDATE SET
-                    confidence_score   = EXCLUDED.confidence_score,
-                    probability_over   = EXCLUDED.probability_over,
-                    edge_percentage    = EXCLUDED.edge_percentage,
-                    tier               = EXCLUDED.tier,
-                    notes              = EXCLUDED.notes,
-                    bet_type           = EXCLUDED.bet_type,
-                    std_devs_from_line = EXCLUDED.std_devs_from_line,
-                    is_risky           = EXCLUDED.is_risky,
-                    odds_type          = EXCLUDED.odds_type
-                """,
-                (
-                    today_str,
-                    r.get("player_name", ""),
-                    r.get("player_team", r.get("team", "")),
-                    r.get("stat_type", ""),
-                    _line,
-                    r.get("direction", "OVER"),
-                    _platform,
-                    float(r.get("confidence_score", 0) or 0),
-                    float(r.get("probability_over", 0.5) or 0.5),
-                    float(r.get("edge_percentage", 0) or 0),
-                    r.get("tier", "Bronze"),
-                    f"Auto-stored by Smart Pick Pro. SAFE Score: {r.get('confidence_score', 0):.0f}",
-                    r.get("bet_type", "normal"),
-                    float(r.get("std_devs_from_line", 0.0)),
-                    1 if r.get("should_avoid", False) else 0,
-                    str(r.get("odds_type", "standard") or "standard").strip().lower(),
-                ),
+        # ── Primary path: batch upsert with ON CONFLICT ──────────────────
+        try:
+            for r in capped_results:
+                cur.execute(_UPSERT_SQL, _build_params(r))
+                inserted += 1
+            conn.commit()
+            conn.close()
+            return inserted
+        except Exception as upsert_err:
+            # ON CONFLICT clause requires idx_aap_unique_pick.
+            # If the index is missing, fall back to per-row inserts with
+            # individual duplicate-key suppression.
+            _logger.warning(
+                "_pg_insert_analysis_picks: ON CONFLICT path failed (%s) — "
+                "falling back to row-by-row INSERT with duplicate suppression.",
+                upsert_err,
             )
-            inserted += 1
-        conn.commit()
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        # ── Fallback: row-by-row INSERT, skip on duplicate ───────────────
+        import psycopg2
+        inserted = 0
+        cur = conn.cursor()  # fresh cursor after rollback
+        for r in capped_results:
+            try:
+                cur.execute(_INSERT_SQL, _build_params(r))
+                conn.commit()
+                inserted += 1
+            except psycopg2.errors.UniqueViolation:
+                conn.rollback()
+                cur = conn.cursor()  # recreate cursor after rollback
+            except Exception as row_err:
+                _logger.debug("_pg_insert_analysis_picks row error: %s", row_err)
+                conn.rollback()
+                cur = conn.cursor()
         conn.close()
+        return inserted
     except Exception as err:
         _logger.warning(f"_pg_insert_analysis_picks error: {err}")
         try:
@@ -3854,6 +3904,35 @@ def save_analysis_session(analysis_results, todays_games=None, selected_picks=No
         _games_json = json.dumps(todays_games or [], default=str)
         _picks_json = json.dumps(selected_picks or [], default=str)
         _prop_count = len(analysis_results)
+        if _DATABASE_URL:
+            # PG path: use RETURNING to get the new session_id
+            conn = None
+            try:
+                conn = _pg_conn()
+                cur = conn.cursor()
+                cur.execute(
+                    """INSERT INTO analysis_sessions
+                       (analysis_timestamp, analysis_results_json, todays_games_json,
+                        selected_picks_json, prop_count)
+                       VALUES (%s, %s, %s, %s, %s)
+                       RETURNING session_id""",
+                    (_ts, _results_json, _games_json, _picks_json, _prop_count),
+                )
+                row = cur.fetchone()
+                conn.commit()
+                conn.close()
+                if row:
+                    return int(row["session_id"] if isinstance(row, dict) else row[0])
+                return -1
+            except Exception as _pg_err:
+                _logger.warning("save_analysis_session PG error: %s", _pg_err)
+                try:
+                    if conn:
+                        conn.rollback()
+                        conn.close()
+                except Exception:
+                    pass
+                return -1
         cursor = _db_write(
             """INSERT INTO analysis_sessions
                (analysis_timestamp, analysis_results_json, todays_games_json,
@@ -3864,7 +3943,6 @@ def save_analysis_session(analysis_results, todays_games=None, selected_picks=No
         )
         if cursor is None:
             return -1
-        # PostgreSQL returns lastrowid via RETURNING; SQLite via cursor.lastrowid
         try:
             return cursor.lastrowid if cursor.lastrowid else -1
         except Exception:

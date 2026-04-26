@@ -1134,7 +1134,7 @@ if run_analysis:
         # ── Auto-log all qualifying picks to the Bet Tracker ────────
         try:
             from tracking.bet_tracker import auto_log_analysis_bets as _auto_log
-            _auto_logged = _auto_log(analysis_results_list, minimum_edge=minimum_edge, max_bets=len(analysis_results_list))
+            _auto_logged = _auto_log(analysis_results_list, minimum_edge=minimum_edge, max_bets=len(analysis_results_list), log_all=True)
             if _auto_logged > 0:
                 st.info(
                     f"📊 Auto-logged **{_auto_logged}** qualifying pick(s) to the Bet Tracker."

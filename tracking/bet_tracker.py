@@ -1339,7 +1339,7 @@ def _calculate_win_rate_by_field(bets_list, field_name):
 
 _MAX_UNCERTAIN_REASONS = 2   # max risk_flags to include in notes for uncertain picks
 
-def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, source="quantum"):
+def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, source="quantum", log_all=False):
     """
     Automatically log bet records for analysis results that have a positive
     edge in the model's recommended direction.
@@ -1360,6 +1360,7 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, s
             >=3% edge. Bronze picks require >=8% edge AND >=60 confidence.
             Defaults to 5.0.  Only picks with edge > 0
             (model favours the recommended direction) are ever logged.
+            Ignored when log_all=True.
         max_bets (int): Maximum number of new bets to log in a single
             analysis run. Defaults to 15.
         source (str): System tag stored in `bets.source` so the tracker
@@ -1368,6 +1369,10 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, s
             ``"smart_money"`` (Smart Money Bets), ``"platform_ai"``
             (Platform AI / Live Games Neural Analysis).
             Defaults to ``"quantum"``.
+        log_all (bool): When True, skip all edge/tier threshold filtering
+            and log every pick in analysis_results (still deduplicates).
+            Use this when the full slate should be tracked regardless of
+            edge quality (e.g. QAM full-slate logging). Defaults to False.
 
     Returns:
         int: Number of new bets logged.
@@ -1425,25 +1430,28 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, s
         # Auto-classify fantasy score props as "fantasy" bet type
         if stat_type in FANTASY_STAT_TYPES:
             bet_type = "fantasy"
-        if edge <= 0:
-            continue
-        # Only auto-log recognised tiers
-        if tier not in AUTO_LOG_TIERS:
-            continue
-        # Apply tier-specific minimum edge thresholds
-        if tier == "Silver":
-            min_required_edge = SILVER_MIN_EDGE
-        elif tier == "Bronze":
-            # Bronze needs high edge AND high confidence to qualify
-            if edge < BRONZE_MIN_EDGE or confidence < BRONZE_MIN_CONFIDENCE:
-                continue
-            min_required_edge = BRONZE_MIN_EDGE
-        else:
-            min_required_edge = minimum_edge
-        if edge < min_required_edge:
-            continue
         if res.get("player_is_out", False):
             continue
+        # When log_all=True, skip all edge/tier threshold checks so the
+        # full QAM slate is tracked regardless of edge quality.
+        if not log_all:
+            if edge <= 0:
+                continue
+            # Only auto-log recognised tiers
+            if tier not in AUTO_LOG_TIERS:
+                continue
+            # Apply tier-specific minimum edge thresholds
+            if tier == "Silver":
+                min_required_edge = SILVER_MIN_EDGE
+            elif tier == "Bronze":
+                # Bronze needs high edge AND high confidence to qualify
+                if edge < BRONZE_MIN_EDGE or confidence < BRONZE_MIN_CONFIDENCE:
+                    continue
+                min_required_edge = BRONZE_MIN_EDGE
+            else:
+                min_required_edge = minimum_edge
+            if edge < min_required_edge:
+                continue
 
         dedup_key = (
             res.get("player_name", "").lower(),
@@ -1486,43 +1494,46 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, s
             logged += 1
 
     # ── Log all avoid/risky picks regardless of tier/edge thresholds ──────────
-    for res in sorted_results:
-        if not res.get("should_avoid", False):
-            continue
-        if res.get("player_is_out", False):
-            continue
-        dedup_key = (
-            res.get("player_name", "").lower(),
-            res.get("stat_type", ""),
-            float(res.get("line", 0) or 0),
-            res.get("direction", "OVER"),
-        )
-        if dedup_key in existing_keys:
-            continue
-        avoid_reasons = res.get("avoid_reasons") or []
-        ok, _msg = log_new_bet(
-            player_name=res.get("player_name", ""),
-            stat_type=res.get("stat_type", "points"),
-            prop_line=float(res.get("line", 0) or 0),
-            direction=res.get("direction", "OVER"),
-            platform=res.get("platform") or "SmartAI-Auto",
-            confidence_score=float(res.get("confidence_score", 0) or 0),
-            probability_over=float(res.get("probability_over", 0.5) or 0.5),
-            edge_percentage=float(res.get("edge_percentage", 0) or 0),
-            tier=res.get("tier", "Bronze"),
-            team=res.get("player_team", res.get("team", "")),
-            notes=(
-                "⚠️ RISKY/AVOID pick — Auto-logged for tracking. "
-                + (" | ".join(avoid_reasons[:3]) if avoid_reasons else "")
-            ),
-            auto_logged=1,
-            bet_type="risky",
-            std_devs_from_line=float(res.get("std_devs_from_line", 0.0)),
-            source=source,
-        )
-        if ok:
-            existing_keys.add(dedup_key)
-            logged += 1
+    # When log_all=True the main loop already processed every pick, so this
+    # extra pass is skipped to avoid double-logging.
+    if not log_all:
+        for res in sorted_results:
+            if not res.get("should_avoid", False):
+                continue
+            if res.get("player_is_out", False):
+                continue
+            dedup_key = (
+                res.get("player_name", "").lower(),
+                res.get("stat_type", ""),
+                float(res.get("line", 0) or 0),
+                res.get("direction", "OVER"),
+            )
+            if dedup_key in existing_keys:
+                continue
+            avoid_reasons = res.get("avoid_reasons") or []
+            ok, _msg = log_new_bet(
+                player_name=res.get("player_name", ""),
+                stat_type=res.get("stat_type", "points"),
+                prop_line=float(res.get("line", 0) or 0),
+                direction=res.get("direction", "OVER"),
+                platform=res.get("platform") or "SmartAI-Auto",
+                confidence_score=float(res.get("confidence_score", 0) or 0),
+                probability_over=float(res.get("probability_over", 0.5) or 0.5),
+                edge_percentage=float(res.get("edge_percentage", 0) or 0),
+                tier=res.get("tier", "Bronze"),
+                team=res.get("player_team", res.get("team", "")),
+                notes=(
+                    "⚠️ RISKY/AVOID pick — Auto-logged for tracking. "
+                    + (" | ".join(avoid_reasons[:3]) if avoid_reasons else "")
+                ),
+                auto_logged=1,
+                bet_type="risky",
+                std_devs_from_line=float(res.get("std_devs_from_line", 0.0)),
+                source=source,
+            )
+            if ok:
+                existing_keys.add(dedup_key)
+                logged += 1
 
     return logged
 

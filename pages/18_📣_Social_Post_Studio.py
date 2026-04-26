@@ -198,10 +198,11 @@ if not any_configured:
     )
 
 # ── Tabs ──────────────────────────────────────────────────────
-tab_compose, tab_picks, tab_results, tab_creds = st.tabs([
+tab_compose, tab_picks, tab_results, tab_weekly, tab_creds = st.tabs([
     "✍️ Compose Post",
     "📊 Post Today's Picks",
     "🏆 Post Results Recap",
+    "📅 Weekly Win Card",
     "🔑 Credentials Guide",
 ])
 
@@ -501,7 +502,238 @@ with tab_results:
                         st.error(f"Post failed: {e}")
 
 # ─────────────────────────────────────────────────────────────
-# TAB 4 — CREDENTIALS GUIDE
+# TAB 4 — WEEKLY WIN CARD
+# ─────────────────────────────────────────────────────────────
+with tab_weekly:
+    st.subheader("Weekly Win Card Generator")
+    st.caption("Generate a premium shareable HTML card showing this week's record — ready to post.")
+
+    _today = date.today()
+    _default_monday = _today - timedelta(days=_today.weekday())
+    wcol1, wcol2 = st.columns([2, 3])
+
+    with wcol1:
+        week_start = st.date_input("Week start (Monday)", value=_default_monday, key="wc_start")
+        week_end   = st.date_input("Week end", value=_today, key="wc_end")
+        card_title = st.text_input("Card title", value="THIS WEEK'S RECEIPTS", key="wc_title")
+        show_win_list = st.checkbox("Show individual wins", value=True, key="wc_list")
+        max_wins_shown = st.slider("Max wins to list", 3, 15, 8, key="wc_max") if show_win_list else 0
+
+        if st.button("🎨 Generate Win Card", type="primary", key="wc_gen"):
+            try:
+                from tracking.database import load_bets_by_date_range
+                _wrows = load_bets_by_date_range(str(week_start), str(week_end))
+                _wwins   = [r for r in _wrows if (r.get("result") or "").upper() == "WIN"]
+                _wlosses = [r for r in _wrows if (r.get("result") or "").upper() == "LOSS"]
+                _wpush   = [r for r in _wrows if (r.get("result") or "").upper() in ("PUSH","EVEN")]
+                _wresolved = len(_wwins) + len(_wlosses)
+                _wwr = (_wresolved and len(_wwins) / _wresolved * 100) or 0
+                _ABBR = {"Points":"PTS","Assists":"AST","Rebounds":"REB","3-Pointers Made":"3PM",
+                         "Fantasy Score":"FPTS","Blocks":"BLK","Steals":"STL","Turnovers":"TO",
+                         "points":"PTS","assists":"AST","rebounds":"REB","fgm":"FGM",
+                         "points_rebounds":"P+R","points_assists":"P+A","points_rebounds_assists":"P+R+A"}
+
+                # Build win rows HTML
+                win_rows_html = ""
+                for _w in _wwins[:max_wins_shown]:
+                    _pname = _w.get("player_name") or "?"
+                    _stat  = _ABBR.get(_w.get("stat_type") or "", _w.get("stat_type") or "")
+                    _dir   = (_w.get("direction") or "").upper()
+                    _line  = _w.get("line_value") or _w.get("prop_line") or "?"
+                    _plat  = (_w.get("platform") or "").upper()
+                    _conf  = _w.get("confidence_score")
+                    _conf_str = f'<span style="font-size:0.72rem;color:#64748b;margin-left:6px">{_conf:.0f}</span>' if _conf else ""
+                    win_rows_html += f'''
+  <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;
+    border-bottom:1px solid rgba(255,255,255,0.04)">
+    <span style="color:#00D559;font-size:1.1rem;flex-shrink:0">✓</span>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:800;font-size:0.95rem;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{_pname}</div>
+      <div style="font-size:0.75rem;color:#64748b">{_dir} {_line} {_stat}</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <span style="font-size:0.65rem;font-weight:700;letter-spacing:0.1em;
+        background:rgba(0,240,255,0.07);border:1px solid rgba(0,240,255,0.15);
+        border-radius:4px;padding:2px 7px;color:#00f0ff">{_plat}</span>
+      {_conf_str}
+    </div>
+  </div>'''
+                if len(_wwins) > max_wins_shown:
+                    _extra = len(_wwins) - max_wins_shown
+                    win_rows_html += f'<div style="text-align:center;padding:10px;color:#475569;font-size:0.75rem">+ {_extra} more wins</div>'
+
+                # Win rate color
+                _wr_clr = "#00D559" if _wwr >= 65 else "#F9C62B" if _wwr >= 50 else "#F24336"
+                _wr_bar = min(_wwr, 100)
+
+                # Date range label
+                _dr_label = f"{week_start.strftime('%b %d')} – {week_end.strftime('%b %d, %Y')}".upper()
+
+                # Build full card HTML
+                card_html = f'''<div style="
+  font-family:'Segoe UI',system-ui,sans-serif;
+  background:linear-gradient(160deg,#060B18 0%,#0A1428 50%,#060B18 100%);
+  border:1px solid rgba(0,213,89,0.20);
+  border-top:4px solid #00D559;
+  border-radius:16px;
+  max-width:540px;
+  overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 40px rgba(0,213,89,0.08);
+">
+  <!-- Header -->
+  <div style="padding:24px 24px 16px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-30px;right:-30px;width:160px;height:160px;
+      background:radial-gradient(circle,rgba(0,213,89,0.12) 0%,transparent 70%)"></div>
+    <div style="font-size:0.62rem;font-weight:800;letter-spacing:0.35em;
+      color:#00f0ff;text-transform:uppercase;margin-bottom:6px">
+      SmartPickPro &nbsp;·&nbsp; {_dr_label}
+    </div>
+    <div style="font-size:2.2rem;font-weight:900;color:#ffffff;letter-spacing:0.02em;line-height:1">
+      {card_title}
+    </div>
+    <div style="font-size:0.78rem;color:#475569;margin-top:4px">
+      Quantum Matrix Engine™ 5.6 &nbsp;·&nbsp; Every win AND loss posted publicly
+    </div>
+  </div>
+
+  <!-- Big stats row -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+    background:rgba(255,255,255,0.04);border-top:1px solid rgba(255,255,255,0.06);
+    border-bottom:1px solid rgba(255,255,255,0.06)">
+    <div style="background:#070C1A;padding:18px 16px;text-align:center">
+      <div style="font-size:2.8rem;font-weight:900;color:#00D559;
+        text-shadow:0 0 30px rgba(0,213,89,0.5);line-height:1">{len(_wwins)}</div>
+      <div style="font-size:0.62rem;font-weight:700;letter-spacing:0.2em;
+        color:#475569;text-transform:uppercase;margin-top:4px">WINS</div>
+    </div>
+    <div style="background:#070C1A;padding:18px 16px;text-align:center">
+      <div style="font-size:2.8rem;font-weight:900;color:#F24336;line-height:1">{len(_wlosses)}</div>
+      <div style="font-size:0.62rem;font-weight:700;letter-spacing:0.2em;
+        color:#475569;text-transform:uppercase;margin-top:4px">LOSSES</div>
+    </div>
+    <div style="background:#070C1A;padding:18px 16px;text-align:center">
+      <div style="font-size:2.8rem;font-weight:900;color:{_wr_clr};
+        text-shadow:0 0 20px {_wr_clr}66;line-height:1">{_wwr:.0f}%</div>
+      <div style="font-size:0.62rem;font-weight:700;letter-spacing:0.2em;
+        color:#475569;text-transform:uppercase;margin-top:4px">WIN RATE</div>
+    </div>
+  </div>
+
+  <!-- Win rate bar -->
+  <div style="padding:0 24px;margin-top:16px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:0.65rem;font-weight:700;letter-spacing:0.15em;
+        color:#475569;text-transform:uppercase">Win Rate</span>
+      <span style="font-size:0.65rem;font-weight:700;color:{_wr_clr}">{_wwr:.1f}%</span>
+    </div>
+    <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden">
+      <div style="width:{_wr_bar:.0f}%;height:100%;background:{_wr_clr};
+        border-radius:3px;box-shadow:0 0 12px {_wr_clr}88;
+        transition:width 1s ease"></div>
+    </div>
+  </div>
+
+  <!-- Win list -->
+  {'<div style="margin-top:16px;border-top:1px solid rgba(255,255,255,0.06)">' + win_rows_html + '</div>' if show_win_list and win_rows_html else ""}
+
+  <!-- Footer -->
+  <div style="padding:14px 24px;border-top:1px solid rgba(255,255,255,0.05);
+    display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+    <div style="font-size:0.65rem;font-weight:800;letter-spacing:0.15em;color:#1e3a5f">
+      smartpickpro.ai
+    </div>
+    <div style="font-size:0.6rem;color:#1e3a5f;text-align:right">
+      21+ · Not gambling advice · Play responsibly
+    </div>
+  </div>
+</div>'''
+
+                st.session_state["wc_html"] = card_html
+                st.session_state["wc_stats"] = {
+                    "wins": len(_wwins), "losses": len(_wlosses),
+                    "win_rate": _wwr, "resolved": _wresolved,
+                    "week_start": str(week_start), "week_end": str(week_end),
+                }
+            except Exception as e:
+                st.error(f"Could not load data: {e}")
+
+    with wcol2:
+        if "wc_html" in st.session_state:
+            st.markdown("**Preview:**")
+            st.components.v1.html(
+                f'<div style="background:#030508;padding:24px;min-height:400px">'
+                f'{st.session_state["wc_html"]}'
+                f'</div>',
+                height=620,
+                scrolling=True,
+            )
+
+            # Download button
+            st.download_button(
+                label="⬇️ Download HTML Card",
+                data=f'''<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<title>SmartPickPro Weekly Win Card</title>
+<style>body{{margin:0;background:#030508;display:flex;justify-content:center;align-items:flex-start;padding:40px;min-height:100vh}}</style>
+</head><body>{st.session_state["wc_html"]}</body></html>''',
+                file_name=f"smartpickpro_weekly_{st.session_state['wc_stats']['week_start']}.html",
+                mime="text/html",
+                key="wc_download",
+            )
+
+            # Post copy for social
+            st.markdown("**Ready-to-post caption:**")
+            _s = st.session_state["wc_stats"]
+            _caption = (
+                f"📊 {card_title}\n\n"
+                f"✅ {_s['wins']}W / ❌ {_s['losses']}L — {_s['win_rate']:.0f}% WIN RATE\n"
+                f"Week of {date.fromisoformat(_s['week_start']).strftime('%b %d')} – {date.fromisoformat(_s['week_end']).strftime('%b %d')}\n\n"
+                f"Every win AND loss posted publicly. Zero hidden losses. Receipts always on file. 🧾\n"
+                f"#NBA #SmartPickPro #Receipts #PrizePicks #WeeklyRecord"
+            )
+            _caption_edit = st.text_area("Caption (edit as needed)", value=_caption, height=160, key="wc_caption")
+
+            # Quick post
+            st.markdown("**Post to:**")
+            _wc_channels = []
+            _wc_cols = st.columns(5)
+            for _i, (_ch, _ok) in enumerate(configured_channels.items()):
+                with _wc_cols[_i % 5]:
+                    if st.checkbox(_ch.capitalize(), value=_ok, disabled=not _ok, key=f"wcc_{_ch}"):
+                        _wc_channels.append(_ch)
+
+            if st.button("🚀 Post Weekly Card", type="primary", disabled=not any_configured, key="wc_post"):
+                if not _wc_channels:
+                    st.warning("Select at least one channel.")
+                else:
+                    with st.spinner("Posting…"):
+                        try:
+                            _orig = sys.path[:]
+                            sys.path.insert(0, str(_SE_ROOT))
+                            from distribute.campaign import deploy_campaign
+                            _tbch = {ch: _caption_edit for ch in _wc_channels}
+                            _res = deploy_campaign({}, _tbch, _wc_channels)
+                            sys.path[:] = _orig
+                            for _r in _res:
+                                if _r.ok:
+                                    _lnk = f' — <a href="{_r.url}" target="_blank">View</a>' if _r.url else ""
+                                    st.markdown(f'<div class="sp-result-ok">✓ {_r.channel.upper()} posted{_lnk}</div>', unsafe_allow_html=True)
+                                else:
+                                    st.markdown(f'<div class="sp-result-err">✗ {_r.channel.upper()} — {_r.error}</div>', unsafe_allow_html=True)
+                        except Exception as e:
+                            st.error(f"Post failed: {e}")
+        else:
+            st.markdown(
+                '<div style="background:#0F172A;border:1px solid rgba(0,213,89,0.12);'
+                'border-radius:12px;padding:48px;text-align:center;color:#334155">'
+                '<div style="font-size:2.5rem;margin-bottom:12px">📅</div>'
+                '<div style="font-size:0.85rem;font-weight:600">Click "Generate Win Card" to preview</div>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+
+# ─────────────────────────────────────────────────────────────
+# TAB 5 — CREDENTIALS GUIDE
 # ─────────────────────────────────────────────────────────────
 with tab_creds:
     st.subheader("Credentials Setup")

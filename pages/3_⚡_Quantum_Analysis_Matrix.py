@@ -1201,6 +1201,44 @@ if run_analysis:
             # Auto-logging is best-effort — never block the main analysis flow
             _logger.warning(f"Auto-log error (non-fatal): {_auto_log_err}")
 
+        # ── Auto-log Joseph M. Smith's picks without needing The Studio ──
+        # Assign verdicts from tier/confidence directly so joseph_auto_log_bets
+        # can run immediately after analysis — no fragment or Studio visit needed.
+        if not st.session_state.get("joseph_bets_logged", False):
+            try:
+                from engine.joseph_bets import joseph_auto_log_bets as _joseph_log
+                _joseph_auto_results = []
+                for _r in analysis_results_list:
+                    if _r.get("player_is_out", False):
+                        continue
+                    _tier = str(_r.get("tier", ""))
+                    _conf = float(_r.get("confidence_score", 0) or 0)
+                    _edge = float(_r.get("edge_percentage", 0) or 0)
+                    if _tier in ("Platinum", "Gold") or _conf >= 70:
+                        _verdict = "SMASH"
+                    elif _tier == "Silver" or _conf >= 55:
+                        _verdict = "LEAN"
+                    else:
+                        continue  # Bronze/low confidence — skip
+                    _joseph_auto_results.append({
+                        "player_name": _r.get("player_name", ""),
+                        "stat_type":   _r.get("stat_type", ""),
+                        "line":        _r.get("line", _r.get("prop_line", 0)),
+                        "direction":   _r.get("direction", "OVER"),
+                        "verdict":     _verdict,
+                        "confidence_pct": _conf,
+                        "joseph_edge": _edge,
+                        "one_liner":   _r.get("explanation", ""),
+                        "player_team": _r.get("team", ""),
+                    })
+                if _joseph_auto_results:
+                    _j_count, _j_msg = _joseph_log(_joseph_auto_results)
+                    if _j_count > 0:
+                        st.toast(f"🎙️ {_j_msg}")
+                st.session_state["joseph_bets_logged"] = True
+            except Exception as _joseph_auto_err:
+                _logger.warning(f"Joseph auto-log error (non-fatal): {_joseph_auto_err}")
+
         # NOTE: st.rerun() was removed here.  The results are already
         # stored in st.session_state["analysis_results"] and will render
         # naturally when the script continues past the ``if run_analysis:``

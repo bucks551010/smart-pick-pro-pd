@@ -201,17 +201,22 @@ except Exception:
 # ─── Auto-seed picks & props into session on first load ───────
 # Reads ONLY from the database (pre-populated by slate_worker.py).
 # Never calls external APIs or runs analysis — instant for the user.
-@st.cache_data(ttl=60, show_spinner=False)
+@st.cache_data(ttl=300, show_spinner=False)
 def _load_cached_slate() -> tuple[list, list]:
     """Read today's pre-computed picks + props from DB (or warm file cache).
 
-    Wrapped in @st.cache_data(ttl=60) so concurrent logins share a single
-    round-trip per minute while still getting near-real-time data updates.
+    Wrapped in @st.cache_data(ttl=300) so concurrent logins share a single
+    read for up to 5 minutes — eliminates redundant DB hits on every page load.
 
     Phase 4 — Cache Warming: checks ``cache/slate_cache.json`` first.
     ``slate_worker.py`` writes that file after each successful run so the
     first Streamlit user gets a sub-millisecond file read instead of a DB
-    query, eliminating the cold-start latency spike.
+    query, eliminating cold-start latency.
+
+    NOTE: The get_todays_games() team-filter was deliberately removed from
+    this path — it fired a live NBA API call on every user login, adding
+    2-5 s of latency even when the cache was warm, and wiped all picks when
+    the schedule API was slow.  Date-stamping in slate_worker is the guard.
 
     Returns:
         (picks, props) — both may be empty lists if the worker hasn't run
@@ -222,13 +227,13 @@ def _load_cached_slate() -> tuple[list, list]:
 
     picks: list = []
 
-    # ── Phase 4 fast-path: slate_cache.json written by slate_worker ────────
+    # ── Fast-path: slate_cache.json written by slate_worker ────────────────
     _cache_file = _Path(__file__).resolve().parent / "cache" / "slate_cache.json"
     if _cache_file.exists():
         try:
             _blob = _json.loads(_cache_file.read_text(encoding="utf-8"))
             from tracking.database import _nba_today_iso as _today
-            if _blob.get("date") == _today():
+            if _blob.get("date") == _today() and not _blob.get("_eon_cleared"):
                 picks = _blob.get("picks") or []
         except Exception:
             picks = []
@@ -237,32 +242,6 @@ def _load_cached_slate() -> tuple[list, list]:
     if not picks:
         from tracking.database import get_slate_picks_for_today
         picks = get_slate_picks_for_today()
-
-    # ── Scrub to today's active teams ───────────────────────────────────────
-    # Ensures picks from prior-day analyses (teams not playing today) are
-    # never seeded into session state, even if they sneak through DB guards.
-    if picks:
-        try:
-            from data.nba_data_service import get_todays_games as _gtg_home
-            _home_games = _gtg_home() or []
-            _home_abbrs: set[str] = set()
-            for _hg in _home_games:
-                _hh = (_hg.get("home_team") or "").upper().strip()
-                _ha = (_hg.get("away_team") or "").upper().strip()
-                if _hh:
-                    _home_abbrs.add(_hh)
-                if _ha:
-                    _home_abbrs.add(_ha)
-            if _home_abbrs:
-                picks = [
-                    p for p in picks
-                    if (
-                        (p.get("player_team") or p.get("team") or "")
-                        .upper().strip()
-                    ) in _home_abbrs
-                ]
-        except Exception:
-            pass
 
     from data.data_manager import load_platform_props_from_csv as _lpc
     try:
@@ -335,13 +314,28 @@ _data_version_poller()
 # Show a non-blocking info banner with a manual refresh button so users can
 # force-check the DB instead of waiting for the next auto-refresh cycle.
 if not st.session_state.get("analysis_results"):
+    # Try one more DB hit in case the startup slate just finished writing.
+    try:
+        _load_cached_slate.clear()
+        _retry_picks, _retry_props = _load_cached_slate()
+        if _retry_picks:
+            st.session_state["analysis_results"] = _retry_picks
+            if _retry_props:
+                st.session_state.setdefault("current_props", _retry_props)
+                st.session_state.setdefault("platform_props", _retry_props)
+            st.rerun()
+    except Exception:
+        pass
+
+if not st.session_state.get("analysis_results"):
     _no_picks_col1, _no_picks_col2 = st.columns([4, 1])
     with _no_picks_col1:
-        st.info(
-            "⏳ Tonight's slate analysis is being prepared. "
-            "Picks will appear automatically — or click Refresh to check now.",
-            icon="🔄",
-        )
+        with st.spinner("Loading tonight's picks..."):
+            st.info(
+                "📡 Fetching tonight's slate — picks load automatically within 60 seconds. "
+                "Click **Refresh** to check now.",
+                icon="⏳",
+            )
     with _no_picks_col2:
         if st.button("🔄 Refresh", key="_home_refresh_no_picks"):
             _load_cached_slate.clear()

@@ -113,6 +113,35 @@ def run_slate(dry_run: bool = False) -> int:
         _logger.error("[0] DB init failed: %s", exc)
         return 0
 
+    # ── Step 0b: Pre-warm cache from existing DB picks ────────────────────
+    # Write whatever picks already exist in the DB to slate_cache.json right
+    # away — before the full analysis runs.  This means users who visit the
+    # app during the ~5-minute analysis window see yesterday/previous picks
+    # instantly instead of a "preparing" spinner.
+    if not dry_run:
+        try:
+            from tracking.database import get_slate_picks_for_today as _gsp
+            _existing = _gsp()
+            if _existing:
+                import json as _json_pre
+                _cache_dir = Path(__file__).resolve().parent / "cache"
+                _cache_dir.mkdir(parents=True, exist_ok=True)
+                (_cache_dir / "slate_cache.json").write_text(
+                    _json_pre.dumps(
+                        {
+                            "date": today_str,
+                            "written_at": datetime.datetime.utcnow().isoformat() + "Z",
+                            "picks": _existing,
+                            "_prewarm": True,
+                        },
+                        default=str,
+                    ),
+                    encoding="utf-8",
+                )
+                _logger.info("[0b] Pre-warmed slate_cache.json with %d existing picks.", len(_existing))
+        except Exception as _pw_exc:
+            _logger.debug("[0b] Pre-warm skipped (non-fatal): %s", _pw_exc)
+
     games: list = []
     props: list = []
     results: list = []

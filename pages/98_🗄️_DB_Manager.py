@@ -250,6 +250,12 @@ _dv_str = (
     f"{_dv_age_s // 60}m ago" if _dv_age_s is not None else "—"
 )
 
+# Pre-compute for Python < 3.12 f-string compatibility
+_bets_n        = _count('bets')
+_picks_n       = _count('all_analysis_picks')
+_write_badge   = 'dbc-badge-green' if _last_write != '\u2014' else 'dbc-badge-blue'
+_write_label   = ('\u2705 Last write: ' + _last_write) if _last_write != '\u2014' else '\U0001f550 No writes this session'
+
 st.markdown(f"""
 <div class="dbc-hero">
   <div class="dbc-hero-title">🗄️ DB Control Center</div>
@@ -258,10 +264,10 @@ st.markdown(f"""
   </div>
   <span class="dbc-badge {_badge_cls}"><span class="dbc-dot"></span> {_BACKEND}</span>
   &nbsp;<span class="dbc-badge dbc-badge-blue">📅 {_TODAY}</span>
-  &nbsp;<span class="dbc-badge dbc-badge-gold">💰 {_count("bets"):,} bets</span>
-  &nbsp;<span class="dbc-badge dbc-badge-violet">⚡ {_count("all_analysis_picks"):,} picks</span>
-  &nbsp;<span class="dbc-badge dbc-badge-{"green" if _last_write != "—" else "blue"}">
-    {"✅ Last write: " + _last_write if _last_write != "—" else "🕐 No writes this session"}
+  &nbsp;<span class="dbc-badge dbc-badge-gold">💰 {_bets_n:,} bets</span>
+  &nbsp;<span class="dbc-badge dbc-badge-violet">⚡ {_picks_n:,} picks</span>
+  &nbsp;<span class="dbc-badge {_write_badge}">
+    {_write_label}
   </span>
   &nbsp;<span class="dbc-badge dbc-badge-blue">🔄 Version bumped: {_dv_str}</span>
 </div>
@@ -1201,6 +1207,7 @@ with _TAB_SQL:
                 st.toast("✅ Write executed — pages refreshing…", icon="✅")
 
     with st.expander("📋 Quick reference queries"):
+        _month_start = datetime.date.today().strftime('%Y-%m-01')
         st.code(f"""-- Today\'s pending bets
 SELECT * FROM bets WHERE bet_date = '{_TODAY}' AND (result IS NULL OR result=\'\');
 
@@ -1213,7 +1220,7 @@ FROM all_analysis_picks WHERE pick_date='{_TODAY}' ORDER BY confidence_score DES
 
 -- Win rate this month
 SELECT result, COUNT(*) AS cnt FROM bets
-WHERE bet_date >= '{datetime.date.today().strftime("%Y-%m-01")}' AND result IS NOT NULL AND result != \'\'
+WHERE bet_date >= '{_month_start}' AND result IS NOT NULL AND result != \'\'
 GROUP BY result;
 
 -- Latest sessions

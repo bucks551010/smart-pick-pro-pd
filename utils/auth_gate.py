@@ -658,40 +658,39 @@ def _load_top_preview_picks(limit: int = 5) -> tuple[list[dict], str]:
         ORDER BY pick_date DESC, confidence_score DESC
         LIMIT ?"""
     try:
-        with get_database_connection() as conn:
-            conn.row_factory = sqlite3.Row
-            # ── 1. Today's platform picks ──────────────────────────────────
-            rows = conn.execute(_PLATFORM_PICK_SQL, (today, limit)).fetchall()
-            if rows:
-                return [dict(r) for r in rows], today
+        from tracking.database import _db_read
+        # ── 1. Today's platform picks ──────────────────────────────────
+        rows = _db_read(_PLATFORM_PICK_SQL, (today, limit))
+        if rows:
+            return rows, today
 
-            # ── 2. Today's any picks (analysis ran but platform not set) ──
-            rows = conn.execute(_ANY_PICK_SQL, (today, limit)).fetchall()
-            if rows:
-                return [dict(r) for r in rows], today
+        # ── 2. Today's any picks (analysis ran but platform not set) ──
+        rows = _db_read(_ANY_PICK_SQL, (today, limit))
+        if rows:
+            return rows, today
 
-            # ── 3. Today's picks from JSON cache ──────────────────────────
-            cache_result = _load_picks_from_cache(limit)
-            if cache_result[0] and cache_result[1] == today:
-                return cache_result
+        # ── 3. Today's picks from JSON cache ──────────────────────────
+        cache_result = _load_picks_from_cache(limit)
+        if cache_result[0] and cache_result[1] == today:
+            return cache_result
 
-            # ── 4. Most recent platform picks (up to any date) ────────────
-            rows = conn.execute(_RECENT_PLATFORM_SQL, (limit,)).fetchall()
-            if rows:
-                recent_date = dict(rows[0]).get("pick_date", today)
-                return [dict(r) for r in rows], recent_date
+        # ── 4. Most recent platform picks (up to any date) ────────────
+        rows = _db_read(_RECENT_PLATFORM_SQL, (limit,))
+        if rows:
+            recent_date = rows[0].get("pick_date", today)
+            return rows, recent_date
 
-            # ── 5. Most recent any picks (no platform filter) ─────────────
-            rows = conn.execute(_RECENT_ANY_SQL, (limit,)).fetchall()
-            if rows:
-                recent_date = dict(rows[0]).get("pick_date", today)
-                return [dict(r) for r in rows], recent_date
+        # ── 5. Most recent any picks (no platform filter) ─────────────
+        rows = _db_read(_RECENT_ANY_SQL, (limit,))
+        if rows:
+            recent_date = rows[0].get("pick_date", today)
+            return rows, recent_date
 
-            # ── 6. JSON cache regardless of date ──────────────────────────
-            if cache_result[0]:
-                return cache_result
+        # ── 6. JSON cache regardless of date ──────────────────────────
+        if cache_result[0]:
+            return cache_result
 
-            return [], today
+        return [], today
     except Exception as exc:
         _logger.debug("_load_top_preview_picks DB: %s", exc)
 

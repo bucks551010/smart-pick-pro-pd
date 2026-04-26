@@ -40,7 +40,7 @@ except ImportError:
 DB_DIRECTORY = Path(os.environ.get("DB_DIR", str(Path(__file__).parent.parent / "db")))
 DB_FILE_PATH = DB_DIRECTORY / "smartai_nba.db"
 
-# PostgreSQL — routes all DB operations to PostgreSQL when DATABASE_URL is set
+# PostgreSQL â€” routes all DB operations to PostgreSQL when DATABASE_URL is set
 # (e.g. on Railway), falling back to SQLite for local dev.
 _DATABASE_URL: str = os.environ.get("DATABASE_URL", "")
 
@@ -157,10 +157,10 @@ def _nba_today_iso() -> str:
     The sports day boundary is 4:00 AM ET (not midnight).  Between
     12:00 AM and 3:59 AM ET the running slate is still attributed to
     the *previous* calendar day, matching how sportsbooks treat West-
-    Coast games that finish at 1–2 AM ET.
+    Coast games that finish at 1â€“2 AM ET.
     """
     now_et = datetime.datetime.now(_get_eastern_tz())
-    # Before 4 AM ET → still the previous sports day
+    # Before 4 AM ET â†’ still the previous sports day
     if now_et.hour < 4:
         now_et = now_et - datetime.timedelta(days=1)
     return now_et.date().isoformat()
@@ -495,7 +495,7 @@ def _pg_initialize_database() -> bool:
     Uses PostgreSQL-compatible DDL (SERIAL primary keys, NOW() defaults).
     """
     _PG_STMTS = [
-        # ── Core tables ────────────────────────────────────────────────
+        # â”€â”€ Core tables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         """CREATE TABLE IF NOT EXISTS bets (
             bet_id SERIAL PRIMARY KEY,
             bet_date TEXT NOT NULL,
@@ -703,7 +703,7 @@ def _pg_initialize_database() -> bool:
             value TEXT NOT NULL,
             updated_at TEXT
         )""",
-        # ── Joseph M. Smith tables ──────────────────────────────────────
+        # â”€â”€ Joseph M. Smith tables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         """CREATE TABLE IF NOT EXISTS joseph_diary (
             diary_id SERIAL PRIMARY KEY,
             diary_date TEXT UNIQUE NOT NULL,
@@ -729,7 +729,7 @@ def _pg_initialize_database() -> bool:
             created_at TEXT,
             UNIQUE(player_name, stat_type)
         )""",
-        # ── Per-user live entry bucket (picks staged from QAM → Entry Builder) ──
+        # â”€â”€ Per-user live entry bucket (picks staged from QAM â†’ Entry Builder) â”€â”€
         """CREATE TABLE IF NOT EXISTS live_entry_bucket (
             bucket_id SERIAL PRIMARY KEY,
             user_email TEXT NOT NULL,
@@ -750,7 +750,7 @@ def _pg_initialize_database() -> bool:
             added_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS'),
             UNIQUE(user_email, pick_key)
         )""",
-        # ── Analytics / notifications / drip emails ───────────────────
+        # â”€â”€ Analytics / notifications / drip emails â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         """CREATE TABLE IF NOT EXISTS analytics_events (
             event_id SERIAL PRIMARY KEY,
             timestamp TEXT NOT NULL,
@@ -772,7 +772,7 @@ def _pg_initialize_database() -> bool:
             sent_at TEXT,
             status TEXT NOT NULL DEFAULT 'pending'
         )""",
-        # ── Indexes ────────────────────────────────────────────────────
+        # â”€â”€ Indexes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         "CREATE INDEX IF NOT EXISTS idx_ae_timestamp ON analytics_events (timestamp)",
         "CREATE INDEX IF NOT EXISTS idx_ae_event_name ON analytics_events (event_name)",
         "CREATE INDEX IF NOT EXISTS idx_ae_user ON analytics_events (user_email)",
@@ -808,7 +808,7 @@ def _pg_initialize_database() -> bool:
         for stmt in _PG_STMTS:
             cur.execute(stmt)
 
-        # ── CRITICAL: commit all CREATE TABLE / CREATE INDEX statements NOW ──
+        # â”€â”€ CRITICAL: commit all CREATE TABLE / CREATE INDEX statements NOW â”€â”€
         # The ALTER TABLE loop below calls conn.rollback() when a statement
         # fails (e.g. ALTER TABLE entries when the entries table doesn't exist).
         # Without this commit, that rollback wipes ALL the tables and indexes
@@ -817,7 +817,7 @@ def _pg_initialize_database() -> bool:
         # rolls back that single statement, never the schema itself.
         conn.commit()
 
-        # ── Pipeline-overhaul ALTER TABLE migrations for existing PG DBs ──
+        # â”€â”€ Pipeline-overhaul ALTER TABLE migrations for existing PG DBs â”€â”€
         # Each ALTER runs in its own transaction so a failure never rolls back
         # the previously committed schema.
         _PG_ALTERS = [
@@ -827,14 +827,14 @@ def _pg_initialize_database() -> bool:
             "ALTER TABLE bets ADD COLUMN IF NOT EXISTS void_reason TEXT",
             "ALTER TABLE bets ADD COLUMN IF NOT EXISTS resolve_attempts INTEGER DEFAULT 0",
             "ALTER TABLE bets ADD COLUMN IF NOT EXISTS last_resolve_attempt TEXT",
-            # odds_type — critical for QEG filtering; without it DB-loaded picks
+            # odds_type â€” critical for QEG filtering; without it DB-loaded picks
             # all default to 'standard' and goblin/demon lines bypass the filter.
             "ALTER TABLE all_analysis_picks ADD COLUMN IF NOT EXISTS odds_type TEXT DEFAULT 'standard'",
             # Joseph diary and player history were added after initial deploy;
             # existing PG DBs need these columns if table already exists.
             "ALTER TABLE joseph_diary ADD COLUMN IF NOT EXISTS week_summary_json TEXT",
             "ALTER TABLE joseph_player_history ADD COLUMN IF NOT EXISTS notes TEXT",
-            # Per-user bet tracking (Live Entry Bucket → Entry Builder lock)
+            # Per-user bet tracking (Live Entry Bucket â†’ Entry Builder lock)
             "ALTER TABLE bets ADD COLUMN IF NOT EXISTS user_email TEXT",
             "ALTER TABLE entries ADD COLUMN IF NOT EXISTS user_email TEXT",
             "CREATE INDEX IF NOT EXISTS idx_bets_user_email ON bets (user_email)",
@@ -846,7 +846,7 @@ def _pg_initialize_database() -> bool:
                 cur.execute(_alter)
                 conn.commit()   # commit each ALTER individually
             except Exception as _alter_exc:
-                _logger.debug("PG ALTER skipped: %s — %s", _alter, _alter_exc)
+                _logger.debug("PG ALTER skipped: %s â€” %s", _alter, _alter_exc)
                 conn.rollback()  # only rolls back this one ALTER
 
         # Unique index: delete dups first if needed
@@ -867,7 +867,7 @@ def _pg_initialize_database() -> bool:
                 cur.execute(_UNIQUE_IDX)
                 conn.commit()
             except Exception:
-                conn.rollback()  # Best-effort — index may already exist
+                conn.rollback()  # Best-effort â€” index may already exist
 
         # Unique index on auto-logged bets: dedup first so index never fails silently
         _BETS_DEDUP_IDX = (
@@ -922,7 +922,7 @@ def initialize_database():
     Create the database and tables if they don't exist.
 
     Call this once when the app starts. It's safe to call
-    multiple times â€” CREATE TABLE IF NOT EXISTS won't
+    multiple times Ã¢â‚¬â€ CREATE TABLE IF NOT EXISTS won't
     overwrite existing tables.  After the first successful
     initialization the heavy work (PRAGMA integrity_check,
     CREATE TABLE, ALTER TABLE migrations) is skipped.
@@ -934,14 +934,14 @@ def initialize_database():
     if _DB_INITIALIZED:
         return True
 
-    # ── PostgreSQL path (Railway / production) ────────────────────────
+    # â”€â”€ PostgreSQL path (Railway / production) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # When DATABASE_URL is set, create all tables on PostgreSQL and skip
     # the SQLite path entirely.  No local file is needed on Railway.
     if _DATABASE_URL:
         ok = _pg_initialize_database()
         if ok:
             _DB_INITIALIZED = True
-            # ── Stale data cleanup for PostgreSQL (mirrors SQLite init) ──
+            # â”€â”€ Stale data cleanup for PostgreSQL (mirrors SQLite init) â”€â”€
             # player_game_logs: keep only the last 3 days of cache rows.
             _cutoff_3d = (datetime.date.today() - datetime.timedelta(days=3)).strftime("%Y-%m-%d")
             _db_write(
@@ -1017,7 +1017,7 @@ def initialize_database():
             )
         return ok
 
-    # ── SQLite path (local development) ───────────────────────────────
+    # â”€â”€ SQLite path (local development) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # Make sure the db directory exists
     # exist_ok=True means don't error if it already exists
     DB_DIRECTORY.mkdir(parents=True, exist_ok=True)
@@ -1073,7 +1073,7 @@ def initialize_database():
                 "(key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT)"
             )
 
-            # ── Joseph M. Smith tables ─────────────────────────────────
+            # â”€â”€ Joseph M. Smith tables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             cursor.execute(
                 "CREATE TABLE IF NOT EXISTS joseph_diary "
                 "(diary_id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -1094,7 +1094,7 @@ def initialize_database():
                 "UNIQUE(player_name, stat_type))"
             )
 
-            # â”€â”€ Indexes for performance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            # Ã¢â€â‚¬Ã¢â€â‚¬ Indexes for performance Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
             _TRACKING_INDEXES = (
                 ("idx_pgl_player_id", "player_game_logs", "(player_id)"),
                 ("idx_pgl_game_date", "player_game_logs", "(game_date)"),
@@ -1117,7 +1117,7 @@ def initialize_database():
                     f"CREATE INDEX IF NOT EXISTS {idx_name} ON {table} {columns}"
                 )
 
-            # â”€â”€ Schema migrations for existing databases â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            # Ã¢â€â‚¬Ã¢â€â‚¬ Schema migrations for existing databases Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
             # Add auto_logged column if it doesn't exist yet
             # (ALTER TABLE is idempotent-safe via the try/except)
             try:
@@ -1125,7 +1125,7 @@ def initialize_database():
                     "ALTER TABLE bets ADD COLUMN auto_logged INTEGER DEFAULT 0"
                 )
             except sqlite3.OperationalError:
-                pass  # Column already exists â€” safe to ignore
+                pass  # Column already exists Ã¢â‚¬â€ safe to ignore
 
             # Ensure actual_value column exists (older schema may not have it)
             try:
@@ -1133,9 +1133,9 @@ def initialize_database():
                     "ALTER TABLE bets ADD COLUMN actual_value REAL"
                 )
             except sqlite3.OperationalError:
-                pass  # Column already exists â€” safe to ignore
+                pass  # Column already exists Ã¢â‚¬â€ safe to ignore
 
-            # â”€â”€ Subscriptions table migration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            # Ã¢â€â‚¬Ã¢â€â‚¬ Subscriptions table migration Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
             # If the subscriptions table was created without updated_at
             # (e.g., from an older version of the schema), add it now.
             try:
@@ -1143,23 +1143,23 @@ def initialize_database():
                     "ALTER TABLE subscriptions ADD COLUMN updated_at TEXT DEFAULT (datetime('now'))"
                 )
             except sqlite3.OperationalError:
-                pass  # Column already exists â€” safe to ignore
+                pass  # Column already exists Ã¢â‚¬â€ safe to ignore
 
-            # â”€â”€ Goblin/Demon bet_type column migrations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            # Ã¢â€â‚¬Ã¢â€â‚¬ Goblin/Demon bet_type column migrations Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
             # Add bet_type and std_devs_from_line to bets table
             try:
                 cursor.execute(
                     "ALTER TABLE bets ADD COLUMN bet_type TEXT DEFAULT 'normal'"
                 )
             except sqlite3.OperationalError:
-                pass  # Column already exists â€” safe to ignore
+                pass  # Column already exists Ã¢â‚¬â€ safe to ignore
 
             try:
                 cursor.execute(
                     "ALTER TABLE bets ADD COLUMN std_devs_from_line REAL DEFAULT 0.0"
                 )
             except sqlite3.OperationalError:
-                pass  # Column already exists â€” safe to ignore
+                pass  # Column already exists Ã¢â‚¬â€ safe to ignore
 
             # Add bet_type to all_analysis_picks table
             try:
@@ -1167,14 +1167,14 @@ def initialize_database():
                     "ALTER TABLE all_analysis_picks ADD COLUMN bet_type TEXT DEFAULT 'normal'"
                 )
             except sqlite3.OperationalError:
-                pass  # Column already exists â€” safe to ignore
+                pass  # Column already exists Ã¢â‚¬â€ safe to ignore
 
             try:
                 cursor.execute(
                     "ALTER TABLE all_analysis_picks ADD COLUMN std_devs_from_line REAL DEFAULT 0.0"
                 )
             except sqlite3.OperationalError:
-                pass  # Column already exists â€” safe to ignore
+                pass  # Column already exists Ã¢â‚¬â€ safe to ignore
 
             # Add is_risky flag to all_analysis_picks (1 = avoid/risky pick)
             try:
@@ -1185,7 +1185,7 @@ def initialize_database():
                 pass  # Column already exists
 
             # Add odds_type to all_analysis_picks (standard / goblin / demon)
-            # Critical for QEG filtering — without this, DB-loaded picks lack
+            # Critical for QEG filtering â€” without this, DB-loaded picks lack
             # the field and all default to "standard", letting goblin/demon
             # alternate-line picks slip into QEG incorrectly.
             try:
@@ -1194,7 +1194,7 @@ def initialize_database():
                 )
             except sqlite3.OperationalError:
                 pass  # Column already exists
-            # â”€â”€ Line category column migration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            # Ã¢â€â‚¬Ã¢â€â‚¬ Line category column migration Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
             # Add line_category and standard_line columns for the three-tier
             # Goblin / 50_50 / Demon classification system.
             try:
@@ -1202,17 +1202,17 @@ def initialize_database():
                     "ALTER TABLE bets ADD COLUMN line_category TEXT DEFAULT '50_50'"
                 )
             except sqlite3.OperationalError:
-                pass  # Column already exists â€” safe to ignore
+                pass  # Column already exists Ã¢â‚¬â€ safe to ignore
 
             try:
                 cursor.execute(
                     "ALTER TABLE bets ADD COLUMN standard_line REAL"
                 )
             except sqlite3.OperationalError:
-                pass  # Column already exists â€” safe to ignore
+                pass  # Column already exists Ã¢â‚¬â€ safe to ignore
 
             # Remap old "demon" bet_type records (conflicting-forces picks under
-            # the old system) to "50_50" â€” they were standard-line uncertain picks,
+            # the old system) to "50_50" Ã¢â‚¬â€ they were standard-line uncertain picks,
             # not true Demon bets (line above standard O/U).
             try:
                 cursor.execute(
@@ -1241,7 +1241,7 @@ def initialize_database():
                     )"""
                 )
             except sqlite3.OperationalError:
-                pass  # Safe to skip — index creation handles remaining cases
+                pass  # Safe to skip â€” index creation handles remaining cases
             try:
                 cursor.execute(
                     "CREATE UNIQUE INDEX IF NOT EXISTS idx_bets_auto_dedup "
@@ -1249,7 +1249,7 @@ def initialize_database():
                     "WHERE auto_logged = 1"
                 )
             except (sqlite3.OperationalError, sqlite3.IntegrityError):
-                pass  # Best-effort — app-level dedup still runs first
+                pass  # Best-effort â€” app-level dedup still runs first
 
             # -- source column migration (track bet origin) --
             try:
@@ -1263,7 +1263,7 @@ def initialize_database():
             except sqlite3.OperationalError:
                 pass  # Column already exists
 
-            # ── Pipeline-overhaul resolution columns (closing_line, CLV, etc.) ──
+            # â”€â”€ Pipeline-overhaul resolution columns (closing_line, CLV, etc.) â”€â”€
             for _col_sql in (
                 "ALTER TABLE bets ADD COLUMN closing_line REAL",
                 "ALTER TABLE bets ADD COLUMN clv_value REAL",
@@ -1277,7 +1277,7 @@ def initialize_database():
                 except sqlite3.OperationalError:
                     pass
 
-            # ── Props cache table (prop JSON storage by date+platform) ──
+            # â”€â”€ Props cache table (prop JSON storage by date+platform) â”€â”€
             try:
                 cursor.execute(
                     "CREATE TABLE IF NOT EXISTS props_cache ("
@@ -1292,7 +1292,7 @@ def initialize_database():
             except sqlite3.OperationalError:
                 pass
 
-            # ── Worker state (job name → last run / status) ──
+            # â”€â”€ Worker state (job name â†’ last run / status) â”€â”€
             try:
                 cursor.execute(
                     "CREATE TABLE IF NOT EXISTS worker_state ("
@@ -1305,7 +1305,7 @@ def initialize_database():
             except sqlite3.OperationalError:
                 pass
 
-            # ── Per-user live entry bucket (picks staged from QAM → Entry Builder) ──
+            # â”€â”€ Per-user live entry bucket (picks staged from QAM â†’ Entry Builder) â”€â”€
             cursor.execute(
                 "CREATE TABLE IF NOT EXISTS live_entry_bucket ("
                 "bucket_id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -1328,7 +1328,7 @@ def initialize_database():
                 "UNIQUE(user_email, pick_key))"
             )
 
-            # ── user_email columns on bets + entries (per-user bet tracking) ──
+            # â”€â”€ user_email columns on bets + entries (per-user bet tracking) â”€â”€
             for _ue_alter in (
                 "ALTER TABLE bets ADD COLUMN user_email TEXT",
                 "ALTER TABLE entries ADD COLUMN user_email TEXT",
@@ -1349,9 +1349,9 @@ def initialize_database():
                 except sqlite3.OperationalError:
                     pass
 
-            # ── Rename retrieved_at column in player_game_logs ──
+            # â”€â”€ Rename retrieved_at column in player_game_logs â”€â”€
             # Older databases have the column named with old terminology; new schema
-            # uses retrieved_at.  SQLite â‰¥ 3.25 supports ALTER TABLE RENAME
+            # uses retrieved_at.  SQLite Ã¢â€°Â¥ 3.25 supports ALTER TABLE RENAME
             # COLUMN, but we guard with try/except for older builds.
             try:
                 cursor.execute(
@@ -1360,7 +1360,7 @@ def initialize_database():
             except sqlite3.OperationalError:
                 pass  # Column already renamed or doesn't exist
 
-            # â”€â”€ Unique index on all_analysis_picks to prevent duplicate rows â”€â”€
+            # Ã¢â€â‚¬Ã¢â€â‚¬ Unique index on all_analysis_picks to prevent duplicate rows Ã¢â€â‚¬Ã¢â€â‚¬
             # Covers the natural key (pick_date, player_name, stat_type,
             # prop_line, direction) that insert_analysis_picks already
             # deduplicates in application code.  The index makes the DB
@@ -1393,7 +1393,7 @@ def initialize_database():
                 except (sqlite3.OperationalError, sqlite3.IntegrityError):
                     pass  # Best-effort -- app-level dedup still protects
 
-            # ── Stale data cleanup ─────────────────────────────────────
+            # â”€â”€ Stale data cleanup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             # player_game_logs: keep only the last 3 days of cache rows.
             # Older entries are regenerated on demand and just waste space.
             try:
@@ -1475,28 +1475,103 @@ def initialize_database():
 
 def get_database_connection():
     """
-    Get a connection to the SQLite database.
+    Get a database connection routed to PostgreSQL (Railway) or SQLite (local dev).
+
+    On Railway (``DATABASE_URL`` is set) returns a ``_PGCompatConn`` wrapper that
+    exposes the same ``execute`` / ``fetchall`` / ``fetchone`` / ``commit`` API as
+    a SQLite connection, so all existing callers work without modification.
 
     Returns:
-        sqlite3.Connection: Active database connection
-        Call .close() when done, or use 'with' statement.
+        _PGCompatConn | sqlite3.Connection: Use as a context manager.
     """
-    # Skip the (re-)initialization overhead once the DB is confirmed ready.
-    # _DB_INITIALIZED is set to True by initialize_database() on first
-    # success, so subsequent calls are a no-op in O(1) time.
+    if _DATABASE_URL:
+        initialize_database()
+        return _PGCompatConn()
+
+    # â”€â”€ Local SQLite path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if not _DB_INITIALIZED:
         initialize_database()
 
-    # Connect with row_factory so results come back as dictionaries
-    # BEGINNER NOTE: row_factory makes results easier to work with â€”
-    # instead of tuples (24, 'LeBron') you get {'points': 24, 'name': 'LeBron'}
-    # check_same_thread=False: required for Streamlit Server multi-session access
     connection = sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False, timeout=30)
     # Enable WAL mode for safe concurrent read access
     connection.execute("PRAGMA journal_mode=WAL")
     connection.row_factory = sqlite3.Row  # Rows behave like dicts
 
     return connection
+
+
+# â”€â”€ PostgreSQL-compatible connection wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+class _PGCompatConn:
+    """Context manager that wraps psycopg2 and mimics the SQLite connection API.
+
+    Allows code written against SQLite (``?`` placeholders, ``conn.execute()``,
+    dict-like row access) to work transparently with PostgreSQL on Railway.
+    SQL dialect translation is handled by ``_to_pg_sql()``.
+    """
+
+    def __init__(self):
+        import psycopg2
+        import psycopg2.extras
+        self._conn = psycopg2.connect(
+            _DATABASE_URL,
+            cursor_factory=psycopg2.extras.RealDictCursor,
+            connect_timeout=10,
+        )
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            if exc_type is None:
+                self._conn.commit()
+            else:
+                self._conn.rollback()
+        finally:
+            self._conn.close()
+
+    # row_factory attribute accepted but ignored â€” PG always returns dicts
+    @property
+    def row_factory(self):
+        return None
+
+    @row_factory.setter
+    def row_factory(self, value):
+        pass
+
+    class _Cursor:
+        """Psycopg2 cursor with SQLite-compatible fetchone/fetchall."""
+
+        def __init__(self, cur):
+            self._cur = cur
+
+        def fetchall(self):
+            return [dict(r) for r in self._cur.fetchall()]
+
+        def fetchone(self):
+            row = self._cur.fetchone()
+            return dict(row) if row is not None else None
+
+        def __iter__(self):
+            return iter(self.fetchall())
+
+        @property
+        def rowcount(self):
+            return self._cur.rowcount
+
+    def execute(self, sql: str, params=()):
+        cur = self._conn.cursor()
+        cur.execute(_to_pg_sql(sql), params if params else ())
+        return self._Cursor(cur)
+
+    def commit(self):
+        self._conn.commit()
+
+    def rollback(self):
+        self._conn.rollback()
+
+    def close(self):
+        self._conn.close()
 
 
 def create_database_backup(*, reason="scheduled"):
@@ -1581,7 +1656,7 @@ def insert_bet(bet_data):
     Returns:
         int or None: The new bet's ID, or None if error
     """
-    # SQL INSERT statement â€” ? placeholders for safety
+    # SQL INSERT statement Ã¢â‚¬â€ ? placeholders for safety
     # BEGINNER NOTE: Never put values directly in SQL strings!
     # Use ? placeholders to prevent "SQL injection" attacks
     insert_sql = """
@@ -1615,7 +1690,7 @@ def insert_bet(bet_data):
         bet_data.get("user_email", "") or None,
     )
 
-    # ── PostgreSQL path (Railway) ─────────────────────────────────────
+    # â”€â”€ PostgreSQL path (Railway) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if _DATABASE_URL:
         pg_insert_sql = insert_sql.replace(
             ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -1642,7 +1717,7 @@ def insert_bet(bet_data):
             if conn:
                 _pg_putconn(conn)
 
-    # ── SQLite path (local dev) ───────────────────────────────────────
+    # â”€â”€ SQLite path (local dev) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     for _attempt in range(_WRITE_RETRY_ATTEMPTS):
         try:
             with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as connection:
@@ -1683,12 +1758,12 @@ def update_bet_result(bet_id, result, actual_value):
     WHERE bet_id = ?
     """
 
-    # ── PostgreSQL path ───────────────────────────────────────────────
+    # â”€â”€ PostgreSQL path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if _DATABASE_URL:
         cur = _pg_execute_write(update_sql, (result, actual_value, bet_id), caller="update_bet_result")
         return cur is not None and cur.rowcount > 0
 
-    # ── SQLite path ───────────────────────────────────────────────────
+    # â”€â”€ SQLite path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     for _attempt in range(_WRITE_RETRY_ATTEMPTS):
         try:
             with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as connection:
@@ -2038,14 +2113,14 @@ def resolve_entry_from_legs(entry_id):
     # If all legs have results and none are LOSS
     if all(r in ("WIN", "EVEN") for r in results):
         if all(r == "WIN" for r in results):
-            # All legs won â€” entry is a WIN
+            # All legs won Ã¢â‚¬â€ entry is a WIN
             update_entry_result(entry_id, "WIN")
             return "WIN"
         if all(r == "EVEN" for r in results):
-            # All legs even â€” entry is a full EVEN (fee returned)
+            # All legs even Ã¢â‚¬â€ entry is a full EVEN (fee returned)
             update_entry_result(entry_id, "EVEN", payout=0.0)
             return "EVEN"
-        # Mix of WIN and EVEN â€” standard rule: even legs are removed,
+        # Mix of WIN and EVEN Ã¢â‚¬â€ standard rule: even legs are removed,
         # payout adjusts to lower leg count. Mark as EVEN for manual review.
         update_entry_result(entry_id, "EVEN", payout=0.0)
         return "EVEN"
@@ -2472,7 +2547,7 @@ def get_calibration_adjustment(stat_type=None, min_samples=20):
 
     Example:
         Model predicts avg 62% probability, actual hit rate is 57%
-        â†’ calibration_adjustment = +5.0 points (reduce all scores by 5)
+        Ã¢â€ â€™ calibration_adjustment = +5.0 points (reduce all scores by 5)
     """
     initialize_database()  # Ensure prediction_history table exists
     if stat_type:
@@ -2505,10 +2580,10 @@ def get_calibration_adjustment(stat_type=None, min_samples=20):
                 actual_rate = row.get("actual_hit_rate") or 0.5
                 # Overconfidence = model probability higher than actual hit rate
                 # Convert probability gap to confidence score adjustment
-                # (1% probability gap â‰ˆ 2 confidence score points)
+                # (1% probability gap Ã¢â€°Ë† 2 confidence score points)
                 prob_gap_pct = (avg_predicted - actual_rate) * 100.0
                 adjustment = prob_gap_pct * 2.0  # Scale to confidence score points
-                # Cap adjustment to Â±15 points to avoid extreme corrections
+                # Cap adjustment to Ã‚Â±15 points to avoid extreme corrections
                 return round(max(-15.0, min(15.0, adjustment)), 1)
 
     except Exception as database_error:
@@ -2874,7 +2949,7 @@ def purge_old_backtest_results(keep=50):
         return 0
 
 
-# â”€â”€ Maintenance defaults â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Ã¢â€â‚¬Ã¢â€â‚¬ Maintenance defaults Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 _MAINTENANCE_SNAPSHOT_DAYS = 30
 _MAINTENANCE_GAME_LOG_DAYS = 30
 _MAINTENANCE_SESSION_DAYS = 90
@@ -2911,7 +2986,7 @@ def run_maintenance(
         "backtests": purge_old_backtest_results(keep=backtest_keep),
         "vacuumed": False,
     }
-    # VACUUM is SQLite-only (reclaims freed pages). Skip on PostgreSQL —
+    # VACUUM is SQLite-only (reclaims freed pages). Skip on PostgreSQL â€”
     # Postgres auto-vacuums, and running VACUUM inside a transaction is not supported.
     if not _DATABASE_URL:
         conn = None
@@ -3000,14 +3075,14 @@ def get_rolling_stats(days=14):
 # ============================================================
 
 # ============================================================
-# SECTION: All Analysis Picks â€” Store and Load
+# SECTION: All Analysis Picks Ã¢â‚¬â€ Store and Load
 # ============================================================
 
 def insert_analysis_picks(analysis_results):
     """
     Persist all Neural Analysis output picks to the all_analysis_picks table.
 
-    Deduplicates by (pick_date, player_name, stat_type, direction) — prop_line
+    Deduplicates by (pick_date, player_name, stat_type, direction) â€” prop_line
     is excluded so that line movements UPDATE the existing row instead of
     creating phantom duplicates.
 
@@ -3023,10 +3098,10 @@ def insert_analysis_picks(analysis_results):
     if not analysis_results:
         return 0
 
-    today_str = _nba_today_iso()  # ET-anchored — correct for NBA game dates
+    today_str = _nba_today_iso()  # ET-anchored â€” correct for NBA game dates
     inserted = 0
 
-    # ── PostgreSQL path (Railway production) ─────────────────────────────
+    # â”€â”€ PostgreSQL path (Railway production) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if _DATABASE_URL:
         inserted = _pg_insert_analysis_picks(analysis_results, today_str)
         if inserted > 0:
@@ -3038,7 +3113,7 @@ def insert_analysis_picks(analysis_results):
             with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
                 conn.execute("PRAGMA journal_mode=WAL")
                 # Dedup key excludes prop_line so line movements update rather than duplicate
-                existing = {}  # key → pick_id for update
+                existing = {}  # key â†’ pick_id for update
                 for row in conn.execute(
                     "SELECT pick_id, lower(player_name), stat_type, direction "
                     "FROM all_analysis_picks WHERE pick_date = ?",
@@ -3053,7 +3128,7 @@ def insert_analysis_picks(analysis_results):
                         r.get("direction", "OVER"),
                     )
                     if key in existing:
-                        # Line may have moved — update the existing row
+                        # Line may have moved â€” update the existing row
                         conn.execute(
                             """UPDATE all_analysis_picks
                                SET prop_line = ?, confidence_score = ?,
@@ -3106,7 +3181,7 @@ def insert_analysis_picks(analysis_results):
                     existing[key] = -1  # mark as inserted so dedup skips on retry
                     inserted += 1
                 conn.commit()
-            break  # success â€” exit retry loop
+            break  # success Ã¢â‚¬â€ exit retry loop
         except sqlite3.OperationalError as op_err:
             if "locked" in str(op_err).lower() and _attempt < _WRITE_RETRY_ATTEMPTS - 1:
                 _logger.warning(
@@ -3245,7 +3320,7 @@ def sync_picks_with_bet_result(bet_date, player_name, stat_type, prop_line, dire
 
     When a bet is resolved (WIN/LOSS/EVEN/VOID), find the matching pick in
     all_analysis_picks and update its result so both tables stay in sync.
-    Uses a fuzzy prop_line match (±0.15) to tolerate minor line movements.
+    Uses a fuzzy prop_line match (Â±0.15) to tolerate minor line movements.
 
     Args:
         bet_date (str): ISO date string "YYYY-MM-DD".
@@ -3560,8 +3635,8 @@ def _bump_data_version(date_str: str) -> None:
     """Write a data-version stamp visible to all containers.
 
     Two mechanisms:
-    1. cache/data_version.json — file-based, in-process.
-    2. app_state DB row — cross-container; GitHub Actions CI writes here
+    1. cache/data_version.json â€” file-based, in-process.
+    2. app_state DB row â€” cross-container; GitHub Actions CI writes here
        after inserting picks so running Streamlit containers detect updates.
     """
     import json as _json, time as _time
@@ -3797,7 +3872,7 @@ def load_latest_analysis_session():
                 _session_date = _session_ts[:10]  # "YYYY-MM-DD"
                 if _session_date < _nba_today_iso():
                     _logger.debug(
-                        "load_latest_analysis_session: session %s is prior-day (%s < %s) — skipping",
+                        "load_latest_analysis_session: session %s is prior-day (%s < %s) â€” skipping",
                         row_dict.get("session_id"),
                         _session_date,
                         _nba_today_iso(),
@@ -3862,7 +3937,7 @@ def load_analysis_session_by_id(session_id: int):
                 row_dict = dict(row) if row else None
         if not row_dict:
             return None
-        # Note: sessions are kept across midnight — same policy as load_latest_analysis_session.
+        # Note: sessions are kept across midnight â€” same policy as load_latest_analysis_session.
         try:
             row_dict["analysis_results"] = json.loads(row_dict.get("analysis_results_json") or "[]")
         except Exception:
@@ -4341,7 +4416,7 @@ def load_page_state():
         if not rows or not rows[0].get("state_json"):
             return {}
         raw = json.loads(rows[0]["state_json"])
-        # Discard state saved on a prior NBA day — prevents yesterday's players
+        # Discard state saved on a prior NBA day â€” prevents yesterday's players
         # from appearing after the Eastern Time day boundary rolls over.
         saved_date = raw.get("_page_state_date", "")
         if saved_date != _nba_today_iso():
@@ -4532,7 +4607,7 @@ def update_bet_resolution_full(
     Computes:
         distance_from_line = actual_value - prop_line  (signed)
         clv_value          = (closing_line - prop_line) * (+1 OVER, -1 UNDER)
-                             — positive CLV = line moved toward your bet.
+                             â€” positive CLV = line moved toward your bet.
 
     Increments resolve_attempts and stamps last_resolve_attempt regardless
     of the outcome so the worker's retry policy can see the history.
@@ -4594,7 +4669,7 @@ def delete_unresolved_bets_older_than(days: int = 3) -> int:
 
     Implements the "if we couldn't resolve it, it never happened" rule.
     Only removes bets that still have NULL/empty result. Returns the
-    deleted row count (best-effort — SQLite/PG cursor.rowcount).
+    deleted row count (best-effort â€” SQLite/PG cursor.rowcount).
     """
     cutoff = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
     cur = _db_write(
@@ -4648,7 +4723,7 @@ def cleanup_props_cache(days: int = 30) -> None:
     )
 
 
-# ── Joseph M. Smith DB helpers ─────────────────────────────────────────────
+# â”€â”€ Joseph M. Smith DB helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def save_joseph_diary_entry(date_str: str, entry: dict) -> bool:

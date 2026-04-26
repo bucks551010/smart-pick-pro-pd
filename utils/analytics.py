@@ -261,18 +261,18 @@ def get_event_counts(days: int = 30) -> dict[str, int]:
     """Return event counts grouped by event_name for the last N days."""
     _ensure_table()
     try:
-        from tracking.database import get_database_connection
-        cutoff = datetime.now(timezone.utc).isoformat()[:10]  # approx
-        with get_database_connection() as conn:
-            rows = conn.execute(
-                """SELECT event_name, COUNT(*) as cnt
-                   FROM analytics_events
-                   WHERE timestamp >= date('now', ?)
-                   GROUP BY event_name
-                   ORDER BY cnt DESC""",
-                (f"-{days} days",),
-            ).fetchall()
-            return {row["event_name"]: row["cnt"] for row in rows}
+        from tracking.database import _db_read
+        from datetime import timedelta
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()[:10]
+        rows = _db_read(
+            """SELECT event_name, COUNT(*) as cnt
+               FROM analytics_events
+               WHERE timestamp >= ?
+               GROUP BY event_name
+               ORDER BY cnt DESC""",
+            (cutoff,),
+        )
+        return {row["event_name"]: row["cnt"] for row in rows}
     except Exception:
         return {}
 
@@ -281,19 +281,20 @@ def get_daily_active_users(days: int = 30) -> list[dict]:
     """Return daily active user counts."""
     _ensure_table()
     try:
-        from tracking.database import get_database_connection
-        with get_database_connection() as conn:
-            rows = conn.execute(
-                """SELECT date(timestamp) as day,
-                          COUNT(DISTINCT session_id) as sessions,
-                          COUNT(DISTINCT user_email) as users
-                   FROM analytics_events
-                   WHERE timestamp >= date('now', ?)
-                   GROUP BY day
-                   ORDER BY day DESC""",
-                (f"-{days} days",),
-            ).fetchall()
-            return [dict(r) for r in rows]
+        from tracking.database import _db_read
+        from datetime import timedelta
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()[:10]
+        rows = _db_read(
+            """SELECT CAST(timestamp AS DATE) as day,
+                      COUNT(DISTINCT session_id) as sessions,
+                      COUNT(DISTINCT user_email) as users
+               FROM analytics_events
+               WHERE timestamp >= ?
+               GROUP BY day
+               ORDER BY day DESC""",
+            (cutoff,),
+        )
+        return rows
     except Exception:
         return []
 
@@ -302,18 +303,19 @@ def get_page_views(days: int = 30) -> dict[str, int]:
     """Return page view counts grouped by page name."""
     _ensure_table()
     try:
-        from tracking.database import get_database_connection
-        with get_database_connection() as conn:
-            rows = conn.execute(
-                """SELECT page, COUNT(*) as cnt
-                   FROM analytics_events
-                   WHERE event_name = 'page_view'
-                     AND timestamp >= date('now', ?)
-                   GROUP BY page
-                   ORDER BY cnt DESC""",
-                (f"-{days} days",),
-            ).fetchall()
-            return {row["page"]: row["cnt"] for row in rows}
+        from tracking.database import _db_read
+        from datetime import timedelta
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()[:10]
+        rows = _db_read(
+            """SELECT page, COUNT(*) as cnt
+               FROM analytics_events
+               WHERE event_name = 'page_view'
+                 AND timestamp >= ?
+               GROUP BY page
+               ORDER BY cnt DESC""",
+            (cutoff,),
+        )
+        return {row["page"]: row["cnt"] for row in rows}
     except Exception:
         return {}
 
@@ -322,18 +324,19 @@ def get_funnel(days: int = 30) -> dict[str, int]:
     """Return a simple acquisition funnel: page_view → signup → login → analysis_run."""
     _ensure_table()
     try:
-        from tracking.database import get_database_connection
-        with get_database_connection() as conn:
-            funnel = {}
-            for step in ("page_view", "signup", "login", "analysis_run", "bet_logged"):
-                row = conn.execute(
-                    """SELECT COUNT(DISTINCT session_id) as cnt
-                       FROM analytics_events
-                       WHERE event_name = ?
-                         AND timestamp >= date('now', ?)""",
-                    (step, f"-{days} days"),
-                ).fetchone()
-                funnel[step] = row["cnt"] if row else 0
-            return funnel
+        from tracking.database import _db_read
+        from datetime import timedelta
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()[:10]
+        funnel = {}
+        for step in ("page_view", "signup", "login", "analysis_run", "bet_logged"):
+            rows = _db_read(
+                """SELECT COUNT(DISTINCT session_id) as cnt
+                   FROM analytics_events
+                   WHERE event_name = ?
+                     AND timestamp >= ?""",
+                (step, cutoff),
+            )
+            funnel[step] = rows[0]["cnt"] if rows else 0
+        return funnel
     except Exception:
         return {}

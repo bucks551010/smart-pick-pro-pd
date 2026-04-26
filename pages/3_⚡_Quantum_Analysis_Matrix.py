@@ -642,23 +642,14 @@ if st.session_state.get("_qam_session_is_prior_day"):
         from zoneinfo import ZoneInfo as _ZI_banner
         import datetime as _dt_banner
         _now_ct_banner = _dt_banner.datetime.now(_ZI_banner("America/Chicago"))
-        _past_noon_banner = _now_ct_banner.hour >= 12
     except Exception:
-        _past_noon_banner = False
-    if _past_noon_banner:
-        st.info(
-            f"📅 **Showing picks from {_prior_label}.** "
-            "These results will stay visible until you run a new analysis for today's slate. "
-            "Click **🚀 Run Analysis** below to refresh.",
-            icon="📅",
-        )
-    else:
-        st.info(
-            f"📅 **Showing picks from {_prior_label}.** "
-            "Today's analysis will auto-start at **12:00 PM Central** when the new slate is ready. "
-            "You can also click **🚀 Run Analysis** to refresh now.",
-            icon="📅",
-        )
+        pass
+    st.info(
+        f"📅 **Showing picks from {_prior_label}.** "
+        "These picks stay visible until midnight Central time, then today's new slate loads automatically. "
+        "You can also click **🚀 Run Analysis** below to refresh now.",
+        icon="📅",
+    )
 
 # ── Sidebar: How to Use, Settings, Roster Health, Framework Logic ──
 # Moved out of the main column to reduce pre-flight scroll distance.
@@ -781,10 +772,10 @@ if _dedup_removed > 0:
 # SECTION: Analysis Runner
 # ============================================================
 
-# ── Daily reset at 12:00 PM Central time ─────────────────────
-# At noon CT each day we clear all prior-session data so users start
-# fresh for the new game day.  The reset fires once per calendar date
-# (tracked via "_qam_noon_reset_date") and only when we're at/past noon.
+# ── Daily reset at midnight Central time ─────────────────────
+# At the start of each new CT calendar day (midnight) we clear all
+# prior-session data so users start fresh for the new game day.
+# The reset fires once per date (tracked via "_qam_noon_reset_date").
 try:
     from zoneinfo import ZoneInfo as _ZI_noon
     import datetime as _dt_noon
@@ -793,11 +784,10 @@ except Exception:
     import datetime as _dt_noon
     _now_ct = _dt_noon.datetime.now()
 
-_noon_reset_date_key = _now_ct.date().isoformat()
-_past_noon_ct = _now_ct.hour >= 12
-_already_reset_today = st.session_state.get("_qam_noon_reset_date") == _noon_reset_date_key
+_ct_date_key = _now_ct.date().isoformat()
+_already_reset_today = st.session_state.get("_qam_noon_reset_date") == _ct_date_key
 
-if _past_noon_ct and not _already_reset_today:
+if not _already_reset_today:
     # Clear all prior analysis data so the new game day starts clean
     for _clr_key in (
         "analysis_results", "todays_games", "selected_picks",
@@ -807,16 +797,15 @@ if _past_noon_ct and not _already_reset_today:
         "_analysis_session_reloaded_at", "_qam_auto_run_date",
     ):
         st.session_state.pop(_clr_key, None)
-    st.session_state["_qam_noon_reset_date"] = _noon_reset_date_key
+    st.session_state["_qam_noon_reset_date"] = _ct_date_key
 
-# ── Auto-trigger: run analysis if props exist but no results AND it's past noon CT ──
+# ── Auto-trigger: run analysis if props exist but no results yet today ──
 _qam_auto_triggered = False
 _qam_today_ct = _now_ct.date().isoformat()
 if (final_props
         and not st.session_state.get("analysis_results")
         and not st.session_state.get("_qam_analysis_requested")
-        and not st.session_state.get("_qam_db_restored")
-        and _past_noon_ct):
+        and not st.session_state.get("_qam_db_restored")):
     if st.session_state.get("_qam_auto_run_date") != _qam_today_ct:
         st.session_state["_qam_auto_run_date"] = _qam_today_ct
         st.session_state["_qam_analysis_requested"] = True

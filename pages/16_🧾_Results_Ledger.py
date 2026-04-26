@@ -201,30 +201,69 @@ _STAT_ABBR = {
     "3-Pointers Made": "3PM", "Fantasy Score": "FPTS",
 }
 
+from dataclasses import dataclass, field as _dc_field
+from typing import Optional, List
+
+@dataclass
+class LedgerEntry:
+    player_name: Optional[str] = None
+    stat_type: Optional[str] = None
+    prop_line: Optional[float] = None
+    direction: Optional[str] = None
+    platform: Optional[str] = None
+    result: Optional[str] = None
+    bet_date: Optional[str] = None
+    confidence_score: Optional[float] = None
+    edge_pct: Optional[float] = None
+
+@dataclass
+class LedgerSummary:
+    entries: List[LedgerEntry] = _dc_field(default_factory=list)
+    total_wins: int = 0
+    total_losses: int = 0
+    total_push: int = 0
+    all_time_win_rate: float = 0.0
+    all_time_roi: Optional[float] = None
+
+
 def _load_ledger(days_back: int):
-    """Try social_engine data_source first, fall back to tracking DB."""
+    """Load resolved bets from tracking.database for the given look-back window."""
     try:
-        _se = _ROOT / "social_engine"
-        sys.path.insert(0, str(_se))
-        import importlib, os as _os
-        _os.environ.setdefault("PYTHONPATH", str(_se))
-        from social_engine.core.data_source import get_public_ledger
-        return get_public_ledger(days_back=days_back)
-    except Exception:
-        pass
-    try:
-        # fallback: read directly from tracking.database
-        from tracking.database import get_bet_history
-        rows = get_bet_history(days_back=days_back)
-        from social_engine.core.data_source import LedgerEntry, LedgerSummary
-        entries = [LedgerEntry(**r) for r in rows]
-        wins   = sum(1 for e in entries if e.result == "WIN")
-        losses = sum(1 for e in entries if e.result == "LOSS")
-        resolved = wins + losses
-        wr = (wins / resolved * 100.0) if resolved else 0.0
-        return LedgerSummary(entries=entries, total_wins=wins, total_losses=losses,
-                             all_time_win_rate=wr)
-    except Exception:
+        from tracking.database import load_bets_by_date_range
+        from datetime import date, timedelta
+        end = date.today()
+        start = end - timedelta(days=days_back)
+        rows = load_bets_by_date_range(start.isoformat(), end.isoformat())
+        entries = [
+            LedgerEntry(
+                player_name=r.get("player_name"),
+                stat_type=r.get("stat_type"),
+                prop_line=r.get("line_value") or r.get("prop_line"),
+                direction=r.get("direction"),
+                platform=r.get("platform"),
+                result=(r.get("result") or "").upper() or None,
+                bet_date=r.get("bet_date"),
+                confidence_score=r.get("confidence_score"),
+                edge_pct=r.get("edge_percentage"),
+            )
+            for r in rows
+        ]
+        resolved = [e for e in entries if e.result in ("WIN", "LOSS", "PUSH", "EVEN")]
+        wins   = sum(1 for e in resolved if e.result == "WIN")
+        losses = sum(1 for e in resolved if e.result == "LOSS")
+        pushes = sum(1 for e in resolved if e.result in ("PUSH", "EVEN"))
+        denom  = wins + losses
+        wr     = (wins / denom * 100.0) if denom else 0.0
+        return LedgerSummary(
+            entries=entries,
+            total_wins=wins,
+            total_losses=losses,
+            total_push=pushes,
+            all_time_win_rate=wr,
+            all_time_roi=None,
+        )
+    except Exception as _ex:
+        st.error(f"Could not load ledger data: {_ex}")
         return None
 
 
@@ -274,12 +313,23 @@ with col_c:
 # ── Load & Filter ──────────────────────────────────────────────
 ledger = _load_ledger(days_back)
 
-if ledger is None or not ledger.entries:
+if ledger is None:
     st.markdown("""
     <div class="rl-no-data">
       NO RESULTS DATA AVAILABLE YET<br>
       <span style="font-size:0.7rem;opacity:0.5">
         Connect DATABASE_URL in .env — results populate automatically after each night's games
+      </span>
+    </div>
+    """, unsafe_allow_html=True)
+    st.stop()
+
+if not ledger.entries:
+    st.markdown("""
+    <div class="rl-no-data">
+      NO PICKS LOGGED FOR THIS TIME WINDOW<br>
+      <span style="font-size:0.7rem;opacity:0.5">
+        Try a wider time window — results appear after games are resolved
       </span>
     </div>
     """, unsafe_allow_html=True)

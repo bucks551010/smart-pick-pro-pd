@@ -247,7 +247,7 @@ def _refresh_props() -> int:
         return 0
 
 
-def _run_auto_analysis(today_str: str) -> int:
+def _run_auto_analysis(today_str: str, force: bool = False) -> int:
     """Run the full QAM analysis pipeline over today's live props slate.
 
     Steps:
@@ -267,12 +267,16 @@ def _run_auto_analysis(today_str: str) -> int:
         return 0
 
     et_hour = _et_now().hour
-    if not (_QAM_HOUR_START <= et_hour < _QAM_HOUR_END):
+    if not force and not (_QAM_HOUR_START <= et_hour < _QAM_HOUR_END):
         _logger.debug(
             "[ETL Scheduler] QAM auto-analysis skipped — ET hour %d outside window %d–%d.",
             et_hour, _QAM_HOUR_START, _QAM_HOUR_END,
         )
         return 0
+    if force:
+        _logger.info(
+            "[ETL Scheduler] QAM auto-analysis FORCED (startup/new-day) — bypassing hour window."
+        )
 
     _logger.info("[ETL Scheduler] Starting QAM auto-analysis for %s …", today_str)
     injury_map = None
@@ -364,6 +368,7 @@ def _loop() -> None:
     _last_analysis_ts = 0.0       # monotonic timestamp of last successful QAM run
     _ANALYSIS_RERUN_SEC = int(os.environ.get("QAM_RERUN_INTERVAL_MIN", "120")) * 60  # re-run every 2 h (was 4 h)
     _last_cleanup_date = ""       # calendar date of last end-of-night cleanup run
+    _first_loop = True            # forces QAM to run once on startup regardless of hour
 
     while True:
         game_window = _in_game_window()
@@ -419,17 +424,20 @@ def _loop() -> None:
                 except Exception:
                     pass
 
-        # ── QAM auto-analysis (once per new day, then every 4 h while in window) ──
+        # ── QAM auto-analysis (once per new day, then every 2 h while in window) ──
         # Runs after props are fresh to analyze the live slate.
-        # Re-runs every 4 h (configurable via QAM_RERUN_INTERVAL_MIN) so that
-        # picks stay current as prop lines shift throughout the day.
+        # On first loop after startup, bypasses the hour-window check so the app
+        # always has picks immediately after a deploy — even if deployed outside
+        # the normal 10AM–11PM ET analysis window.
         _analysis_stale = (
             _last_analysis_date != today_str
             or (time.monotonic() - _last_analysis_ts >= _ANALYSIS_RERUN_SEC)
         )
-        if _analysis_stale:
+        if _analysis_stale or _first_loop:
+            _force = _first_loop or (_last_analysis_date != today_str)
+            _first_loop = False
             t0 = time.monotonic()
-            inserted = _run_auto_analysis(today_str)
+            inserted = _run_auto_analysis(today_str, force=_force)
             if inserted > 0:
                 _last_analysis_date = today_str
                 _last_analysis_ts = time.monotonic()

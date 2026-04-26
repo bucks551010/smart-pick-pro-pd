@@ -6,13 +6,17 @@ dockerfilePath = "Dockerfile"
 healthcheckPath = "/_stcore/health"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 5
-# redeploy trigger: 2026-04-22
+restartPolicyMaxRetries = 10
+# redeploy trigger: 2026-04-26
 
 # ──────────────────────────────────────────────────────────────
-# NOTE: This file configures the `web` service only.  The
-# pipeline `worker` service must be added manually via the
-# Railway dashboard — see WORKER_SETUP.md for step-by-step
-# instructions.  Worker start command:
+# WORKER SERVICE
+# The slate_worker daemon runs the full picks pipeline every 30 min
+# independently of the web process.  In Railway, add a second service
+# pointing at the same repo and set its start command to:
 #     python slate_worker.py --daemon
+# OR use the Procfile `worker:` entry when Railway detects it.
+#
+# Environment variables needed on the worker service (same as web):
+#   DATABASE_URL, DB_DIR, PRIZEPICKS_API_KEY, UNDERDOG_API_KEY
 # ──────────────────────────────────────────────────────────────

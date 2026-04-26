@@ -1804,46 +1804,163 @@ if joseph_results:
     ]
 
     if _joseph_bets_tonight:
+        _jbt_sorted = sorted(_joseph_bets_tonight, key=lambda x: abs(x.get("edge", 0)), reverse=True)
+
+        # ── count line ─────────────────────────────────────────
+        _n_locks  = sum(1 for r in _jbt_sorted if r.get("verdict") == "LOCK")
+        _n_smash  = sum(1 for r in _jbt_sorted if r.get("verdict") == "SMASH")
+        _n_lean   = sum(1 for r in _jbt_sorted if r.get("verdict") == "LEAN")
+        _pill_html = ""
+        for _lbl, _cnt, _clr in [("🔒 LOCK", _n_locks, "#a855f7"), ("🔥 SMASH", _n_smash, "#F24336"), ("✅ LEAN", _n_lean, "#00D559")]:
+            if _cnt:
+                _pill_html += (
+                    f'<span style="background:rgba({",".join(str(int(int(_clr.lstrip("#")[i:i+2],16)) for i in (0,2,4))},0.15);'
+                    f'color:{_clr};border:1px solid {_clr};border-radius:20px;'
+                    f'padding:3px 10px;font-size:0.72rem;font-weight:700;margin-right:6px">'
+                    f'{_lbl} &times;{_cnt}</span>'
+                )
         st.markdown(
-            f'<div style="color:#6B7A9A;font-size:0.84rem;margin-bottom:10px;">'
-            f'Joseph has <strong style="color:#00D559;">{len(_joseph_bets_tonight)}</strong> '
-            f'active bets tonight (LOCK + SMASH + LEAN picks).</div>',
+            f'<div style="margin-bottom:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
+            f'<span style="color:#6B7A9A;font-size:0.84rem">Joseph has '
+            f'<strong style="color:#e2e8f0">{len(_jbt_sorted)}</strong> active bets tonight&nbsp;&mdash;&nbsp;</span>'
+            f'{_pill_html}</div>',
             unsafe_allow_html=True,
         )
 
-        _jbt_rows = ""
-        for _jb in sorted(_joseph_bets_tonight, key=lambda x: abs(x.get("edge", 0)), reverse=True):
-            _jb_name = _html.escape(str(_jb.get("player", _jb.get("name", "Unknown"))))
-            _jb_prop = _html.escape(str(_jb.get("prop", _jb.get("stat_type", ""))))
-            _jb_dir = _html.escape(str(_jb.get("direction", "")))
-            _jb_line = _jb.get("line", "")
+        # ── Premium bet cards ───────────────────────────────────
+        _cards_html = '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:8px">'
+        for _rank, _jb in enumerate(_jbt_sorted, 1):
+            _jb_name    = _html.escape(str(_jb.get("player", _jb.get("name", "Unknown"))))
+            _jb_prop    = _html.escape(str(_jb.get("prop", _jb.get("stat_type", ""))))
+            _jb_dir     = _html.escape(str(_jb.get("direction", "")))
+            _jb_line    = _jb.get("line", "")
             _jb_verdict = _jb.get("verdict", "")
-            _jb_emoji = _jb.get("verdict_emoji", "")
-            _jb_edge = _jb.get("edge", 0)
-            _jb_team = _html.escape(str(_jb.get("team", "")))
+            _jb_emoji   = _html.escape(str(_jb.get("verdict_emoji", "")))
+            _jb_edge    = float(_jb.get("edge", 0) or 0)
+            _jb_conf    = float(_jb.get("confidence", _jb.get("confidence_pct", 0)) or 0)
+            _jb_team    = _html.escape(str(_jb.get("team", "")))
+            _jb_liner   = _html.escape(str(_jb.get("one_liner", _jb.get("condensed_summary", "")) or "")[:110])
+            _jb_df      = float(_jb.get("dawg_factor", 0) or 0)
+            _jb_odds    = str(_jb.get("odds_type", "standard")).lower()
 
-            _jb_v_clr = "#2D9EFF" if _jb_verdict == "LOCK" else "#F24336" if _jb_verdict == "SMASH" else "#00D559"
-            _jb_edge_clr = "#00D559" if _jb_edge > 0 else "#F24336"
+            # Verdict palette
+            _vpal = {
+                "LOCK":  {"border": "#a855f7", "bg": "rgba(168,85,247,0.08)", "badge_bg": "rgba(168,85,247,0.20)", "text": "#a855f7"},
+                "SMASH": {"border": "#F24336", "bg": "rgba(242,67,54,0.08)",  "badge_bg": "rgba(242,67,54,0.20)",  "text": "#F24336"},
+                "LEAN":  {"border": "#00D559", "bg": "rgba(0,213,89,0.08)",   "badge_bg": "rgba(0,213,89,0.20)",   "text": "#00D559"},
+            }.get(_jb_verdict, {"border": "#334155", "bg": "rgba(51,65,85,0.08)", "badge_bg": "rgba(51,65,85,0.20)", "text": "#94a3b8"})
 
-            _jbt_rows += (
-                f'<tr>'
-                f'<td><strong>{_jb_name}</strong>'
-                f'<span style="color:#718096;font-size:0.75rem;margin-left:6px">{_jb_team}</span></td>'
-                f'<td style="color:#EEF0F6">{_jb_dir} {_jb_line} {_jb_prop}</td>'
-                f'<td style="color:{_jb_v_clr};font-weight:700">{_html.escape(str(_jb_emoji))} {_html.escape(_jb_verdict)}</td>'
-                f'<td style="color:{_jb_edge_clr};font-weight:700">{_jb_edge:+.1f}%</td>'
-                f'</tr>'
-            )
+            _v_border = _vpal["border"]
+            _v_bg     = _vpal["bg"]
+            _v_badge  = _vpal["badge_bg"]
+            _v_text   = _vpal["text"]
 
-        st.markdown(
-            '<table class="joseph-dawg-table">'
-            '<thead><tr>'
-            '<th>Player</th><th>Bet</th><th>Verdict</th><th>Edge</th>'
-            '</tr></thead>'
-            f'<tbody>{_jbt_rows}</tbody>'
-            '</table>',
-            unsafe_allow_html=True,
-        )
+            # Edge bar (clamped 0-100%)
+            _edge_bar_w = min(abs(_jb_edge) * 2.5, 100)
+            _edge_clr   = "#00D559" if _jb_edge >= 0 else "#F24336"
+
+            # Odds type tag
+            _odds_tag = ""
+            if _jb_odds == "goblin":
+                _odds_tag = '<span style="background:rgba(34,197,94,0.18);color:#22c55e;border:1px solid #22c55e;border-radius:4px;padding:1px 7px;font-size:0.65rem;font-weight:700;margin-left:6px">GOBLIN</span>'
+            elif _jb_odds == "demon":
+                _odds_tag = '<span style="background:rgba(239,68,68,0.18);color:#ef4444;border:1px solid #ef4444;border-radius:4px;padding:1px 7px;font-size:0.65rem;font-weight:700;margin-left:6px">DEMON</span>'
+
+            # Dawg factor bar (clamped 0-100% over scale of 10)
+            _df_bar_w = min(_jb_df * 10, 100)
+            _df_clr = "#F24336" if _jb_df >= 5 else "#a855f7" if _jb_df >= 3 else "#eab308" if _jb_df >= 1 else "#64748b"
+
+            _cards_html += f"""
+<div style="background:linear-gradient(135deg,#0f172a 0%,{_v_bg} 100%);
+  border:1px solid {_v_border};border-left:4px solid {_v_border};
+  border-radius:12px;padding:14px 18px;position:relative;overflow:hidden">
+
+  <!-- glow accent -->
+  <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;
+    background:radial-gradient(circle,{_v_border}22 0%,transparent 70%);pointer-events:none"></div>
+
+  <!-- top row -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px">
+
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="background:#1e293b;color:#818cf8;border-radius:6px;
+        padding:3px 8px;font-size:0.68rem;font-weight:800;min-width:28px;text-align:center">
+        #{_rank}
+      </div>
+      <div>
+        <div style="color:#f1f5f9;font-size:1.0rem;font-weight:800;line-height:1.1">
+          {_jb_name}
+        </div>
+        <div style="color:#94a3b8;font-size:0.75rem;margin-top:2px">
+          {_jb_team}
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="background:{_v_badge};color:{_v_text};border:1px solid {_v_border};
+        border-radius:20px;padding:4px 12px;font-size:0.78rem;font-weight:800;
+        letter-spacing:0.5px">
+        {_jb_emoji} {_html.escape(_jb_verdict)}
+      </span>
+      <span style="color:{_edge_clr};font-size:0.9rem;font-weight:800">
+        {_jb_edge:+.1f}% edge
+      </span>
+    </div>
+
+  </div>
+
+  <!-- bet line -->
+  <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <span style="background:#1e293b;color:#e2e8f0;border-radius:8px;
+      padding:5px 12px;font-size:0.88rem;font-weight:700;letter-spacing:0.3px">
+      {_jb_dir} {_jb_line} {_jb_prop}
+    </span>
+    {_odds_tag}
+  </div>
+
+  <!-- one-liner -->
+  {'<div style="margin-top:8px;color:#94a3b8;font-size:0.78rem;font-style:italic;line-height:1.4">&ldquo;' + _jb_liner + '&rdquo;</div>' if _jb_liner else ''}
+
+  <!-- stat bars -->
+  <div style="margin-top:12px;display:flex;gap:20px;flex-wrap:wrap">
+
+    <div style="flex:1;min-width:110px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="color:#64748b;font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Edge</span>
+        <span style="color:{_edge_clr};font-size:0.68rem;font-weight:700">{_jb_edge:+.1f}%</span>
+      </div>
+      <div style="height:4px;background:#1e293b;border-radius:2px;overflow:hidden">
+        <div style="width:{_edge_bar_w:.0f}%;height:100%;background:{_edge_clr};border-radius:2px"></div>
+      </div>
+    </div>
+
+    <div style="flex:1;min-width:110px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="color:#64748b;font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Confidence</span>
+        <span style="color:#818cf8;font-size:0.68rem;font-weight:700">{_jb_conf:.0f}%</span>
+      </div>
+      <div style="height:4px;background:#1e293b;border-radius:2px;overflow:hidden">
+        <div style="width:{min(_jb_conf,100):.0f}%;height:100%;background:#818cf8;border-radius:2px"></div>
+      </div>
+    </div>
+
+    <div style="flex:1;min-width:110px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="color:#64748b;font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Dawg Factor</span>
+        <span style="color:{_df_clr};font-size:0.68rem;font-weight:700">{_jb_df:.1f}</span>
+      </div>
+      <div style="height:4px;background:#1e293b;border-radius:2px;overflow:hidden">
+        <div style="width:{_df_bar_w:.0f}%;height:100%;background:{_df_clr};border-radius:2px"></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>"""
+
+        _cards_html += '</div>'
+        st.markdown(_cards_html, unsafe_allow_html=True)
 
         # Auto-save Joseph's bets to the bet tracker
         if _BETS_AVAILABLE:

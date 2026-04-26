@@ -414,7 +414,24 @@ if not st.session_state.get("analysis_results"):
             if _saved_session.get("selected_picks") and not st.session_state.get("selected_picks"):
                 st.session_state["selected_picks"] = _saved_session["selected_picks"]
             # Record the timestamp so the UI can show when the session was saved
-            st.session_state["_analysis_session_reloaded_at"] = _saved_session.get("analysis_timestamp", "")
+            _session_ts = _saved_session.get("analysis_timestamp", "")
+            st.session_state["_analysis_session_reloaded_at"] = _session_ts
+            # Track whether this is a prior-day session so the UI can show a banner
+            try:
+                from zoneinfo import ZoneInfo as _ZI_sb
+                import datetime as _dt_sb
+                _today_iso_sb = _dt_sb.datetime.now(_ZI_sb("America/New_York")).date().isoformat()
+            except Exception:
+                import datetime as _dt_sb
+                _today_iso_sb = _dt_sb.date.today().isoformat()
+            _session_date_sb = ""
+            if _session_ts:
+                try:
+                    _session_date_sb = _dt_sb.datetime.fromisoformat(_session_ts.rstrip("Z")).date().isoformat()
+                except Exception:
+                    pass
+            st.session_state["_qam_session_date"] = _session_date_sb
+            st.session_state["_qam_session_is_prior_day"] = bool(_session_date_sb and _session_date_sb < _today_iso_sb)
             # Prevent the auto-run guard from re-triggering the engine when we
             # already have results from the DB.
             st.session_state["_qam_db_restored"] = True
@@ -613,6 +630,21 @@ st.markdown(
     '<p style="color:#a0b4d0;margin-top:0;font-size:0.82rem;">Quantum Matrix Engine 5.6 — Powered by N.A.N. (Neural Analysis Network)</p>',
     unsafe_allow_html=True,
 )
+
+# ── Prior-day session banner ───────────────────────────────────
+# If the loaded session is from a previous game day, show a notice so users
+# know they're viewing yesterday's picks.  The picks stay visible until a
+# new analysis is run for today's slate.
+if st.session_state.get("_qam_session_is_prior_day"):
+    _prior_ts = st.session_state.get("_analysis_session_reloaded_at", "")
+    _prior_date = st.session_state.get("_qam_session_date", "")
+    _prior_label = _prior_date if _prior_date else "a prior game day"
+    st.info(
+        f"📅 **Showing picks from {_prior_label}.** "
+        "These results will stay visible until you run a new analysis for today's slate. "
+        "Click **🚀 Run Analysis** below to refresh.",
+        icon="📅",
+    )
 
 # ── Sidebar: How to Use, Settings, Roster Health, Framework Logic ──
 # Moved out of the main column to reduce pre-flight scroll distance.

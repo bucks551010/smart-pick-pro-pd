@@ -90,8 +90,12 @@ def _create_user(email: str, password: str, display_name: str = "") -> bool:
             conn.commit()
         return True
     except sqlite3.IntegrityError:
-        return False  # Email already registered
+        return False  # Email already registered (SQLite)
     except Exception as exc:
+        # Also catches psycopg2 UniqueViolation on PostgreSQL for duplicate email
+        err_msg = str(exc).lower()
+        if "unique" in err_msg or "duplicate" in err_msg or "already exists" in err_msg:
+            return False  # Email already registered (PostgreSQL)
         _logger.error("Failed to create user: %s", exc)
         return False
 

@@ -5,8 +5,7 @@ Standalone Flask server for receiving Stripe webhook events.
 
 Stripe webhooks cannot be sent directly to a Streamlit app (Streamlit
 only serves its own UI over HTTP). This lightweight Flask server runs
-separately and updates the shared SQLite database when subscription
-events occur.
+separately and updates the shared database when subscription events occur.
 
 Deployment:
     Deploy on Railway, Render, or Fly.io. Register the public URL in
@@ -19,7 +18,8 @@ Usage:
 Environment variables (set in .env or host config):
     STRIPE_SECRET_KEY       — Stripe API secret key
     STRIPE_WEBHOOK_SECRET   — Webhook endpoint signing secret (whsec_...)
-    DB_PATH                 — SQLite database path (default: db/smartai_nba.db)
+    DATABASE_URL            — PostgreSQL connection string (Railway/Render)
+    DB_PATH                 — SQLite database path fallback (default: db/smartai_nba.db)
 """
 
 import datetime
@@ -41,6 +41,7 @@ except ImportError:
 # ── Configuration ─────────────────────────────────────────────
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
 DB_PATH = os.environ.get("DB_PATH", str(Path(os.environ.get("DB_DIR", str(Path(__file__).parent / "db"))) / "smartai_nba.db"))
 
 stripe.api_key = STRIPE_SECRET_KEY
@@ -59,7 +60,44 @@ app = Flask(__name__)
 
 def _update_subscription(subscription_id: str, status: str, email: str = "",
                          period_end: str = "") -> bool:
-    """Insert or update a subscription row in the shared SQLite database."""
+    """Insert or update a subscription row.
+
+    Writes to PostgreSQL when DATABASE_URL is set (Railway production),
+    falls back to SQLite for local development.
+    """
+    # ── PostgreSQL path (Railway production) ──────────────────────────
+    if DATABASE_URL:
+        try:
+            import psycopg2  # type: ignore
+            conn = psycopg2.connect(DATABASE_URL, connect_timeout=10)
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO subscriptions
+                        (subscription_id, customer_id, customer_email, status,
+                         current_period_end, updated_at)
+                    VALUES (%s, '', %s, %s, %s, NOW())
+                    ON CONFLICT(subscription_id) DO UPDATE SET
+                        status             = EXCLUDED.status,
+                        customer_email     = CASE WHEN EXCLUDED.customer_email = ''
+                                                 THEN subscriptions.customer_email
+                                                 ELSE EXCLUDED.customer_email END,
+                        current_period_end = CASE WHEN EXCLUDED.current_period_end = ''
+                                                 THEN subscriptions.current_period_end
+                                                 ELSE EXCLUDED.current_period_end END,
+                        updated_at         = NOW()
+                    """,
+                    (subscription_id, email, status, period_end),
+                )
+            conn.commit()
+            conn.close()
+            _logger.info("DB (PG) updated: %s → %s", subscription_id, status)
+            return True
+        except Exception as exc:
+            _logger.error("PG update failed for %s: %s", subscription_id, exc)
+            return False
+
+    # ── SQLite path (local development fallback) ───────────────────────
     try:
         Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(DB_PATH, timeout=30)
@@ -84,9 +122,10 @@ def _update_subscription(subscription_id: str, status: str, email: str = "",
         )
         conn.commit()
         conn.close()
+        _logger.info("DB (SQLite) updated: %s → %s", subscription_id, status)
         return True
     except Exception as exc:
-        _logger.error("DB update failed for %s: %s", subscription_id, exc)
+        _logger.error("SQLite update failed for %s: %s", subscription_id, exc)
         return False
 
 

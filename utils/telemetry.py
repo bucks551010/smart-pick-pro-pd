@@ -158,14 +158,17 @@ def _ensure_tables() -> None:
     if _tables_ensured:
         return
     try:
-        from tracking.database import get_database_connection, initialize_database
+        from tracking.database import get_database_connection, initialize_database, _DATABASE_URL
         initialize_database()
-        with get_database_connection() as conn:
-            for sql in _TELEMETRY_TABLES_SQL:
-                conn.execute(sql)
-            for sql in _TELEMETRY_INDEXES_SQL:
-                conn.execute(sql)
-            conn.commit()
+        if not _DATABASE_URL:
+            # SQLite path: create tables with AUTOINCREMENT DDL.
+            # On PostgreSQL the tables are created by initialize_database() via _PG_STMTS.
+            with get_database_connection() as conn:
+                for sql in _TELEMETRY_TABLES_SQL:
+                    conn.execute(sql)
+                for sql in _TELEMETRY_INDEXES_SQL:
+                    conn.execute(sql)
+                conn.commit()
         _tables_ensured = True
     except Exception as exc:
         _logger.debug("telemetry table init skipped (non-fatal): %s", exc)

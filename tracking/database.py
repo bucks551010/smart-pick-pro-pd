@@ -772,6 +772,34 @@ def _pg_initialize_database() -> bool:
             sent_at TEXT,
             status TEXT NOT NULL DEFAULT 'pending'
         )""",
+        # ── Telemetry tables ────────────────────────────────────────────
+        """CREATE TABLE IF NOT EXISTS telemetry_timings (
+            id SERIAL PRIMARY KEY,
+            timestamp TEXT NOT NULL,
+            function_label TEXT NOT NULL,
+            duration_ms REAL NOT NULL,
+            session_id TEXT,
+            success INTEGER DEFAULT 1,
+            error_type TEXT
+        )""",
+        """CREATE TABLE IF NOT EXISTS telemetry_errors (
+            id SERIAL PRIMARY KEY,
+            timestamp TEXT NOT NULL,
+            session_id TEXT,
+            error_type TEXT NOT NULL,
+            error_message TEXT,
+            context TEXT,
+            page TEXT,
+            stack_trace TEXT
+        )""",
+        """CREATE TABLE IF NOT EXISTS telemetry_features (
+            id SERIAL PRIMARY KEY,
+            timestamp TEXT NOT NULL,
+            session_id TEXT,
+            feature_name TEXT NOT NULL,
+            page TEXT,
+            metadata TEXT
+        )""",
         # â”€â”€ Indexes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         "CREATE INDEX IF NOT EXISTS idx_ae_timestamp ON analytics_events (timestamp)",
         "CREATE INDEX IF NOT EXISTS idx_ae_event_name ON analytics_events (event_name)",

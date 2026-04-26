@@ -580,6 +580,17 @@ st.markdown('<div style="margin-bottom:8px"></div>', unsafe_allow_html=True)
 # Tabs — each body delegates to its tab module
 # ============================================================
 
+# ── Persist active tab across reruns via URL param (?btab=N) ──
+# JavaScript updates ?btab=N in the URL when the user clicks a tab (no page
+# reload — replaceState only).  On every rerun Python reads the param and
+# injects JS that re-clicks the stored tab index when it is not already
+# selected, so st.rerun() calls inside tab modules no longer reset the view.
+_bt_active_tab_idx = 0
+try:
+    _bt_active_tab_idx = max(0, int(st.query_params.get("btab", "0")))
+except (TypeError, ValueError):
+    _bt_active_tab_idx = 0
+
 (
     tab_model_health,
     tab_ai_picks,
@@ -607,6 +618,45 @@ st.markdown('<div style="margin-bottom:8px"></div>', unsafe_allow_html=True)
         "🏆 Awards",
     ]
 )
+
+# Inject JS after tabs are rendered:
+#   1. Attach click listeners to each tab button → update ?btab=N in URL
+#   2. If targetIdx > 0 and that tab is not already selected → click it
+st.markdown(f"""
+<script>
+(function() {{
+    var TARGET = {_bt_active_tab_idx};
+    function setup() {{
+        var tabs = document.querySelectorAll('[role="tab"]');
+        if (!tabs || tabs.length === 0) {{
+            setTimeout(setup, 150);
+            return;
+        }}
+        // Attach URL-update listeners (once per button)
+        tabs.forEach(function(btn, i) {{
+            if (!btn._btabBound) {{
+                btn._btabBound = true;
+                btn.addEventListener('click', function() {{
+                    try {{
+                        var u = new URL(window.location.href);
+                        u.searchParams.set('btab', i);
+                        window.history.replaceState(null, '', u.toString());
+                    }} catch(e) {{}}
+                }}, true);
+            }}
+        }});
+        // Restore stored tab if not already active
+        if (TARGET > 0 && tabs.length > TARGET) {{
+            var t = tabs[TARGET];
+            if (t.getAttribute('aria-selected') !== 'true') {{
+                t.click();
+            }}
+        }}
+    }}
+    setTimeout(setup, 250);
+}})();
+</script>
+""", unsafe_allow_html=True)
 
 with tab_model_health:
     health.render(platform_filter_selections, _player_search, _date_range, _direction_filter)

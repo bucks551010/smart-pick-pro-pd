@@ -66,7 +66,9 @@ _DISABLED = os.environ.get("ETL_SCHEDULER_DISABLED", "").strip() in ("1", "true"
 # QAM auto-analysis config
 _QAM_DISABLED = os.environ.get("QAM_AUTO_ANALYSIS_DISABLED", "").strip() in ("1", "true", "yes")
 _QAM_HOUR_START = int(os.environ.get("QAM_ANALYSIS_HOUR_START", "10"))   # 10 AM ET — props often available by 10 AM
-_QAM_HOUR_END = int(os.environ.get("QAM_ANALYSIS_HOUR_END", "23"))       # 11 PM ET
+# QAM_ANALYSIS_HOUR_END is now DYNAMIC — see _get_games_cutoff_hour() below.
+# Hardcoded fallback (used only if schedule cannot be fetched): 18 ET (6 PM).
+_QAM_HOUR_END_FALLBACK = int(os.environ.get("QAM_ANALYSIS_HOUR_END", "18"))
 _QAM_SIM_DEPTH = int(os.environ.get("QAM_SIM_DEPTH", "1000"))
 
 # End-of-night cleanup config
@@ -222,6 +224,81 @@ _PROP_SLOW_INTERVAL = int(os.environ.get("PROP_SLOW_INTERVAL_MIN", "60")) * 60  
 _ETL_RUN_TIMEOUT = int(os.environ.get("ETL_RUN_TIMEOUT_SEC", "300"))  # wall-clock limit for run_update
 
 
+_games_cutoff_cache: dict = {}  # {date_str: cutoff_hour_int}
+
+
+def _get_games_cutoff_hour() -> int:
+    """Return the ET hour 1 hour before tonight's earliest NBA game tip-off.
+
+    Looks up today's schedule via ``get_todays_games()``, parses each
+    ``game_time_et`` field (e.g. ``"7:30 PM ET"``), and returns
+    ``earliest_tip_off_hour - 1``.  Result is cached per sports-day so the
+    live schedule is only queried once per day.
+
+    Falls back to ``_QAM_HOUR_END_FALLBACK`` (default 18 / 6 PM ET) when:
+    - No games are scheduled today.
+    - All ``game_time_et`` strings fail to parse.
+    - The schedule fetch raises an exception.
+
+    Override at any time by setting ``QAM_ANALYSIS_HOUR_END`` env var — that
+    forces this function to return that fixed value instead.
+    """
+    # Hard override: if the operator set QAM_ANALYSIS_HOUR_END explicitly,
+    # honour it and skip the dynamic lookup.
+    if os.environ.get("QAM_ANALYSIS_HOUR_END"):
+        return _QAM_HOUR_END_FALLBACK
+
+    today = _et_sports_day()
+    if today in _games_cutoff_cache:
+        return _games_cutoff_cache[today]
+
+    try:
+        from data.nba_data_service import get_todays_games
+        games = get_todays_games()
+        earliest_hour = None
+        for g in games:
+            raw = g.get("game_time_et", "")
+            if not raw:
+                continue
+            try:
+                # Strip trailing " ET" and parse "7:30 PM" or "10:00 PM" etc.
+                clean = raw.replace(" ET", "").strip()
+                import datetime as _dt
+                for fmt in ("%I:%M %p", "%I %p"):
+                    try:
+                        t = _dt.datetime.strptime(clean, fmt)
+                        h = t.hour  # 24-h
+                        if earliest_hour is None or h < earliest_hour:
+                            earliest_hour = h
+                        break
+                    except ValueError:
+                        continue
+            except Exception:
+                continue
+        if earliest_hour is not None:
+            cutoff = max(earliest_hour - 1, _QAM_HOUR_START + 1)  # never cut off before start+1h
+            _logger.info(
+                "[Scheduler] Earliest game ET hour=%d  →  cutoff=%d ET "
+                "(QAM + props stop %d h before tip-off)",
+                earliest_hour, cutoff, earliest_hour - cutoff,
+            )
+        else:
+            cutoff = _QAM_HOUR_END_FALLBACK
+            _logger.info(
+                "[Scheduler] No parseable game times found — using fallback cutoff=%d ET",
+                cutoff,
+            )
+    except Exception:
+        cutoff = _QAM_HOUR_END_FALLBACK
+        _logger.warning(
+            "[Scheduler] _get_games_cutoff_hour() failed — using fallback cutoff=%d ET",
+            cutoff,
+        )
+
+    _games_cutoff_cache[today] = cutoff
+    return cutoff
+
+
 def _refresh_props() -> int:
     """Fetch fresh props from FREE platforms (PrizePicks + Underdog) and
     write to ``data/live_props.csv``.  DraftKings is skipped because The
@@ -267,10 +344,11 @@ def _run_auto_analysis(today_str: str, force: bool = False) -> int:
         return 0
 
     et_hour = _et_now().hour
-    if not force and not (_QAM_HOUR_START <= et_hour < _QAM_HOUR_END):
+    _qam_cutoff = _get_games_cutoff_hour()
+    if not force and not (_QAM_HOUR_START <= et_hour < _qam_cutoff):
         _logger.debug(
             "[ETL Scheduler] QAM auto-analysis skipped — ET hour %d outside window %d–%d.",
-            et_hour, _QAM_HOUR_START, _QAM_HOUR_END,
+            et_hour, _QAM_HOUR_START, _qam_cutoff,
         )
         return 0
     if force:
@@ -402,9 +480,12 @@ def _loop() -> None:
             _logger.exception("[ETL Scheduler] refresh failed — will retry next cycle")
 
         # ── Live props refresh (PrizePicks + Underdog only) ────────
+        # Stop refreshing once the games-start cutoff hour is reached so picks and
+        # bets shown to users remain consistent throughout the game window.
         prop_interval = _PROP_FAST_INTERVAL if game_window else _PROP_SLOW_INTERVAL
         since_last_prop = time.monotonic() - _last_prop_refresh
-        if since_last_prop >= prop_interval:
+        _past_prop_cutoff = _et_now().hour >= _get_games_cutoff_hour()
+        if since_last_prop >= prop_interval and not _past_prop_cutoff:
             t0 = time.monotonic()
             count = _refresh_props()
             elapsed = round(time.monotonic() - t0, 1)

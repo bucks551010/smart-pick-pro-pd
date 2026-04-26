@@ -1404,13 +1404,10 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, s
         pass  # If query fails, log without dedup (safe -- unique index protects)
 
     logged = 0
-    # Silver, Gold, and Platinum tiers qualify for auto-logging.
-    # Bronze qualifies only with edge >= 8% AND confidence score >= 60/100.
+    # All tiers qualify for auto-logging.
     AUTO_LOG_TIERS = {"Gold", "Platinum", "Silver", "Bronze"}
-    # Silver picks only need 3% edge; Gold/Platinum use the minimum_edge parameter
+    # Silver and Bronze picks only need 3% edge; Gold/Platinum use the minimum_edge parameter
     SILVER_MIN_EDGE = 3.0
-    BRONZE_MIN_EDGE = 8.0
-    BRONZE_MIN_CONFIDENCE = 60.0  # out of 100
 
     # Sort by confidence score descending so the highest-quality picks are logged first
     sorted_results = sorted(
@@ -1441,13 +1438,8 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, s
             if tier not in AUTO_LOG_TIERS:
                 continue
             # Apply tier-specific minimum edge thresholds
-            if tier == "Silver":
+            if tier in ("Silver", "Bronze"):
                 min_required_edge = SILVER_MIN_EDGE
-            elif tier == "Bronze":
-                # Bronze needs high edge AND high confidence to qualify
-                if edge < BRONZE_MIN_EDGE or confidence < BRONZE_MIN_CONFIDENCE:
-                    continue
-                min_required_edge = BRONZE_MIN_EDGE
             else:
                 min_required_edge = minimum_edge
             if edge < min_required_edge:

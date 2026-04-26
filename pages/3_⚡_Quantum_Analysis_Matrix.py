@@ -438,6 +438,21 @@ if not st.session_state.get("analysis_results"):
     except Exception:
         pass  # Non-fatal — just show empty state
 
+# ─── Final fallback: load today's auto-run picks from all_analysis_picks ────
+# If neither session_state nor analysis_sessions has results, fall back to the
+# auto-run picks written by slate_worker / scheduler.  This covers the case
+# where a user navigates directly to QAM (no home-page visit) and no manual
+# session has been saved yet for today.
+if not st.session_state.get("analysis_results"):
+    try:
+        from tracking.database import get_slate_picks_for_today as _gsp_qam
+        _auto_picks = _gsp_qam()
+        if _auto_picks:
+            st.session_state["analysis_results"] = _auto_picks
+            st.session_state["_qam_db_restored"] = True
+    except Exception:
+        pass  # Non-fatal
+
 # ─── Restore todays_games independently if still missing ────────────────────
 # The session bridge above only fires when analysis_results is absent.
 # But the home page now seeds analysis_results from get_slate_picks_for_today()

@@ -33,8 +33,8 @@ UNCERTAIN_BLOWOUT_SPREAD_THRESHOLD = 10.0   # Spread >10 pts on back-to-back
 UNCERTAIN_HOT_STREAK_RATIO         = 1.25   # Line ≥125% of season avg
 
 # ── Auto-log Bronze thresholds ────────────────────────────────────────────────
-BRONZE_AUTO_LOG_MIN_EDGE       = 8.0    # Bronze requires ≥8% edge to auto-log
-BRONZE_AUTO_LOG_MIN_CONFIDENCE = 60.0   # Bronze requires ≥60 confidence score
+BRONZE_AUTO_LOG_MIN_EDGE       = 3.0    # Bronze uses same 3% floor as Silver
+BRONZE_AUTO_LOG_MIN_CONFIDENCE = 0.0    # No confidence gate — all Bronze auto-logs
 
 # ── Simulation defaults ───────────────────────────────────────────────────────
 DEFAULT_NUM_SIMULATIONS = 2000

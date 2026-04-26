@@ -782,7 +782,18 @@ def _pg_initialize_database() -> bool:
         for stmt in _PG_STMTS:
             cur.execute(stmt)
 
+        # ── CRITICAL: commit all CREATE TABLE / CREATE INDEX statements NOW ──
+        # The ALTER TABLE loop below calls conn.rollback() when a statement
+        # fails (e.g. ALTER TABLE entries when the entries table doesn't exist).
+        # Without this commit, that rollback wipes ALL the tables and indexes
+        # created above, leaving the DB empty and silently breaking every
+        # subsequent insert.  Committing here means each ALTER failure only
+        # rolls back that single statement, never the schema itself.
+        conn.commit()
+
         # ── Pipeline-overhaul ALTER TABLE migrations for existing PG DBs ──
+        # Each ALTER runs in its own transaction so a failure never rolls back
+        # the previously committed schema.
         _PG_ALTERS = [
             "ALTER TABLE bets ADD COLUMN IF NOT EXISTS closing_line REAL",
             "ALTER TABLE bets ADD COLUMN IF NOT EXISTS clv_value REAL",
@@ -807,27 +818,30 @@ def _pg_initialize_database() -> bool:
         for _alter in _PG_ALTERS:
             try:
                 cur.execute(_alter)
+                conn.commit()   # commit each ALTER individually
             except Exception as _alter_exc:
                 _logger.debug("PG ALTER skipped: %s — %s", _alter, _alter_exc)
-                conn.rollback()
+                conn.rollback()  # only rolls back this one ALTER
 
         # Unique index: delete dups first if needed
         try:
             cur.execute(_UNIQUE_IDX)
+            conn.commit()
         except Exception:
             conn.rollback()
-            cur.execute(
-                """DELETE FROM all_analysis_picks
-                   WHERE pick_id NOT IN (
-                       SELECT MIN(pick_id)
-                       FROM all_analysis_picks
-                       GROUP BY pick_date, player_name, stat_type, prop_line, direction
-                   )"""
-            )
             try:
+                cur.execute(
+                    """DELETE FROM all_analysis_picks
+                       WHERE pick_id NOT IN (
+                           SELECT MIN(pick_id)
+                           FROM all_analysis_picks
+                           GROUP BY pick_date, player_name, stat_type, prop_line, direction
+                       )"""
+                )
                 cur.execute(_UNIQUE_IDX)
+                conn.commit()
             except Exception:
-                pass  # Best-effort
+                conn.rollback()  # Best-effort — index may already exist
 
         # Unique index on auto-logged bets: dedup first so index never fails silently
         _BETS_DEDUP_IDX = (
@@ -836,6 +850,7 @@ def _pg_initialize_database() -> bool:
         )
         try:
             cur.execute(_BETS_DEDUP_IDX)
+            conn.commit()
         except Exception:
             conn.rollback()
             try:
@@ -846,9 +861,9 @@ def _pg_initialize_database() -> bool:
                     )"""
                 )
                 cur.execute(_BETS_DEDUP_IDX)
+                conn.commit()
             except Exception:
-                pass  # Best-effort
-        conn.commit()
+                conn.rollback()  # Best-effort
         _logger.info("PostgreSQL schema initialized successfully")
         return True
     except Exception as exc:

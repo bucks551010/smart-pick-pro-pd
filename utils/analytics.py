@@ -109,7 +109,7 @@ def ga4_event(event_name: str, params: dict[str, Any] | None = None) -> None:
 
 _EVENTS_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS analytics_events (
-    event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER PRIMARY KEY,
     timestamp TEXT NOT NULL,
     session_id TEXT,
     user_email TEXT,
@@ -137,13 +137,11 @@ def _ensure_table() -> None:
     if _table_ensured:
         return
     try:
-        from tracking.database import get_database_connection, initialize_database
+        from tracking.database import _db_write, initialize_database
         initialize_database()
-        with get_database_connection() as conn:
-            conn.execute(_EVENTS_TABLE_SQL)
-            for idx_sql in _EVENTS_INDEXES_SQL:
-                conn.execute(idx_sql)
-            conn.commit()
+        _db_write(_EVENTS_TABLE_SQL.strip(), caller="analytics_ensure_table")
+        for idx_sql in _EVENTS_INDEXES_SQL:
+            _db_write(idx_sql, caller="analytics_ensure_index")
         _table_ensured = True
     except Exception as exc:
         _logger.debug("analytics table creation skipped: %s", exc)
@@ -182,20 +180,19 @@ def track_event(
     """
     _ensure_table()
     try:
-        from tracking.database import get_database_connection
+        from tracking.database import _db_write
         now = datetime.now(timezone.utc).isoformat()
         session_id = _get_session_id()
         user_email = _get_user_email()
         event_json = json.dumps(data) if data else None
 
-        with get_database_connection() as conn:
-            conn.execute(
-                """INSERT INTO analytics_events
-                   (timestamp, session_id, user_email, event_name, page, event_data)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
-                (now, session_id, user_email or None, event_name, page, event_json),
-            )
-            conn.commit()
+        _db_write(
+            """INSERT INTO analytics_events
+               (timestamp, session_id, user_email, event_name, page, event_data)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (now, session_id, user_email or None, event_name, page, event_json),
+            caller="track_event",
+        )
     except Exception as exc:
         _logger.debug("analytics track_event failed: %s", exc)
 

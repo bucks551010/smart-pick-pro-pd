@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS notification_tokens (
 
 _SQL_DRIP_EMAILS = """
 CREATE TABLE IF NOT EXISTS drip_emails (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    id           INTEGER PRIMARY KEY,
     email        TEXT NOT NULL,
     display_name TEXT NOT NULL DEFAULT '',
     plan_name    TEXT NOT NULL DEFAULT '',

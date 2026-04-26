@@ -750,7 +750,33 @@ def _pg_initialize_database() -> bool:
             added_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS'),
             UNIQUE(user_email, pick_key)
         )""",
+        # ── Analytics / notifications / drip emails ───────────────────
+        """CREATE TABLE IF NOT EXISTS analytics_events (
+            event_id SERIAL PRIMARY KEY,
+            timestamp TEXT NOT NULL,
+            session_id TEXT,
+            user_email TEXT,
+            event_name TEXT NOT NULL,
+            page TEXT,
+            event_data TEXT,
+            ip_hash TEXT,
+            user_agent TEXT
+        )""",
+        """CREATE TABLE IF NOT EXISTS drip_emails (
+            id SERIAL PRIMARY KEY,
+            email TEXT NOT NULL,
+            display_name TEXT NOT NULL DEFAULT '',
+            plan_name TEXT NOT NULL DEFAULT '',
+            sequence_step INTEGER NOT NULL,
+            send_after TEXT NOT NULL,
+            sent_at TEXT,
+            status TEXT NOT NULL DEFAULT 'pending'
+        )""",
         # ── Indexes ────────────────────────────────────────────────────
+        "CREATE INDEX IF NOT EXISTS idx_ae_timestamp ON analytics_events (timestamp)",
+        "CREATE INDEX IF NOT EXISTS idx_ae_event_name ON analytics_events (event_name)",
+        "CREATE INDEX IF NOT EXISTS idx_ae_user ON analytics_events (user_email)",
+        "CREATE INDEX IF NOT EXISTS idx_drip_pending ON drip_emails (status, send_after)",
         "CREATE INDEX IF NOT EXISTS idx_bets_player ON bets (player_name)",
         "CREATE INDEX IF NOT EXISTS idx_bets_date ON bets (bet_date)",
         "CREATE INDEX IF NOT EXISTS idx_bets_created ON bets (created_at)",
@@ -961,6 +987,32 @@ def initialize_database():
             _db_write(
                 "DELETE FROM slate_cache WHERE for_date < ?",
                 (_cutoff_30d,),
+                caller="pg_stale_cleanup",
+            )
+            # analytics_events: keep only the last 90 days.
+            _db_write(
+                "DELETE FROM analytics_events WHERE timestamp < ?",
+                (_cutoff_90d + "T00:00:00",),
+                caller="pg_stale_cleanup",
+            )
+            # drip_emails: purge sent/failed records older than 30 days.
+            _db_write(
+                "DELETE FROM drip_emails WHERE status != 'pending' AND send_after < ?",
+                (_cutoff_30d,),
+                caller="pg_stale_cleanup",
+            )
+            # props_cache: keep only the last 7 days.
+            _cutoff_7d = (datetime.date.today() - datetime.timedelta(days=7)).isoformat()
+            _db_write(
+                "DELETE FROM props_cache WHERE for_date < ?",
+                (_cutoff_7d,),
+                caller="pg_stale_cleanup",
+            )
+            # login_sessions: prune expired tokens (keeps the table small).
+            _now_iso = datetime.datetime.utcnow().isoformat()
+            _db_write(
+                "DELETE FROM login_sessions WHERE expires_at < ?",
+                (_now_iso,),
                 caller="pg_stale_cleanup",
             )
         return ok
@@ -1361,6 +1413,47 @@ def initialize_database():
                     "DELETE FROM analysis_sessions "
                     "WHERE analysis_timestamp < ?",
                     (_today_str,),
+                )
+            except sqlite3.OperationalError:
+                pass
+
+            # analytics_events: keep only the last 90 days.
+            try:
+                _ae_cutoff = (datetime.date.today() - datetime.timedelta(days=90)).isoformat()
+                cursor.execute(
+                    "DELETE FROM analytics_events WHERE timestamp < ?",
+                    (_ae_cutoff + "T00:00:00",),
+                )
+            except sqlite3.OperationalError:
+                pass
+
+            # props_cache: keep only the last 7 days (stale props are useless).
+            try:
+                _pc_cutoff = (datetime.date.today() - datetime.timedelta(days=7)).isoformat()
+                cursor.execute(
+                    "DELETE FROM props_cache WHERE for_date < ?",
+                    (_pc_cutoff,),
+                )
+            except sqlite3.OperationalError:
+                pass
+
+            # drip_emails: purge sent/failed records older than 30 days.
+            try:
+                _de_cutoff = (datetime.date.today() - datetime.timedelta(days=30)).isoformat()
+                cursor.execute(
+                    "DELETE FROM drip_emails WHERE status != 'pending' AND send_after < ?",
+                    (_de_cutoff,),
+                )
+            except sqlite3.OperationalError:
+                pass
+
+            # login_sessions: prune expired tokens.
+            try:
+                import datetime as _dt
+                _ls_now = _dt.datetime.utcnow().isoformat()
+                cursor.execute(
+                    "DELETE FROM login_sessions WHERE expires_at < ?",
+                    (_ls_now,),
                 )
             except sqlite3.OperationalError:
                 pass

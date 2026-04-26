@@ -3279,6 +3279,14 @@ def insert_analysis_picks(analysis_results):
             _logger.warning(f"insert_analysis_picks error (non-fatal): {err}")
             break  # non-retryable error
 
+    # Mirror the PG path: write latest_picks cache + bump data_version so all
+    # running Streamlit sessions (home page 60-second poller) detect new picks.
+    if inserted > 0:
+        try:
+            _write_latest_picks_cache(today_str)
+        except Exception as _wlp_err:
+            _logger.debug("insert_analysis_picks: _write_latest_picks_cache failed: %s", _wlp_err)
+
     return inserted
 
 

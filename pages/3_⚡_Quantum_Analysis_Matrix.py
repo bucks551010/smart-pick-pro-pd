@@ -815,9 +815,16 @@ if not _already_reset_today:
     st.session_state["_qam_noon_reset_date"] = _ct_date_key
 
 # ── Auto-trigger: run analysis if props exist but no results yet today ──
+# Guard: only auto-trigger when there is a manageable props set so we don't
+# OOM the Railway container by sending 3000+ unfiltered props through
+# 2000-depth simulations.  Without tonight's games loaded, every PrizePicks
+# prop passes the team filter — that's ~3808 props × 2000 sims = likely OOM.
+# Auto-trigger requires EITHER games are loaded OR the prop set is small (≤200).
 _qam_auto_triggered = False
 _qam_today_ct = _now_ct.date().isoformat()
+_qam_auto_safe = bool(todays_games) or len(final_props) <= 200
 if (final_props
+        and _qam_auto_safe
         and not st.session_state.get("analysis_results")
         and not st.session_state.get("_qam_analysis_requested")
         and not st.session_state.get("_qam_db_restored")):
@@ -825,6 +832,17 @@ if (final_props
         st.session_state["_qam_auto_run_date"] = _qam_today_ct
         st.session_state["_qam_analysis_requested"] = True
         _qam_auto_triggered = True
+elif (final_props
+        and not _qam_auto_safe
+        and not st.session_state.get("analysis_results")
+        and not st.session_state.get("_qam_db_restored")):
+    # Too many props with no game context — show a targeted warning.
+    st.info(
+        f"⚡ **{len(final_props)} props loaded.** Go to **🏟️ Live Games** → "
+        "**Auto-Load Tonight's Games** first so analysis only runs props for tonight's teams. "
+        "Click 🚀 Run Analysis to proceed anyway.",
+        icon="⚠️",
+    )
 
 run_analysis = st.button(
     "🚀 Run Analysis",
@@ -1034,6 +1052,8 @@ if run_analysis:
             st.warning("⚠️ No props remain after filtering to tonight's teams / injury status. Check your games and props.")
             _progress_status.empty()
             progress_bar.empty()
+            # Clear the requested flag so the auto-retry notice doesn't loop
+            st.session_state.pop("_qam_analysis_requested", None)
             st.stop()
 
         # ── Analysis proceeds with all available props (no cap) ────
@@ -1197,10 +1217,16 @@ if run_analysis:
 
         # ── Store ALL picks to all_analysis_picks table ──────────────
         try:
-            from tracking.database import insert_analysis_picks as _insert_picks
+            from tracking.database import insert_analysis_picks as _insert_picks, _bump_data_version as _qam_bump, _nba_today_iso as _qam_today_fn
             _stored = _insert_picks(analysis_results_list)
             if _stored > 0:
                 _logger.info(f"Stored {_stored} analysis picks to all_analysis_picks table.")
+                # Belt-and-suspenders: bump data_version so the home page 60-second
+                # poller detects fresh picks and auto-refreshes all connected sessions.
+                try:
+                    _qam_bump(_qam_today_fn())
+                except Exception:
+                    pass
         except Exception as _store_err:
             _logger.warning(f"Store analysis picks error (non-fatal): {_store_err}")
 

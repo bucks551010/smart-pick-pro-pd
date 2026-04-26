@@ -279,6 +279,14 @@ def run_slate(dry_run: bool = False) -> int:
                 _logger.info("[6b] slate_cache.json warmed (%d picks).", inserted)
             except Exception as exc:
                 _logger.debug("[6b] Cache file warm failed (non-fatal): %s", exc)
+            # Bump data_version so all running Streamlit sessions (home page
+            # 60-second poller) detect the fresh slate and auto-refresh.
+            try:
+                from tracking.database import _bump_data_version as _slw_bump
+                _slw_bump(today_str)
+                _logger.info("[6c] data_version bumped — running sessions will refresh.")
+            except Exception as exc:
+                _logger.debug("[6c] _bump_data_version failed (non-fatal): %s", exc)
     elif dry_run:
         inserted = len(results)
         _logger.info("[6] DRY RUN — would persist %d picks (no write).", inserted)

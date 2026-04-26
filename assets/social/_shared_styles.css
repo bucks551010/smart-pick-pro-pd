@@ -1,0 +1,15 @@
+/* Shared font + color tokens for all SmartPickPro social cards */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg:      #060B18;
+  --panel:   #0A1428;
+  --green:   #00D559;
+  --cyan:    #00f0ff;
+  --red:     #F24336;
+  --gold:    #F9C62B;
+  --slate:   #475569;
+  --muted:   #334155;
+  --text:    #f1f5f9;
+  --subtext: #94a3b8;
+}

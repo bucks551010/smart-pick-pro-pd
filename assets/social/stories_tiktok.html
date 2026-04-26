@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Stories / TikTok — 1080x1920</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  width: 1080px; height: 1920px; overflow: hidden;
+  background: #060B18; font-family: 'Inter', sans-serif;
+}
+.story {
+  width: 1080px; height: 1920px;
+  background: linear-gradient(180deg, #060B18 0%, #0B1630 35%, #060B18 70%, #050A14 100%);
+  border-left: 4px solid #00D559;
+  border-right: 4px solid #00D559;
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+/* Glow elements */
+.glow-top    { position:absolute;top:-150px;left:50%;transform:translateX(-50%);width:900px;height:700px;background:radial-gradient(circle,rgba(0,213,89,0.12) 0%,transparent 65%);pointer-events:none; }
+.glow-mid    { position:absolute;top:700px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(0,240,255,0.07) 0%,transparent 65%);pointer-events:none; }
+.glow-bot    { position:absolute;bottom:-100px;left:50%;transform:translateX(-50%);width:700px;height:500px;background:radial-gradient(circle,rgba(0,213,89,0.09) 0%,transparent 65%);pointer-events:none; }
+
+/* Top bar */
+.topbar { height: 6px; background: linear-gradient(90deg, #00D559, #00f0ff, #00D559); flex-shrink: 0; }
+
+/* Status area (like phone status bar spacing) */
+.status-area { height: 60px; flex-shrink: 0; }
+
+/* Brand */
+.brand-row {
+  padding: 0 72px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 14px;
+  position: relative; z-index: 1;
+}
+.brand-dot { width:10px;height:10px;background:#00D559;border-radius:50%;box-shadow:0 0 12px #00D559;animation:pulse 1.6s ease-in-out infinite;flex-shrink:0; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);} }
+.brand-name { font-size:0.85rem;font-weight:800;letter-spacing:0.3em;color:#00D559;text-transform:uppercase; }
+
+/* HERO section */
+.hero {
+  padding: 40px 72px 48px;
+  position: relative; z-index: 1;
+  text-align: center;
+}
+.hero-eyebrow { font-size:0.75rem;font-weight:800;letter-spacing:0.4em;color:#00f0ff;text-transform:uppercase;margin-bottom:16px; }
+.hero-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16rem;
+  line-height: 0.88;
+  color: #00D559;
+  text-shadow:
+    0 0 60px rgba(0,213,89,0.7),
+    0 0 120px rgba(0,213,89,0.4),
+    0 0 240px rgba(0,213,89,0.15);
+  letter-spacing: -0.02em;
+}
+.hero-wins {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 4.5rem;
+  color: #ffffff;
+  letter-spacing: 0.1em;
+  margin-top: 8px;
+}
+.hero-wins span { color: #00D559; }
+.hero-sub {
+  font-size: 0.88rem; font-weight: 700; color: #475569;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  margin-top: 18px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Divider */
+.h-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,213,89,0.3), transparent);
+  margin: 0 72px;
+  flex-shrink: 0;
+}
+
+/* Joseph section */
+.joseph-section {
+  padding: 44px 72px;
+  position: relative; z-index: 1;
+}
+.section-label { font-size:0.65rem;font-weight:800;letter-spacing:0.3em;color:#334155;text-transform:uppercase;margin-bottom:20px; }
+.joseph-av {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: linear-gradient(135deg, #00D559, #00f0ff);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+  box-shadow: 0 0 30px rgba(0,213,89,0.4);
+  margin-bottom: 20px;
+}
+.joseph-text {
+  font-size: 1.35rem; font-weight: 800; color: #cbd5e1; line-height: 1.65;
+}
+.joseph-text em { color: #00D559; font-style: normal; }
+.joseph-attr { font-size: 0.8rem; font-weight: 700; color: #475569; margin-top: 14px; }
+
+/* Wins section */
+.wins-section {
+  padding: 0 72px 0;
+  position: relative; z-index: 1;
+  flex: 1;
+}
+.wins-section .section-label { margin-bottom: 16px; }
+.win-row {
+  display: flex; align-items: center; gap: 18px;
+  padding: 18px 16px; border-radius: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.win-row:last-child { border-bottom: none; }
+.win-row:nth-child(odd) { background: rgba(255,255,255,0.02); }
+.ck { width:34px;height:34px;background:rgba(0,213,89,0.10);border:1.5px solid rgba(0,213,89,0.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.9rem;color:#00D559;flex-shrink:0; }
+.pi { flex:1;min-width:0; }
+.pp { font-size:1.1rem;font-weight:800;color:#f1f5f9; }
+.pl { font-size:0.75rem;color:#475569;margin-top:3px;font-family:'JetBrains Mono',monospace; }
+.ov { color:#00D559;font-weight:700; }
+.un { color:#00f0ff;font-weight:700; }
+.pn { font-size:1.15rem;font-weight:900;color:#00D559;font-family:'JetBrains Mono',monospace; }
+
+/* CTA section */
+.cta-section {
+  padding: 44px 72px;
+  text-align: center;
+  position: relative; z-index: 1;
+  flex-shrink: 0;
+}
+.cta-pill {
+  display: inline-block;
+  background: #00D559;
+  color: #030508;
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  padding: 20px 56px;
+  border-radius: 50px;
+  text-transform: uppercase;
+  box-shadow: 0 0 40px rgba(0,213,89,0.5);
+  margin-bottom: 16px;
+}
+.cta-sub { font-size: 0.8rem; color: #334155; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; }
+
+/* Footer */
+.footer {
+  padding: 24px 72px 40px;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  position: relative; z-index: 1;
+}
+.fb { font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:0.18em;color:#1e3a5f; }
+.fb span { color:#00D559; }
+.fd { font-size:0.6rem;color:#1e3a5f;text-align:right;line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="story">
+  <div class="glow-top"></div>
+  <div class="glow-mid"></div>
+  <div class="glow-bot"></div>
+
+  <div class="topbar"></div>
+  <div class="status-area"></div>
+
+  <!-- Brand -->
+  <div class="brand-row">
+    <div class="brand-dot"></div>
+    <div class="brand-name">SmartPickPro · Quantum Matrix Engine™ 5.6</div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">All Time · Every Result On File</div>
+    <div class="hero-num">103</div>
+    <div class="hero-wins">WINS <span>&amp; COUNTING</span></div>
+    <div class="hero-sub">Apr 20 – 25, 2026 · PrizePicks &amp; More</div>
+  </div>
+
+  <div class="h-divider"></div>
+
+  <!-- Joseph -->
+  <div class="joseph-section">
+    <div class="section-label">🎙️ Joseph M. Smith</div>
+    <div class="joseph-av">🎙️</div>
+    <div class="joseph-text">
+      "The database <em>NEVER lies.</em>
+      <em>103 documented wins</em> — timestamped and on file.
+      Every win AND loss posted publicly.
+      <em>Zero hidden losses. Zero excuses.</em>"
+    </div>
+    <div class="joseph-attr">— Joseph M. Smith, Founder · SmartPickPro</div>
+  </div>
+
+  <div class="h-divider"></div>
+
+  <!-- Wins -->
+  <div class="wins-section">
+    <div class="section-label" style="margin-top:32px">🏆 Highlight Wins</div>
+
+    <div class="win-row">
+      <div class="ck">✓</div>
+      <div class="pi"><div class="pp">Julius Randle</div><div class="pl">FTA <span class="ov">OVER 4.5</span></div></div>
+      <div class="pn">10 FTA 🔥</div>
+    </div>
+    <div class="win-row">
+      <div class="ck">✓</div>
+      <div class="pi"><div class="pp">Tyrese Maxey</div><div class="pl">PTS <span class="ov">OVER 19.5</span></div></div>
+      <div class="pn">31 PTS 🔥</div>
+    </div>
+    <div class="win-row">
+      <div class="ck">✓</div>
+      <div class="pi"><div class="pp">Reed Sheppard</div><div class="pl">FGA <span class="ov">OVER 7.5</span></div></div>
+      <div class="pn">21 FGA 🎯</div>
+    </div>
+    <div class="win-row">
+      <div class="ck">✓</div>
+      <div class="pi"><div class="pp">CJ McCollum</div><div class="pl">FPTS <span class="ov">OVER 31.0</span></div></div>
+      <div class="pn">51.6 FPTS 🔥</div>
+    </div>
+    <div class="win-row">
+      <div class="ck">✓</div>
+      <div class="pi"><div class="pp">Donovan Mitchell</div><div class="pl">PTS <span class="ov">OVER 27.5</span></div></div>
+      <div class="pn">30 PTS ✅</div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <div class="cta-pill">Follow for Daily Picks</div>
+    <div class="cta-sub">All results posted publicly · smartpickpro.ai</div>
+  </div>
+
+  <div class="footer">
+    <div class="fb">Smart<span>Pick</span>Pro</div>
+    <div class="fd">21+ · Entertainment only<br>Not financial advice</div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartPickPro — 103 Wins &amp; Counting</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #030508;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px 80px;
+    min-height: 100vh;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  .outer { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 640px; }
+
+  .card {
+    width: 100%;
+    background: linear-gradient(160deg, #060B18 0%, #0B1630 55%, #060B18 100%);
+    border: 1px solid rgba(0,213,89,0.20);
+    border-top: 5px solid #00D559;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow:
+      0 32px 80px rgba(0,0,0,0.75),
+      0 0 80px rgba(0,213,89,0.06),
+      inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 36px 36px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-glow-tr {
+    position: absolute; top: -80px; right: -80px;
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, rgba(0,213,89,0.13) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .hero-glow-bl {
+    position: absolute; bottom: -60px; left: -60px;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, rgba(0,240,255,0.07) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.45em;
+    color: #00f0ff;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .hero-counter {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .hero-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 7rem;
+    color: #00D559;
+    text-shadow:
+      0 0 40px rgba(0,213,89,0.6),
+      0 0 80px rgba(0,213,89,0.3);
+    line-height: 1;
+  }
+  .hero-word {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.6rem;
+    color: #ffffff;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    padding-bottom: 14px;
+  }
+  .hero-word span {
+    color: #00D559;
+  }
+
+  .hero-sub {
+    font-size: 0.82rem;
+    color: #475569;
+    line-height: 1.6;
+    margin-top: 6px;
+    max-width: 480px;
+  }
+  .hero-sub strong { color: #94a3b8; }
+
+  /* ── LIVE COUNTER STRIP ── */
+  .counter-strip {
+    background: rgba(0,213,89,0.05);
+    border-top: 1px solid rgba(0,213,89,0.12);
+    border-bottom: 1px solid rgba(0,213,89,0.12);
+    padding: 14px 36px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cs-dot {
+    width: 8px; height: 8px;
+    background: #00D559;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #00D559;
+    animation: pulse 1.6s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+  .cs-text {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    color: #00D559;
+    text-transform: uppercase;
+  }
+  .cs-date {
+    margin-left: auto;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #334155;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── JOSEPH QUOTE ── */
+  .joseph {
+    padding: 24px 36px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .joseph-av {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00D559 0%, #00f0ff 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    box-shadow: 0 0 24px rgba(0,213,89,0.35);
+  }
+  .joseph-body { flex: 1; }
+  .joseph-name {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    color: #00D559;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .joseph-copy {
+    font-size: 0.9rem;
+    color: #cbd5e1;
+    line-height: 1.7;
+  }
+  .joseph-copy em { color: #ffffff; font-style: normal; font-weight: 800; }
+  .joseph-copy .hot { color: #00D559; font-weight: 800; }
+
+  /* ── SECTION LABEL ── */
+  .sec-label {
+    padding: 16px 36px 8px;
+    font-size: 0.56rem;
+    font-weight: 800;
+    letter-spacing: 0.32em;
+    color: #334155;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sec-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.05);
+  }
+
+  /* ── PICK ROWS ── */
+  .picks { padding: 0 28px 4px; }
+  .pick {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 10px;
+    border-radius: 10px;
+    margin-bottom: 3px;
+  }
+  .pick:hover { background: rgba(255,255,255,0.025); }
+  .pick-icon {
+    width: 26px; height: 26px;
+    background: rgba(0,213,89,0.10);
+    border: 1px solid rgba(0,213,89,0.22);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.68rem;
+    color: #00D559;
+    flex-shrink: 0;
+  }
+  .pick-main { flex: 1; min-width: 0; }
+  .pick-player {
+    font-weight: 800;
+    font-size: 0.88rem;
+    color: #f1f5f9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pick-line {
+    font-size: 0.68rem;
+    color: #475569;
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .over  { color: #00D559; font-weight: 700; }
+  .under { color: #00f0ff; font-weight: 700; }
+  .pick-right { text-align: right; flex-shrink: 0; }
+  .pick-result {
+    font-size: 0.82rem;
+    font-weight: 900;
+    color: #00D559;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .pick-plat {
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    background: rgba(0,240,255,0.07);
+    border: 1px solid rgba(0,240,255,0.14);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: #00f0ff;
+    margin-top: 3px;
+    display: inline-block;
+  }
+  .tier-g  { font-size:0.52rem;font-weight:800;padding:1px 6px;border-radius:3px;background:rgba(249,198,43,0.1);color:#F9C62B;border:1px solid rgba(249,198,43,0.2);margin-left:5px;letter-spacing:0.08em;text-transform:uppercase; }
+  .tier-s  { font-size:0.52rem;font-weight:800;padding:1px 6px;border-radius:3px;background:rgba(148,163,184,0.1);color:#94a3b8;border:1px solid rgba(148,163,184,0.2);margin-left:5px;letter-spacing:0.08em;text-transform:uppercase; }
+
+  .divider { height: 1px; background: rgba(255,255,255,0.04); margin: 3px 28px; }
+
+  /* ── PROGRESS BAR ── */
+  .progress-section {
+    padding: 18px 36px 20px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    margin-top: 8px;
+  }
+  .prog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .prog-label {
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    color: #334155;
+    text-transform: uppercase;
+  }
+  .prog-val {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #00D559;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .prog-track {
+    height: 10px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+  }
+  .prog-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00D559 0%, #00f0ff 100%);
+    border-radius: 5px;
+    box-shadow: 0 0 20px rgba(0,213,89,0.55);
+    width: 50.5%;
+  }
+  .prog-sublabels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+  .prog-sub {
+    font-size: 0.6rem;
+    color: #334155;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    padding: 16px 36px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 6px;
+  }
+  .footer-brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.15rem;
+    letter-spacing: 0.12em;
+    color: #1e3a5f;
+  }
+  .footer-brand span { color: #00D559; }
+  .footer-disc {
+    font-size: 0.55rem;
+    color: #1e3a5f;
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  /* ── CAPTION BOX ── */
+  .caption-box {
+    width: 100%;
+    margin-top: 28px;
+    background: #0A1428;
+    border: 1px solid rgba(0,240,255,0.10);
+    border-radius: 14px;
+    padding: 24px 28px;
+  }
+  .cap-label {
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.3em;
+    color: #00f0ff;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .cap-text {
+    font-size: 0.86rem;
+    color: #94a3b8;
+    line-height: 1.85;
+    white-space: pre-line;
+  }
+  .cap-text strong { color: #f1f5f9; }
+</style>
+</head>
+<body>
+<div class="outer">
+
+<!-- ═══ CARD ═══ -->
+<div class="card">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-glow-tr"></div>
+    <div class="hero-glow-bl"></div>
+    <div class="hero-eyebrow">SmartPickPro &nbsp;·&nbsp; Quantum Matrix Engine™ 5.6 &nbsp;·&nbsp; All Time</div>
+    <div class="hero-counter">
+      <div class="hero-num">103</div>
+      <div class="hero-word">WINS<br><span>&amp; COUNTING</span></div>
+    </div>
+    <div class="hero-sub">
+      <strong>Joseph M. Smith</strong> — every pick, every result, on record. No cherry-picking.
+      No hidden losses. This is the <strong>live scoreboard</strong>, updated in real time.
+    </div>
+  </div>
+
+  <!-- LIVE STRIP -->
+  <div class="counter-strip">
+    <div class="cs-dot"></div>
+    <div class="cs-text">Live &nbsp;·&nbsp; 103 Documented Wins</div>
+    <div class="cs-date">APR 20 – 25, 2026</div>
+  </div>
+
+  <!-- JOSEPH QUOTE -->
+  <div class="joseph">
+    <div class="joseph-av">🎙️</div>
+    <div class="joseph-body">
+      <div class="joseph-name">Joseph M. Smith — Analyst &amp; Founder</div>
+      <div class="joseph-copy">
+        <em>103.</em> Let that number breathe for a second.
+        One hundred and three <em>DOCUMENTED WINS</em> — every single one logged, timestamped,
+        and on file in the system. Not a prediction. Not a screenshot.
+        <em>THE ACTUAL DATABASE.</em>
+        Reed Sheppard went for <span class="hot">21 field goal attempts</span> when we said over 7.5.
+        Donovan Mitchell went for <span class="hot">30 points</span> when we said over 27.5.
+        Tyrese Maxey dropped <span class="hot">31 points</span> when they set the line at 19.5.
+        The Quantum Matrix Engine™ doesn't guess — it <em>CALCULATES.</em>
+        And the scoreboard? The scoreboard <em>NEVER LIES.</em> 🏆
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP WINS -->
+  <div class="sec-label">🏆 Highlight Wins</div>
+
+  <div class="picks">
+
+    <div class="pick">
+      <div class="pick-icon">✓</div>
+      <div class="pick-main">
+        <div class="pick-player">Julius Randle <span class="tier-g">Gold</span></div>
+        <div class="pick-line">FTA &nbsp;<span class="over">OVER 4.5</span></div>
+      </div>
+      <div class="pick-right">
+        <div class="pick-result">10 FTA 🔥</div>
+        <div class="pick-plat">PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="pick">
+      <div class="pick-icon">✓</div>
+      <div class="pick-main">
+        <div class="pick-player">Tyrese Maxey <span class="tier-g">Gold</span></div>
+        <div class="pick-line">PTS &nbsp;<span class="over">OVER 19.5</span></div>
+      </div>
+      <div class="pick-right">
+        <div class="pick-result">31 PTS 🔥</div>
+        <div class="pick-plat">PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="pick">
+      <div class="pick-icon">✓</div>
+      <div class="pick-main">
+        <div class="pick-player">Jabari Smith Jr. <span class="tier-g">Gold</span></div>
+        <div class="pick-line">PTS &nbsp;<span class="over">OVER 11.5</span></div>
+      </div>
+      <div class="pick-right">
+        <div class="pick-result">24 PTS 🔥</div>
+        <div class="pick-plat">PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="pick">
+      <div class="pick-icon">✓</div>
+      <div class="pick-main">
+        <div class="pick-player">Reed Sheppard <span class="tier-g">Gold</span></div>
+        <div class="pick-line">FGA &nbsp;<span class="over">OVER 7.5</span></div>
+      </div>
+      <div class="pick-right">
+        <div class="pick-result">21 FGA 🎯</div>
+        <div class="pick-plat">PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="pick">
+      <div class="pick-icon">✓</div>
+      <div class="pick-main">
+        <div class="pick-player">Amen Thompson <span class="tier-g">Gold</span></div>
+        <div class="pick-line">PTS &nbsp;<span class="over">OVER 14.5</span></div>
+      </div>
+      <div class="pick-right">
+        <div class="pick-result">26 PTS 🔥</div>
+        <div class="pick-plat">PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="pick">
+      <div class="pick-icon">✓</div>
+      <div class="pick-main">
+        <div class="pick-player">Donovan Mitchell <span class="tier-s">Silver</span></div>
+        <div class="pick-line">PTS &nbsp;<span class="over">OVER 27.5</span></div>
+      </div>
+      <div class="pick-right">
+        <div class="pick-result">30 PTS ✅</div>
+        <div class="pick-plat">PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="pick">
+      <div class="pick-icon">✓</div>
+      <div class="pick-main">
+        <div class="pick-player">CJ McCollum <span class="tier-s">Silver</span></div>
+        <div class="pick-line">FPTS &nbsp;<span class="over">OVER 31.0</span></div>
+      </div>
+      <div class="pick-right">
+        <div class="pick-result">51.6 FPTS ✅</div>
+        <div class="pick-plat">PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="pick">
+      <div class="pick-icon">✓</div>
+      <div class="pick-main">
+        <div class="pick-player">Sandro Mamukelashvili <span class="tier-s">Silver</span></div>
+        <div class="pick-line">REB &nbsp;<span class="over">OVER 4.0</span></div>
+      </div>
+      <div class="pick-right">
+        <div class="pick-result">10 REB ✅</div>
+        <div class="pick-plat">PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="pick">
+      <div class="pick-icon">✓</div>
+      <div class="pick-main">
+        <div class="pick-player">Naz Reid <span class="tier-s">Silver</span></div>
+        <div class="pick-line">REB &nbsp;<span class="over">OVER 5.0</span></div>
+      </div>
+      <div class="pick-right">
+        <div class="pick-result">9 REB ✅</div>
+        <div class="pick-plat">PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="pick">
+      <div class="pick-icon">✓</div>
+      <div class="pick-main">
+        <div class="pick-player">James Harden <span class="tier-g">Gold</span></div>
+        <div class="pick-line">FGA &nbsp;<span class="under">UNDER 15.5</span></div>
+      </div>
+      <div class="pick-right">
+        <div class="pick-result">14 FGA ✅</div>
+        <div class="pick-plat">PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="pick">
+      <div class="pick-icon">✓</div>
+      <div class="pick-main">
+        <div class="pick-player">Karl-Anthony Towns <span class="tier-s">Silver</span></div>
+        <div class="pick-line">PTS &nbsp;<span class="under">UNDER 20.5</span></div>
+      </div>
+      <div class="pick-right">
+        <div class="pick-result">18 PTS ✅</div>
+        <div class="pick-plat">PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="pick">
+      <div class="pick-icon">✓</div>
+      <div class="pick-main">
+        <div class="pick-player">Mikal Bridges <span class="tier-s">Silver</span></div>
+        <div class="pick-line">P+R+A &nbsp;<span class="under">UNDER 19.0</span></div>
+      </div>
+      <div class="pick-right">
+        <div class="pick-result">13 ✅</div>
+        <div class="pick-plat">PrizePicks</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- WIN PROGRESS -->
+  <div class="progress-section">
+    <div class="prog-header">
+      <span class="prog-label">All-Time Win Rate (Resolved Picks)</span>
+      <span class="prog-val">103W / 101L — 50.5%</span>
+    </div>
+    <div class="prog-track">
+      <div class="prog-fill"></div>
+    </div>
+    <div class="prog-sublabels">
+      <span class="prog-sub">204 resolved</span>
+      <span class="prog-sub">542 pending · results still coming</span>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-brand">Smart<span>Pick</span>Pro</div>
+    <div class="footer-disc">
+      21+ · For entertainment only · Not financial advice<br>
+      All results logged publicly · smartpickpro.ai
+    </div>
+  </div>
+
+</div><!-- /card -->
+
+<!-- CAPTION BOX -->
+<div class="caption-box">
+  <div class="cap-label">📋 Ready-to-Post Caption</div>
+  <div class="cap-text"><strong>🏆 103 WINS AND COUNTING.</strong>
+
+Not a screenshot. Not a prediction.
+The actual database. Timestamped. On file. Always.
+
+🔥 Highlights:
+→ Julius Randle: 10 FTA (line was 4.5)
+→ Tyrese Maxey: 31 PTS (line was 19.5)
+→ Reed Sheppard: 21 FGA (line was 7.5)
+→ Donovan Mitchell: 30 PTS (line was 27.5)
+→ CJ McCollum: 51.6 FPTS (line was 31.0)
+
+The Quantum Matrix Engine™ doesn't guess.
+It CALCULATES. And the scoreboard never lies.
+
+Every win AND loss posted publicly. Zero excuses.
+The receipts are always on file. 🧾
+
+#NBA #SmartPickPro #PrizePicks #PropBets #WinsAndCounting #Receipts #NBAPlayoffs</div>
+</div>
+
+</div><!-- /outer -->
+</body>
+</html>

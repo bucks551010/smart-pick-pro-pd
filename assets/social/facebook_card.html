@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Facebook Card — 1200x630</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  width: 1200px; height: 630px; overflow: hidden;
+  background: #060B18; font-family: 'Inter', sans-serif;
+}
+.card {
+  width: 1200px; height: 630px;
+  background: linear-gradient(145deg, #060B18 0%, #0C1830 55%, #060B18 100%);
+  border-top: 5px solid #00D559;
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.glow-tr { position:absolute;top:-80px;right:-80px;width:400px;height:400px;background:radial-gradient(circle,rgba(0,213,89,0.10) 0%,transparent 65%);pointer-events:none; }
+.glow-bl { position:absolute;bottom:-80px;left:-80px;width:350px;height:350px;background:radial-gradient(circle,rgba(0,240,255,0.07) 0%,transparent 65%);pointer-events:none; }
+
+/* Top row */
+.top-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 32px 60px 24px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  position: relative; z-index: 1;
+}
+.brand-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(0,213,89,0.08); border: 1px solid rgba(0,213,89,0.22); border-radius: 50px;
+  padding: 7px 20px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.2em; color: #00D559; text-transform: uppercase;
+}
+.brand-dot { width:7px;height:7px;background:#00D559;border-radius:50%;box-shadow:0 0 8px #00D559;animation:pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;}50%{opacity:0.4;} }
+.counter-big {
+  display: flex; align-items: baseline; gap: 12px;
+}
+.num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 5.5rem; line-height: 1;
+  color: #00D559;
+  text-shadow: 0 0 40px rgba(0,213,89,0.6), 0 0 80px rgba(0,213,89,0.3);
+}
+.num-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem; color: #ffffff; letter-spacing: 0.08em; line-height: 1;
+}
+.num-label span { color: #00D559; }
+
+/* Main content */
+.main {
+  display: flex; flex: 1; position: relative; z-index: 1;
+}
+
+.divider-v { width: 1px; background: rgba(255,255,255,0.05); flex-shrink: 0; }
+
+.col { flex: 1; padding: 20px 32px; display: flex; flex-direction: column; justify-content: center; }
+
+.col-title { font-size: 0.58rem; font-weight: 800; letter-spacing: 0.3em; color: #00f0ff; text-transform: uppercase; margin-bottom: 14px; }
+
+.pick {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 12px; border-radius: 8px; margin-bottom: 3px;
+}
+.pick:nth-child(odd) { background: rgba(255,255,255,0.02); }
+.ck { width:22px;height:22px;background:rgba(0,213,89,0.10);border:1.5px solid rgba(0,213,89,0.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:#00D559;flex-shrink:0; }
+.pi { flex:1;min-width:0; }
+.pp { font-size:0.85rem;font-weight:800;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.pl { font-size:0.62rem;color:#475569;margin-top:1px;font-family:'JetBrains Mono',monospace; }
+.ov { color:#00D559;font-weight:700; }
+.un { color:#00f0ff;font-weight:700; }
+.pr { text-align:right;flex-shrink:0; }
+.pn { font-size:0.9rem;font-weight:900;color:#00D559;font-family:'JetBrains Mono',monospace; }
+
+/* Joseph quote col */
+.joseph-quote {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #cbd5e1;
+  line-height: 1.65;
+  font-style: italic;
+}
+.joseph-quote em { color: #00D559; font-style: normal; }
+.joseph-attr {
+  font-size: 0.7rem; font-weight: 700; color: #475569;
+  margin-top: 14px; letter-spacing: 0.08em;
+}
+
+/* Footer */
+.footer {
+  padding: 14px 60px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0; position: relative; z-index: 1;
+}
+.fb { font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:0.15em;color:#1e3a5f; }
+.fb span { color:#00D559; }
+.fd { font-size:0.55rem;color:#1e3a5f; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="glow-tr"></div>
+  <div class="glow-bl"></div>
+
+  <!-- TOP ROW -->
+  <div class="top-row">
+    <div class="brand-chip"><div class="brand-dot"></div>SmartPickPro · Quantum Matrix Engine™ 5.6</div>
+    <div class="counter-big">
+      <div class="num">103</div>
+      <div class="num-label">WINS<br><span>&amp; COUNTING</span></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- Left picks -->
+    <div class="col">
+      <div class="col-title">🏆 Top Wins</div>
+      <div class="pick"><div class="ck">✓</div><div class="pi"><div class="pp">Julius Randle</div><div class="pl">FTA <span class="ov">OVER 4.5</span></div></div><div class="pr"><div class="pn">10 🔥</div></div></div>
+      <div class="pick"><div class="ck">✓</div><div class="pi"><div class="pp">Tyrese Maxey</div><div class="pl">PTS <span class="ov">OVER 19.5</span></div></div><div class="pr"><div class="pn">31 🔥</div></div></div>
+      <div class="pick"><div class="ck">✓</div><div class="pi"><div class="pp">Reed Sheppard</div><div class="pl">FGA <span class="ov">OVER 7.5</span></div></div><div class="pr"><div class="pn">21 🎯</div></div></div>
+      <div class="pick"><div class="ck">✓</div><div class="pi"><div class="pp">Jabari Smith Jr.</div><div class="pl">PTS <span class="ov">OVER 11.5</span></div></div><div class="pr"><div class="pn">24 🔥</div></div></div>
+      <div class="pick"><div class="ck">✓</div><div class="pi"><div class="pp">Donovan Mitchell</div><div class="pl">PTS <span class="ov">OVER 27.5</span></div></div><div class="pr"><div class="pn">30 ✅</div></div></div>
+    </div>
+
+    <div class="divider-v"></div>
+
+    <!-- Right — Joseph quote -->
+    <div class="col">
+      <div class="col-title">🎙️ Joseph M. Smith</div>
+      <div class="joseph-quote">
+        "The database <em>NEVER lies.</em>
+        103 documented wins — timestamped, on file, <em>always.</em>
+        Every win AND loss posted publicly.
+        Zero hidden losses. Zero excuses.
+        This is what <em>elite AI analysis</em> looks like."
+      </div>
+      <div class="joseph-attr">— Joseph M. Smith, Founder · SmartPickPro</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="fb">Smart<span>Pick</span>Pro</div>
+    <div class="fd">21+ · For entertainment only · Not financial or gambling advice · All results logged publicly</div>
+  </div>
+</div>
+</body>
+</html>

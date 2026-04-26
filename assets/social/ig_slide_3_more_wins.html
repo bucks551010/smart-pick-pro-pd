@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>IG Slide 3 — More Wins</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  width: 1080px; height: 1080px; overflow: hidden;
+  background: #060B18; font-family: 'Inter', sans-serif;
+}
+.slide {
+  width: 1080px; height: 1080px;
+  background: linear-gradient(160deg, #060B18 0%, #0C1830 60%, #060B18 100%);
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.topbar { height: 5px; background: linear-gradient(90deg, #00D559, #00f0ff, #00D559); flex-shrink: 0; }
+
+.header { padding: 40px 64px 24px; flex-shrink: 0; }
+.header-eyebrow { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.35em; color: #00f0ff; text-transform: uppercase; margin-bottom: 10px; }
+.header-title { font-family: 'Bebas Neue', sans-serif; font-size: 3.8rem; color: #ffffff; letter-spacing: 0.04em; line-height: 1; }
+.header-title span { color: #00D559; }
+
+.wins { padding: 0 48px; flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 0; }
+.win-row {
+  display: flex; align-items: center; gap: 20px;
+  padding: 17px 20px; border-radius: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.win-row:last-child { border-bottom: none; }
+.win-row:nth-child(odd) { background: rgba(255,255,255,0.015); }
+.check {
+  width: 36px; height: 36px;
+  background: rgba(0,213,89,0.12); border: 1.5px solid rgba(0,213,89,0.3); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 1rem; color: #00D559; flex-shrink: 0;
+}
+.win-info { flex: 1; min-width: 0; }
+.win-player { font-size: 1.3rem; font-weight: 800; color: #f1f5f9; }
+.win-line { font-size: 0.82rem; color: #475569; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+.over  { color: #00D559; font-weight: 700; }
+.under { color: #00f0ff; font-weight: 700; }
+.win-result { text-align: right; flex-shrink: 0; }
+.result-num { font-size: 1.5rem; font-weight: 900; color: #00D559; font-family: 'JetBrains Mono', monospace; line-height: 1; }
+.result-label { font-size: 0.6rem; color: #334155; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 3px; }
+.tier-s { display:inline-block;font-size:0.55rem;font-weight:800;letter-spacing:0.1em;padding:2px 8px;border-radius:4px;text-transform:uppercase;background:rgba(148,163,184,0.1);color:#94a3b8;border:1px solid rgba(148,163,184,0.2);margin-left:8px;vertical-align:middle; }
+.tier-g { display:inline-block;font-size:0.55rem;font-weight:800;letter-spacing:0.1em;padding:2px 8px;border-radius:4px;text-transform:uppercase;background:rgba(249,198,43,0.1);color:#F9C62B;border:1px solid rgba(249,198,43,0.2);margin-left:8px;vertical-align:middle; }
+
+.footer { padding: 20px 64px 32px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.footer-brand { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 0.15em; color: #1e3a5f; }
+.footer-brand span { color: #00D559; }
+.footer-dots { display: flex; gap: 8px; }
+.dot { width:8px;height:8px;border-radius:50%;background:#1e3a5f; }
+.dot.active { background:#00D559; box-shadow:0 0 8px #00D559; }
+.footer-slide { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.15em; color: #334155; font-family: 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="topbar"></div>
+  <div class="header">
+    <div class="header-eyebrow">🏀 More Documented Wins — Still Counting</div>
+    <div class="header-title">THE <span>RECEIPTS</span></div>
+  </div>
+  <div class="wins">
+
+    <div class="win-row">
+      <div class="check">✓</div>
+      <div class="win-info">
+        <div class="win-player">Donovan Mitchell <span class="tier-s">Silver</span></div>
+        <div class="win-line">PTS &nbsp;<span class="over">OVER 27.5</span></div>
+      </div>
+      <div class="win-result">
+        <div class="result-num">30 ✅</div>
+        <div class="result-label">PTS · PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="win-row">
+      <div class="check">✓</div>
+      <div class="win-info">
+        <div class="win-player">CJ McCollum <span class="tier-s">Silver</span></div>
+        <div class="win-line">FPTS &nbsp;<span class="over">OVER 31.0</span></div>
+      </div>
+      <div class="win-result">
+        <div class="result-num">51.6 🔥</div>
+        <div class="result-label">FPTS · PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="win-row">
+      <div class="check">✓</div>
+      <div class="win-info">
+        <div class="win-player">Sandro Mamukelashvili <span class="tier-s">Silver</span></div>
+        <div class="win-line">REB &nbsp;<span class="over">OVER 4.0</span></div>
+      </div>
+      <div class="win-result">
+        <div class="result-num">10 🔥</div>
+        <div class="result-label">REB · PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="win-row">
+      <div class="check">✓</div>
+      <div class="win-info">
+        <div class="win-player">Karl-Anthony Towns <span class="tier-s">Silver</span></div>
+        <div class="win-line">PTS &nbsp;<span class="under">UNDER 20.5</span></div>
+      </div>
+      <div class="win-result">
+        <div class="result-num">18 ✅</div>
+        <div class="result-label">PTS · PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="win-row">
+      <div class="check">✓</div>
+      <div class="win-info">
+        <div class="win-player">Mikal Bridges <span class="tier-s">Silver</span></div>
+        <div class="win-line">P+R+A &nbsp;<span class="under">UNDER 19.0</span></div>
+      </div>
+      <div class="win-result">
+        <div class="result-num">13 ✅</div>
+        <div class="result-label">PRA · PrizePicks</div>
+      </div>
+    </div>
+
+    <div class="win-row">
+      <div class="check">✓</div>
+      <div class="win-info">
+        <div class="win-player">James Harden <span class="tier-g">Gold</span></div>
+        <div class="win-line">FGA &nbsp;<span class="under">UNDER 15.5</span></div>
+      </div>
+      <div class="win-result">
+        <div class="result-num">14 ✅</div>
+        <div class="result-label">FGA · PrizePicks</div>
+      </div>
+    </div>
+
+  </div>
+  <div class="footer">
+    <div class="footer-brand">Smart<span>Pick</span>Pro</div>
+    <div class="footer-dots">
+      <div class="dot"></div><div class="dot"></div>
+      <div class="dot active"></div><div class="dot"></div>
+    </div>
+    <div class="footer-slide">3 / 4</div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SmartPickPro — Social Cards Preview</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #030507;
+  font-family: 'Inter', sans-serif;
+  color: #94a3b8;
+  padding: 40px;
+  min-height: 100vh;
+}
+h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.5rem;
+  color: #00D559;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+.subtitle { font-size: 0.85rem; color: #334155; margin-bottom: 48px; letter-spacing: 0.1em; font-weight: 600; text-transform: uppercase; }
+
+.section { margin-bottom: 64px; }
+.section-title {
+  font-size: 0.7rem; font-weight: 800; letter-spacing: 0.35em; color: #00f0ff;
+  text-transform: uppercase; margin-bottom: 16px;
+  border-bottom: 1px solid rgba(0,240,255,0.1); padding-bottom: 8px;
+}
+
+/* Card groups */
+.cards-row { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+
+.card-wrap {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.card-label {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.15em;
+  color: #475569; text-transform: uppercase;
+}
+.card-dims {
+  font-size: 0.55rem; color: #1e3a5f; letter-spacing: 0.1em;
+}
+iframe {
+  border: 1px solid rgba(0,213,89,0.15);
+  border-radius: 8px;
+  display: block;
+  background: #060B18;
+}
+a.view-btn {
+  display: inline-block;
+  background: rgba(0,213,89,0.06);
+  border: 1px solid rgba(0,213,89,0.2);
+  color: #00D559;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  padding: 6px 16px;
+  border-radius: 4px;
+  text-decoration: none;
+  text-transform: uppercase;
+  width: fit-content;
+}
+a.view-btn:hover { background: rgba(0,213,89,0.12); }
+
+/* IG carousel side scroll */
+.ig-row { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; }
+.ig-row::-webkit-scrollbar { height: 4px; }
+.ig-row::-webkit-scrollbar-track { background: #0a0f1a; }
+.ig-row::-webkit-scrollbar-thumb { background: #00D559; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<h1>SmartPickPro — 103 Wins &amp; Counting</h1>
+<div class="subtitle">Social Cards Preview · All formats · Review before posting</div>
+
+<!-- INSTAGRAM CAROUSEL -->
+<div class="section">
+  <div class="section-title">📱 Instagram Carousel — 1080 × 1080px · 4 Slides (Swipe Right)</div>
+  <div class="ig-row">
+
+    <div class="card-wrap">
+      <div class="card-label">Slide 1 — Hook</div>
+      <div class="card-dims">1080 × 1080</div>
+      <iframe src="ig_slide_1_hook.html" width="360" height="360" scrolling="no" style="transform:scale(0.333);transform-origin:top left;width:1080px;height:1080px;"></iframe>
+      <a class="view-btn" href="ig_slide_1_hook.html" target="_blank">Open Full Size ↗</a>
+    </div>
+
+    <div class="card-wrap">
+      <div class="card-label">Slide 2 — Gold Wins</div>
+      <div class="card-dims">1080 × 1080</div>
+      <iframe src="ig_slide_2_gold_wins.html" width="360" height="360" scrolling="no" style="transform:scale(0.333);transform-origin:top left;width:1080px;height:1080px;"></iframe>
+      <a class="view-btn" href="ig_slide_2_gold_wins.html" target="_blank">Open Full Size ↗</a>
+    </div>
+
+    <div class="card-wrap">
+      <div class="card-label">Slide 3 — More Wins</div>
+      <div class="card-dims">1080 × 1080</div>
+      <iframe src="ig_slide_3_more_wins.html" width="360" height="360" scrolling="no" style="transform:scale(0.333);transform-origin:top left;width:1080px;height:1080px;"></iframe>
+      <a class="view-btn" href="ig_slide_3_more_wins.html" target="_blank">Open Full Size ↗</a>
+    </div>
+
+    <div class="card-wrap">
+      <div class="card-label">Slide 4 — Joseph CTA</div>
+      <div class="card-dims">1080 × 1080</div>
+      <iframe src="ig_slide_4_cta.html" width="360" height="360" scrolling="no" style="transform:scale(0.333);transform-origin:top left;width:1080px;height:1080px;"></iframe>
+      <a class="view-btn" href="ig_slide_4_cta.html" target="_blank">Open Full Size ↗</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- TWITTER/X -->
+<div class="section">
+  <div class="section-title">🐦 Twitter / X — 1200 × 675px</div>
+  <div class="cards-row">
+    <div class="card-wrap">
+      <div class="card-label">Twitter/X Card</div>
+      <div class="card-dims">1200 × 675</div>
+      <div style="position:relative;width:600px;height:337px;overflow:hidden;">
+        <iframe src="twitter_x_card.html" scrolling="no" style="width:1200px;height:675px;transform:scale(0.5);transform-origin:top left;border:none;border-radius:0;"></iframe>
+      </div>
+      <a class="view-btn" href="twitter_x_card.html" target="_blank">Open Full Size ↗</a>
+    </div>
+  </div>
+</div>
+
+<!-- FACEBOOK -->
+<div class="section">
+  <div class="section-title">📘 Facebook — 1200 × 630px</div>
+  <div class="cards-row">
+    <div class="card-wrap">
+      <div class="card-label">Facebook Card</div>
+      <div class="card-dims">1200 × 630</div>
+      <div style="position:relative;width:600px;height:315px;overflow:hidden;">
+        <iframe src="facebook_card.html" scrolling="no" style="width:1200px;height:630px;transform:scale(0.5);transform-origin:top left;border:none;border-radius:0;"></iframe>
+      </div>
+      <a class="view-btn" href="facebook_card.html" target="_blank">Open Full Size ↗</a>
+    </div>
+  </div>
+</div>
+
+<!-- STORIES / TIKTOK -->
+<div class="section">
+  <div class="section-title">📲 Instagram Stories / TikTok — 1080 × 1920px</div>
+  <div class="cards-row">
+    <div class="card-wrap">
+      <div class="card-label">Stories / TikTok Static</div>
+      <div class="card-dims">1080 × 1920</div>
+      <div style="position:relative;width:270px;height:480px;overflow:hidden;">
+        <iframe src="stories_tiktok.html" scrolling="no" style="width:1080px;height:1920px;transform:scale(0.25);transform-origin:top left;border:none;border-radius:0;"></iframe>
+      </div>
+      <a class="view-btn" href="stories_tiktok.html" target="_blank">Open Full Size ↗</a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

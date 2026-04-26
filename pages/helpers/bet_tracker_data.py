@@ -307,7 +307,11 @@ def build_merged_pick_universe(scope_label: str) -> dict:
             continue
         _pipeline_added.append(_mapped)
 
-    _combined_like = list(_analysis_scope) + _pipeline_added
+    # Bets records come FIRST so that resolved WIN/LOSS results take priority
+    # during dedup.  Analysis rows (which never have a result field) come second
+    # and are dropped when the same pick already exists from the bets table.
+    # This prevents resolved picks from showing as "pending" in Model Health.
+    _combined_like = _pipeline_added + list(_analysis_scope)
     _combined_pre_dedup_count = len(_combined_like)
     _seen_keys: set = set()
     _combined: list = []

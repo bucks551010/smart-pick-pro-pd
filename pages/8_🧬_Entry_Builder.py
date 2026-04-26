@@ -565,6 +565,63 @@ with st.expander("🔒 Lock / Unlock Legs (force picks into every entry)", expan
 
 selected_picks = st.session_state.get("selected_picks", [])
 
+# ── 🪣 Live Entry Bucket integration ─────────────────────────────
+# Show the user's per-account staged picks at the top so they can
+# pull bucket items into the Selected Picks cart with one click.
+try:
+    from utils.user_session import get_current_user_email as _eb_get_ue, get_user_display_label as _eb_get_label
+    from tracking.live_bucket import (
+        get_bucket as _eb_get_bucket,
+        bucket_count as _eb_bucket_count,
+        pick_to_selected_format as _eb_to_selected,
+        clear_bucket as _eb_clear_bucket,
+    )
+    _eb_user_email = _eb_get_ue()
+    _eb_bucket_n = _eb_bucket_count(_eb_user_email)
+except Exception:
+    _eb_user_email = ""
+    _eb_bucket_n = 0
+    _eb_get_bucket = _eb_to_selected = _eb_clear_bucket = None  # type: ignore
+
+if _eb_user_email and _eb_bucket_n > 0 and _eb_get_bucket is not None:
+    st.markdown(
+        f"<div style='padding:10px 14px;border-radius:10px;"
+        f"background:rgba(0,240,255,0.05);border:1px solid rgba(0,240,255,0.18);"
+        f"margin-bottom:10px;'>"
+        f"🪣 <b>You have {_eb_bucket_n} pick(s) in your Live Entry Bucket</b> · "
+        f"{_eb_get_label()}"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+    _eb_b1, _eb_b2, _eb_b3 = st.columns([1, 1, 2])
+    with _eb_b1:
+        if st.button("🪣 → Add bucket to slip", help="Pull every pick from your bucket into Selected Picks"):
+            _bucket_rows = _eb_get_bucket(_eb_user_email)
+            _existing = list(st.session_state.get("selected_picks", []) or [])
+            _seen = {p.get("key") for p in _existing}
+            _added = 0
+            for _r in _bucket_rows:
+                _conv = _eb_to_selected(_r)
+                if _conv.get("key") and _conv["key"] not in _seen:
+                    _existing.append(_conv)
+                    _seen.add(_conv["key"])
+                    _added += 1
+            st.session_state["selected_picks"] = _existing
+            st.toast(f"🪣 +{_added} pick(s) added to slip")
+            st.rerun()
+    with _eb_b2:
+        if st.button("🪣 Open bucket page"):
+            try:
+                st.switch_page("pages/17_🪣_Live_Entry_Bucket.py")
+            except Exception:
+                st.info("Open the 🪣 Live Entry Bucket page from the sidebar.")
+    with _eb_b3:
+        st.caption(
+            "Bucket items also save automatically to your tracked bets when "
+            "you build & lock entries below — every bet is tagged to your account."
+        )
+    selected_picks = st.session_state.get("selected_picks", [])  # refresh
+
 if selected_picks:
     st.subheader(f"✅ Your Selected Picks ({len(selected_picks)} picks)")
     st.caption("These picks were selected from the ⚡ Neural Analysis page. Uncheck any you want to remove.")
@@ -1174,6 +1231,11 @@ if _stored_entries:
             if st.button(f"📋 Log Entry #{entry_rank}", key=f"log_entry_{entry_rank}"):
                 try:
                     from tracking.database import insert_bet as _insert_bet_eb
+                    try:
+                        from utils.user_session import get_current_user_email as _get_ue
+                        _ue = _get_ue()
+                    except Exception:
+                        _ue = ""
                     _today_str = _dt.date.today().isoformat()
                     _logged_count = 0
                     for _lp in picks:
@@ -1193,6 +1255,7 @@ if _stored_entries:
                             "entry_fee": float(entry_fee),
                             "notes": f"Entry #{entry_rank} ({entry_size}-pick, EV: {ev_label})",
                             "auto_logged": 1,
+                            "user_email": _ue,
                         }
                         _row_id = _insert_bet_eb(_bet_data)
                         if _row_id:
@@ -1274,6 +1337,11 @@ if _stored_entries:
     try:
         from tracking.database import insert_entry as _eb_insert_entry, insert_bet as _eb_insert_bet, link_bets_to_entry as _eb_link
         import datetime as _dt_eb
+        try:
+            from utils.user_session import get_current_user_email as _get_ue_auto
+            _ue_auto = _get_ue_auto()
+        except Exception:
+            _ue_auto = ""
 
         _today_str = _dt_eb.date.today().isoformat()
         _logged_count = 0
@@ -1291,6 +1359,7 @@ if _stored_entries:
                 "expected_value": _ev_net,
                 "pick_count": len(_picks),
                 "notes": f"Auto-logged from Entry Builder",
+                "user_email": _ue_auto,
             })
 
             if _entry_id and _picks:
@@ -1309,6 +1378,7 @@ if _stored_entries:
                         "edge_percentage": _pick.get("edge_percentage", 0.0),
                         "player_id": _pick.get("player_id", ""),
                         "entry_fee": float(entry_fee) / max(len(_picks), 1),
+                        "user_email": _ue_auto,
                     })
                     if _bet_id:
                         _leg_ids.append(_bet_id)

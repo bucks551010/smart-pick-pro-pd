@@ -1,4 +1,5 @@
 """History tab for Bet Tracker."""
+import datetime as _dt_hist
 import streamlit as st
 from utils.rbac import has_permission, permission_gate
 from tracking.database import get_rolling_stats
@@ -8,6 +9,7 @@ from pages.helpers.bet_tracker_data import (
     platform_filter_fn,
     apply_global_filters,
     render_bet_cards_chunked,
+    tracker_today_date,
     DFS_PAYOUT_RATIO,
     BREAKEVEN_WIN_RATE,
 )
@@ -34,17 +36,60 @@ def render(platform_selections, player_search, date_range, direction_filter):
             st.markdown(get_calendar_heatmap_html(_by_date, num_days=42), unsafe_allow_html=True)
             st.caption("Hover for daily stats. Green = winning, Red = losing.")
 
-    # Rolling summary
-    if rolling_stats.get("total_bets", 0) > 0:
-        _streak = rolling_stats.get("streak", 0)
-        _slabel = f"🔥 W{_streak}" if _streak > 0 else f"❄️ L{abs(_streak)}" if _streak < 0 else "—"
-        _best = rolling_stats.get("best_day", {})
-        _worst = rolling_stats.get("worst_day", {})
-        _bs = f"{_best.get('snapshot_date', '—')} ({_best.get('win_rate', 0):.0f}%)" if _best else "—"
-        _ws = f"{_worst.get('snapshot_date', '—')} ({_worst.get('win_rate', 0):.0f}%)" if _worst else "—"
+    # ── Rolling summary — computed from user-scoped bets (not global snapshots)
+    # get_rolling_stats uses daily_snapshots which aggregate ALL users; instead
+    # we compute directly from the user-filtered bet list so the numbers match
+    # the rest of the tracker.
+    _14d_start = (tracker_today_date() - _dt_hist.timedelta(days=13)).isoformat()
+    _14d_all = [b for b in _filtered if str(b.get("bet_date", ""))[:10] >= _14d_start]
+    _14d_resolved = [b for b in _14d_all if b.get("result") in ("WIN", "LOSS", "EVEN")]
+    _14d_wins = sum(1 for b in _14d_resolved if b.get("result") == "WIN")
+    _14d_losses = sum(1 for b in _14d_resolved if b.get("result") == "LOSS")
+    _14d_decided = _14d_wins + _14d_losses
+    _14d_wr = round(_14d_wins / max(_14d_decided, 1) * 100, 1) if _14d_decided > 0 else 0.0
+
+    # Streak from user-scoped bets
+    _14d_streak = 0
+    _14d_sorted = sorted(
+        [b for b in _14d_all if b.get("result") in ("WIN", "LOSS")],
+        key=lambda b: (b.get("bet_date", ""), b.get("id", 0)), reverse=True,
+    )
+    if _14d_sorted:
+        _14d_first = _14d_sorted[0].get("result")
+        _14d_streak = 1 if _14d_first == "WIN" else -1
+        for _sb in _14d_sorted[1:]:
+            if _sb.get("result") == _14d_first:
+                _14d_streak += 1 if _14d_first == "WIN" else -1
+            else:
+                break
+
+    # Best / worst day from user-scoped bets
+    _day_perf: dict = {}
+    for _b14 in _14d_all:
+        _d14 = str(_b14.get("bet_date", ""))[:10]
+        if not _d14:
+            continue
+        if _d14 not in _day_perf:
+            _day_perf[_d14] = {"wins": 0, "losses": 0}
+        if _b14.get("result") == "WIN":
+            _day_perf[_d14]["wins"] += 1
+        elif _b14.get("result") == "LOSS":
+            _day_perf[_d14]["losses"] += 1
+    _day_wr = {
+        d: round(v["wins"] / max(v["wins"] + v["losses"], 1) * 100, 1)
+        for d, v in _day_perf.items()
+        if v["wins"] + v["losses"] > 0
+    }
+    _best_day_str = max(_day_wr, key=lambda d: _day_wr[d]) if _day_wr else ""
+    _worst_day_str = min(_day_wr, key=lambda d: _day_wr[d]) if _day_wr else ""
+
+    if len(_14d_all) > 0:
+        _slabel = f"🔥 W{_14d_streak}" if _14d_streak > 0 else f"❄️ L{abs(_14d_streak)}" if _14d_streak < 0 else "—"
+        _bs = f"{_best_day_str} ({_day_wr.get(_best_day_str, 0):.0f}%)" if _best_day_str else "—"
+        _ws = f"{_worst_day_str} ({_day_wr.get(_worst_day_str, 0):.0f}%)" if _worst_day_str else "—"
         _c = st.columns(5)
-        _c[0].metric("14-Day Bets", rolling_stats.get("total_bets", 0))
-        _c[1].metric("Win Rate", f"{rolling_stats.get('win_rate', 0):.1f}%")
+        _c[0].metric("14-Day Bets", len(_14d_all))
+        _c[1].metric("Win Rate", f"{_14d_wr:.1f}%" if _14d_decided > 0 else "—")
         _c[2].metric("Streak", _slabel)
         _c[3].metric("Best Day", _bs)
         _c[4].metric("Worst Day", _ws)
@@ -52,13 +97,13 @@ def render(platform_selections, player_search, date_range, direction_filter):
         # ── Shareable Report Card ─────────────────────────────
         from utils.components import generate_performance_report_html
         _report_html = generate_performance_report_html({
-            "total": rolling_stats.get("total_bets", 0),
-            "wins": rolling_stats.get("wins", 0),
-            "losses": rolling_stats.get("losses", 0),
-            "evens": 0,
-            "pending": 0,
-            "win_rate": rolling_stats.get("win_rate", 0),
-            "streak": rolling_stats.get("streak", 0),
+            "total": len(_14d_all),
+            "wins": _14d_wins,
+            "losses": _14d_losses,
+            "evens": sum(1 for b in _14d_resolved if b.get("result") == "EVEN"),
+            "pending": sum(1 for b in _14d_all if b.get("result") not in ("WIN", "LOSS", "EVEN")),
+            "win_rate": _14d_wr,
+            "streak": _14d_streak,
             "best_platform": "",
             "date_range": "Last 14 Days",
         })

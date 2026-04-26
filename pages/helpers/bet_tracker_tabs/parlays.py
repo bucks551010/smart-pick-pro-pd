@@ -20,6 +20,13 @@ def render(platform_selections, player_search, date_range, direction_filter):
     st.subheader("🎰 Parlay / Entry Tracker")
     st.markdown("Track multi-leg entries as parlays. All legs must hit for a parlay WIN.")
 
+    # Scope to current user so parlay counts match the user's own entries.
+    try:
+        from utils.user_session import get_current_user_email as _prl_get_ue
+        _prl_ue = _prl_get_ue() or None
+    except Exception:
+        _prl_ue = st.session_state.get("_bet_tracker_user_email") or None
+
     # ── Create New Parlay ─────────────────────────────────────
     with st.expander("➕ Create New Parlay Entry", expanded=False):
         with st.form("create_parlay_form"):
@@ -59,6 +66,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
                     "entry_type": _type.split(" ")[0].lower(),
                     "entry_fee": _fee, "expected_value": 0.0,
                     "pick_count": len(_legs), "notes": _notes,
+                    "user_email": _prl_ue,
                 })
                 if _eid:
                     link_bets_to_entry(_legs, _eid)
@@ -71,7 +79,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
 
     st.divider()
 
-    _entries = load_all_entries()
+    _entries = load_all_entries(user_email=_prl_ue)
     if not _entries:
         st.info("📭 No parlay entries yet. Create one above or use **🧬 Entry Builder**.")
         return
@@ -80,7 +88,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
     _resolved = [e for e in _entries if e.get("result") in ("WIN", "LOSS", "EVEN")]
     _wins = sum(1 for e in _resolved if e.get("result") == "WIN")
     _losses = sum(1 for e in _resolved if e.get("result") == "LOSS")
-    _pending = sum(1 for e in _entries if not e.get("result"))
+    _pending = sum(1 for e in _entries if e.get("result") not in ("WIN", "LOSS", "EVEN"))
     _wr = round(_wins / max(_wins + _losses, 1) * 100, 1)
     _fees = sum(float(e.get("entry_fee") or 0) for e in _entries)
     _payouts = sum(float(e.get("payout") or 0) for e in _resolved if e.get("result") == "WIN")

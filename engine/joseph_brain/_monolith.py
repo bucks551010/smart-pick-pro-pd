@@ -230,6 +230,12 @@ try:
 except ImportError:
     _BETS_TRACK_RECORD_AVAILABLE = False
 
+try:
+    from tracking.database import get_joseph_player_history as _get_player_history
+    _PLAYER_HISTORY_AVAILABLE = True
+except ImportError:
+    _PLAYER_HISTORY_AVAILABLE = False
+
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # GOD MODE ANALYTICAL MODULES (Layer 10)
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -911,7 +917,7 @@ _COMBO_STAT_MAP = {
 
 
 def joseph_generate_independent_picks(props, players_lookup, todays_games,
-                                      teams_data, max_picks=20):
+                                      teams_data, max_picks=50):
     """Generate Joseph's supreme independent picks from raw platform props.
 
     Joseph selects his top picks using DB-powered trend analysis, hit rates,
@@ -955,6 +961,7 @@ def joseph_generate_independent_picks(props, players_lookup, todays_games,
             continue
         team = str(prop.get("team", prop.get("player_team", ""))).upper().strip()
         platform = str(prop.get("platform", "PrizePicks"))
+        odds_type = str(prop.get("odds_type", "standard")).lower().strip()
 
         # â”€â”€ player lookup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         p_data = players_lookup.get(player_name.lower(), {})
@@ -1035,14 +1042,20 @@ def joseph_generate_independent_picks(props, players_lookup, todays_games,
             "tier": tier,
             "direction": direction,
             "platform": platform,
+            "odds_type": odds_type,
         }
 
         # Sort score: edge + hit rate bonus + trend bonus
+        # Goblin lines (easier) get a boost; demon lines (harder) get a discount
         sort_score = abs(edge)
         if hit_rate_val > 70:
             sort_score += 2.0
         elif hit_rate_val > 50:
             sort_score += 1.0
+        if odds_type == "goblin":
+            sort_score += 1.5
+        elif odds_type == "demon":
+            sort_score -= 1.5
 
         candidates.append((sort_score, analysis_result, p_data, game_data))
 
@@ -1058,6 +1071,7 @@ def joseph_generate_independent_picks(props, players_lookup, todays_games,
             result["line"] = ar["line"]
             result["direction"] = ar["direction"]
             result["team"] = ar["team"]
+            result["odds_type"] = ar.get("odds_type", "standard")
             results.append(result)
         except Exception as exc:
             logger.debug(
@@ -1102,6 +1116,62 @@ def joseph_rank_picks(picks, game_contexts=None):
     for idx, p in enumerate(ranked, 1):
         p["rank"] = idx
     return ranked
+
+
+def joseph_get_dark_horse_picks(results: list, n: int = 3) -> list:
+    """Return the top *n* dark horse picks from a set of Joseph analysis results.
+
+    Dark horse = high upside, underrated/sleeper plays that are NOT already
+    obvious LOCKs. Criteria: trending form, injury-created usage boost,
+    high hit-rate vs a line that hasn't been priced up yet, or goblin line
+    with value. Scored internally — never blocks the UI.
+    """
+    if not results:
+        return []
+
+    scored = []
+    for r in results:
+        if r.get("verdict") in ("LOCK", "STAY_AWAY"):
+            continue
+        tags = r.get("narrative_tags") or []
+        hit_rate = _safe_float(r.get("hit_rate", 0))
+        confidence = _safe_float(r.get("confidence", 50))
+        edge = abs(_safe_float(r.get("edge", 0)))
+        trend = str(r.get("db_trend", ""))
+        odds_type = str(r.get("odds_type", "standard")).lower()
+
+        dh_score = 0.0
+        # Trending up but not a LOCK — momentum the market hasn't fully priced
+        if "trending_up" in tags or trend in ("surging", "trending_up"):
+            dh_score += 25.0
+        if trend == "surging":
+            dh_score += 10.0
+        # Injury-created usage surge — opponent priced for healthy opponent
+        if "opportunity_boost" in tags:
+            dh_score += 22.0
+        # High hit-rate but still not a Lock = market under-pricing historical edge
+        if hit_rate >= 0.65:
+            dh_score += 20.0
+        elif hit_rate >= 0.55:
+            dh_score += 10.0
+        # Goblin line = easier alternate line with high hit probability
+        if odds_type == "goblin" or "goblin_line" in tags:
+            dh_score += 15.0
+        # Edge present but confidence still moderate = value the sharp money hasn't killed
+        if edge >= 5.0 and confidence < 65.0:
+            dh_score += 15.0
+        # QEG with lower-profile player = hidden gem
+        if "qeg_pick" in tags and confidence < 75.0:
+            dh_score += 12.0
+        # Line moving down on an OVER = easifying — contrarian value
+        if "line_moving_down" in tags:
+            dh_score += 8.0
+
+        if dh_score > 0:
+            scored.append((dh_score, r))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [r for _, r in scored[:n]]
 
 
 def joseph_evaluate_parlay(picks, platform="DraftKings", entry_fee=10.0):
@@ -1844,6 +1914,38 @@ def joseph_full_analysis(analysis_result: dict, player: dict, game: dict,
         elif pace_delta < -2.0 and "pace_down" not in narrative_tags:
             narrative_tags.append("pace_down")
 
+        # ── Line movement awareness ───────────────────────────────────
+        _line_shift = _safe_float(
+            analysis_result.get("line_movement") or analysis_result.get("line_shift", 0.0)
+        )
+        if abs(_line_shift) >= 0.5:
+            if _line_shift > 0 and "line_moving_up" not in narrative_tags:
+                narrative_tags.append("line_moving_up")
+            elif _line_shift < 0 and "line_moving_down" not in narrative_tags:
+                narrative_tags.append("line_moving_down")
+
+        # ── Injury context / opportunity boost ───────────────────────
+        _injury_ctx = analysis_result.get("injury_context") or game.get("injury_context") or {}
+        if isinstance(_injury_ctx, dict):
+            _player_team = player.get("team", "")
+            _teammates_out = [
+                n for n, info in _injury_ctx.items()
+                if isinstance(info, dict) and info.get("player_is_out")
+                and info.get("team") == _player_team
+            ]
+            if _teammates_out and "opportunity_boost" not in narrative_tags:
+                narrative_tags.append("opportunity_boost")
+
+        # ── Line type awareness (QEG / Goblin / Demon) ───────────────
+        _odds_type = str(analysis_result.get("odds_type", "standard")).lower()
+        if _odds_type == "goblin" and "goblin_line" not in narrative_tags:
+            narrative_tags.append("goblin_line")
+        elif _odds_type == "demon" and "demon_line" not in narrative_tags:
+            narrative_tags.append("demon_line")
+        # QEG = standard line with verified high edge (≥20%)
+        if _odds_type == "standard" and abs(qme_edge) >= 20.0 and "qeg_pick" not in narrative_tags:
+            narrative_tags.append("qeg_pick")
+
         # Step 3 -- RETRIEVE (Supreme: DB Intel + Grade + Comp)
         try:
             player_grade = joseph_grade_player(player, game)
@@ -2080,6 +2182,51 @@ def joseph_full_analysis(analysis_result: dict, player: dict, game: dict,
             risk_factors.append("Standard variance applies")
 
         # Step 7 -- EXPLAIN (Supreme: DB-powered rant)
+        # ── Inject diary + streak context into rant enrichment ────────
+        _joseph_mood = "neutral"
+        _joseph_streak_line = ""
+        _joseph_player_take = ""
+        if _DIARY_AVAILABLE:
+            try:
+                _week = _diary_week_summary()
+                _joseph_mood = _week.get("mood", "neutral")
+                _brag = _week.get("brag_intensity", 50)
+                _streak = _week.get("streak", 0)
+                if _streak >= 3:
+                    _joseph_streak_line = f"I am on a {_streak}-pick heater right now. "
+                elif _streak <= -3:
+                    _joseph_streak_line = f"Look — even legends hit rough patches. I'm {abs(_streak)} in a row I'm coming back from. "
+                _yesterday = _diary_yesterday_ref()
+                if _yesterday and _brag > 60:
+                    _joseph_streak_line = _yesterday + " " + _joseph_streak_line
+            except Exception:
+                pass
+        if _BETS_TRACK_RECORD_AVAILABLE:
+            try:
+                _tr = _bets_track_record()
+                _tr_wins = _tr.get("wins", 0)
+                _tr_losses = _tr.get("losses", 0)
+                if _tr_wins + _tr_losses >= 5:
+                    _tr_rate = _tr.get("win_rate", 0.0)
+                    if isinstance(_tr_rate, float) and _tr_rate > 0.65:
+                        if not _joseph_streak_line:
+                            _joseph_streak_line = f"Season record {_tr_wins}-{_tr_losses}. That's all you need to know. "
+            except Exception:
+                pass
+        _player_name_key = str(player.get("name", ""))
+        if _PLAYER_HISTORY_AVAILABLE and _player_name_key:
+            try:
+                _ph = _get_player_history(_player_name_key, stat_type)
+                if _ph and _ph.get("total_picks", 0) >= 3:
+                    _ph_rate = _ph.get("win_rate", 0.0)
+                    _ph_total = _ph.get("total_picks", 0)
+                    if _ph_rate >= 0.70:
+                        _joseph_player_take = f"I've been right on {_player_name_key} {_ph['wins']}-of-{_ph_total} times this season. "
+                    elif _ph_rate <= 0.35:
+                        _joseph_player_take = f"Full transparency — {_player_name_key} has beaten me {_ph['losses']}-of-{_ph_total} times this year. But the numbers don't lie tonight. "
+            except Exception:
+                pass
+
         energy_level = "nuclear" if verdict == "SMASH" else "high" if verdict == "LEAN" else "medium" if verdict == "FADE" else "low"
         if is_override:
             energy_level = "nuclear"
@@ -2095,6 +2242,11 @@ def joseph_full_analysis(analysis_result: dict, player: dict, game: dict,
             energy=energy_level,
             db_intel=db_intel,
         )
+        # Prepend any diary/streak/player context to the rant
+        if _joseph_streak_line or _joseph_player_take:
+            _prefix = (_joseph_streak_line + _joseph_player_take).strip()
+            if _prefix:
+                rant_text = _prefix + " " + rant_text
 
         # Concise take for Top 5 pick cards (1-2 sentences)
         top_pick_take = build_joseph_top_pick_take(
@@ -2211,6 +2363,7 @@ def joseph_full_analysis(analysis_result: dict, player: dict, game: dict,
             "db_trend": trend_data.get("trend", "unknown"),
             "hit_rate": hit_rate,
             "consistency": trend_data.get("consistency", "unknown"),
+            "_result_date": __import__("datetime").date.today().isoformat(),
         }
     except Exception as exc:
         logger.warning("joseph_full_analysis failed: %s", exc)

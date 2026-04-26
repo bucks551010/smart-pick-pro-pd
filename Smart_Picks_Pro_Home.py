@@ -885,8 +885,16 @@ _hero_pool = sorted(
 )[:3]
 
 if _user_tier != TIER_FREE and _hero_pool:
-    # Attach Joseph short takes if available
+    # Staleness guard: clear cached joseph_results if they're from a prior day
     _joseph_results = st.session_state.get("joseph_results", [])
+    if _joseph_results:
+        _first_date = _joseph_results[0].get("_result_date", "") if isinstance(_joseph_results[0], dict) else ""
+        import datetime as _dt_guard
+        if _first_date and _first_date != _dt_guard.date.today().isoformat():
+            st.session_state.pop("joseph_results", None)
+            st.session_state.pop("joseph_bets_logged", None)
+            _joseph_results = []
+    # Attach Joseph short takes if available
     if _joseph_results:
         _joseph_lookup = {
             (jr.get("player_name", ""), (jr.get("stat_type", "") or "").lower()): jr
@@ -897,6 +905,45 @@ if _user_tier != TIER_FREE and _hero_pool:
             _jr = _joseph_lookup.get(_jk)
             if _jr:
                 _hp["joseph_short_take"] = _jr.get("joseph_short_take", "") or _jr.get("joseph_take", "")
+    # Fallback: generate inline takes for hero picks when Studio hasn't been visited yet
+    if not _joseph_results:
+        try:
+            from engine.joseph_brain import joseph_full_analysis as _jfa
+            from data.data_manager import load_players_data as _lpd_home
+            _players_raw_home = _lpd_home()
+            _p_lookup_home = {
+                str(p.get("name", p.get("player_name", ""))).lower().strip(): p
+                for p in _players_raw_home if p
+            }
+            _games_home = st.session_state.get("todays_games", [])
+            _teams_home = st.session_state.get("teams_data", {})
+            _inline_joseph = []
+            for _hp in _hero_pool:
+                _pn = _hp.get("player_name", "")
+                _pd_home = _p_lookup_home.get(_pn.lower().strip(), {})
+                _pt_home = (_hp.get("player_team") or _hp.get("team") or "")
+                _gd_home = {}
+                for _g in _games_home:
+                    if _pt_home in (_g.get("home_team", ""), _g.get("away_team", "")):
+                        _gd_home = _g
+                        break
+                _jres = _jfa(_hp, _pd_home, _gd_home, _teams_home)
+                _jres["player_name"] = _pn
+                _jres["stat_type"] = _hp.get("stat_type", "")
+                _inline_joseph.append(_jres)
+            if _inline_joseph:
+                st.session_state["joseph_results"] = _inline_joseph
+                _joseph_lookup = {
+                    (jr.get("player_name", ""), (jr.get("stat_type", "") or "").lower()): jr
+                    for jr in _inline_joseph
+                }
+                for _hp in _hero_pool:
+                    _jk = (_hp.get("player_name", ""), (_hp.get("stat_type", "") or "").lower())
+                    _jr = _joseph_lookup.get(_jk)
+                    if _jr:
+                        _hp["joseph_short_take"] = _jr.get("joseph_short_take", "") or _jr.get("rant", "")
+        except Exception:
+            pass
 
     st.markdown(_get_qcm_css(), unsafe_allow_html=True)
     st.markdown(

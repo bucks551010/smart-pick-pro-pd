@@ -1815,6 +1815,124 @@ def _render_results_fragment():
             else:
                 st.info("All Gold+ picks already added.")
 
+    # ── 🪣 Live Entry Bucket controls (per-user staging) ─────────────
+    # Lets the user stash specific picks into a personal bucket that
+    # persists across sessions in their own DB row, then review them on
+    # the dedicated Live Entry Bucket page before locking into the
+    # Entry Builder.
+    try:
+        from utils.user_session import get_current_user_email, get_user_display_label
+        from tracking.live_bucket import (
+            add_to_bucket as _bucket_add,
+            add_many_to_bucket as _bucket_add_many,
+            bucket_count as _bucket_count,
+        )
+        _qam_user_email = get_current_user_email()
+    except Exception as _bucket_imp_err:
+        _qam_user_email = ""
+        _bucket_add = _bucket_add_many = _bucket_count = None  # type: ignore
+
+    if _qam_user_email and _bucket_add is not None:
+        st.markdown(
+            f"<div style='margin:10px 0 4px 0;font-size:0.82rem;color:#9ca3af;'>"
+            f"🪣 <b>Live Entry Bucket</b> · {get_user_display_label()} · "
+            f"<span style='color:#00f0ff;font-weight:700;'>"
+            f"{_bucket_count(_qam_user_email)} pick(s) staged</span> · "
+            "review on the <b>🪣 Live Entry Bucket</b> page</div>",
+            unsafe_allow_html=True,
+        )
+        _bk_c1, _bk_c2, _bk_c3, _bk_c4 = st.columns([1, 1, 2, 1])
+
+        # Pool of "bucketable" picks (exclude OUT / AVOID players)
+        _bucketable = [
+            r for r in displayed_results
+            if not r.get("player_is_out", False)
+            and not r.get("should_avoid", False)
+            and r.get("tier") in ("Platinum", "Gold", "Silver", "Bronze")
+        ]
+
+        def _row_to_bucket_pick(r: dict) -> dict:
+            _stat = r.get("stat_type", "").lower()
+            _line = r.get("line", 0)
+            _dir  = r.get("direction", "OVER")
+            _tier = r.get("tier", "")
+            _tier_emoji = {
+                "Platinum": "💎", "Gold": "🥇",
+                "Silver": "🥈", "Bronze": "🥉",
+            }.get(_tier, "")
+            return {
+                "key":              f"{r.get('player_name', '')}_{_stat}_{_line}_{_dir}",
+                "player_name":      r.get("player_name", ""),
+                "team":             r.get("team", "") or "",
+                "stat_type":        _stat,
+                "prop_line":        _line,
+                "direction":        _dir,
+                "platform":         r.get("platform", ""),
+                "tier":             _tier,
+                "tier_emoji":       _tier_emoji,
+                "confidence_score": r.get("confidence_score", 0),
+                "probability_over": r.get("probability_over", 0),
+                "edge_percentage":  r.get("edge_percentage", 0),
+                "bet_type":         r.get("bet_type", "normal"),
+                "odds_type":        r.get("odds_type", "standard"),
+            }
+
+        with _bk_c1:
+            if st.button("🪣 Bucket Platinum", key="_bucket_plat",
+                         help="Stage all Platinum picks to your personal bucket"):
+                _picks = [_row_to_bucket_pick(r) for r in _bucketable
+                          if r.get("tier") == "Platinum"]
+                _n = _bucket_add_many(_qam_user_email, _picks)
+                st.toast(f"🪣 +{_n} Platinum pick(s) bucketed" if _n else
+                         "All Platinum already in bucket")
+                st.rerun()
+
+        with _bk_c2:
+            if st.button("🪣 Bucket Gold+", key="_bucket_gold",
+                         help="Stage all Platinum + Gold picks to your bucket"):
+                _picks = [_row_to_bucket_pick(r) for r in _bucketable
+                          if r.get("tier") in ("Platinum", "Gold")]
+                _n = _bucket_add_many(_qam_user_email, _picks)
+                st.toast(f"🪣 +{_n} Gold+ pick(s) bucketed" if _n else
+                         "All Gold+ already in bucket")
+                st.rerun()
+
+        with _bk_c3:
+            _opt_labels = {}
+            for _r in _bucketable[:120]:  # cap dropdown size
+                _bk_pick = _row_to_bucket_pick(_r)
+                _label = (
+                    f"{_bk_pick.get('tier_emoji','')} {_bk_pick['player_name']} · "
+                    f"{_bk_pick['stat_type']} {_bk_pick['direction']} {_bk_pick['prop_line']} "
+                    f"({_bk_pick.get('platform','')})"
+                )
+                _opt_labels[_label] = _bk_pick
+            _picked_labels = st.multiselect(
+                "🎯 Pick specific props for your bucket",
+                options=list(_opt_labels.keys()),
+                key="_bucket_multi_select",
+                help="Selectively add individual props — your personal bucket "
+                     "persists across sessions in the database.",
+            )
+            if st.button("➕ Add selected to bucket", key="_bucket_add_selected"):
+                if not _picked_labels:
+                    st.warning("Select one or more props above first.")
+                else:
+                    _picks = [_opt_labels[l] for l in _picked_labels]
+                    _n = _bucket_add_many(_qam_user_email, _picks)
+                    st.toast(f"🪣 +{_n} pick(s) added to your bucket"
+                             if _n else "All selected already in bucket")
+                    st.rerun()
+
+        with _bk_c4:
+            try:
+                if st.button("🪣 Open Bucket", key="_bucket_open",
+                             help="Review and lock your bucket"):
+                    st.switch_page("pages/17_🪣_Live_Entry_Bucket.py")
+            except Exception:
+                pass
+
+
     if unmatched_count > 0:
         # Deduplicate: same player may have multiple stat types, each flagged separately.
         # Only count and list each unique player name once.

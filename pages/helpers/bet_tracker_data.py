@@ -238,9 +238,25 @@ def bet_type_sort_key(bet_type: str):
 # ── Cached data loading ──────────────────────────────────────
 
 @st.cache_data(ttl=10)
-def cached_load_all_bets(limit: int = 10000, exclude_linked: bool = True):
-    """Load bets from the live database. TTL=10s so DB edits appear within 10 seconds."""
-    return load_all_bets(limit=limit, exclude_linked=exclude_linked)
+def cached_load_all_bets(limit: int = 10000, exclude_linked: bool = True, user_email: str = ""):
+    """Load bets from the live database. TTL=10s so DB edits appear within 10 seconds.
+
+    When user_email is provided (or set via session state at
+    `_bet_tracker_user_email`), restricts to that user's tagged bets
+    (plus legacy untagged rows for historical visibility).
+    """
+    # Auto-resolve from session state if caller didn't supply
+    _ue = user_email
+    if not _ue:
+        try:
+            _ue = str(st.session_state.get("_bet_tracker_user_email", "") or "").strip().lower()
+        except Exception:
+            _ue = ""
+    return load_all_bets(
+        limit=limit,
+        exclude_linked=exclude_linked,
+        user_email=_ue or None,
+    )
 
 
 def reload_bets():

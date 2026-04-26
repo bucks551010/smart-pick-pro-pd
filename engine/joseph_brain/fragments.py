@@ -8,6 +8,7 @@ comps database, and the anti-repetition fragment picker functions.
 
 from __future__ import annotations
 
+import datetime
 import random
 
 # ═══════════════════════════════════════════════════════════════
@@ -17,12 +18,24 @@ _used_fragments: dict = {}      # keyed by pool name → set of used IDs
 _used_ambient: dict = {}        # keyed by context → set of used indices
 _used_commentary: dict = {}     # keyed by context_type → set of used indices
 
+# Daily reset guard: track the last date fragment state was cleared
+_fragment_reset_date: str = ""
+
 
 def reset_fragment_state() -> None:
     """Clear all anti-repetition tracking dicts."""
     _used_fragments.clear()
     _used_ambient.clear()
     _used_commentary.clear()
+
+
+def _auto_reset_if_new_day() -> None:
+    """Auto-reset fragment state when a new sports day begins."""
+    global _fragment_reset_date
+    today = datetime.date.today().isoformat()
+    if _fragment_reset_date != today:
+        reset_fragment_state()
+        _fragment_reset_date = today
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -1379,6 +1392,7 @@ _SHORT_TAKE_TEMPLATES = {
 
 def _pick_fragment(pool, pool_name):
     """Pick a random fragment from *pool* without repeating until exhausted."""
+    _auto_reset_if_new_day()
     if not pool:
         return ""
     used = _used_fragments.setdefault(pool_name, set())

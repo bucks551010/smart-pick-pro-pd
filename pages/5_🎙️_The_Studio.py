@@ -1588,15 +1588,17 @@ if not joseph_results and _BRAIN_AVAILABLE:
                 _games = st.session_state.get("todays_games", [])
 
                 if _from_props:
+                    # All props including goblin/demon lines — Joseph sees everything
                     joseph_results = joseph_generate_independent_picks(
-                        _gen_source, _p_lookup, _games, teams_data,
+                        _gen_source, _p_lookup, _games, teams_data, max_picks=50,
                     )
                 else:
+                    # Sort by edge — no cap, Joseph analyzes the full slate
                     _sorted_ar = sorted(
                         _gen_source,
                         key=lambda r: abs(_extract_edge(r)),
                         reverse=True,
-                    )[:100]
+                    )
                     joseph_results = []
                     for _ar in _sorted_ar:
                         _pn = _ar.get(
@@ -1626,12 +1628,39 @@ if not joseph_results and _BRAIN_AVAILABLE:
                             )
                             _res["direction"] = _ar.get("direction", "")
                             _res["team"] = _pt
+                            _res["odds_type"] = _ar.get("odds_type", "standard")
                             joseph_results.append(_res)
+                        except Exception:
+                            pass
+
+                    # ── Also run goblin/demon props through Joseph ────────
+                    # The orchestrator filters them from analysis_results, so
+                    # pull them separately from platform_props if available.
+                    _alt_props = [
+                        p for p in st.session_state.get("platform_props", [])
+                        if str(p.get("odds_type", "standard")).lower() in ("goblin", "demon")
+                    ]
+                    if _alt_props:
+                        try:
+                            _alt_results = joseph_generate_independent_picks(
+                                _alt_props, _p_lookup, _games, teams_data, max_picks=20,
+                            )
+                            joseph_results.extend(_alt_results)
                         except Exception:
                             pass
 
                 if joseph_results:
                     st.session_state["joseph_results"] = joseph_results
+                    # Auto-log Joseph's picks to bet tracker (once per session)
+                    if not st.session_state.get("joseph_bets_logged"):
+                        try:
+                            from engine.joseph_bets import joseph_auto_log_bets as _jalab
+                            _logged_count = _jalab(joseph_results)
+                            st.session_state["joseph_bets_logged"] = True
+                            if isinstance(_logged_count, int) and _logged_count > 0:
+                                st.caption(f"📝 Joseph logged {_logged_count} pick(s) to your Bet Tracker")
+                        except Exception:
+                            pass
             except Exception as _dawg_err:
                 _logger.warning(
                     "Auto-generation of Joseph's picks failed: %s", _dawg_err,
@@ -1644,7 +1673,113 @@ if not joseph_results and _BRAIN_AVAILABLE:
                 pass
 
 if joseph_results:
+    # ── Joseph's Best Bet of the Night hero card ──────────────────
+    try:
+        _best_candidates = [
+            r for r in joseph_results
+            if r.get("verdict") in ("LOCK", "SMASH")
+        ]
+        if not _best_candidates:
+            _best_candidates = [r for r in joseph_results if r.get("verdict") == "LEAN"]
+        if _best_candidates:
+            _best = max(_best_candidates, key=lambda r: r.get("dawg_factor", 0))
+            _b_player = _best.get("player", _best.get("player_name", ""))
+            _b_verdict = _best.get("verdict", "")
+            _b_emoji = _best.get("verdict_emoji", "🔒")
+            _b_line = _best.get("line", "")
+            _b_prop = _best.get("prop", _best.get("stat_type", ""))
+            _b_dir = _best.get("direction", "")
+            _b_edge = _best.get("edge", 0)
+            _b_take = _best.get("top_pick_take") or _best.get("one_liner", "")
+            st.markdown(
+                f"""<div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);
+                border:2px solid #e2b96a;border-radius:12px;padding:18px 22px;margin-bottom:18px">
+                <div style="color:#e2b96a;font-size:13px;font-weight:700;letter-spacing:2px;
+                text-transform:uppercase;margin-bottom:6px">🔒 Joseph's Best Bet Tonight</div>
+                <div style="color:#fff;font-size:20px;font-weight:800">{_b_emoji} {_b_player}
+                — {_b_dir} {_b_line} {_b_prop}</div>
+                <div style="color:#aaa;font-size:13px;margin-top:6px">{_b_verdict} &bull;
+                {_b_edge:.1f}% edge</div>
+                <div style="color:#ccc;font-size:13px;margin-top:8px;font-style:italic">
+                "{_b_take}"</div></div>""",
+                unsafe_allow_html=True,
+            )
+    except Exception:
+        pass
+
+    # ── Sort toggle ───────────────────────────────────────────────
+    _sort_key = st.radio(
+        "Sort Dawg Board by",
+        options=["Dawg Factor", "Edge %", "Verdict", "Team"],
+        index=0,
+        horizontal=True,
+        key="dawg_board_sort",
+        label_visibility="collapsed",
+    )
+    try:
+        _verdict_order = {"LOCK": 0, "SMASH": 1, "LEAN": 2, "FADE": 3, "STAY_AWAY": 4}
+        if _sort_key == "Edge %":
+            joseph_results = sorted(joseph_results, key=lambda r: abs(r.get("edge", 0)), reverse=True)
+        elif _sort_key == "Verdict":
+            joseph_results = sorted(joseph_results, key=lambda r: _verdict_order.get(r.get("verdict", "STAY_AWAY"), 5))
+        elif _sort_key == "Team":
+            joseph_results = sorted(joseph_results, key=lambda r: str(r.get("team", "")))
+        else:  # Dawg Factor (default)
+            joseph_results = sorted(joseph_results, key=lambda r: r.get("dawg_factor", 0), reverse=True)
+    except Exception:
+        pass
+
     render_dawg_board(joseph_results)
+
+    # ── Joseph's Dark Horse Picks ────────────────────────────────
+    try:
+        from engine.joseph_brain._monolith import joseph_get_dark_horse_picks as _get_dh
+        _dark_horses = _get_dh(joseph_results, 3)
+        if _dark_horses:
+            st.markdown(
+                '<div class="studio-section-title" style="margin-top:28px">🏇 JOSEPH\'S DARK HORSE PICKS</div>',
+                unsafe_allow_html=True,
+            )
+            st.caption("Sleepers, usage surges & alternate-line value the market hasn't caught up to yet.")
+            _dh_cols = st.columns(len(_dark_horses))
+            for _dhc, _dh in zip(_dh_cols, _dark_horses):
+                with _dhc:
+                    _dh_player = _dh.get("player", _dh.get("player_name", ""))
+                    _dh_verdict = _dh.get("verdict", "LEAN")
+                    _dh_emoji = _dh.get("verdict_emoji", "")
+                    _dh_prop = _dh.get("prop", _dh.get("stat_type", ""))
+                    _dh_line = _dh.get("line", "")
+                    _dh_dir = _dh.get("direction", "")
+                    _dh_edge = _dh.get("edge", 0)
+                    _dh_tags = _dh.get("narrative_tags") or []
+                    _dh_odds = str(_dh.get("odds_type", "standard")).lower()
+                    _dh_tag_label = ""
+                    if _dh_odds == "goblin":
+                        _dh_tag_label = "🟢 GOBLIN LINE"
+                    elif _dh_odds == "demon":
+                        _dh_tag_label = "🔴 DEMON LINE"
+                    elif "qeg_pick" in _dh_tags:
+                        _dh_tag_label = "⚡ QEG"
+                    elif "opportunity_boost" in _dh_tags:
+                        _dh_tag_label = "🚀 USAGE SURGE"
+                    elif "trending_up" in _dh_tags:
+                        _dh_tag_label = "📈 HOT STREAK"
+                    _dh_take = _dh.get("one_liner") or _dh.get("condensed_summary", "")
+                    st.markdown(
+                        f"""<div style="background:#1a1a2e;border:1px solid #4a3f7a;border-radius:10px;
+                        padding:14px 16px;height:100%">
+                        <div style="color:#b98ee4;font-size:11px;font-weight:700;letter-spacing:1px;
+                        margin-bottom:4px">{_dh_tag_label}</div>
+                        <div style="color:#fff;font-size:15px;font-weight:700">{_dh_emoji} {_dh_player}</div>
+                        <div style="color:#aaa;font-size:12px;margin-top:3px">{_dh_dir} {_dh_line} {_dh_prop}</div>
+                        <div style="color:#b98ee4;font-size:12px;margin-top:4px">{_dh_verdict} &bull;
+                        {_dh_edge:.1f}% edge</div>
+                        <div style="color:#888;font-size:11px;margin-top:6px;font-style:italic">
+                        "{_dh_take}"</div></div>""",
+                        unsafe_allow_html=True,
+                    )
+    except Exception:
+        pass
 else:
     st.markdown(
         render_empty_state(

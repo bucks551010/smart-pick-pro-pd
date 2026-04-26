@@ -76,7 +76,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
     evens_h = sum(1 for b in resolved_health if b.get("result") == "EVEN")
     total_h = len(resolved_health)
     win_rate_h = round(wins_h / max(wins_h + losses_h, 1) * 100, 1)
-    pending_h = sum(1 for b in filtered_main if not b.get("result"))
+    pending_h = sum(1 for b in filtered_main if b.get("result") not in ("WIN", "LOSS", "EVEN"))
 
     # Streak (main bets only, avoids excluded)
     streak_val = 0

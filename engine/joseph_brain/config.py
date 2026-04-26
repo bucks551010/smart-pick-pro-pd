@@ -81,6 +81,13 @@ DAWG_FACTOR_TABLE = {
     "opp_bottom5_defense":   +1.5,   # Facing a bad defense
     "missing_key_teammate":  -1.0,   # Key teammate out (usage shift)
     "starter_returning":     -0.5,   # Key player back = fewer touches
+    # ── Line Type / Market Intelligence ─────────────────────────
+    "goblin_line":           +1.5,   # Easier alternate line — higher hit probability
+    "demon_line":            -1.5,   # Harder alternate line — lower hit probability
+    "qeg_pick":              +2.0,   # Quantum Edge Goblin: verified high-edge play
+    "opportunity_boost":     +1.5,   # Teammate injury creates usage surge
+    "line_moving_up":        -0.5,   # Line rising — books pricing OVER harder
+    "line_moving_down":      +0.5,   # Line dropping — easier to hit OVER
 }
 
 VERDICT_EMOJIS = {

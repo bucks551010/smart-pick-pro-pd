@@ -325,6 +325,7 @@ CREATE TABLE IF NOT EXISTS all_analysis_picks (
     result TEXT,
     actual_value REAL,
     notes TEXT,
+    odds_type TEXT DEFAULT 'standard',
     created_at TEXT DEFAULT (datetime('now'))
 );
 """
@@ -590,6 +591,7 @@ def _pg_initialize_database() -> bool:
             bet_type TEXT DEFAULT 'normal',
             std_devs_from_line REAL DEFAULT 0.0,
             is_risky INTEGER DEFAULT 0,
+            odds_type TEXT DEFAULT 'standard',
             created_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
         )""",
         """CREATE TABLE IF NOT EXISTS subscriptions (
@@ -701,6 +703,53 @@ def _pg_initialize_database() -> bool:
             value TEXT NOT NULL,
             updated_at TEXT
         )""",
+        # ── Joseph M. Smith tables ──────────────────────────────────────
+        """CREATE TABLE IF NOT EXISTS joseph_diary (
+            diary_id SERIAL PRIMARY KEY,
+            diary_date TEXT UNIQUE NOT NULL,
+            wins INTEGER NOT NULL DEFAULT 0,
+            losses INTEGER NOT NULL DEFAULT 0,
+            mood TEXT,
+            narrative TEXT,
+            picks_json TEXT,
+            week_summary_json TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        )""",
+        """CREATE TABLE IF NOT EXISTS joseph_player_history (
+            history_id SERIAL PRIMARY KEY,
+            player_name TEXT NOT NULL,
+            stat_type TEXT NOT NULL,
+            total_picks INTEGER NOT NULL DEFAULT 0,
+            wins INTEGER NOT NULL DEFAULT 0,
+            losses INTEGER NOT NULL DEFAULT 0,
+            last_verdict TEXT,
+            last_pick_date TEXT,
+            notes TEXT,
+            created_at TEXT,
+            UNIQUE(player_name, stat_type)
+        )""",
+        # ── Per-user live entry bucket (picks staged from QAM → Entry Builder) ──
+        """CREATE TABLE IF NOT EXISTS live_entry_bucket (
+            bucket_id SERIAL PRIMARY KEY,
+            user_email TEXT NOT NULL,
+            pick_key TEXT NOT NULL,
+            player_name TEXT NOT NULL,
+            team TEXT,
+            stat_type TEXT NOT NULL,
+            prop_line REAL NOT NULL,
+            direction TEXT NOT NULL,
+            platform TEXT,
+            tier TEXT,
+            tier_emoji TEXT,
+            confidence_score REAL,
+            probability_over REAL,
+            edge_percentage REAL,
+            bet_type TEXT DEFAULT 'normal',
+            odds_type TEXT DEFAULT 'standard',
+            added_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS'),
+            UNIQUE(user_email, pick_key)
+        )""",
         # ── Indexes ────────────────────────────────────────────────────
         "CREATE INDEX IF NOT EXISTS idx_bets_player ON bets (player_name)",
         "CREATE INDEX IF NOT EXISTS idx_bets_date ON bets (bet_date)",
@@ -717,9 +766,7 @@ def _pg_initialize_database() -> bool:
         "CREATE INDEX IF NOT EXISTS idx_pgl_player_date ON player_game_logs (player_id, game_date)",
         "CREATE INDEX IF NOT EXISTS idx_ph_date ON prediction_history (prediction_date)",
         "CREATE INDEX IF NOT EXISTS idx_ph_stat ON prediction_history (stat_type)",
-        # Prevent duplicate auto-logged bets on Railway (ephemeral filesystem means
-        # in-process dedup can't be relied upon — DB-level guard is the real protection).
-        "CREATE UNIQUE INDEX IF NOT EXISTS idx_bets_auto_dedup ON bets (bet_date, LOWER(player_name), stat_type, direction, platform) WHERE auto_logged = 1",
+        # idx_bets_auto_dedup is created separately below (after dup cleanup)
     ]
     # The unique index on all_analysis_picks must match the ON CONFLICT clause
     # in _pg_insert_analysis_picks exactly (including LOWER/COALESCE expressions).
@@ -743,6 +790,19 @@ def _pg_initialize_database() -> bool:
             "ALTER TABLE bets ADD COLUMN IF NOT EXISTS void_reason TEXT",
             "ALTER TABLE bets ADD COLUMN IF NOT EXISTS resolve_attempts INTEGER DEFAULT 0",
             "ALTER TABLE bets ADD COLUMN IF NOT EXISTS last_resolve_attempt TEXT",
+            # odds_type — critical for QEG filtering; without it DB-loaded picks
+            # all default to 'standard' and goblin/demon lines bypass the filter.
+            "ALTER TABLE all_analysis_picks ADD COLUMN IF NOT EXISTS odds_type TEXT DEFAULT 'standard'",
+            # Joseph diary and player history were added after initial deploy;
+            # existing PG DBs need these columns if table already exists.
+            "ALTER TABLE joseph_diary ADD COLUMN IF NOT EXISTS week_summary_json TEXT",
+            "ALTER TABLE joseph_player_history ADD COLUMN IF NOT EXISTS notes TEXT",
+            # Per-user bet tracking (Live Entry Bucket → Entry Builder lock)
+            "ALTER TABLE bets ADD COLUMN IF NOT EXISTS user_email TEXT",
+            "ALTER TABLE entries ADD COLUMN IF NOT EXISTS user_email TEXT",
+            "CREATE INDEX IF NOT EXISTS idx_bets_user_email ON bets (user_email)",
+            "CREATE INDEX IF NOT EXISTS idx_entries_user_email ON entries (user_email)",
+            "CREATE INDEX IF NOT EXISTS idx_leb_user ON live_entry_bucket (user_email)",
         ]
         for _alter in _PG_ALTERS:
             try:
@@ -766,6 +826,26 @@ def _pg_initialize_database() -> bool:
             )
             try:
                 cur.execute(_UNIQUE_IDX)
+            except Exception:
+                pass  # Best-effort
+
+        # Unique index on auto-logged bets: dedup first so index never fails silently
+        _BETS_DEDUP_IDX = (
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_bets_auto_dedup "
+            "ON bets (bet_date, LOWER(player_name), stat_type, direction, platform) WHERE auto_logged = 1"
+        )
+        try:
+            cur.execute(_BETS_DEDUP_IDX)
+        except Exception:
+            conn.rollback()
+            try:
+                cur.execute(
+                    """DELETE FROM bets WHERE auto_logged = 1 AND bet_id NOT IN (
+                        SELECT MAX(bet_id) FROM bets WHERE auto_logged = 1
+                        GROUP BY bet_date, LOWER(player_name), stat_type, direction, platform
+                    )"""
+                )
+                cur.execute(_BETS_DEDUP_IDX)
             except Exception:
                 pass  # Best-effort
         conn.commit()
@@ -926,6 +1006,27 @@ def initialize_database():
                 "(key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT)"
             )
 
+            # ── Joseph M. Smith tables ─────────────────────────────────
+            cursor.execute(
+                "CREATE TABLE IF NOT EXISTS joseph_diary "
+                "(diary_id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "diary_date TEXT UNIQUE NOT NULL, "
+                "wins INTEGER NOT NULL DEFAULT 0, "
+                "losses INTEGER NOT NULL DEFAULT 0, "
+                "mood TEXT, narrative TEXT, picks_json TEXT, "
+                "week_summary_json TEXT, created_at TEXT, updated_at TEXT)"
+            )
+            cursor.execute(
+                "CREATE TABLE IF NOT EXISTS joseph_player_history "
+                "(history_id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "player_name TEXT NOT NULL, stat_type TEXT NOT NULL, "
+                "total_picks INTEGER NOT NULL DEFAULT 0, "
+                "wins INTEGER NOT NULL DEFAULT 0, "
+                "losses INTEGER NOT NULL DEFAULT 0, "
+                "last_verdict TEXT, last_pick_date TEXT, notes TEXT, created_at TEXT, "
+                "UNIQUE(player_name, stat_type))"
+            )
+
             # â”€â”€ Indexes for performance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             _TRACKING_INDEXES = (
                 ("idx_pgl_player_id", "player_game_logs", "(player_id)"),
@@ -1015,6 +1116,17 @@ def initialize_database():
                 )
             except sqlite3.OperationalError:
                 pass  # Column already exists
+
+            # Add odds_type to all_analysis_picks (standard / goblin / demon)
+            # Critical for QEG filtering — without this, DB-loaded picks lack
+            # the field and all default to "standard", letting goblin/demon
+            # alternate-line picks slip into QEG incorrectly.
+            try:
+                cursor.execute(
+                    "ALTER TABLE all_analysis_picks ADD COLUMN odds_type TEXT DEFAULT 'standard'"
+                )
+            except sqlite3.OperationalError:
+                pass  # Column already exists
             # â”€â”€ Line category column migration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             # Add line_category and standard_line columns for the three-tier
             # Goblin / 50_50 / Demon classification system.
@@ -1051,10 +1163,18 @@ def initialize_database():
                 pass  # Column already exists -- safe to ignore
 
             # -- auto-logged bet dedup index --
-            # Prevents duplicate auto-logged bets at the DB level -- same guard
-            # that _PG_STMTS creates on PostgreSQL.  SQLite supports partial
-            # indexes with a WHERE clause.  If existing duplicates prevent
-            # creation, we skip silently (app-level dedup still runs first).
+            # Prevents duplicate auto-logged bets at the DB level.  Purge any
+            # existing duplicates first (keep the latest bet_id per group) so
+            # the UNIQUE index creation never silently fails.
+            try:
+                cursor.execute(
+                    """DELETE FROM bets WHERE auto_logged = 1 AND bet_id NOT IN (
+                        SELECT MAX(bet_id) FROM bets WHERE auto_logged = 1
+                        GROUP BY bet_date, LOWER(player_name), stat_type, direction, platform
+                    )"""
+                )
+            except sqlite3.OperationalError:
+                pass  # Safe to skip — index creation handles remaining cases
             try:
                 cursor.execute(
                     "CREATE UNIQUE INDEX IF NOT EXISTS idx_bets_auto_dedup "
@@ -1062,7 +1182,7 @@ def initialize_database():
                     "WHERE auto_logged = 1"
                 )
             except (sqlite3.OperationalError, sqlite3.IntegrityError):
-                pass  # Duplicates already exist -- app dedup cleans them going forward
+                pass  # Best-effort — app-level dedup still runs first
 
             # -- source column migration (track bet origin) --
             try:
@@ -1117,6 +1237,50 @@ def initialize_database():
                 )
             except sqlite3.OperationalError:
                 pass
+
+            # ── Per-user live entry bucket (picks staged from QAM → Entry Builder) ──
+            cursor.execute(
+                "CREATE TABLE IF NOT EXISTS live_entry_bucket ("
+                "bucket_id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "user_email TEXT NOT NULL, "
+                "pick_key TEXT NOT NULL, "
+                "player_name TEXT NOT NULL, "
+                "team TEXT, "
+                "stat_type TEXT NOT NULL, "
+                "prop_line REAL NOT NULL, "
+                "direction TEXT NOT NULL, "
+                "platform TEXT, "
+                "tier TEXT, "
+                "tier_emoji TEXT, "
+                "confidence_score REAL, "
+                "probability_over REAL, "
+                "edge_percentage REAL, "
+                "bet_type TEXT DEFAULT 'normal', "
+                "odds_type TEXT DEFAULT 'standard', "
+                "added_at TEXT DEFAULT (datetime('now')), "
+                "UNIQUE(user_email, pick_key))"
+            )
+
+            # ── user_email columns on bets + entries (per-user bet tracking) ──
+            for _ue_alter in (
+                "ALTER TABLE bets ADD COLUMN user_email TEXT",
+                "ALTER TABLE entries ADD COLUMN user_email TEXT",
+            ):
+                try:
+                    cursor.execute(_ue_alter)
+                except sqlite3.OperationalError:
+                    pass  # column already exists
+
+            # Indexes for fast per-user filtering
+            for _idx_sql in (
+                "CREATE INDEX IF NOT EXISTS idx_bets_user_email ON bets (user_email)",
+                "CREATE INDEX IF NOT EXISTS idx_entries_user_email ON entries (user_email)",
+                "CREATE INDEX IF NOT EXISTS idx_leb_user ON live_entry_bucket (user_email)",
+            ):
+                try:
+                    cursor.execute(_idx_sql)
+                except sqlite3.OperationalError:
+                    pass
 
             # ── Rename retrieved_at column in player_game_logs ──
             # Older databases have the column named with old terminology; new schema
@@ -1317,8 +1481,8 @@ def insert_bet(bet_data):
         bet_date, player_name, team, stat_type, prop_line,
         direction, platform, confidence_score, probability_over,
         edge_percentage, tier, entry_type, entry_fee, notes, auto_logged,
-        bet_type, std_devs_from_line, source
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        bet_type, std_devs_from_line, source, user_email
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
     values = (
@@ -1340,13 +1504,14 @@ def insert_bet(bet_data):
         bet_data.get("bet_type", "normal"),
         float(bet_data.get("std_devs_from_line", 0.0)),
         bet_data.get("source", "manual"),
+        bet_data.get("user_email", "") or None,
     )
 
     # ── PostgreSQL path (Railway) ─────────────────────────────────────
     if _DATABASE_URL:
         pg_insert_sql = insert_sql.replace(
-            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ") VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING bet_id",
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ") VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING bet_id",
         )
         conn = None
         try:
@@ -1536,22 +1701,32 @@ def search_bets_by_player(query, limit=200):
     return _db_read(sql, (f"%{query.strip().lower()}%", limit))
 
 
-def load_all_bets(*, limit=10000, exclude_linked=True):
+def load_all_bets(*, limit=10000, exclude_linked=True, user_email=None):
     """
     Load all bets, optionally excluding those linked to a parlay entry.
 
     Args:
         limit (int): Maximum number of rows to return.
         exclude_linked (bool): If True, exclude bets with an entry_id set.
+        user_email (str|None): If set, restrict to that user's bets only.
 
     Returns:
         list[dict]: Bet rows.
     """
+    where_parts = []
+    params = []
     if exclude_linked:
-        sql = "SELECT * FROM bets WHERE entry_id IS NULL ORDER BY created_at DESC LIMIT ?"
-    else:
-        sql = "SELECT * FROM bets ORDER BY created_at DESC LIMIT ?"
-    return _db_read(sql, (limit,))
+        where_parts.append("entry_id IS NULL")
+    if user_email:
+        where_parts.append(
+            "(user_email IS NULL OR user_email = '' "
+            "OR LOWER(user_email) = ?)"
+        )
+        params.append(str(user_email).strip().lower())
+    where_sql = (" WHERE " + " AND ".join(where_parts)) if where_parts else ""
+    sql = f"SELECT * FROM bets{where_sql} ORDER BY created_at DESC LIMIT ?"
+    params.append(limit)
+    return _db_read(sql, tuple(params))
 
 
 def load_bets_by_date_range(start_date, end_date, limit=10000):
@@ -1621,8 +1796,8 @@ def insert_entry(entry_data):
     insert_sql = """
     INSERT INTO entries (
         entry_date, platform, entry_type, entry_fee,
-        expected_value, pick_count, notes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        expected_value, pick_count, notes, user_email
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """
     values = (
         entry_data.get("entry_date", ""),
@@ -1632,6 +1807,7 @@ def insert_entry(entry_data):
         entry_data.get("expected_value", 0.0),
         entry_data.get("pick_count", 0),
         entry_data.get("notes", ""),
+        entry_data.get("user_email", "") or None,
     )
     cursor = _db_write(insert_sql, values, caller="insert_entry")
     if cursor is not None:
@@ -1639,13 +1815,25 @@ def insert_entry(entry_data):
     return None
 
 
-def load_all_entries(limit=500):
+def load_all_entries(limit=500, user_email=None):
     """
     Load recent parlay entries from the database.
+
+    When *user_email* is supplied, restricts to that user's entries plus
+    legacy rows without a user_email (historical visibility during rollout).
 
     Returns:
         list of dict: Entry rows as dictionaries
     """
+    if user_email:
+        select_sql = """
+        SELECT * FROM entries
+        WHERE (user_email IS NULL OR user_email = ''
+               OR LOWER(user_email) = ?)
+        ORDER BY created_at DESC
+        LIMIT ?
+        """
+        return _db_read(select_sql, (str(user_email).strip().lower(), int(limit)))
     select_sql = """
     SELECT * FROM entries
     ORDER BY created_at DESC
@@ -1792,6 +1980,7 @@ def _build_bets_filter_clause(
     result_filter=None,
     tier_filter=None,
     bet_types=None,
+    user_email=None,
 ):
     """Build SQL WHERE clause + params for reusable bet filters."""
     where_parts = []
@@ -1799,6 +1988,16 @@ def _build_bets_filter_clause(
 
     if exclude_linked:
         where_parts.append("entry_id IS NULL")
+
+    if user_email:
+        # Match this user's bets PLUS legacy (NULL/empty) rows so
+        # historical bets from before per-user tagging remain visible
+        # in everyone's tracker until they're explicitly cleaned up.
+        where_parts.append(
+            "(user_email IS NULL OR user_email = '' "
+            "OR LOWER(user_email) = ?)"
+        )
+        params.append(str(user_email).strip().lower())
 
     if player_search:
         where_parts.append("LOWER(COALESCE(player_name, '')) LIKE ?")
@@ -1826,7 +2025,7 @@ def _build_bets_filter_clause(
             where_parts.append("(" + " OR ".join(term_clauses) + ")")
 
     if result_filter == "PENDING":
-        where_parts.append("(result IS NULL OR result = '')")
+        where_parts.append("(result IS NULL OR result = '' OR result = 'VOID')")
     elif result_filter in {"WIN", "LOSS", "EVEN", "VOID"}:
         where_parts.append("result = ?")
         params.append(result_filter)
@@ -1860,6 +2059,7 @@ def load_bets_page(
     result_filter=None,
     tier_filter=None,
     bet_types=None,
+    user_email=None,
 ):
     """Load a page of bets using DB-side filters and pagination."""
     where_sql, params = _build_bets_filter_clause(
@@ -1872,6 +2072,7 @@ def load_bets_page(
         result_filter=result_filter,
         tier_filter=tier_filter,
         bet_types=bet_types,
+        user_email=user_email,
     )
 
     query_sql = f"""
@@ -1895,6 +2096,7 @@ def count_bets(
     result_filter=None,
     tier_filter=None,
     bet_types=None,
+    user_email=None,
 ):
     """Count total bets for the provided filters."""
     where_sql, params = _build_bets_filter_clause(
@@ -1907,6 +2109,7 @@ def count_bets(
         result_filter=result_filter,
         tier_filter=tier_filter,
         bet_types=bet_types,
+        user_email=user_email,
     )
 
     query_sql = f"SELECT COUNT(*) AS total_count FROM bets {where_sql}"
@@ -1928,6 +2131,7 @@ def get_bets_summary(
     result_filter=None,
     tier_filter=None,
     bet_types=None,
+    user_email=None,
 ):
     """Return summary counts for a filtered bet set."""
     where_sql, params = _build_bets_filter_clause(
@@ -1940,6 +2144,7 @@ def get_bets_summary(
         result_filter=result_filter,
         tier_filter=tier_filter,
         bet_types=bet_types,
+        user_email=user_email,
     )
 
     query_sql = f"""
@@ -1948,7 +2153,8 @@ def get_bets_summary(
             SUM(CASE WHEN result = 'WIN' THEN 1 ELSE 0 END) AS wins,
             SUM(CASE WHEN result = 'LOSS' THEN 1 ELSE 0 END) AS losses,
             SUM(CASE WHEN result = 'EVEN' THEN 1 ELSE 0 END) AS evens,
-            SUM(CASE WHEN result IS NULL OR result = '' THEN 1 ELSE 0 END) AS pending
+            SUM(CASE WHEN (result IS NULL OR result = '' OR result = 'VOID')
+                THEN 1 ELSE 0 END) AS pending
         FROM bets
         {where_sql}
     """
@@ -2745,7 +2951,7 @@ def insert_analysis_picks(analysis_results):
                                SET prop_line = ?, confidence_score = ?,
                                    probability_over = ?, edge_percentage = ?,
                                    tier = ?, notes = ?, bet_type = ?,
-                                   std_devs_from_line = ?
+                                   std_devs_from_line = ?, odds_type = ?
                                WHERE pick_id = ?""",
                             (
                                 float(r.get("line", 0) or 0),
@@ -2756,6 +2962,7 @@ def insert_analysis_picks(analysis_results):
                                 f"Auto-stored by Smart Pick Pro. SAFE Score: {r.get('confidence_score', 0):.0f}",
                                 r.get("bet_type", "normal"),
                                 float(r.get("std_devs_from_line", 0.0)),
+                                str(r.get("odds_type", "standard") or "standard").strip().lower(),
                                 existing[key],
                             ),
                         )
@@ -2766,8 +2973,8 @@ def insert_analysis_picks(analysis_results):
                             (pick_date, player_name, team, stat_type, prop_line,
                              direction, platform, confidence_score, probability_over,
                              edge_percentage, tier, result, actual_value, notes,
-                             bet_type, std_devs_from_line, is_risky)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?)
+                             bet_type, std_devs_from_line, is_risky, odds_type)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?)
                         """,
                         (
                             today_str,
@@ -2784,6 +2991,8 @@ def insert_analysis_picks(analysis_results):
                             f"Auto-stored by Smart Pick Pro. SAFE Score: {r.get('confidence_score', 0):.0f}",
                             r.get("bet_type", "normal"),
                             float(r.get("std_devs_from_line", 0.0)),
+                            1 if r.get("should_avoid", False) else 0,
+                            str(r.get("odds_type", "standard") or "standard").strip().lower(),
                         ),
                     )
                     existing[key] = -1  # mark as inserted so dedup skips on retry
@@ -3133,8 +3342,8 @@ def _pg_insert_analysis_picks(analysis_results: list, today_str: str) -> int:
                 INSERT INTO all_analysis_picks
                     (pick_date, player_name, team, stat_type, prop_line, direction,
                      platform, confidence_score, probability_over, edge_percentage,
-                     tier, notes, bet_type, std_devs_from_line, is_risky)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                     tier, notes, bet_type, std_devs_from_line, is_risky, odds_type)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (pick_date, LOWER(player_name), stat_type, prop_line, direction, COALESCE(platform, ''))
                 DO UPDATE SET
                     confidence_score   = EXCLUDED.confidence_score,
@@ -3144,7 +3353,8 @@ def _pg_insert_analysis_picks(analysis_results: list, today_str: str) -> int:
                     notes              = EXCLUDED.notes,
                     bet_type           = EXCLUDED.bet_type,
                     std_devs_from_line = EXCLUDED.std_devs_from_line,
-                    is_risky           = EXCLUDED.is_risky
+                    is_risky           = EXCLUDED.is_risky,
+                    odds_type          = EXCLUDED.odds_type
                 """,
                 (
                     today_str,
@@ -3162,6 +3372,7 @@ def _pg_insert_analysis_picks(analysis_results: list, today_str: str) -> int:
                     r.get("bet_type", "normal"),
                     float(r.get("std_devs_from_line", 0.0)),
                     1 if r.get("should_avoid", False) else 0,
+                    str(r.get("odds_type", "standard") or "standard").strip().lower(),
                 ),
             )
             inserted += 1
@@ -3370,7 +3581,7 @@ def get_slate_picks_for_today() -> list:
             cur.execute(
                 "SELECT pick_id, pick_date, player_name, team, stat_type, prop_line, "
                 "direction, platform, confidence_score, probability_over, edge_percentage, "
-                "tier, result, actual_value, notes, bet_type, std_devs_from_line, is_risky "
+                "tier, result, actual_value, notes, bet_type, std_devs_from_line, is_risky, odds_type "
                 "FROM all_analysis_picks "
                 "WHERE pick_date = %s "
                 "ORDER BY confidence_score DESC",
@@ -4344,6 +4555,166 @@ def cleanup_props_cache(days: int = 30) -> None:
         (cutoff,),
         caller="cleanup_props_cache",
     )
+
+
+# ── Joseph M. Smith DB helpers ─────────────────────────────────────────────
+
+
+def save_joseph_diary_entry(date_str: str, entry: dict) -> bool:
+    """Upsert a Joseph diary entry for *date_str* (YYYY-MM-DD)."""
+    import json as _json
+    try:
+        now_iso = datetime.datetime.utcnow().isoformat() + "Z"
+        _db_write(
+            "INSERT INTO joseph_diary "
+            "(diary_date, wins, losses, mood, narrative, picks_json, week_summary_json, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(diary_date) DO UPDATE SET "
+            "wins=excluded.wins, losses=excluded.losses, mood=excluded.mood, "
+            "narrative=excluded.narrative, picks_json=excluded.picks_json, "
+            "week_summary_json=excluded.week_summary_json, updated_at=excluded.updated_at",
+            (
+                date_str,
+                entry.get("wins", 0),
+                entry.get("losses", 0),
+                entry.get("mood", "neutral"),
+                entry.get("narrative", ""),
+                _json.dumps(entry.get("picks", [])),
+                _json.dumps(entry.get("week_summary", {})),
+                now_iso,
+                now_iso,
+            ),
+            caller="save_joseph_diary",
+        )
+        return True
+    except Exception as exc:
+        _logger.debug("save_joseph_diary_entry failed: %s", exc)
+        return False
+
+
+def load_joseph_diary_entry(date_str: str) -> dict | None:
+    """Load a Joseph diary entry for *date_str*. Returns None if not found."""
+    import json as _json
+    try:
+        rows = _db_read(
+            "SELECT wins, losses, mood, narrative, picks_json, week_summary_json "
+            "FROM joseph_diary WHERE diary_date = ?",
+            (date_str,),
+        )
+        if not rows:
+            return None
+        row = rows[0]
+        entry: dict = {
+            "wins": row["wins"] or 0,
+            "losses": row["losses"] or 0,
+            "mood": row["mood"] or "neutral",
+            "narrative": row["narrative"] or "",
+        }
+        try:
+            entry["picks"] = _json.loads(row["picks_json"] or "[]")
+        except Exception:
+            entry["picks"] = []
+        try:
+            entry["week_summary"] = _json.loads(row["week_summary_json"] or "{}")
+        except Exception:
+            entry["week_summary"] = {}
+        return entry
+    except Exception as exc:
+        _logger.debug("load_joseph_diary_entry failed: %s", exc)
+        return None
+
+
+def load_joseph_full_diary() -> dict:
+    """Load all Joseph diary entries as a {date_str: entry} dict."""
+    import json as _json
+    try:
+        rows = _db_read(
+            "SELECT diary_date, wins, losses, mood, narrative, picks_json, week_summary_json "
+            "FROM joseph_diary ORDER BY diary_date",
+            (),
+        )
+        result: dict = {}
+        for row in rows:
+            entry: dict = {
+                "wins": row["wins"] or 0,
+                "losses": row["losses"] or 0,
+                "mood": row["mood"] or "neutral",
+                "narrative": row["narrative"] or "",
+            }
+            try:
+                entry["picks"] = _json.loads(row["picks_json"] or "[]")
+            except Exception:
+                entry["picks"] = []
+            try:
+                entry["week_summary"] = _json.loads(row["week_summary_json"] or "{}")
+            except Exception:
+                entry["week_summary"] = {}
+            result[row["diary_date"]] = entry
+        return result
+    except Exception as exc:
+        _logger.debug("load_joseph_full_diary failed: %s", exc)
+        return {}
+
+
+def get_joseph_player_history(player_name: str, stat_type: str) -> dict | None:
+    """Return Joseph's tracked accuracy record for *player_name* / *stat_type*."""
+    try:
+        rows = _db_read(
+            "SELECT total_picks, wins, losses, last_verdict, last_pick_date, notes "
+            "FROM joseph_player_history WHERE player_name = ? AND stat_type = ?",
+            (player_name, stat_type),
+        )
+        if not rows:
+            return None
+        row = rows[0]
+        total = row["total_picks"] or 0
+        wins = row["wins"] or 0
+        return {
+            "total_picks": total,
+            "wins": wins,
+            "losses": row["losses"] or 0,
+            "win_rate": round(wins / total, 3) if total > 0 else 0.0,
+            "last_verdict": row["last_verdict"],
+            "last_pick_date": row["last_pick_date"],
+            "notes": row["notes"] or "",
+        }
+    except Exception as exc:
+        _logger.debug("get_joseph_player_history failed: %s", exc)
+        return None
+
+
+def update_joseph_player_history(
+    player_name: str,
+    stat_type: str,
+    verdict: str,
+    was_correct: bool | None,
+) -> bool:
+    """Increment Joseph's per-player accuracy stats after a result resolves."""
+    try:
+        now_iso = datetime.datetime.utcnow().isoformat() + "Z"
+        today = datetime.date.today().isoformat()
+        win_inc = 1 if was_correct else 0
+        loss_inc = 1 if was_correct is False else 0
+        _db_write(
+            "INSERT INTO joseph_player_history "
+            "(player_name, stat_type, total_picks, wins, losses, last_verdict, last_pick_date, created_at) "
+            "VALUES (?, ?, 1, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(player_name, stat_type) DO UPDATE SET "
+            "total_picks = total_picks + 1, "
+            "wins = wins + ?, "
+            "losses = losses + ?, "
+            "last_verdict = excluded.last_verdict, "
+            "last_pick_date = excluded.last_pick_date",
+            (
+                player_name, stat_type, win_inc, loss_inc, verdict, today, now_iso,
+                win_inc, loss_inc,
+            ),
+            caller="update_joseph_player_history",
+        )
+        return True
+    except Exception as exc:
+        _logger.debug("update_joseph_player_history failed: %s", exc)
+        return False
 
 
 def get_pending_bets_for_date(date_str: str) -> list[dict]:

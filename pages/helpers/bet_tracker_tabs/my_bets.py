@@ -55,6 +55,13 @@ def render(platform_selections, player_search, date_range, direction_filter):
 
     _bt_values = [bt.lower() for bt in _bt_filter] if _bt_filter else None
 
+    # Scope to the current user so My Bets totals match the user's own picks.
+    try:
+        from utils.user_session import get_current_user_email as _mb_get_ue
+        _mb_ue = _mb_get_ue() or None
+    except Exception:
+        _mb_ue = st.session_state.get("_bet_tracker_user_email") or None
+
     _args = {
         "exclude_linked": True,
         "player_search": player_search.strip() if player_search else None,
@@ -65,6 +72,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
         "result_filter": _result_filter,
         "tier_filter": _tier_filter,
         "bet_types": _bt_values,
+        "user_email": _mb_ue,
     }
 
     _summary = get_bets_summary(**_args)

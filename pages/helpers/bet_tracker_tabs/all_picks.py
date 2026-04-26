@@ -129,7 +129,12 @@ def render(platform_selections, player_search, date_range, direction_filter):
 
         # Only show bets from the Railway bets table for this date
         from tracking.database import load_bets_page as _load_bets_page
-        _rbd_bets = _load_bets_page(start_date=_rbd_sel, end_date=_rbd_sel, exclude_linked=False, limit=500)
+        _rbd_ue = st.session_state.get("_bet_tracker_user_email") or None
+        _rbd_bets = _load_bets_page(
+            start_date=_rbd_sel, end_date=_rbd_sel,
+            exclude_linked=False, limit=500,
+            user_email=_rbd_ue,
+        )
 
         if not _rbd_bets:
             st.info(f"No bets logged for {_rbd_sel}.")
@@ -242,17 +247,18 @@ def render(platform_selections, player_search, date_range, direction_filter):
         return
 
     # ── Summary stats ─────────────────────────────────────────
-    _total = len(all_picks_data)
-    # Exclude avoided/risky picks from the main win rate calculation
+    # Exclude avoided/risky picks from totals/win-rate — consistent with
+    # Health tab so the numbers match when both use the same scope.
     _main_picks = [p for p in all_picks_data if normalized_bet_type(p) != "risky" and int(p.get("is_risky", 0) or 0) != 1]
+    _total = len(_main_picks)  # consistent with Health (excl. Avoided)
     _wins = sum(1 for p in _main_picks if p.get("result") == "WIN")
     _losses = sum(1 for p in _main_picks if p.get("result") == "LOSS")
     _evens = sum(1 for p in _main_picks if p.get("result") == "EVEN")
-    _pending = sum(1 for p in all_picks_data if not p.get("result"))
+    _pending = sum(1 for p in _main_picks if p.get("result") not in ("WIN", "LOSS", "EVEN"))  # excl. avoided so wins+losses+evens+pending=total
     _resolved = _wins + _losses
     _wr = round(_wins / max(_resolved, 1) * 100, 1) if _resolved > 0 else 0.0
-    _avg_edge = sum(abs(float(p.get("edge_percentage", 0) or 0)) for p in all_picks_data) / _total if _total else 0.0
-    _avg_conf = sum(float(p.get("confidence_score", 0) or 0) for p in all_picks_data) / _total if _total else 0.0
+    _avg_edge = sum(abs(float(p.get("edge_percentage", 0) or 0)) for p in _main_picks) / _total if _total else 0.0
+    _avg_conf = sum(float(p.get("confidence_score", 0) or 0) for p in _main_picks) / _total if _total else 0.0
 
     with st.expander("🔎 Count Reconciliation", expanded=False):
         _c1, _c2, _c3, _c4 = st.columns(4)
@@ -296,13 +302,14 @@ def render(platform_selections, player_search, date_range, direction_filter):
         get_summary_cards_html(
             total=_total, wins=_wins, losses=_losses, evens=_evens,
             pending=_pending, win_rate=_wr, streak=_streak,
-            best_platform=_best_plat, total_label="Total Picks",
+            best_platform=_best_plat, total_label="Total Picks (excl. Avoided)",
         ),
         unsafe_allow_html=True,
     )
     st.caption(
         f"Scope source = {len(db_picks)} analysis rows + {len(_pipeline)} pipeline "
-        f"(-{_skip_overlap} overlaps) = {len(_combined)} merged; {_total} shown."
+        f"(-{_skip_overlap} overlaps) = {len(_combined)} merged; "
+        f"{_total} shown (excl. avoided picks — wins+losses+evens+pending = total)."
     )
 
     if _resolved > 0:

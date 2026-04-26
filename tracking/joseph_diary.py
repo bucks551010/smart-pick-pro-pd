@@ -17,14 +17,36 @@ try:
 except ImportError:
     _logger = logging.getLogger(__name__)
 
+# Optional DB layer — used when available (SQLite or Railway PostgreSQL)
+try:
+    from tracking.database import (
+        save_joseph_diary_entry as _db_save_diary,
+        load_joseph_diary_entry as _db_load_diary_entry,
+        load_joseph_full_diary as _db_load_full_diary,
+    )
+    _DB_AVAILABLE = True
+except ImportError:
+    _DB_AVAILABLE = False
+
 
 # ── Diary file location ──────────────────────────────────────
-_DIARY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)))
+_DIARY_DIR = os.environ.get("DB_DIR", os.path.dirname(os.path.abspath(__file__)))
 _DIARY_FILE = os.path.join(_DIARY_DIR, "joseph_diary.json")
 
 
 def _load_diary() -> dict:
-    """Load the diary JSON from disk. Returns empty dict on any failure."""
+    """Load the full diary.
+
+    Tries the DB layer first; falls back to the JSON file on disk.
+    """
+    if _DB_AVAILABLE:
+        try:
+            db_data = _db_load_full_diary()
+            if db_data:
+                return db_data
+        except Exception as exc:
+            _logger.debug("joseph_diary: DB full-load failed, using file — %s", exc)
+    # File fallback
     try:
         if os.path.isfile(_DIARY_FILE):
             with open(_DIARY_FILE, "r") as fh:
@@ -32,19 +54,31 @@ def _load_diary() -> dict:
                 if isinstance(data, dict):
                     return data
     except Exception as exc:
-        _logger.debug("joseph_diary: load error — %s", exc)
+        _logger.debug("joseph_diary: file load error — %s", exc)
     return {}
 
 
 def _save_diary(data: dict) -> bool:
-    """Write the diary dict to disk. Returns True on success."""
+    """Persist the full diary dict.
+
+    Writes to both the DB layer and the JSON file for redundancy.
+    """
+    success = False
+    if _DB_AVAILABLE:
+        try:
+            for date_key, entry in data.items():
+                _db_save_diary(date_key, entry)
+            success = True
+        except Exception as exc:
+            _logger.debug("joseph_diary: DB full-save failed — %s", exc)
+    # Always mirror to file as backup
     try:
         with open(_DIARY_FILE, "w") as fh:
             json.dump(data, fh, indent=2, default=str)
-        return True
+        success = True
     except Exception as exc:
-        _logger.warning("joseph_diary: save error — %s", exc)
-        return False
+        _logger.warning("joseph_diary: file save error — %s", exc)
+    return success
 
 
 # ── Public API ────────────────────────────────────────────────
@@ -72,7 +106,7 @@ def diary_log_entry(date_str: str = None, entry: dict = None) -> bool:
     diary = _load_diary()
     if "entries" not in diary:
         diary["entries"] = {}
-    diary["entries"][date_str] = {
+    entry_data = {
         "date": date_str,
         "wins": entry.get("wins", 0),
         "losses": entry.get("losses", 0),
@@ -82,7 +116,23 @@ def diary_log_entry(date_str: str = None, entry: dict = None) -> bool:
         "narrative": entry.get("narrative", ""),
         "timestamp": datetime.datetime.now().isoformat(),
     }
-    return _save_diary(diary)
+    diary["entries"][date_str] = entry_data
+
+    # Fast path: write single entry directly to DB when available
+    if _DB_AVAILABLE:
+        try:
+            _db_save_diary(date_str, entry_data)
+        except Exception as exc:
+            _logger.debug("joseph_diary: DB single-entry save failed — %s", exc)
+
+    # Mirror full diary to file
+    try:
+        with open(_DIARY_FILE, "w") as fh:
+            json.dump(diary, fh, indent=2, default=str)
+        return True
+    except Exception as exc:
+        _logger.warning("joseph_diary: file save error — %s", exc)
+        return False
 
 
 def diary_get_entry(date_str: str = None) -> dict:

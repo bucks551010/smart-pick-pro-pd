@@ -74,6 +74,25 @@ st.markdown(get_global_css(), unsafe_allow_html=True)
 st.markdown(get_qds_css(), unsafe_allow_html=True)
 st.markdown(get_bet_card_css(), unsafe_allow_html=True)
 
+# ── Per-user scoping ──────────────────────────────────────────
+# Stamp the active user email so cached_load_all_bets / load_bets_page /
+# get_bets_summary all auto-filter to this user's bets (legacy rows
+# without a user_email are still included so historical data remains
+# visible during the rollout).
+try:
+    from utils.user_session import (
+        get_current_user_email as _bt_get_ue,
+        get_user_display_label as _bt_label,
+    )
+    _bt_user_email = _bt_get_ue()
+    st.session_state["_bet_tracker_user_email"] = _bt_user_email
+    st.caption(
+        f"{_bt_label()} — viewing your tracked bets (legacy untagged "
+        "bets are included for continuity)."
+    )
+except Exception:
+    _bt_user_email = ""
+
 # Premium UI layer — metric cards, chart wrap, footer CSS
 from styles.theme import get_premium_ui_css as _bt_premium_css
 st.markdown(_bt_premium_css(), unsafe_allow_html=True)
@@ -453,7 +472,10 @@ if _check_now_btn:
         try:
             _today_top = _dt_top.date.today().isoformat()
             _pending_top = [
-                b for b in _load_bets_top(exclude_linked=False)
+                b for b in _load_bets_top(
+                    exclude_linked=False,
+                    user_email=st.session_state.get("_bet_tracker_user_email") or None,
+                )
                 if b.get("bet_date") == _today_top and not b.get("result")
             ]
             _total_top = max(len(_pending_top), 1)

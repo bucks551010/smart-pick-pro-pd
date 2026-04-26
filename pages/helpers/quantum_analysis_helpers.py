@@ -750,8 +750,9 @@ def filter_qeg_picks(
 
        b. **Edge percentage** – ``|edge_percentage| >= threshold``.
 
-    4. **No other hiding** – ``should_avoid`` and ``player_is_out`` are
-       intentionally *not* checked so extreme-deviation picks are surfaced.
+    4. **Exclude injured/avoided picks** – ``player_is_out`` and
+       ``should_avoid`` are both excluded. OUT players have an artificially
+       set ``edge_percentage = -50.0`` that would falsely pass Criterion B.
 
     Parameters
     ----------
@@ -764,6 +765,12 @@ def filter_qeg_picks(
     thr = edge_threshold if edge_threshold is not None else _QEG_LINE_DEVIATION_THRESHOLD
     filtered: list = []
     for r in results:
+        # Skip out/injured players and explicitly avoided picks — these have
+        # artificially extreme edge_percentage values (-50.0 for OUT players)
+        # that would otherwise trigger Criterion B and produce misleading picks.
+        if r.get("player_is_out", False) or r.get("should_avoid", False):
+            continue
+
         odds_type = str(r.get("odds_type", "standard")).strip().lower()
         if odds_type != "standard":
             continue

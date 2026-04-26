@@ -156,7 +156,7 @@ def get_calendar_heatmap_html(bets_by_date: dict, num_days: int = 42) -> str:
         wins = sum(1 for b in day_bets if b.get("result") == "WIN")
         losses = sum(1 for b in day_bets if b.get("result") == "LOSS")
         total_resolved = wins + losses
-        pending = sum(1 for b in day_bets if not b.get("result"))
+        pending = sum(1 for b in day_bets if b.get("result") not in ("WIN", "LOSS", "EVEN"))
 
         if total_resolved == 0:
             cells_html += (

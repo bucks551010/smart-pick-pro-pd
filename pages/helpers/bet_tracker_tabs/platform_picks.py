@@ -78,7 +78,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
     st.markdown(
         get_summary_cards_html(
             total=len(ai_bets), wins=ai_wins, losses=ai_losses, evens=ai_evens,
-            pending=sum(1 for b in ai_bets if not b.get("result")),
+            pending=sum(1 for b in ai_bets if b.get("result") not in ("WIN", "LOSS", "EVEN")),
             win_rate=ai_rate, total_label="Total Picks",
         ),
         unsafe_allow_html=True,

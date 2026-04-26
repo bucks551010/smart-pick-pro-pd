@@ -228,18 +228,25 @@ def _load_cached_slate() -> tuple[list, list]:
     picks: list = []
 
     # ── Fast-path: slate_cache.json written by slate_worker ────────────────
+    _eon_cleared_today = False
     _cache_file = _Path(__file__).resolve().parent / "cache" / "slate_cache.json"
     if _cache_file.exists():
         try:
             _blob = _json.loads(_cache_file.read_text(encoding="utf-8"))
             from tracking.database import _nba_today_iso as _today
-            if _blob.get("date") == _today() and not _blob.get("_eon_cleared"):
+            _cache_date_matches = _blob.get("date") == _today()
+            if _cache_date_matches and _blob.get("_eon_cleared"):
+                # EON cleanup has run for today — skip DB fallback too so
+                # yesterday's DB rows don't leak back to the home page
+                # during the 2–4 AM ET window (before the sports-day rolls over).
+                _eon_cleared_today = True
+            elif _cache_date_matches and not _blob.get("_eon_cleared"):
                 picks = _blob.get("picks") or []
         except Exception:
             picks = []
 
-    # ── DB fallback ─────────────────────────────────────────────────────────
-    if not picks:
+    # ── DB fallback — skipped when EON has already cleared today's slate ────
+    if not picks and not _eon_cleared_today:
         from tracking.database import get_slate_picks_for_today
         picks = get_slate_picks_for_today()
 

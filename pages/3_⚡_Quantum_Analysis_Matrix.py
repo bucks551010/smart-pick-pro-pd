@@ -835,7 +835,8 @@ if (final_props
 elif (final_props
         and not _qam_auto_safe
         and not st.session_state.get("analysis_results")
-        and not st.session_state.get("_qam_db_restored")):
+        and not st.session_state.get("_qam_db_restored")
+        and not st.session_state.get("_qam_analysis_requested")):
     # Too many props with no game context — show a targeted warning.
     st.info(
         f"⚡ **{len(final_props)} props loaded.** Go to **🏟️ Live Games** → "

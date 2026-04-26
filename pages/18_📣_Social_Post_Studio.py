@@ -111,24 +111,50 @@ st.markdown("""
 # ── Load social_engine config ─────────────────────────────────
 @st.cache_resource(show_spinner=False)
 def _load_se_config():
+    """Build a settings object directly from env vars — avoids any import collision."""
+    import os
+    from dataclasses import dataclass
+
+    # Load social_engine/.env if it exists (supplements the main app .env)
     try:
-        import importlib.util, sys as _sys
-        _spec = importlib.util.spec_from_file_location(
-            "_se_config", str(_SE_ROOT / "config.py")
-        )
-        _mod = importlib.util.module_from_spec(_spec)
-        # Give the module its own namespace so dotenv loads from social_engine/.env
-        _spec.loader.exec_module(_mod)
-        return _mod.SETTINGS
-    except Exception as e:
-        st.error(f"Could not load social_engine config: {e}")
-        return None
+        from dotenv import load_dotenv
+        _se_env = _SE_ROOT / ".env"
+        if _se_env.exists():
+            load_dotenv(_se_env, override=False)
+    except Exception:
+        pass
+
+    @dataclass(frozen=True)
+    class _Settings:
+        twitter_key:        str
+        twitter_secret:     str
+        twitter_token:      str
+        twitter_token_sec:  str
+        twitter_bearer:     str
+        meta_token:         str
+        meta_page_id:       str
+        meta_ig_id:         str
+        meta_threads_id:    str
+        tiktok_token:       str
+        tiktok_open_id:     str
+        gemini_api_key:     str
+
+    return _Settings(
+        twitter_key=       os.getenv("TWITTER_API_KEY", ""),
+        twitter_secret=    os.getenv("TWITTER_API_SECRET", ""),
+        twitter_token=     os.getenv("TWITTER_ACCESS_TOKEN", ""),
+        twitter_token_sec= os.getenv("TWITTER_ACCESS_SECRET", ""),
+        twitter_bearer=    os.getenv("TWITTER_BEARER_TOKEN", ""),
+        meta_token=        os.getenv("META_PAGE_ACCESS_TOKEN", ""),
+        meta_page_id=      os.getenv("META_PAGE_ID", ""),
+        meta_ig_id=        os.getenv("META_INSTAGRAM_BUSINESS_ID", ""),
+        meta_threads_id=   os.getenv("META_THREADS_USER_ID", ""),
+        tiktok_token=      os.getenv("TIKTOK_ACCESS_TOKEN", ""),
+        tiktok_open_id=    os.getenv("TIKTOK_OPEN_ID", ""),
+        gemini_api_key=    os.getenv("GEMINI_API_KEY", ""),
+    )
 
 cfg = _load_se_config()
-
-if cfg is None:
-    st.error("Could not load social_engine config. Check that `social_engine/config.py` is accessible.")
-    st.stop()
 
 # ── Channel Status ────────────────────────────────────────────
 def _ch_status(name: str, check: bool) -> str:

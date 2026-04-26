@@ -31,6 +31,17 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# ── Admin-only gate ────────────────────────────────────────────
+from utils.page_bootstrap import inject_theme_css, init_session_state
+inject_theme_css()
+from utils.auth_gate import require_login, is_admin_user
+if not require_login():
+    st.stop()
+init_session_state()
+if not is_admin_user():
+    st.error("🔒 Access denied. This page is restricted to administrators.")
+    st.stop()
+
 try:
     from styles.theme import get_global_css
     st.markdown(get_global_css(), unsafe_allow_html=True)

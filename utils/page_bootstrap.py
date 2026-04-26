@@ -107,6 +107,48 @@ html, body,
 
 # ── 1. Deterministic CSS Pre-Loader ─────────────────────────────────────────
 
+def _inject_admin_sidebar_guard() -> None:
+    """Hide admin-only sidebar nav items for non-admin users.
+
+    Uses CSS attribute selectors on the sidebar ``<a>`` links whose text
+    matches the admin page names.  Runs every render; zero overhead for admins.
+    """
+    try:
+        from utils.auth_gate import is_admin_user
+        if is_admin_user():
+            return  # admins see everything
+    except Exception:
+        return  # if auth not loaded yet, default to hiding
+
+    # Names that appear in the Streamlit sidebar nav links
+    _ADMIN_PAGE_NAMES = [
+        "Admin Metrics",
+        "DB Manager",
+        "Social Post Studio",
+    ]
+    # Build a CSS selector that matches <a> elements whose trimmed text equals
+    # one of the admin page names (Streamlit renders them as spans inside <a>).
+    selectors = ", ".join(
+        f'[data-testid="stSidebarNav"] a[href*="{name.replace(" ", "_")}"]'
+        for name in _ADMIN_PAGE_NAMES
+    )
+    # Also match by visible text via :has() for browsers that support it
+    text_selectors = " ".join(
+        f'[data-testid="stSidebarNavItems"] li:has(span[title="{name}"]) {{ display: none !important; }}'
+        for name in _ADMIN_PAGE_NAMES
+    )
+    st.markdown(
+        f"<style>\n"
+        f"/* Hide admin-only pages from non-admin sidebar */\n"
+        f"{text_selectors}\n"
+        f"[data-testid='stSidebarNavItems'] li:has(a[href*='Admin_Metrics']) {{ display: none !important; }}\n"
+        f"[data-testid='stSidebarNavItems'] li:has(a[href*='DB_Manager']) {{ display: none !important; }}\n"
+        f"[data-testid='stSidebarNavItems'] li:has(a[href*='Social_Post_Studio']) {{ display: none !important; }}\n"
+        f"</style>",
+        unsafe_allow_html=True,
+    )
+
+
 def inject_theme_css() -> None:
     """Inject the global dark theme CSS *before* any login gate or content.
 
@@ -128,6 +170,8 @@ def inject_theme_css() -> None:
     st.markdown(get_premium_ui_css(), unsafe_allow_html=True)
     # 1c. SEO meta/OG/JSON-LD injection (auto-detected from call stack)
     _inject_page_seo_auto()
+    # 1d. Hide admin-only sidebar items for non-admin users
+    _inject_admin_sidebar_guard()
 
 
 def _inject_page_seo_auto() -> None:

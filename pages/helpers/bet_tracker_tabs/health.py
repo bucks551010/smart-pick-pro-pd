@@ -42,14 +42,11 @@ def render(platform_selections, player_search, date_range, direction_filter):
     ), unsafe_allow_html=True)
 
     _col1, _col2 = st.columns([2, 5])
-    # Force reset if stale "All Time" scope persists from an older session
-    if st.session_state.get("health_scope_filter") == "All Time":
-        st.session_state["health_scope_filter"] = "Today"
-    st.session_state.setdefault("health_scope_filter", "Today")
+    st.session_state.setdefault("health_scope_filter", "Last 30 Days")
     with _col1:
         _health_scope = st.selectbox(
             "Health Scope",
-            ["Today", "Last 7 Days", "Last 30 Days"],
+            ["Today", "Last 7 Days", "Last 30 Days", "All Time"],
             key="health_scope_filter",
             help="Choose which date window feeds Model Health stats.",
         )
@@ -223,10 +220,21 @@ def render(platform_selections, player_search, date_range, direction_filter):
                 st.error(f"📉 **Model Drift Warning** — Last 20 bets win rate: **{_l20_wr:.0f}%**.")
                 _add_notif("Model Drift", f"Last 20 bets win rate: {_l20_wr:.0f}%.", "error")
 
-    if total_h > 0:
-        st.divider()
-        performance_stats = get_model_performance_stats(bets_list=filtered_health)
+    st.divider()
+    # Performance breakdowns always use ALL resolved bets (not scoped to current
+    # date window) so the stats are meaningful even when viewing Today or Last 7 Days.
+    from pages.helpers.bet_tracker_data import cached_load_all_bets as _load_all_for_stats
+    _all_resolved_for_stats = [
+        b for b in _load_all_for_stats()
+        if b.get("result") in ("WIN", "LOSS", "EVEN")
+    ]
+    if not _all_resolved_for_stats:
+        st.caption("📊 Win rate breakdowns will appear once bets are resolved.")
+    else:
+        performance_stats = get_model_performance_stats(bets_list=_all_resolved_for_stats)
+        st.caption(f"📊 Win rate stats below use all {len(_all_resolved_for_stats)} resolved bets (all time).")
 
+    if _all_resolved_for_stats:
         # Win rate by tier
         with st.expander("🏆 Win Rate by Tier", expanded=True):
             tier_perf = performance_stats.get("by_tier", {})
@@ -295,7 +303,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
 
         # Win rate by bet classification
         _bt_perf: dict = {}
-        for _hb in resolved_health:
+        for _hb in _all_resolved_for_stats:
             _bt = normalized_bet_type(_hb)
             if _bt not in _bt_perf:
                 _bt_perf[_bt] = {"wins": 0, "losses": 0, "total": 0}

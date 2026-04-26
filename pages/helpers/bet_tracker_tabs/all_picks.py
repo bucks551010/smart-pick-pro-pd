@@ -334,12 +334,20 @@ def render(platform_selections, player_search, date_range, direction_filter):
 
     st.divider()
 
+    # Performance breakdowns always use ALL resolved bets (not scoped to current
+    # date selection) so stats are meaningful even when viewing a single day.
+    _stats_bets = [b for b in cached_load_all_bets() if b.get("result") in ("WIN", "LOSS", "EVEN")]
+    if _stats_bets:
+        st.caption(f"📊 Win rate stats below use all {len(_stats_bets)} resolved bets (all time).")
+    else:
+        st.caption("📊 Win rate breakdowns will appear once bets are resolved.")
+
     # Win rate by tier
     with st.expander("🏆 Win Rate by Tier", expanded=True):
         _tr = []
         _icons = {"Platinum": "💎", "Gold": "🥇", "Silver": "🥈", "Bronze": "🥉"}
         for _tn in ["Platinum", "Gold", "Silver", "Bronze"]:
-            _tp = [p for p in all_picks_data if p.get("tier") == _tn]
+            _tp = [p for p in _stats_bets if p.get("tier") == _tn]
             if not _tp:
                 continue
             _tw = sum(1 for p in _tp if p.get("result") == "WIN")
@@ -360,7 +368,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
 
     # Win rate by platform
     _pd: dict = {}
-    for _p in all_picks_data:
+    for _p in _stats_bets:
         _plat = "Smart Pick Pro Platform Picks" if is_ai_auto_bet(_p) else platform_display_name(_p.get("platform") or "Unknown")
         _res = _p.get("result")
         if _plat not in _pd:
@@ -381,8 +389,8 @@ def render(platform_selections, player_search, date_range, direction_filter):
     # Win rate by stat type
     with st.expander("📐 Win Rate by Stat Type", expanded=False):
         _sr = []
-        for _st in sorted({p.get("stat_type", "unknown") for p in all_picks_data}):
-            _sp2 = [p for p in all_picks_data if p.get("stat_type") == _st]
+        for _st in sorted({p.get("stat_type", "unknown") for p in _stats_bets}):
+            _sp2 = [p for p in _stats_bets if p.get("stat_type") == _st]
             _sw = sum(1 for p in _sp2 if p.get("result") == "WIN")
             _sl = sum(1 for p in _sp2 if p.get("result") == "LOSS")
             _sres = _sw + _sl
@@ -395,7 +403,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
 
     # Win rate by bet classification
     _bd: dict = {}
-    for _p in all_picks_data:
+    for _p in _stats_bets:
         _bt = normalized_bet_type(_p)
         _res = _p.get("result")
         if _bt not in _bd:

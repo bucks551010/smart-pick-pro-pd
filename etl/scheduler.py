@@ -212,6 +212,21 @@ def _run_end_of_night_cleanup(sports_date: str) -> dict:
         summary["errors"].append(f"bump_data_version: {exc}")
         _logger.warning("[EON] _bump_data_version failed (non-fatal): %s", exc)
 
+    # 5. Prune prior-day analysis_sessions from DB so load_latest_analysis_session
+    #    never returns a stale session after EON cleanup runs.
+    try:
+        from tracking.database import _db_write, _nba_today_iso as _eon_today
+        _today_iso = _eon_today()
+        _db_write(
+            "DELETE FROM analysis_sessions WHERE analysis_timestamp < ?",
+            (_today_iso,),
+            caller="eon_prune_analysis_sessions",
+        )
+        _logger.info("[EON] Pruned prior-day analysis_sessions (before %s)", _today_iso)
+    except Exception as exc:
+        summary["errors"].append(f"prune_analysis_sessions: {exc}")
+        _logger.warning("[EON] analysis_sessions prune failed (non-fatal): %s", exc)
+
     _logger.info(
         "[EON] Cleanup complete — bets=%d  picks=%d  errors=%d",
         summary["bets_resolved"], summary["picks_resolved"], len(summary["errors"]),

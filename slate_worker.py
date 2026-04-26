@@ -515,7 +515,7 @@ def _job_bet_logging() -> None:
     )
     today = _et_today()
     rows = _db_read(
-        "SELECT * FROM all_analysis_picks WHERE for_date = ?", (today,)
+        "SELECT * FROM all_analysis_picks WHERE pick_date = ?", (today,)
     ) or []
     if not rows:
         _logger.warning("[bet_logging] no picks in all_analysis_picks for %s", today)

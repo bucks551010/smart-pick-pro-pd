@@ -3788,9 +3788,23 @@ def load_latest_analysis_session():
         if not rows:
             return None
         row_dict = rows[0]
-        # Note: sessions are kept across midnight so users can view yesterday's
-        # picks until a new game-day analysis is run.  A new run always
-        # overwrites the stored session, so stale data is cleared automatically.
+        # Date guard: if the session is from a prior sports day, return None.
+        # The QAM page falls back to get_slate_picks_for_today() when this
+        # returns None, which has a hard pick_date = today filter.
+        _session_ts = row_dict.get("analysis_timestamp", "")
+        if _session_ts:
+            try:
+                _session_date = _session_ts[:10]  # "YYYY-MM-DD"
+                if _session_date < _nba_today_iso():
+                    _logger.debug(
+                        "load_latest_analysis_session: session %s is prior-day (%s < %s) — skipping",
+                        row_dict.get("session_id"),
+                        _session_date,
+                        _nba_today_iso(),
+                    )
+                    return None
+            except Exception:
+                pass  # If date parse fails, still return the session
         # Deserialize JSON blobs
         try:
             row_dict["analysis_results"] = json.loads(row_dict.get("analysis_results_json") or "[]")

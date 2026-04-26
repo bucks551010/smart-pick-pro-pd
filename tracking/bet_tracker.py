@@ -1355,11 +1355,11 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, s
     Args:
         analysis_results (list[dict]): Full analysis result list from the
             Neural Analysis engine (as stored in session_state).
-        minimum_edge (float): Skip picks whose edge_percentage is below
-            this value for Gold/Platinum tiers. Silver picks only require
-            >=3% edge. Bronze picks require >=8% edge AND >=60 confidence.
-            Defaults to 5.0.  Only picks with edge > 0
-            (model favours the recommended direction) are ever logged.
+        minimum_edge (float): Fallback minimum edge for any tier not found
+            in the per-tier threshold dict (unusual/custom tiers).
+            Standard tiers use values from config.thresholds:
+            Platinum ≥1%, Gold ≥2%, Silver ≥3%, Bronze ≥3%.
+            Only picks with edge > 0 are ever logged.
             Ignored when log_all=True.
         max_bets (int): Maximum number of new bets to log in a single
             analysis run. Defaults to 15.
@@ -1406,8 +1406,22 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, s
     logged = 0
     # All tiers qualify for auto-logging.
     AUTO_LOG_TIERS = {"Gold", "Platinum", "Silver", "Bronze"}
-    # Silver and Bronze picks only need 3% edge; Gold/Platinum use the minimum_edge parameter
-    SILVER_MIN_EDGE = 3.0
+    # Per-tier minimum edge requirements loaded from thresholds (single source of truth)
+    try:
+        from config.thresholds import (
+            PLATINUM_AUTO_LOG_MIN_EDGE as _PT_EDGE,
+            GOLD_AUTO_LOG_MIN_EDGE     as _GD_EDGE,
+            SILVER_AUTO_LOG_MIN_EDGE   as _SV_EDGE,
+            BRONZE_AUTO_LOG_MIN_EDGE   as _BZ_EDGE,
+        )
+    except ImportError:
+        _PT_EDGE, _GD_EDGE, _SV_EDGE, _BZ_EDGE = 1.0, 2.0, 3.0, 3.0
+    _TIER_MIN_EDGE = {
+        "Platinum": _PT_EDGE,
+        "Gold":     _GD_EDGE,
+        "Silver":   _SV_EDGE,
+        "Bronze":   _BZ_EDGE,
+    }
 
     # Sort by confidence score descending so the highest-quality picks are logged first
     sorted_results = sorted(
@@ -1437,11 +1451,8 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, s
             # Only auto-log recognised tiers
             if tier not in AUTO_LOG_TIERS:
                 continue
-            # Apply tier-specific minimum edge thresholds
-            if tier in ("Silver", "Bronze"):
-                min_required_edge = SILVER_MIN_EDGE
-            else:
-                min_required_edge = minimum_edge
+            # Apply tier-specific minimum edge thresholds (sourced from config.thresholds)
+            min_required_edge = _TIER_MIN_EDGE.get(tier, minimum_edge)
             if edge < min_required_edge:
                 continue
 
@@ -3563,7 +3574,7 @@ def auto_log_qeg_bets(analysis_results, *, max_bets=15):
         return 0
     qeg = deduplicate_qeg_picks(filter_qeg_picks(analysis_results or []))
     return auto_log_analysis_bets(
-        qeg, minimum_edge=5.0, max_bets=max_bets, source="qeg"
+        qeg, max_bets=max_bets, source="qeg"
     )
 
 
@@ -3604,7 +3615,7 @@ def auto_log_smart_money_bets(analysis_results, *, max_bets=20):
             if line_dev >= 10.0 or edge_pct >= 10.0:
                 smart_picks.append(r)
     return auto_log_analysis_bets(
-        smart_picks, minimum_edge=5.0, max_bets=max_bets, source="smart_money"
+        smart_picks, max_bets=max_bets, source="smart_money"
     )
 
 
@@ -3632,7 +3643,7 @@ def auto_log_platform_ai_bets(analysis_results, *, max_bets=20, prizepicks_only=
             continue
         filtered.append(r)
     return auto_log_analysis_bets(
-        filtered, minimum_edge=5.0, max_bets=max_bets, source="platform_ai"
+        filtered, max_bets=max_bets, source="platform_ai"
     )
 
 

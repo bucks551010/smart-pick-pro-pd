@@ -32,9 +32,18 @@ UNCERTAIN_HIGH_VAR_MAX_EDGE        = 8.0    # High-variance stats with edge <8%
 UNCERTAIN_BLOWOUT_SPREAD_THRESHOLD = 10.0   # Spread >10 pts on back-to-back
 UNCERTAIN_HOT_STREAK_RATIO         = 1.25   # Line ≥125% of season avg
 
-# ── Auto-log Bronze thresholds ────────────────────────────────────────────────
-BRONZE_AUTO_LOG_MIN_EDGE       = 3.0    # Bronze uses same 3% floor as Silver
-BRONZE_AUTO_LOG_MIN_CONFIDENCE = 0.0    # No confidence gate — all Bronze auto-logs
+# ── Auto-log thresholds (per tier) ───────────────────────────────────────────
+# Minimum edge % required for a pick to be auto-logged to the Bet Tracker.
+# Higher tiers already encode high confidence so they need less raw edge.
+# Confidence gates are all 0 — the tier classification itself is the gate.
+PLATINUM_AUTO_LOG_MIN_EDGE       = 1.0   # Near-certain: low edge still worthwhile
+GOLD_AUTO_LOG_MIN_EDGE           = 2.0   # Strong signal: 2% floor
+SILVER_AUTO_LOG_MIN_EDGE         = 3.0   # Solid edge floor
+BRONZE_AUTO_LOG_MIN_EDGE         = 3.0   # Same floor as Silver
+PLATINUM_AUTO_LOG_MIN_CONFIDENCE = 0.0   # Tier encodes confidence — no extra gate
+GOLD_AUTO_LOG_MIN_CONFIDENCE     = 0.0
+SILVER_AUTO_LOG_MIN_CONFIDENCE   = 0.0
+BRONZE_AUTO_LOG_MIN_CONFIDENCE   = 0.0
 
 # ── Simulation defaults ───────────────────────────────────────────────────────
 DEFAULT_NUM_SIMULATIONS = 2000

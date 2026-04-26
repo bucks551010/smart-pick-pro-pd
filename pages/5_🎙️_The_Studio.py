@@ -2133,93 +2133,139 @@ def _render_track_record_section():
     smash_pct = _verdict_pct("SMASH")
     lean_pct = _verdict_pct("LEAN")
 
-    # Enhancement 6: Win-rate sparkline SVG + LOCK/SMASH/LEAN pie chart
+    # ── Premium Track Record Dashboard ─────────────────────────
+    # Determine streak label and color
+    if streak > 0:
+        _streak_label = f"🔥 {streak}W Streak"
+        _streak_clr = "#00D559"
+    elif streak < 0:
+        _streak_label = f"🧊 {abs(streak)}L Streak"
+        _streak_clr = "#F24336"
+    else:
+        _streak_label = "— No streak"
+        _streak_clr = "#64748b"
+
+    _wr_clr = "#00D559" if win_rate_pct >= 60 else "#F9C62B" if win_rate_pct >= 50 else "#F24336"
     _wr_pct = max(0, min(100, win_rate_pct))
+
+    # Verdict accuracy colors
+    def _acc_clr(pct):
+        return "#00D559" if pct >= 60 else "#F9C62B" if pct >= 50 else "#F24336" if pct > 0 else "#334155"
+
+    # Top stat row — 4 big KPI tiles
+    st.markdown(
+        f'''<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+  <div style="background:linear-gradient(135deg,#0f172a,#1a1f35);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:18px 16px;text-align:center;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-20px;left:-20px;width:80px;height:80px;background:radial-gradient(circle,rgba(129,140,248,0.15) 0%,transparent 70%)"></div>
+    <div style="color:#818cf8;font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Total Bets</div>
+    <div style="color:#f1f5f9;font-size:2rem;font-weight:900;line-height:1">{total}</div>
+    <div style="color:#475569;font-size:0.65rem;margin-top:4px">{decided} resolved · {pending} pending</div>
+  </div>
+  <div style="background:linear-gradient(135deg,#0f172a,#0d2015);border:1px solid {_wr_clr}33;border-radius:14px;padding:18px 16px;text-align:center;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-20px;left:-20px;width:80px;height:80px;background:radial-gradient(circle,{_wr_clr}22 0%,transparent 70%)"></div>
+    <div style="color:{_wr_clr};font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Win Rate</div>
+    <div style="color:{_wr_clr};font-size:2rem;font-weight:900;line-height:1">{win_rate_pct:.1f}%</div>
+    <div style="margin-top:8px;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden">
+      <div style="width:{_wr_pct:.0f}%;height:100%;background:{_wr_clr};border-radius:3px;box-shadow:0 0 8px {_wr_clr}88"></div>
+    </div>
+    <div style="color:#475569;font-size:0.65rem;margin-top:4px">{wins}W · {losses}L</div>
+  </div>
+  <div style="background:linear-gradient(135deg,#0f172a,#1a1f35);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:18px 16px;text-align:center;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-20px;left:-20px;width:80px;height:80px;background:radial-gradient(circle,rgba(234,179,8,0.15) 0%,transparent 70%)"></div>
+    <div style="color:#eab308;font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Pending</div>
+    <div style="color:#f1f5f9;font-size:2rem;font-weight:900;line-height:1">{pending}</div>
+    <div style="color:#475569;font-size:0.65rem;margin-top:4px">{total - pending} resolved</div>
+  </div>
+  <div style="background:linear-gradient(135deg,#0f172a,#1a1f35);border:1px solid {_streak_clr}33;border-radius:14px;padding:18px 16px;text-align:center;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-20px;left:-20px;width:80px;height:80px;background:radial-gradient(circle,{_streak_clr}22 0%,transparent 70%)"></div>
+    <div style="color:{_streak_clr};font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Current Streak</div>
+    <div style="color:{_streak_clr};font-size:1.3rem;font-weight:900;line-height:1">{_streak_label}</div>
+  </div>
+</div>''',
+        unsafe_allow_html=True,
+    )
+
+    # Verdict accuracy row — 3 tiles (LOCK / SMASH / LEAN)
+    _verdict_tiles_html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">'
+    for _vname, _vpct, _vclr, _vemoji in [
+        ("LOCK",  lock_pct,  "#a855f7", "🔒"),
+        ("SMASH", smash_pct, "#F24336", "🔥"),
+        ("LEAN",  lean_pct,  "#00D559", "✅"),
+    ]:
+        _ac = _acc_clr(_vpct)
+        _bar_w = min(_vpct, 100)
+        _verdict_tiles_html += (
+            f'<div style="background:linear-gradient(135deg,#0f172a,rgba({",".join(str(int(int(_vclr.lstrip("#")[i:i+2],16)) for i in (0,2,4))},0.07));'
+            f'border:1px solid {_vclr}33;border-radius:14px;padding:16px;text-align:center">'
+            f'<div style="color:{_vclr};font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px">{_vemoji} {_vname} Accuracy</div>'
+            f'<div style="color:{_ac};font-size:1.7rem;font-weight:900;line-height:1.1">{"—" if _vpct == 0 else f"{_vpct:.1f}%"}</div>'
+            f'<div style="margin-top:8px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden">'
+            f'<div style="width:{_bar_w:.0f}%;height:100%;background:{_vclr};border-radius:2px;box-shadow:0 0 6px {_vclr}66"></div>'
+            f'</div></div>'
+        )
+    _verdict_tiles_html += '</div>'
+    st.markdown(_verdict_tiles_html, unsafe_allow_html=True)
+
+    # SVG mini pie for LOCK vs SMASH vs LEAN (retained, placed inline below verdict row)
     _lock_pct_100 = max(0, min(100, lock_pct * 100)) if lock_pct <= 1 else lock_pct
     _smash_pct_100 = max(0, min(100, smash_pct * 100)) if smash_pct <= 1 else smash_pct
     _lean_pct_100 = max(0, min(100, lean_pct * 100)) if lean_pct <= 1 else lean_pct
-
-    # SVG mini pie for LOCK vs SMASH vs LEAN
     _pie_total = max(_lock_pct_100 + _smash_pct_100 + _lean_pct_100, 1)
-    _pie_circ = 2 * math.pi * 20
+    _pie_circ = 2 * math.pi * 28
     _lock_dash = _pie_circ * _lock_pct_100 / _pie_total
     _smash_dash = _pie_circ * _smash_pct_100 / _pie_total
     _lean_dash = _pie_circ * _lean_pct_100 / _pie_total
     _pie_svg = (
-        f'<svg width="50" height="50" viewBox="0 0 50 50" style="margin:4px auto;display:block">'
-        f'<circle cx="25" cy="25" r="20" fill="none" stroke="#1e293b" stroke-width="6"/>'
-        f'<circle cx="25" cy="25" r="20" fill="none" stroke="#2D9EFF" stroke-width="6" '
+        f'<svg width="70" height="70" viewBox="0 0 70 70">'
+        f'<circle cx="35" cy="35" r="28" fill="none" stroke="#1e293b" stroke-width="8"/>'
+        f'<circle cx="35" cy="35" r="28" fill="none" stroke="#a855f7" stroke-width="8" '
         f'stroke-dasharray="{_lock_dash:.1f} {_pie_circ - _lock_dash:.1f}" '
-        f'transform="rotate(-90 25 25)"/>'
-        f'<circle cx="25" cy="25" r="20" fill="none" stroke="#F9C62B" stroke-width="6" '
+        f'transform="rotate(-90 35 35)"/>'
+        f'<circle cx="35" cy="35" r="28" fill="none" stroke="#F24336" stroke-width="8" '
         f'stroke-dasharray="{_smash_dash:.1f} {_pie_circ - _smash_dash:.1f}" '
         f'stroke-dashoffset="-{_lock_dash:.1f}" '
-        f'transform="rotate(-90 25 25)"/>'
-        f'<circle cx="25" cy="25" r="20" fill="none" stroke="#22c55e" stroke-width="6" '
+        f'transform="rotate(-90 35 35)"/>'
+        f'<circle cx="35" cy="35" r="28" fill="none" stroke="#00D559" stroke-width="8" '
         f'stroke-dasharray="{_lean_dash:.1f} {_pie_circ - _lean_dash:.1f}" '
+        f'stroke-dashoffset="-{_lock_dash + _smash_dash:.1f}" '
+        f'transform="rotate(-90 35 35)"/>'
+        f'</svg>'
+    )
+    st.markdown(
+        f'<div style="background:linear-gradient(135deg,#0f172a,#1a1f35);border:1px solid rgba(255,255,255,0.08);'
+        f'border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">'
+        f'<div style="flex-shrink:0">{_pie_svg}</div>'
+        f'<div style="flex:1;min-width:160px">'
+        f'<div style="color:#94a3b8;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Verdict Mix</div>'
+        f'<div style="display:flex;flex-direction:column;gap:5px">'
+        f'<div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#a855f7;flex-shrink:0"></span><span style="color:#e2e8f0;font-size:0.8rem">LOCK</span><span style="color:#a855f7;font-size:0.8rem;font-weight:700;margin-left:auto">{_lock_pct_100:.0f}%</span></div>'
+        f'<div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#F24336;flex-shrink:0"></span><span style="color:#e2e8f0;font-size:0.8rem">SMASH</span><span style="color:#F24336;font-size:0.8rem;font-weight:700;margin-left:auto">{_smash_pct_100:.0f}%</span></div>'
+        f'<div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#00D559;flex-shrink:0"></span><span style="color:#e2e8f0;font-size:0.8rem">LEAN</span><span style="color:#00D559;font-size:0.8rem;font-weight:700;margin-left:auto">{_lean_pct_100:.0f}%</span></div>'
+        f'</div></div></div>',
+        unsafe_allow_html=True,
+    )
         f'stroke-dashoffset="-{_lock_dash + _smash_dash:.1f}" '
         f'transform="rotate(-90 25 25)"/>'
         f'</svg>'
     )
 
-    st.markdown(
-        f'<div class="studio-metric-row">'
-        f'<div class="studio-metric-card">'
-        f'<div class="studio-metric-value">{total}</div>'
-        f'<div class="studio-metric-label">Total Bets</div></div>'
-        f'<div class="studio-metric-card">'
-        f'<div class="studio-metric-value">{win_rate_pct:.1f}%</div>'
-        f'<div class="studio-metric-label">Win Rate</div>'
-        # win-rate progress bar
-        f'<div style="margin-top:6px;height:4px;background:#1e293b;border-radius:2px">'
-        f'<div style="height:4px;width:{_wr_pct:.0f}%;background:var(--studio-green);border-radius:2px"></div></div>'
-        f'</div>'
-        f'<div class="studio-metric-card">'
-        f'<div class="studio-metric-value" style="color:#2D9EFF">{lock_pct:.1f}%</div>'
-        f'<div class="studio-metric-label">LOCK Accuracy</div></div>'
-        f'<div class="studio-metric-card">'
-        f'<div class="studio-metric-value">{smash_pct:.1f}%</div>'
-        f'<div class="studio-metric-label">SMASH Accuracy</div></div>'
-        f'<div class="studio-metric-card">'
-        f'<div class="studio-metric-value">{lean_pct:.1f}%</div>'
-        f'<div class="studio-metric-label">LEAN Accuracy</div></div>'
-        f'<div class="studio-metric-card">'
-        f'{_pie_svg}'
-        f'<div class="studio-metric-label">LOCK vs SMASH vs LEAN</div></div>'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
-
-    # Additional stats row
-    if wins or losses or pending or streak:
-        st.markdown(
-            f'<div class="studio-metric-row">'
-            f'<div class="studio-metric-card">'
-            f'<div class="studio-metric-value" style="color:var(--studio-green)">{wins}</div>'
-            f'<div class="studio-metric-label">Wins</div></div>'
-            f'<div class="studio-metric-card">'
-            f'<div class="studio-metric-value" style="color:var(--studio-red)">{losses}</div>'
-            f'<div class="studio-metric-label">Losses</div></div>'
-            f'<div class="studio-metric-card">'
-            f'<div class="studio-metric-value" style="color:var(--studio-yellow)">{pending}</div>'
-            f'<div class="studio-metric-label">Pending</div></div>'
-            f'<div class="studio-metric-card">'
-            f'<div class="studio-metric-value">{streak:+d}</div>'
-            f'<div class="studio-metric-label">Streak</div></div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-
     # Override accuracy
     try:
         override_acc = joseph_get_override_accuracy()
         if isinstance(override_acc, dict) and override_acc.get("overrides_total", 0) > 0:
+            _ov_acc = override_acc.get("override_accuracy", 0)
+            _ov_ok = override_acc.get("overrides_correct", 0)
+            _ov_total = override_acc.get("overrides_total", 0)
+            _ov_clr = "#00D559" if _ov_acc >= 60 else "#F9C62B" if _ov_acc >= 50 else "#F24336"
             st.markdown(
-                f'<div style="color:var(--studio-cyan);font-size:0.88rem;margin:8px 0">'
-                f'🔄 <strong>Override Accuracy:</strong> '
-                f'{override_acc.get("override_accuracy", 0):.1f}% '
-                f'({override_acc.get("overrides_correct", 0)}/'
-                f'{override_acc.get("overrides_total", 0)} correct)</div>',
+                f'<div style="background:linear-gradient(135deg,#0f172a,rgba(6,182,212,0.07));'
+                f'border:1px solid rgba(6,182,212,0.25);border-radius:12px;padding:14px 18px;'
+                f'display:flex;align-items:center;gap:14px;margin-top:12px">'
+                f'<span style="font-size:1.4rem">🔄</span>'
+                f'<div><div style="color:#06b6d4;font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:1px">Override Accuracy</div>'
+                f'<div style="color:{_ov_clr};font-size:1.3rem;font-weight:900">{_ov_acc:.1f}% '
+                f'<span style="color:#64748b;font-size:0.75rem;font-weight:400">({_ov_ok}/{_ov_total} correct)</span></div></div>'
+                f'</div>',
                 unsafe_allow_html=True,
             )
     except Exception:

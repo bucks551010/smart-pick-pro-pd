@@ -633,18 +633,32 @@ st.markdown(
 
 # ── Prior-day session banner ───────────────────────────────────
 # If the loaded session is from a previous game day, show a notice so users
-# know they're viewing yesterday's picks.  The picks stay visible until a
-# new analysis is run for today's slate.
+# know they're viewing yesterday's picks.  The picks stay visible until noon
+# CT on the new day when the auto-reset fires.
 if st.session_state.get("_qam_session_is_prior_day"):
-    _prior_ts = st.session_state.get("_analysis_session_reloaded_at", "")
     _prior_date = st.session_state.get("_qam_session_date", "")
     _prior_label = _prior_date if _prior_date else "a prior game day"
-    st.info(
-        f"📅 **Showing picks from {_prior_label}.** "
-        "These results will stay visible until you run a new analysis for today's slate. "
-        "Click **🚀 Run Analysis** below to refresh.",
-        icon="📅",
-    )
+    try:
+        from zoneinfo import ZoneInfo as _ZI_banner
+        import datetime as _dt_banner
+        _now_ct_banner = _dt_banner.datetime.now(_ZI_banner("America/Chicago"))
+        _past_noon_banner = _now_ct_banner.hour >= 12
+    except Exception:
+        _past_noon_banner = False
+    if _past_noon_banner:
+        st.info(
+            f"📅 **Showing picks from {_prior_label}.** "
+            "These results will stay visible until you run a new analysis for today's slate. "
+            "Click **🚀 Run Analysis** below to refresh.",
+            icon="📅",
+        )
+    else:
+        st.info(
+            f"📅 **Showing picks from {_prior_label}.** "
+            "Today's analysis will auto-start at **12:00 PM Central** when the new slate is ready. "
+            "You can also click **🚀 Run Analysis** to refresh now.",
+            icon="📅",
+        )
 
 # ── Sidebar: How to Use, Settings, Roster Health, Framework Logic ──
 # Moved out of the main column to reduce pre-flight scroll distance.
@@ -767,21 +781,44 @@ if _dedup_removed > 0:
 # SECTION: Analysis Runner
 # ============================================================
 
-# ── Auto-trigger: run analysis immediately if props exist but no results ──
+# ── Daily reset at 12:00 PM Central time ─────────────────────
+# At noon CT each day we clear all prior-session data so users start
+# fresh for the new game day.  The reset fires once per calendar date
+# (tracked via "_qam_noon_reset_date") and only when we're at/past noon.
+try:
+    from zoneinfo import ZoneInfo as _ZI_noon
+    import datetime as _dt_noon
+    _now_ct = _dt_noon.datetime.now(_ZI_noon("America/Chicago"))
+except Exception:
+    import datetime as _dt_noon
+    _now_ct = _dt_noon.datetime.now()
+
+_noon_reset_date_key = _now_ct.date().isoformat()
+_past_noon_ct = _now_ct.hour >= 12
+_already_reset_today = st.session_state.get("_qam_noon_reset_date") == _noon_reset_date_key
+
+if _past_noon_ct and not _already_reset_today:
+    # Clear all prior analysis data so the new game day starts clean
+    for _clr_key in (
+        "analysis_results", "todays_games", "selected_picks",
+        "joseph_results", "joseph_bets_logged",
+        "_qam_db_restored", "_qam_analysis_requested",
+        "_qam_session_is_prior_day", "_qam_session_date",
+        "_analysis_session_reloaded_at", "_qam_auto_run_date",
+    ):
+        st.session_state.pop(_clr_key, None)
+    st.session_state["_qam_noon_reset_date"] = _noon_reset_date_key
+
+# ── Auto-trigger: run analysis if props exist but no results AND it's past noon CT ──
 _qam_auto_triggered = False
+_qam_today_ct = _now_ct.date().isoformat()
 if (final_props
         and not st.session_state.get("analysis_results")
         and not st.session_state.get("_qam_analysis_requested")
-        and not st.session_state.get("_qam_db_restored")):
-    try:
-        from zoneinfo import ZoneInfo as _ZI_qam
-        import datetime as _dt_qam
-        _qam_today = _dt_qam.datetime.now(_ZI_qam("America/New_York")).date().isoformat()
-    except Exception:
-        import datetime as _dt_qam
-        _qam_today = _dt_qam.date.today().isoformat()
-    if st.session_state.get("_qam_auto_run_date") != _qam_today:
-        st.session_state["_qam_auto_run_date"] = _qam_today
+        and not st.session_state.get("_qam_db_restored")
+        and _past_noon_ct):
+    if st.session_state.get("_qam_auto_run_date") != _qam_today_ct:
+        st.session_state["_qam_auto_run_date"] = _qam_today_ct
         st.session_state["_qam_analysis_requested"] = True
         _qam_auto_triggered = True
 

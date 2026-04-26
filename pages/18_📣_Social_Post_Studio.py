@@ -101,12 +101,16 @@ st.markdown("""
 @st.cache_resource(show_spinner=False)
 def _load_se_config():
     try:
-        import importlib, sys as _sys
-        if "config" in _sys.modules:
-            importlib.reload(_sys.modules["config"])
-        from config import SETTINGS
-        return SETTINGS
+        import importlib.util, sys as _sys
+        _spec = importlib.util.spec_from_file_location(
+            "_se_config", str(_SE_ROOT / "config.py")
+        )
+        _mod = importlib.util.module_from_spec(_spec)
+        # Give the module its own namespace so dotenv loads from social_engine/.env
+        _spec.loader.exec_module(_mod)
+        return _mod.SETTINGS
     except Exception as e:
+        st.error(f"Could not load social_engine config: {e}")
         return None
 
 cfg = _load_se_config()

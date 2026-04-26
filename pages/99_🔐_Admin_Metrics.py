@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # FILE: pages/99_🔐_Admin_Metrics.py
 # PURPOSE: Hidden admin-only observability dashboard.
 #

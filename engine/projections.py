@@ -1389,6 +1389,15 @@ def _estimate_timezone_diff(player_team, opponent_team):
 # ============================================================
 
 
+_COMBO_STAT_COMPONENTS: dict = {
+    "points_rebounds": ("points", "rebounds"),
+    "points_assists": ("points", "assists"),
+    "rebounds_assists": ("rebounds", "assists"),
+    "points_rebounds_assists": ("points", "rebounds", "assists"),
+    "blocks_steals": ("blocks", "steals"),
+}
+
+
 def get_stat_standard_deviation(player_data, stat_type):
     """
     Get the pre-stored standard deviation for a stat type.
@@ -1400,6 +1409,11 @@ def get_stat_standard_deviation(player_data, stat_type):
     - Role players have HIGHER CV — usage is more situational
     - Threes always get at least 0.55 CV (most streaky stat)
 
+    For combo stats (points_rebounds, points_assists, etc.) the std is
+    computed as the quadrature sum of component stds so that
+    std_devs_from_line reflects a meaningful number instead of inflating
+    to nonsensical values caused by the minimum 0.5 fallback.
+
     Args:
         player_data (dict): Player row from CSV
         stat_type (str): 'points', 'rebounds', 'assists', etc.
@@ -1407,6 +1421,16 @@ def get_stat_standard_deviation(player_data, stat_type):
     Returns:
         float: Standard deviation for this stat
     """
+    # Combo stats: compute as quadrature sum of component stds
+    if stat_type in _COMBO_STAT_COMPONENTS:
+        import math
+        components = _COMBO_STAT_COMPONENTS[stat_type]
+        sum_sq = sum(
+            get_stat_standard_deviation(player_data, c) ** 2
+            for c in components
+        )
+        return max(0.5, math.sqrt(sum_sq))
+
     # Try to get the stored std from the CSV first
     std_column = f"{stat_type}_std"
     stored_std = player_data.get(std_column, None)

@@ -782,7 +782,13 @@ def get_todays_games() -> list[dict]:
     DB-only — no live API fallback.  Data must be populated
     by the ETL initial pull before this function is used.
     """
-    today = datetime.date.today().strftime("%Y-%m-%d")
+    # Use ET-anchored NBA sports day so Railway (UTC) matches the pick_date
+    # convention used by slate_worker and get_slate_picks_for_today().
+    try:
+        from tracking.database import _nba_today_iso as _etl_nba_today
+        today = _etl_nba_today()
+    except Exception:
+        today = datetime.date.today().strftime("%Y-%m-%d")
 
     conn = _get_conn()
     db_games: list[dict] = []

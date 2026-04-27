@@ -4591,6 +4591,22 @@ def load_page_state():
                 _nba_today_iso(),
             )
             return {}
+        # Secondary guard: validate the actual pick_date inside analysis_results.
+        # save_page_state() stamps _page_state_date = today on every write, so a
+        # session that had prior-day picks and got saved today (e.g. after a page
+        # reload that hit the boundary guard while analysis_results was still set)
+        # would pass the date guard above even though the picks are from a prior day.
+        _saved_picks = raw.get("analysis_results")
+        if _saved_picks and isinstance(_saved_picks, list) and len(_saved_picks) > 0:
+            _pick_date = str(_saved_picks[0].get("pick_date") or "")[:10]
+            if _pick_date and _pick_date < _nba_today_iso():
+                _logger.info(
+                    "load_page_state: discarding prior-day analysis_results "
+                    "(pick_date=%s, today=%s) — also clearing todays_games",
+                    _pick_date, _nba_today_iso(),
+                )
+                raw.pop("analysis_results", None)
+                raw.pop("todays_games", None)   # games belong to the same prior-day slate
         # Only return recognised keys to avoid injecting stale/unknown state
         return {
             k: v for k, v in raw.items()

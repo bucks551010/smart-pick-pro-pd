@@ -5736,6 +5736,11 @@ def require_login() -> bool:
         _cookie_user = _load_session_by_token(_cookie_tok)
         if _cookie_user:
             _set_logged_in(_cookie_user, _write_storage=False)
+            # Cookie restore is a silent re-auth — do NOT redirect to Home.
+            # _set_logged_in() always sets _redirect_to_home=True (for fresh
+            # logins), so we clear it here so sub-page users are not kicked
+            # back to the homepage on their first widget interaction.
+            st.session_state["_redirect_to_home"] = False
             # Store the active token in session_state so logout_user()
             # can delete it from the DB and expire the cookie properly.
             st.session_state["_auth_session_token"] = _cookie_tok
@@ -5766,6 +5771,8 @@ def require_login() -> bool:
             _user = _load_session_by_token(_tok)
             if _user:
                 _set_logged_in(_user, _write_storage=False)
+                # localStorage bridge restore — do NOT redirect to Home.
+                st.session_state["_redirect_to_home"] = False
                 # Store the active token so logout_user() can delete it from DB.
                 st.session_state["_auth_session_token"] = _tok
                 try:

@@ -2114,32 +2114,74 @@ html, body, .stApp, .stApp * {
     box-shadow: 0 0 12px rgba(59,158,255,0.6);
 }
 
-/* ── Hero (Nike-scale) ─────────────────────────────────────── */
+/* ── Hero (Cinematic / Elite) ──────────────────────────────── */
+@keyframes agHeroCinemaGlow {
+    0%,100% { box-shadow: 0 0 0 1px rgba(0,232,122,0.12), 0 0 120px rgba(0,232,122,0.10), 0 60px 120px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.07); }
+    50%      { box-shadow: 0 0 0 1px rgba(0,232,122,0.20), 0 0 180px rgba(0,232,122,0.16), 0 60px 120px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.09); }
+}
+@keyframes agHeroScan {
+    0%   { top: 0%; opacity: 0; }
+    5%   { opacity: 1; }
+    95%  { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+}
 .ag-hero {
     text-align: center;
-    padding: 32px 28px 0;
-    max-width: 860px; margin: 0 auto;
+    padding: 72px 48px 56px;
+    max-width: 1020px; margin: 0 auto;
     position: relative;
+    background:
+        linear-gradient(180deg, rgba(0,20,14,0.97) 0%, rgba(3,10,20,0.99) 60%, rgba(4,8,16,1) 100%);
+    border: 1px solid rgba(0,232,122,0.22);
+    border-radius: 28px;
+    overflow: hidden;
+    animation: agHeroCinemaGlow 5s ease-in-out infinite;
 }
+/* Top accent bar */
+.ag-hero::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, transparent 0%, var(--c-green) 25%, var(--c-plasma) 50%, var(--c-blue) 75%, transparent 100%);
+    background-size: 300% 100%;
+    animation: agPlasmaFlow 4s ease infinite;
+}
+/* Animated scan line */
+.ag-hero::after {
+    content: '';
+    position: absolute; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(0,232,122,0.22) 50%, transparent 100%);
+    animation: agHeroScan 8s linear infinite;
+    pointer-events: none;
+}
+/* Ambient radial glows */
+.ag-hero-bg {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background:
+        radial-gradient(ellipse 65% 55% at 15% 40%, rgba(0,232,122,0.09) 0%, transparent 60%),
+        radial-gradient(ellipse 45% 60% at 85% 25%, rgba(59,158,255,0.07) 0%, transparent 55%),
+        radial-gradient(ellipse 35% 35% at 50% 95%, rgba(0,232,122,0.05) 0%, transparent 60%);
+    pointer-events: none;
+}
+.ag-hero-inner { position: relative; z-index: 1; }
+
 .ag-hero-ai-badge {
-    display: inline-flex; align-items: center; gap: 8px;
+    display: inline-flex; align-items: center; gap: 10px;
     font-family: var(--font-mono);
-    font-size: 0.54rem; font-weight: 700;
-    color: var(--c-plasma); background: rgba(163,247,224,0.04);
-    border: 1px solid rgba(163,247,224,0.18);
-    padding: 7px 22px; border-radius: 6px;
+    font-size: 0.72rem; font-weight: 700;
+    color: var(--c-plasma); background: rgba(163,247,224,0.06);
+    border: 1px solid rgba(163,247,224,0.28);
+    padding: 10px 28px; border-radius: 8px;
     text-transform: uppercase; letter-spacing: 0.18em;
-    margin-bottom: 20px;
+    margin-bottom: 28px;
     animation: agHeroTextReveal 0.8s 0.05s var(--ease-out) both;
-    box-shadow: 0 0 24px rgba(163,247,224,0.06), inset 0 0 0 1px rgba(163,247,224,0.04);
+    box-shadow: 0 0 32px rgba(163,247,224,0.10), inset 0 0 0 1px rgba(163,247,224,0.05);
     position: relative; overflow: hidden;
 }
 .ag-hero-ai-badge::after {
     content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(163,247,224,0.06), transparent);
+    background: linear-gradient(90deg, transparent, rgba(163,247,224,0.08), transparent);
     animation: agShimmer 4s ease-in-out infinite;
 }
-/* Blinking cursor */
 .ag-hero-ai-badge .ai-cursor {
     display: inline-block; width: 1px; height: 0.65em;
     background: var(--c-plasma); margin-left: 2px;
@@ -2147,27 +2189,28 @@ html, body, .stApp, .stApp * {
     vertical-align: middle;
 }
 .ag-hero-ai-badge .ai-dot {
-    width: 5px; height: 5px; border-radius: 50%;
+    width: 7px; height: 7px; border-radius: 50%;
     background: var(--c-green);
-    box-shadow: 0 0 8px rgba(0,232,122,0.55);
+    box-shadow: 0 0 12px rgba(0,232,122,0.70);
     animation: agLivePulse 2s ease-in-out infinite;
 }
 .ag-hero h1 {
     font-family: var(--font-head);
-    font-size: 6.2rem; font-weight: 900;
-    line-height: 0.9; letter-spacing: -0.055em;
+    font-size: clamp(4.8rem, 11vw, 9.5rem); font-weight: 900;
+    line-height: 0.88; letter-spacing: -0.055em;
     color: #fff; margin: 0;
     text-transform: uppercase;
     text-shadow:
-        0 0 120px rgba(0,232,122,0.08),
-        0 0 240px rgba(59,158,255,0.05),
-        0 2px 0 rgba(0,0,0,0.4);
+        0 0 160px rgba(0,232,122,0.12),
+        0 0 300px rgba(59,158,255,0.07),
+        0 4px 0 rgba(0,0,0,0.6);
     animation: agHeroTextReveal 0.9s 0.1s var(--ease-out) both;
     will-change: transform;
 }
 .ag-hero h1 .line2 {
     animation: agHeroTextReveal 0.9s 0.28s var(--ease-out) both;
     display: block;
+    color: rgba(210,225,245,0.80);
 }
 .ag-hero .em {
     display: block;
@@ -2175,63 +2218,63 @@ html, body, .stApp, .stApp * {
     background-size: 300% 200%;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
-    animation: agPlasmaFlow 6s ease infinite, agHeroTextReveal 0.9s 0.45s var(--ease-out) both;
-    filter: drop-shadow(0 0 40px rgba(0,232,122,0.15));
+    animation: agPlasmaFlow 5s ease infinite, agHeroTextReveal 0.9s 0.45s var(--ease-out) both;
+    filter: drop-shadow(0 0 55px rgba(0,232,122,0.22));
     position: relative;
 }
-/* Precision underline beam */
 .ag-hero h1::after {
     content: ''; display: block;
-    width: 80px; height: 2px; margin: 22px auto 0;
+    width: 120px; height: 3px; margin: 28px auto 0;
     background: linear-gradient(90deg, transparent, var(--c-green), var(--c-plasma), var(--c-blue), transparent);
     border-radius: 2px;
     animation: agHeroTextReveal 0.9s 0.6s var(--ease-out) both;
-    box-shadow: 0 0 20px rgba(0,232,122,0.4);
+    box-shadow: 0 0 28px rgba(0,232,122,0.5);
 }
 .ag-hero-sub {
     font-family: var(--font-body);
-    font-size: 1.1rem; font-weight: 400;
-    color: rgba(255,255,255,0.5);
-    line-height: 1.8; margin-top: 28px;
-    max-width: 560px; margin-left: auto; margin-right: auto;
+    font-size: clamp(1.0rem, 1.8vw, 1.30rem); font-weight: 400;
+    color: rgba(200,215,235,0.80);
+    line-height: 1.85; margin-top: 32px;
+    max-width: 660px; margin-left: auto; margin-right: auto;
     animation: agHeroTextReveal 0.9s 0.65s var(--ease-out) both;
     letter-spacing: 0.01em;
 }
 .ag-hero-sub strong {
-    color: rgba(255,255,255,0.9); font-weight: 600;
+    color: #ffffff; font-weight: 700;
     background: linear-gradient(90deg, #fff, var(--c-plasma));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 .ag-hero-badges {
-    display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
-    margin-top: 26px;
+    display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;
+    margin-top: 32px;
     animation: agHeroTextReveal 0.9s 0.75s var(--ease-out) both;
 }
 .ag-hero-badge {
-    display: inline-flex; align-items: center; gap: 6px;
+    display: inline-flex; align-items: center; gap: 8px;
     font-family: var(--font-mono);
-    font-size: 0.58rem; font-weight: 600;
-    color: rgba(255,255,255,0.38);
-    background: rgba(255,255,255,0.025);
-    border: 1px solid rgba(255,255,255,0.07);
-    padding: 7px 16px; border-radius: 6px;
+    font-size: 0.72rem; font-weight: 600;
+    color: rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 10px 20px; border-radius: 8px;
     text-transform: uppercase; letter-spacing: 0.08em;
     transition: all 0.2s var(--ease-spring);
     backdrop-filter: blur(8px);
 }
 .ag-hero-badge:hover {
-    border-color: rgba(0,232,122,0.28);
-    background: rgba(0,232,122,0.04);
-    color: rgba(255,255,255,0.65);
-    box-shadow: 0 0 18px rgba(0,232,122,0.07);
+    border-color: rgba(0,232,122,0.38);
+    background: rgba(0,232,122,0.06);
+    color: rgba(255,255,255,0.85);
+    box-shadow: 0 0 24px rgba(0,232,122,0.10);
+    transform: translateY(-2px);
 }
-.ag-hero-badge .badge-ico { font-size: 0.78rem; }
+.ag-hero-badge .badge-ico { font-size: 1.0rem; }
 .ag-hero-badge.primary {
     color: var(--c-green);
-    background: rgba(0,232,122,0.06);
-    border-color: rgba(0,232,122,0.22);
-    box-shadow: 0 0 24px rgba(0,232,122,0.08);
+    background: rgba(0,232,122,0.08);
+    border-color: rgba(0,232,122,0.32);
+    box-shadow: 0 0 28px rgba(0,232,122,0.12);
 }
 
 /* ── Hero dual CTA row ──────────────────────────────────────── */
@@ -2293,15 +2336,20 @@ html, body, .stApp, .stApp * {
 }
 .ag-hero-cta-trust {
     width: 100%; text-align: center;
-    font-family: var(--font-mono); font-size: 0.5rem; font-weight: 500;
-    color: rgba(255,255,255,0.16); letter-spacing: 0.08em; margin-top: 8px;
+    font-family: var(--font-mono); font-size: 0.68rem; font-weight: 500;
+    color: rgba(255,255,255,0.32); letter-spacing: 0.08em; margin-top: 10px;
 }
 @media (max-width: 520px) {
+    .ag-hero { padding: 48px 24px 40px; border-radius: 20px; }
     .ag-hero-cta { gap: 10px; margin-top: 28px; }
     .ag-hero-cta-primary { padding: 15px 32px; font-size: 0.9rem; }
     .ag-hero-cta-secondary { padding: 14px 22px; font-size: 0.8rem; }
+    .ag-hero-ai-badge { font-size: 0.60rem; padding: 8px 18px; }
+    .ag-hero-badge { font-size: 0.62rem; padding: 8px 14px; }
+    .ag-hero-sub { font-size: 1.0rem; }
 }
 @media (max-width: 380px) {
+    .ag-hero { padding: 36px 16px 32px; }
     .ag-hero-cta { flex-direction: column; gap: 8px; }
     .ag-hero-cta-primary, .ag-hero-cta-secondary { width: 100%; justify-content: center; }
 }
@@ -3816,7 +3864,7 @@ html, body, .stApp, .stApp * {
     .ag-section { padding-left: 18px; padding-right: 18px; }
     .ag-full-bleed .ag-section { padding-left: 18px; padding-right: 18px; }
     .ag-full-bleed { padding: 36px 0; }
-    .ag-hero h1 { font-size: 3.6rem; }
+    .ag-hero h1 { font-size: 3.8rem; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 2rem; }
     .ag-cta2-head { font-size: 1.9rem; }
     .ag-proof-big { font-size: 2.4rem; }
@@ -3853,7 +3901,7 @@ html, body, .stApp, .stApp * {
     .ag-section { padding-left: 14px; padding-right: 14px; }
     .ag-full-bleed .ag-section { padding-left: 14px; padding-right: 14px; }
     .ag-full-bleed { padding: 28px 0; }
-    .ag-hero h1 { font-size: 2.4rem; line-height: 1.02; }
+    .ag-hero h1 { font-size: 2.6rem; line-height: 1.00; }
     .ag-hero p { font-size: 0.82rem; padding: 0 8px; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 1.5rem; }
     .ag-section-head p { font-size: 0.78rem; padding: 0 4px; }
@@ -3861,8 +3909,8 @@ html, body, .stApp, .stApp * {
     .ag-logo-ring { width: 190px; height: 190px; }
     .ag-logo-section { padding-top: 40px; }
     .ag-hero-badges { gap: 6px; flex-wrap: wrap; justify-content: center; }
-    .ag-hero-badge { padding: 6px 12px; font-size: 0.58rem; }
-    .ag-hero-ai-badge { font-size: 0.5rem; padding: 5px 14px; letter-spacing: 0.1em; }
+    .ag-hero-badge { padding: 8px 14px; font-size: 0.64rem; }
+    .ag-hero-ai-badge { font-size: 0.60rem; padding: 8px 16px; letter-spacing: 0.12em; }
     .ag-proof-inner { grid-template-columns: repeat(2, 1fr); gap: 8px; }
     .ag-proof-big { font-size: 1.8rem; }
     .ag-proof-stat { padding: 16px 10px 14px; border-radius: 14px; }
@@ -3912,7 +3960,7 @@ html, body, .stApp, .stApp * {
     }
     .ag-section { padding-left: 10px; padding-right: 10px; }
     .ag-full-bleed .ag-section { padding-left: 10px; padding-right: 10px; }
-    .ag-hero h1 { font-size: 2rem; }
+    .ag-hero h1 { font-size: 2.2rem; }
     .ag-hero p { font-size: 0.78rem; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 1.2rem; }
     .ag-cta2-head { font-size: 1.1rem; }
@@ -3937,8 +3985,8 @@ html, body, .stApp, .stApp * {
     .ag-comp { grid-template-columns: auto 1fr; gap: 8px; }
     .ag-comp-price { display: none; }
     .ag-hero-badges { gap: 4px; }
-    .ag-hero-badge { padding: 5px 10px; font-size: 0.52rem; }
-    .ag-hero-ai-badge { font-size: 0.46rem; padding: 4px 10px; }
+    .ag-hero-badge { padding: 6px 12px; font-size: 0.60rem; }
+    .ag-hero-ai-badge { font-size: 0.56rem; padding: 6px 12px; }
     .ag-ticker { height: 30px; }
     .ag-ticker-item { padding: 0 10px; font-size: 0.5rem; }
 }
@@ -5772,6 +5820,8 @@ def require_login() -> bool:
     <div class="ag-logo-section">{_logo_html}<div class="ag-logo-ring"></div></div>
 
     <div class="ag-hero">
+      <div class="ag-hero-bg"></div>
+      <div class="ag-hero-inner">
       <div class="ag-hero-ai-badge"><span class="ai-dot"></span> NEURAL ENGINE v6.0 &mdash; 6 AI MODELS ACTIVE</div>
       <h1>The House<br><span class="line2">Has a Problem.</span><br><span class="em">It&rsquo;s Us.</span></h1>
       <div class="ag-hero-sub">
@@ -5791,6 +5841,7 @@ def require_login() -> bool:
         <a class="ag-hero-cta-primary" href="?auth=signup">&#x26A1; Create Free Account &mdash; It&rsquo;s Free</a>
         <a class="ag-hero-cta-secondary" href="?auth=login">Already a member? Log In &#x2192;</a>
         <div class="ag-hero-cta-trust">&#x1F512; No credit card &nbsp;&middot;&nbsp; 10-second signup &nbsp;&middot;&nbsp; 2,400+ sharps already winning</div>
+      </div>
       </div>
     </div>
 

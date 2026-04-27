@@ -2115,9 +2115,26 @@ html, body, .stApp, .stApp * {
 }
 
 /* ── Hero (Cinematic / Elite) ──────────────────────────────── */
+@keyframes agHeroL1In {
+    0%   { opacity: 0; transform: translateY(-60px) scale(1.05); filter: blur(16px); }
+    100% { opacity: 1; transform: translateY(0)     scale(1);    filter: blur(0); }
+}
+@keyframes agHeroL2In {
+    0%   { opacity: 0; transform: translateX(-50px); filter: blur(10px); }
+    100% { opacity: 1; transform: translateX(0);     filter: blur(0); }
+}
+@keyframes agHeroItsUsIn {
+    0%   { opacity: 0; transform: translateY(80px) scale(0.82); filter: blur(28px); }
+    65%  { filter: blur(2px); }
+    100% { opacity: 1; transform: translateY(0)    scale(1);    filter: blur(0); }
+}
+@keyframes agHeroDividerIn {
+    0%   { transform: scaleX(0); opacity: 0; }
+    100% { transform: scaleX(1); opacity: 1; }
+}
 @keyframes agHeroCinemaGlow {
-    0%,100% { box-shadow: 0 0 0 1px rgba(0,232,122,0.12), 0 0 120px rgba(0,232,122,0.10), 0 60px 120px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.07); }
-    50%      { box-shadow: 0 0 0 1px rgba(0,232,122,0.20), 0 0 180px rgba(0,232,122,0.16), 0 60px 120px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.09); }
+    0%,100% { box-shadow: 0 0 0 1px rgba(0,232,122,0.15), 0 0 160px rgba(0,232,122,0.13), 0 80px 160px rgba(0,0,0,0.90), inset 0 1px 0 rgba(255,255,255,0.07); }
+    50%      { box-shadow: 0 0 0 1px rgba(0,232,122,0.28), 0 0 240px rgba(0,232,122,0.22), 0 80px 160px rgba(0,0,0,0.90), inset 0 1px 0 rgba(255,255,255,0.10); }
 }
 @keyframes agHeroScan {
     0%   { top: 0%; opacity: 0; }
@@ -2127,12 +2144,12 @@ html, body, .stApp, .stApp * {
 }
 .ag-hero {
     text-align: center;
-    padding: 72px 48px 56px;
-    max-width: 1020px; margin: 0 auto;
+    padding: 104px 56px 88px;
+    max-width: 1280px; margin: 0 auto;
     position: relative;
     background:
-        linear-gradient(180deg, rgba(0,20,14,0.97) 0%, rgba(3,10,20,0.99) 60%, rgba(4,8,16,1) 100%);
-    border: 1px solid rgba(0,232,122,0.22);
+        linear-gradient(180deg, rgba(0,18,12,0.98) 0%, rgba(3,10,20,0.99) 50%, rgba(4,8,16,1) 100%);
+    border: 1px solid rgba(0,232,122,0.25);
     border-radius: 28px;
     overflow: hidden;
     animation: agHeroCinemaGlow 5s ease-in-out infinite;
@@ -2157,9 +2174,10 @@ html, body, .stApp, .stApp * {
 .ag-hero-bg {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
     background:
-        radial-gradient(ellipse 65% 55% at 15% 40%, rgba(0,232,122,0.09) 0%, transparent 60%),
-        radial-gradient(ellipse 45% 60% at 85% 25%, rgba(59,158,255,0.07) 0%, transparent 55%),
-        radial-gradient(ellipse 35% 35% at 50% 95%, rgba(0,232,122,0.05) 0%, transparent 60%);
+        radial-gradient(ellipse 80% 70% at 10% 30%, rgba(0,232,122,0.13) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 80% at 90% 20%, rgba(59,158,255,0.10) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 50% at 50% 95%, rgba(0,232,122,0.08) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(59,158,255,0.04) 0%, transparent 70%);
     pointer-events: none;
 }
 .ag-hero-inner { position: relative; z-index: 1; }
@@ -2196,45 +2214,60 @@ html, body, .stApp, .stApp * {
 }
 .ag-hero h1 {
     font-family: var(--font-head);
-    font-size: clamp(4.8rem, 11vw, 9.5rem); font-weight: 900;
-    line-height: 0.88; letter-spacing: -0.055em;
+    font-weight: 900;
+    line-height: 0.88;
     color: #fff; margin: 0;
     text-transform: uppercase;
-    text-shadow:
-        0 0 160px rgba(0,232,122,0.12),
-        0 0 300px rgba(59,158,255,0.07),
-        0 4px 0 rgba(0,0,0,0.6);
-    animation: agHeroTextReveal 0.9s 0.1s var(--ease-out) both;
     will-change: transform;
 }
-.ag-hero h1 .line2 {
-    animation: agHeroTextReveal 0.9s 0.28s var(--ease-out) both;
+.ag-hero h1 .hero-l1 {
     display: block;
-    color: rgba(210,225,245,0.80);
+    font-size: clamp(5.5rem, 14vw, 12.5rem);
+    letter-spacing: -0.06em;
+    text-shadow:
+        0 0 220px rgba(0,232,122,0.16),
+        0 0 480px rgba(59,158,255,0.08),
+        0 8px 0 rgba(0,0,0,0.65);
+    animation: agHeroL1In 1.0s 0.10s var(--ease-out) both;
+    color: #fff;
 }
-.ag-hero .em {
+.ag-hero h1 .hero-l2 {
     display: block;
-    background: linear-gradient(135deg, var(--c-green) 0%, var(--c-plasma) 28%, var(--c-blue) 55%, var(--c-purple) 80%, var(--c-gold) 100%);
+    font-size: clamp(3.4rem, 8.5vw, 7.5rem);
+    letter-spacing: -0.04em;
+    color: rgba(195,215,240,0.60);
+    text-shadow: 0 4px 0 rgba(0,0,0,0.5);
+    animation: agHeroL2In 0.9s 0.40s var(--ease-out) both;
+    margin-top: 4px;
+}
+.ag-hero-divider {
+    width: 80px; height: 2px; margin: 30px auto 26px;
+    background: linear-gradient(90deg, transparent, rgba(0,232,122,0.6), rgba(59,158,255,0.5), transparent);
+    border-radius: 2px;
+    animation: agHeroDividerIn 0.8s 0.58s cubic-bezier(0.22,1,0.36,1) both;
+    box-shadow: 0 0 20px rgba(0,232,122,0.4);
+    transform-origin: center;
+}
+.ag-hero-its-us {
+    font-family: var(--font-head);
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: clamp(5.2rem, 13.5vw, 12rem);
+    letter-spacing: 0.20em;
+    line-height: 1.0;
+    background: linear-gradient(135deg, var(--c-green) 0%, var(--c-plasma) 30%, var(--c-blue) 55%, var(--c-purple) 78%, var(--c-gold) 100%);
     background-size: 300% 200%;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
-    animation: agPlasmaFlow 5s ease infinite, agHeroTextReveal 0.9s 0.45s var(--ease-out) both;
-    filter: drop-shadow(0 0 55px rgba(0,232,122,0.22));
-    position: relative;
-}
-.ag-hero h1::after {
-    content: ''; display: block;
-    width: 120px; height: 3px; margin: 28px auto 0;
-    background: linear-gradient(90deg, transparent, var(--c-green), var(--c-plasma), var(--c-blue), transparent);
-    border-radius: 2px;
-    animation: agHeroTextReveal 0.9s 0.6s var(--ease-out) both;
-    box-shadow: 0 0 28px rgba(0,232,122,0.5);
+    animation: agPlasmaFlow 5s ease infinite, agHeroItsUsIn 1.1s 0.70s var(--ease-out) both;
+    filter: drop-shadow(0 0 100px rgba(0,232,122,0.32)) drop-shadow(0 0 200px rgba(59,158,255,0.14));
+    margin: 0; padding-bottom: 0.08em;
 }
 .ag-hero-sub {
     font-family: var(--font-body);
     font-size: clamp(1.0rem, 1.8vw, 1.30rem); font-weight: 400;
     color: rgba(200,215,235,0.80);
-    line-height: 1.85; margin-top: 32px;
+    line-height: 1.85; margin-top: 48px;
     max-width: 660px; margin-left: auto; margin-right: auto;
     animation: agHeroTextReveal 0.9s 0.65s var(--ease-out) both;
     letter-spacing: 0.01em;
@@ -2340,16 +2373,17 @@ html, body, .stApp, .stApp * {
     color: rgba(255,255,255,0.32); letter-spacing: 0.08em; margin-top: 10px;
 }
 @media (max-width: 520px) {
-    .ag-hero { padding: 48px 24px 40px; border-radius: 20px; }
+    .ag-hero { padding: 56px 24px 48px; border-radius: 20px; }
     .ag-hero-cta { gap: 10px; margin-top: 28px; }
     .ag-hero-cta-primary { padding: 15px 32px; font-size: 0.9rem; }
     .ag-hero-cta-secondary { padding: 14px 22px; font-size: 0.8rem; }
     .ag-hero-ai-badge { font-size: 0.60rem; padding: 8px 18px; }
     .ag-hero-badge { font-size: 0.62rem; padding: 8px 14px; }
     .ag-hero-sub { font-size: 1.0rem; }
+    .ag-hero-divider { margin: 18px auto 16px; width: 56px; }
 }
 @media (max-width: 380px) {
-    .ag-hero { padding: 36px 16px 32px; }
+    .ag-hero { padding: 44px 16px 36px; }
     .ag-hero-cta { flex-direction: column; gap: 8px; }
     .ag-hero-cta-primary, .ag-hero-cta-secondary { width: 100%; justify-content: center; }
 }
@@ -3864,7 +3898,9 @@ html, body, .stApp, .stApp * {
     .ag-section { padding-left: 18px; padding-right: 18px; }
     .ag-full-bleed .ag-section { padding-left: 18px; padding-right: 18px; }
     .ag-full-bleed { padding: 36px 0; }
-    .ag-hero h1 { font-size: 3.8rem; }
+    .ag-hero h1 .hero-l1 { font-size: 4.5rem; }
+    .ag-hero h1 .hero-l2 { font-size: 2.7rem; }
+    .ag-hero-its-us { font-size: 4.0rem; letter-spacing: 0.15em; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 2rem; }
     .ag-cta2-head { font-size: 1.9rem; }
     .ag-proof-big { font-size: 2.4rem; }
@@ -3901,7 +3937,9 @@ html, body, .stApp, .stApp * {
     .ag-section { padding-left: 14px; padding-right: 14px; }
     .ag-full-bleed .ag-section { padding-left: 14px; padding-right: 14px; }
     .ag-full-bleed { padding: 28px 0; }
-    .ag-hero h1 { font-size: 2.6rem; line-height: 1.00; }
+    .ag-hero h1 .hero-l1 { font-size: 3.0rem; line-height: 0.88; }
+    .ag-hero h1 .hero-l2 { font-size: 1.85rem; }
+    .ag-hero-its-us { font-size: 2.6rem; letter-spacing: 0.12em; }
     .ag-hero p { font-size: 0.82rem; padding: 0 8px; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 1.5rem; }
     .ag-section-head p { font-size: 0.78rem; padding: 0 4px; }
@@ -3960,7 +3998,9 @@ html, body, .stApp, .stApp * {
     }
     .ag-section { padding-left: 10px; padding-right: 10px; }
     .ag-full-bleed .ag-section { padding-left: 10px; padding-right: 10px; }
-    .ag-hero h1 { font-size: 2.2rem; }
+    .ag-hero h1 .hero-l1 { font-size: 2.4rem; }
+    .ag-hero h1 .hero-l2 { font-size: 1.5rem; }
+    .ag-hero-its-us { font-size: 2.1rem; letter-spacing: 0.08em; }
     .ag-hero p { font-size: 0.78rem; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 1.2rem; }
     .ag-cta2-head { font-size: 1.1rem; }
@@ -5823,7 +5863,9 @@ def require_login() -> bool:
       <div class="ag-hero-bg"></div>
       <div class="ag-hero-inner">
       <div class="ag-hero-ai-badge"><span class="ai-dot"></span> NEURAL ENGINE v6.0 &mdash; 6 AI MODELS ACTIVE</div>
-      <h1>The House<br><span class="line2">Has a Problem.</span><br><span class="em">It&rsquo;s Us.</span></h1>
+      <h1><span class="hero-l1">The House</span><span class="hero-l2">Has a Problem.</span></h1>
+      <div class="ag-hero-divider"></div>
+      <div class="ag-hero-its-us">It&rsquo;s Us.</div>
       <div class="ag-hero-sub">
         <strong>The NBA prop machine the Twitter gurus don&rsquo;t want you to know about.</strong><br>
         Every night, 6 AI models scan 300+ props across PrizePicks, DraftKings &amp; Underdog

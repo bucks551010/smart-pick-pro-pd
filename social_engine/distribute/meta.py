@@ -99,6 +99,62 @@ class InstagramPoster:
         return PostResult(True, self.channel, post_id=media_id,
                           url=f"https://www.instagram.com/p/{media_id}")
 
+    def post_carousel(self, image_paths: list[Path], text: str) -> PostResult:
+        """Post multiple images as an Instagram carousel album (up to 10 slides)."""
+        if not image_paths:
+            return PostResult(False, self.channel, error="no images provided for carousel")
+
+        # 1. Create one child media container per slide
+        child_ids: list[str] = []
+        for img_path in image_paths[:10]:  # IG carousel cap = 10
+            r = requests.post(
+                f"{_API}/{SETTINGS.meta_ig_id}/media",
+                data={
+                    "image_url":        _public_image_url(img_path),
+                    "is_carousel_item": "true",
+                    "access_token":     SETTINGS.meta_token,
+                },
+                timeout=60,
+            )
+            r.raise_for_status()
+            child_ids.append(r.json()["id"])
+
+        # 2. Create carousel container
+        create = requests.post(
+            f"{_API}/{SETTINGS.meta_ig_id}/media",
+            data={
+                "media_type":   "CAROUSEL",
+                "caption":      text,
+                "children":     ",".join(child_ids),
+                "access_token": SETTINGS.meta_token,
+            },
+            timeout=60,
+        )
+        create.raise_for_status()
+        creation_id = create.json()["id"]
+
+        # 3. Poll until FINISHED
+        for _ in range(10):
+            status = requests.get(
+                f"{_API}/{creation_id}",
+                params={"fields": "status_code", "access_token": SETTINGS.meta_token},
+                timeout=20,
+            ).json()
+            if status.get("status_code") == "FINISHED":
+                break
+            time.sleep(2)
+
+        # 4. Publish
+        pub = requests.post(
+            f"{_API}/{SETTINGS.meta_ig_id}/media_publish",
+            data={"creation_id": creation_id, "access_token": SETTINGS.meta_token},
+            timeout=60,
+        )
+        pub.raise_for_status()
+        media_id = pub.json()["id"]
+        return PostResult(True, self.channel, post_id=media_id,
+                          url=f"https://www.instagram.com/p/{media_id}")
+
 
 # ── THREADS ──────────────────────────────────────────────────
 

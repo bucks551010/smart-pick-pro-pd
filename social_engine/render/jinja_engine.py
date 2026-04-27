@@ -12,7 +12,8 @@ from core.headshots import enrich_picks_with_headshots
 from core.qr import build_utm_url, qr_data_uri
 
 # ── Logo data URI — embedded once at startup ─────────────────
-_LOGO_PATH = Path(__file__).resolve().parents[2] / "assets" / "Smart_Pick_Pro_Logo.png"
+# parents[0]=render/  parents[1]=social_engine/  parents[2]=project root
+_LOGO_PATH = Path(__file__).resolve().parents[1] / "assets" / "Smart_Pick_Pro_Logo.png"
 
 def _logo_data_uri() -> str | None:
     if _LOGO_PATH.exists():

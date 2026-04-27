@@ -120,15 +120,16 @@ with tab_templates:
     def _get_results_picks() -> tuple[int, int, float, list[dict]]:
         try:
             summary = ds.get_results_for_date(result_date)
+            # bets is list[dict] — use dict access, never dot access
             picks = [
                 {
-                    "player_name":  b.player_name,
-                    "stat_type":    b.stat_type,
-                    "prop_line":    b.prop_line,
-                    "direction":    getattr(b, "direction", "OVER"),
-                    "actual_value": getattr(b, "actual_value", None),
-                    "platform":     getattr(b, "platform", ""),
-                    "result":       b.result,
+                    "player_name":  b.get("player_name", ""),
+                    "stat_type":    b.get("stat_type", ""),
+                    "prop_line":    float(b.get("prop_line") or 0),
+                    "direction":    b.get("direction", "OVER"),
+                    "actual_value": b.get("actual_value"),
+                    "platform":     b.get("platform", ""),
+                    "result":       b.get("result", ""),
                 }
                 for b in summary.bets[:n_show]
             ]

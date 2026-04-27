@@ -289,6 +289,13 @@ if not st.session_state.get("_picks_seeded"):
             st.session_state["analysis_results"] = _cached_picks
     except Exception:
         pass
+    # Stamp _data_version_seen now so the poller's first registration fire
+    # does NOT clear freshly-loaded picks and trigger an unnecessary rerun.
+    try:
+        from tracking.database import get_data_version as _gv_seed
+        st.session_state.setdefault("_data_version_seen", _gv_seed())
+    except Exception:
+        pass
 
 # ─── Phase 3 — Real-Time Polling: silent 60-second data-version fragment ───
 # Streamlit re-runs this fragment every 60 s without touching the rest of the
@@ -336,12 +343,12 @@ if not st.session_state.get("analysis_results"):
 if not st.session_state.get("analysis_results"):
     _no_picks_col1, _no_picks_col2 = st.columns([4, 1])
     with _no_picks_col1:
-        with st.spinner("Loading tonight's picks..."):
-            st.info(
-                "📡 Fetching tonight's slate — picks load automatically within 60 seconds. "
-                "Click **Refresh** to check now.",
-                icon="⏳",
-            )
+        st.info(
+            "📡 No picks available yet for today's slate — "
+            "the worker runs every 30 minutes. "
+            "Click **Refresh** to check now.",
+            icon="📡",
+        )
     with _no_picks_col2:
         if st.button("🔄 Refresh", key="_home_refresh_no_picks"):
             _load_cached_slate.clear()

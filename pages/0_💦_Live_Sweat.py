@@ -457,13 +457,14 @@ def _bet_label(b: dict) -> str:
 _bet_labels = [_bet_label(b) for b in all_available_bets]
 _label_to_bet = dict(zip(_bet_labels, all_available_bets))
 
-st.markdown("### 🎯 Select Bets to Sweat")
-selected_labels = st.multiselect(
-    "Choose which bets to track live (all selected by default)",
-    options=_bet_labels,
-    default=_bet_labels,
-    key="sweat_bet_selector",
-)
+selected_labels = _bet_labels  # default: all selected
+with st.expander(f"🎯 Select Bets to Sweat — {len(_bet_labels)} bets loaded (click to filter)", expanded=False):
+    selected_labels = st.multiselect(
+        "Choose which bets to track live (all selected by default)",
+        options=_bet_labels,
+        default=_bet_labels,
+        key="sweat_bet_selector",
+    )
 
 active_bets = [_label_to_bet[lbl] for lbl in selected_labels if lbl in _label_to_bet]
 

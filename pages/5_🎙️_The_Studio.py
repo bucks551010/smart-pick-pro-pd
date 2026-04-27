@@ -1813,8 +1813,9 @@ if joseph_results:
         _pill_html = ""
         for _lbl, _cnt, _clr in [("🔒 LOCK", _n_locks, "#a855f7"), ("🔥 SMASH", _n_smash, "#F24336"), ("✅ LEAN", _n_lean, "#00D559")]:
             if _cnt:
+                _clr_rgb = ",".join(str(int(_clr.lstrip("#")[i:i+2], 16)) for i in (0, 2, 4))
                 _pill_html += (
-                    f'<span style="background:rgba({",".join(str(int(int(_clr.lstrip("#")[i:i+2],16)) for i in (0,2,4))},0.15);'
+                    f'<span style="background:rgba({_clr_rgb},0.15);'
                     f'color:{_clr};border:1px solid {_clr};border-radius:20px;'
                     f'padding:3px 10px;font-size:0.72rem;font-weight:700;margin-right:6px">'
                     f'{_lbl} &times;{_cnt}</span>'
@@ -2194,8 +2195,9 @@ def _render_track_record_section():
     ]:
         _ac = _acc_clr(_vpct)
         _bar_w = min(_vpct, 100)
+        _vclr_rgb = ",".join(str(int(_vclr.lstrip("#")[i:i+2], 16)) for i in (0, 2, 4))
         _verdict_tiles_html += (
-            f'<div style="background:linear-gradient(135deg,#0f172a,rgba({",".join(str(int(int(_vclr.lstrip("#")[i:i+2],16)) for i in (0,2,4))},0.07));'
+            f'<div style="background:linear-gradient(135deg,#0f172a,rgba({_vclr_rgb},0.07));'
             f'border:1px solid {_vclr}33;border-radius:14px;padding:16px;text-align:center">'
             f'<div style="color:{_vclr};font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px">{_vemoji} {_vname} Accuracy</div>'
             f'<div style="color:{_ac};font-size:1.7rem;font-weight:900;line-height:1.1">{"—" if _vpct == 0 else f"{_vpct:.1f}%"}</div>'
@@ -2243,10 +2245,6 @@ def _render_track_record_section():
         f'<div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#00D559;flex-shrink:0"></span><span style="color:#e2e8f0;font-size:0.8rem">LEAN</span><span style="color:#00D559;font-size:0.8rem;font-weight:700;margin-left:auto">{_lean_pct_100:.0f}%</span></div>'
         f'</div></div></div>',
         unsafe_allow_html=True,
-    )
-        f'stroke-dashoffset="-{_lock_dash + _smash_dash:.1f}" '
-        f'transform="rotate(-90 25 25)"/>'
-        f'</svg>'
     )
 
     # Override accuracy

@@ -425,11 +425,28 @@ if not st.session_state.get("analysis_results"):
         else:
             _saved_session = _load_session()
         if _saved_session and _saved_session.get("analysis_results"):
-            st.session_state["analysis_results"] = _saved_session["analysis_results"]
+            # Filter out analysis results with no opponent (non-playing-team
+            # props or synthetic game-total entries like "DET @ ORL Total").
+            _raw_ar = _saved_session["analysis_results"] or []
+            _games_loaded = (
+                _saved_session.get("todays_games")
+                or st.session_state.get("todays_games")
+                or []
+            )
+            if _games_loaded:
+                _raw_ar = [r for r in _raw_ar if r.get("opponent", "")]
+            st.session_state["analysis_results"] = _raw_ar
             if _saved_session.get("todays_games") and not st.session_state.get("todays_games"):
                 st.session_state["todays_games"] = _saved_session["todays_games"]
             if _saved_session.get("selected_picks") and not st.session_state.get("selected_picks"):
-                st.session_state["selected_picks"] = _saved_session["selected_picks"]
+                # Filter out any stored selected_picks that have no opponent
+                # (synthetic game-total props or non-playing-team picks).
+                _raw_sel = _saved_session["selected_picks"] or []
+                _filtered_sel = [
+                    p for p in _raw_sel
+                    if p.get("opponent", "")
+                ]
+                st.session_state["selected_picks"] = _filtered_sel
             # Record the timestamp so the UI can show when the session was saved
             st.session_state["_analysis_session_reloaded_at"] = _saved_session.get("analysis_timestamp", "")
             # Prevent the auto-run guard from re-triggering the engine when we
@@ -446,9 +463,10 @@ if not st.session_state.get("selected_picks") and st.session_state.get("analysis
     _qam_ar = st.session_state["analysis_results"]
     _qam_auto = [
         r for r in _qam_ar
-        if r.get("tier", "").lower() in ("platinum", "gold")
+        if r.get("tier", "").lower() in ("platinum", "gold", "silver")
         and not r.get("player_is_out", False)
         and not r.get("should_avoid", False)
+        and r.get("opponent", "")  # exclude synthetic/no-game props
     ][:20]
     if _qam_auto:
         st.session_state["selected_picks"] = _qam_auto

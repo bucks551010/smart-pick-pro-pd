@@ -221,6 +221,32 @@ def run_slate(dry_run: bool = False) -> int:
             return 0
         _logger.info("[3] %d props fetched.", len(props))
 
+        # ── Step 3b: Filter props to tonight's playing teams only ────────
+        # The prop platforms (PrizePicks, Underdog) list props for ALL
+        # upcoming games this week, not just tonight's.  Without this filter,
+        # the analysis engine processes props for teams not playing tonight
+        # (e.g. POR, TOR, HOU), producing picks with empty opponents that
+        # contaminate the QAM display and the DB.
+        if games:
+            _tonight_teams: set[str] = set()
+            for _g in games:
+                _t1 = str(_g.get("home_team", "") or "").upper().strip()
+                _t2 = str(_g.get("away_team", "") or "").upper().strip()
+                if _t1:
+                    _tonight_teams.add(_t1)
+                if _t2:
+                    _tonight_teams.add(_t2)
+            if _tonight_teams:
+                _props_before = len(props)
+                props = [
+                    p for p in props
+                    if str(p.get("team", "") or "").upper().strip() in _tonight_teams
+                ]
+                _logger.info(
+                    "[3b] Filtered to tonight's teams %s: %d → %d props.",
+                    sorted(_tonight_teams), _props_before, len(props),
+                )
+
         # Write props CSV fresh so Prop Scanner page stays current.
         if not dry_run:
             try:
@@ -254,6 +280,19 @@ def run_slate(dry_run: bool = False) -> int:
         _logger.exception("[!] Pipeline error: %s", exc)
 
     # ── Step 6: Persist picks ─────────────────────────────────────────────
+    # Extra guard: only persist results for players with a known game opponent.
+    # This catches any non-playing-team props or synthetic game-total entries
+    # that slipped through the step-3b team filter (e.g. props with no team
+    # field set in the platform data).
+    if results and games:
+        _results_before = len(results)
+        results = [r for r in results if r.get("opponent", "")]
+        if len(results) < _results_before:
+            _logger.info(
+                "[6] Dropped %d no-opponent results (non-playing-team / synthetic). Keeping %d.",
+                _results_before - len(results), len(results),
+            )
+
     inserted = 0
     if results and not dry_run:
         try:
@@ -300,11 +339,17 @@ def run_slate(dry_run: bool = False) -> int:
         # session, preventing stale session 42-style hangovers.
         try:
             from tracking.database import save_analysis_session as _save_session
+            # Include Platinum, Gold, and Silver picks in selected_picks so the
+            # QAM and home page have a meaningful set of top picks to display.
+            # Also require a non-empty opponent to exclude synthetic game-total
+            # props (e.g. "DET @ ORL Total") and players from non-playing teams
+            # that may have slipped through the props filter.
             _top_picks = [
                 r for r in results
-                if r.get("tier", "").lower() in ("platinum", "gold", "diamond")
+                if r.get("tier", "").lower() in ("platinum", "gold", "silver")
                 and not r.get("player_is_out", False)
                 and not r.get("should_avoid", False)
+                and r.get("opponent", "")  # must have a valid game opponent
             ][:50]
             _session_id = _save_session(
                 results, todays_games=games, selected_picks=_top_picks

@@ -902,13 +902,15 @@ if _user_tier == TIER_FREE:
     )
     st.markdown(_cta_html, unsafe_allow_html=True)
 
-# Build Top 3 hero pool: Platinum/Gold, conf >= 65, not avoided/out
+# Build Top 3 hero pool: Platinum/Gold/Silver, conf >= 57, not avoided/out
+# Also exclude synthetic game-total props (opponent must be non-empty).
 _hero_pool = [
     r for r in _home_analysis
     if not r.get("should_avoid", False)
     and not r.get("player_is_out", False)
-    and r.get("tier", "Bronze") in {"Platinum", "Gold"}
-    and float(r.get("confidence_score", 0) or 0) >= 65
+    and r.get("tier", "Bronze") in {"Platinum", "Gold", "Silver"}
+    and float(r.get("confidence_score", 0) or 0) >= 57
+    and r.get("opponent", "")  # exclude no-opponent/synthetic props
 ]
 _hero_pool = sorted(
     _hero_pool,

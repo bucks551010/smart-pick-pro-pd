@@ -104,7 +104,7 @@ def generate_copy(asset_type: str, payload: dict[str, Any]) -> CopyVariants:
             payload=json.dumps(payload)[:4000],
         )
         resp = model.models.generate_content(
-            model="gemini-2.0-flash",
+            model="models/gemini-2.5-flash",
             contents=prompt,
             config={"response_mime_type": "application/json"},
         )

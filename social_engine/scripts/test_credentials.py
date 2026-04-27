@@ -45,11 +45,11 @@ def test_gemini() -> None:
         from google import genai  # type: ignore
         client = genai.Client(api_key=key)
         resp = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="models/gemini-2.5-flash",
             contents="Reply with the single word: OK",
         )
         text = resp.text.strip()
-        ok("Gemini 2.0 Flash", f"response: {text[:40]}")
+        ok("Gemini 2.5 Flash", f"response: {text[:40]}")
     except Exception as exc:
         fail("Gemini", str(exc))
 

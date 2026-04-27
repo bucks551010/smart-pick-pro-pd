@@ -136,7 +136,7 @@ def is_ai_auto_bet(row: dict) -> bool:
         return False
     if "smart money" in _platform or "smart money" in _notes:
         return False
-    if _source in {"qeg_auto", "smart_pick_pro", "smart_pick_pro_platform", "smartpickpro_auto"}:
+    if _source in {"qeg_auto", "quantum", "smart_pick_pro", "smart_pick_pro_platform", "smartpickpro_auto"}:
         return True
     if _platform in {"smartai-auto", "smartauto-ai", "smart pick pro",
                       "smart pick pro platform picks", "smart pick pro platform"}:

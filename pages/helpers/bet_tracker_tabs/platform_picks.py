@@ -20,7 +20,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
     )
 
     _col1, _col2 = st.columns([2, 5])
-    st.session_state.setdefault("ai_picks_scope", "Today")
+    st.session_state.setdefault("ai_picks_scope", "Last 7 Days")
     with _col1:
         _ai_scope = st.selectbox(
             "Platform Picks Scope",

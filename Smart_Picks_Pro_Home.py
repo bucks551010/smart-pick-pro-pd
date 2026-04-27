@@ -296,6 +296,26 @@ if not st.session_state.get("_picks_seeded"):
             st.session_state["analysis_results"] = _cached_picks
     except Exception:
         pass
+    # ── Load todays_games from the latest analysis session saved by the
+    # worker.  The worker and web containers have separate filesystems so
+    # slate_cache.json is never found by the web container; reading from
+    # the shared DB is the only cross-container-safe path.
+    if not st.session_state.get("todays_games"):
+        try:
+            from tracking.database import load_latest_analysis_session as _llas
+            _latest_sess = _llas()
+            if _latest_sess and _latest_sess.get("todays_games"):
+                st.session_state["todays_games"] = _latest_sess["todays_games"]
+            # Also seed analysis_results from the rich session blob if the
+            # flat-pick fallback left it empty.
+            if (
+                not st.session_state.get("analysis_results")
+                and _latest_sess
+                and _latest_sess.get("analysis_results")
+            ):
+                st.session_state["analysis_results"] = _latest_sess["analysis_results"]
+        except Exception:
+            pass
     # Stamp _data_version_seen now so the poller's first registration fire
     # does NOT clear freshly-loaded picks and trigger an unnecessary rerun.
     try:

@@ -438,6 +438,21 @@ if not st.session_state.get("analysis_results"):
     except Exception:
         pass  # Non-fatal — just show empty state
 
+# ── Auto-populate selected_picks with top-tier picks if empty.
+# Covers the case where the analysis session was saved without picks
+# (e.g. a UI-triggered run that didn't reach the selection step) and
+# the case where the worker saved an empty selected_picks list.
+if not st.session_state.get("selected_picks") and st.session_state.get("analysis_results"):
+    _qam_ar = st.session_state["analysis_results"]
+    _qam_auto = [
+        r for r in _qam_ar
+        if r.get("tier", "").lower() in ("platinum", "gold")
+        and not r.get("player_is_out", False)
+        and not r.get("should_avoid", False)
+    ][:20]
+    if _qam_auto:
+        st.session_state["selected_picks"] = _qam_auto
+
 # ─── Auto-refresh injury data if empty or stale (>4 hours) ──
 # Use a 30-minute in-session cooldown to avoid re-loading on every
 # page navigation, while still updating when data is genuinely stale.

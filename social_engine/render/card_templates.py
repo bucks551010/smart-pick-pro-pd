@@ -1229,11 +1229,26 @@ def render_carousel(
 # Registry — used by app.py template picker
 # ══════════════════════════════════════════════════════════════════════
 
+# Posting-destination categories (ordered for display)
+CATEGORIES: dict[str, str] = {
+    "instagram_feed":     "📸 Instagram Feed",
+    "instagram_reels":    "🎬 Instagram Reels",
+    "instagram_carousel": "🎠 Instagram Carousel",
+    "twitter_x":          "🐦 Twitter / X",
+    "facebook":           "📘 Facebook",
+}
+
+# Each template carries:
+#   categories  — list of CATEGORIES keys this template is suited for
+#   sizes       — {label: (w, h)} mapping; only platform-appropriate sizes listed
+#   needs_picks — template fn accepts a `picks` argument
+#   needs_carousel — render via render_carousel() rather than a single fn call
 TEMPLATES: dict[str, dict] = {
     "scoreboard_hero": {
-        "label":       "1 · Scoreboard Hero",
-        "description": "Massive record front & center, cyan glow. Best for Instagram square & Twitter.",
+        "label":       "Scoreboard Hero",
+        "description": "Massive record front & center, cyan glow. Clean, bold result card.",
         "fn":          scoreboard_hero,
+        "categories":  ["instagram_feed", "twitter_x", "facebook"],
         "sizes": {
             "Instagram Square (1080×1080)": (1080, 1080),
             "Twitter/X Card (1200×628)":    (1200, 628),
@@ -1241,29 +1256,33 @@ TEMPLATES: dict[str, dict] = {
         },
     },
     "receipts_gold": {
-        "label":       "2 · Receipts Gold",
-        "description": "Split: big win count left, player list with actual scores right. Gold fire.",
+        "label":       "Receipts Gold",
+        "description": "Split layout: big win count left, full player list with actual scores right.",
         "fn":          receipts_gold,
+        "categories":  ["instagram_feed"],
         "sizes": {
-            "Instagram Square (1080×1080)": (1080, 1080),
+            "Instagram Square (1080×1080)":   (1080, 1080),
             "Instagram Portrait (1080×1350)": (1080, 1350),
         },
         "needs_picks": True,
     },
     "neon_grid": {
-        "label":       "3 · Neon Grid",
-        "description": "3×3 win cards on dark crimson/purple. Best for square & landscape.",
+        "label":       "Neon Grid",
+        "description": "3×3 win cards on dark crimson/purple. Great for square feed or landscape.",
         "fn":          neon_grid,
+        "categories":  ["instagram_feed", "twitter_x", "facebook"],
         "sizes": {
             "Instagram Square (1080×1080)": (1080, 1080),
             "Twitter/X Card (1200×628)":    (1200, 628),
+            "Facebook Post (1200×628)":     (1200, 628),
         },
         "needs_picks": True,
     },
     "ice_command": {
-        "label":       "4 · Ice Command",
-        "description": "Blue steel portrait, full pick list with actual scores. Instagram portrait.",
+        "label":       "Ice Command",
+        "description": "Blue steel portrait, full pick list with actual scores. Tall feed card.",
         "fn":          ice_command,
+        "categories":  ["instagram_feed"],
         "sizes": {
             "Instagram Portrait (1080×1350)": (1080, 1350),
             "Instagram Square (1080×1080)":   (1080, 1080),
@@ -1271,36 +1290,40 @@ TEMPLATES: dict[str, dict] = {
         "needs_picks": True,
     },
     "volt_minimal": {
-        "label":       "5 · Volt Minimal",
-        "description": "Electric green, giant number, bold & clean. Any platform.",
+        "label":       "Volt Minimal",
+        "description": "Electric green, giant number, bold & clean. Works on any platform.",
         "fn":          volt_minimal,
+        "categories":  ["instagram_feed", "twitter_x", "facebook"],
         "sizes": {
             "Instagram Square (1080×1080)":   (1080, 1080),
-            "Instagram Story (1080×1920)":    (1080, 1920),
             "Twitter/X Card (1200×628)":      (1200, 628),
+            "Facebook Post (1200×628)":       (1200, 628),
         },
     },
     "reels_fire": {
-        "label":       "6 · Reels Fire",
-        "description": "Cinematic dark-red, pick list, swipe CTA. Instagram Reels / Story 9:16.",
+        "label":       "Reels Fire",
+        "description": "Cinematic dark-red 9:16, pick rows, animated swipe CTA. Built for Reels.",
         "fn":          reels_fire,
+        "categories":  ["instagram_reels"],
         "sizes": {
             "Instagram Reel / Story (1080×1920)": (1080, 1920),
         },
         "needs_picks": True,
     },
     "reels_minimal": {
-        "label":       "7 · Reels Minimal",
+        "label":       "Reels Minimal",
         "description": "Electric-green volt adapted for 9:16. Clean, bold, hypnotic.",
         "fn":          reels_minimal,
+        "categories":  ["instagram_reels"],
         "sizes": {
             "Instagram Reel / Story (1080×1920)": (1080, 1920),
         },
     },
     "carousel": {
-        "label":       "8 · Carousel (Multi-Slide)",
-        "description": "Cover + one slide per pick + CTA. Instagram carousel / swipe post.",
-        "fn":          carousel_cover,       # cover preview only — use render_carousel() for full set
+        "label":       "Carousel (Multi-Slide)",
+        "description": "Cover + one receipt per pick + CTA. Instagram swipe carousel.",
+        "fn":          carousel_cover,       # cover preview only — render_carousel() for full set
+        "categories":  ["instagram_carousel"],
         "sizes": {
             "Instagram Square (1080×1080)":   (1080, 1080),
             "Instagram Portrait (1080×1350)": (1080, 1350),

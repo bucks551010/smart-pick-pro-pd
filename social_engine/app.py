@@ -15,7 +15,7 @@ from core.llm_copy import generate_copy
 from distribute.campaign import deploy_campaign
 from render.headless import render_to_images, render_png_bytes
 from render.jinja_engine import render_html
-from render.card_templates import TEMPLATES
+from render.card_templates import TEMPLATES, CATEGORIES
 
 logging.basicConfig(level=logging.INFO)
 
@@ -57,8 +57,26 @@ with tab_templates:
 
     # ── controls ─────────────────────────────────────────────
     with ctrl_col:
-        tmpl_options = {v["label"]: k for k, v in TEMPLATES.items()}
-        chosen_label = st.radio("**Template**", list(tmpl_options.keys()), key="tmpl_radio")
+        # ── Step 1: pick posting destination ─────────────────
+        cat_labels  = list(CATEGORIES.values())
+        cat_keys    = list(CATEGORIES.keys())
+        chosen_cat_label = st.selectbox("**Post to**", cat_labels, key="tmpl_cat")
+        chosen_cat  = cat_keys[cat_labels.index(chosen_cat_label)]
+
+        # filter templates that belong to this category
+        filtered = {
+            k: v for k, v in TEMPLATES.items()
+            if chosen_cat in v.get("categories", [])
+        }
+        if not filtered:
+            st.warning("No templates for this destination yet.")
+            st.stop()
+
+        st.divider()
+
+        # ── Step 2: pick design ───────────────────────────────
+        tmpl_options = {v["label"]: k for k, v in filtered.items()}
+        chosen_label = st.radio("**Design**", list(tmpl_options.keys()), key="tmpl_radio")
         chosen_key   = tmpl_options[chosen_label]
         tmpl         = TEMPLATES[chosen_key]
         st.caption(tmpl["description"])

@@ -292,26 +292,29 @@ def run_slate(dry_run: bool = False) -> int:
                 _logger.info("[6c] data_version bumped — running sessions will refresh.")
             except Exception as exc:
                 _logger.debug("[6c] _bump_data_version failed (non-fatal): %s", exc)
-            # Step 6d: Persist the full analysis session to DB so the web
-            # container (separate filesystem) can load todays_games and
-            # top picks without needing the local slate_cache.json file.
-            try:
-                from tracking.database import save_analysis_session as _save_session
-                _top_picks = [
-                    r for r in results
-                    if r.get("tier", "").lower() in ("platinum", "gold", "diamond")
-                    and not r.get("player_is_out", False)
-                    and not r.get("should_avoid", False)
-                ][:50]
-                _session_id = _save_session(
-                    results, todays_games=games, selected_picks=_top_picks
-                )
-                _logger.info(
-                    "[6d] Analysis session saved (id=%s) — %d games, %d top picks.",
-                    _session_id, len(games), len(_top_picks),
-                )
-            except Exception as exc:
-                _logger.debug("[6d] save_analysis_session failed (non-fatal): %s", exc)
+        # Step 6d: Persist the full analysis session to DB so the web
+        # container (separate filesystem) can load todays_games and
+        # top picks without needing the local slate_cache.json file.
+        # Runs whenever results exist — NOT gated on inserted > 0 — so that
+        # runs where all picks are UPDATEs (already in DB) still push a fresh
+        # session, preventing stale session 42-style hangovers.
+        try:
+            from tracking.database import save_analysis_session as _save_session
+            _top_picks = [
+                r for r in results
+                if r.get("tier", "").lower() in ("platinum", "gold", "diamond")
+                and not r.get("player_is_out", False)
+                and not r.get("should_avoid", False)
+            ][:50]
+            _session_id = _save_session(
+                results, todays_games=games, selected_picks=_top_picks
+            )
+            _logger.info(
+                "[6d] Analysis session saved (id=%s) — %d games, %d top picks.",
+                _session_id, len(games), len(_top_picks),
+            )
+        except Exception as exc:
+            _logger.debug("[6d] save_analysis_session failed (non-fatal): %s", exc)
     elif dry_run:
         inserted = len(results)
         _logger.info("[6] DRY RUN — would persist %d picks (no write).", inserted)

@@ -976,6 +976,21 @@ def _fetch_games_layer3_live_scoreboard(team_records):
                 game_id=nba_game_id,
             ))
 
+        # ── ET date filter ────────────────────────────────────────────────
+        # The live scoreboard keeps completed games in its buffer for hours
+        # after they finish.  Filter to today's ET sports day only — same
+        # guard that Layer 2 (ESPN) already applies.
+        _today_iso = _nba_today_et().isoformat()
+        formatted_games = [
+            g for g in formatted_games
+            if g.get("game_date", _today_iso) == _today_iso
+        ]
+        if not formatted_games:
+            _logger.info(
+                "Layer 3 (Live ScoreBoard): all games filtered out (not today %s) — returning []",
+                _today_iso,
+            )
+
         time.sleep(API_DELAY_SECONDS)
         return formatted_games
 

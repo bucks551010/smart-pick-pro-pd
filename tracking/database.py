@@ -4058,6 +4058,35 @@ def load_latest_analysis_session():
             row_dict["selected_picks"] = json.loads(row_dict.get("selected_picks_json") or "[]")
         except Exception:
             row_dict["selected_picks"] = []
+
+        # Content date guard: strip any picks whose pick_date or game_date is
+        # from a prior sports day.  A stale UI session saved at 6 PM today could
+        # contain analysis_results generated from yesterday's player pool when
+        # the user had leftover session state.  Comparing content dates (not just
+        # the session timestamp) is the only reliable protection.
+        _today = _nba_today_iso()
+        _raw_results = row_dict["analysis_results"]
+        if _raw_results:
+            row_dict["analysis_results"] = [
+                r for r in _raw_results
+                if r.get("pick_date", _today) >= _today
+                or r.get("game_date", _today) >= _today
+            ]
+            _filtered_out = len(_raw_results) - len(row_dict["analysis_results"])
+            if _filtered_out:
+                _logger.info(
+                    "load_latest_analysis_session: dropped %d prior-day picks from session %s",
+                    _filtered_out,
+                    row_dict.get("session_id"),
+                )
+        _raw_sel = row_dict["selected_picks"]
+        if _raw_sel:
+            row_dict["selected_picks"] = [
+                r for r in _raw_sel
+                if r.get("pick_date", _today) >= _today
+                or r.get("game_date", _today) >= _today
+            ]
+
         return row_dict
     except Exception as _err:
         _logger.warning(f"load_latest_analysis_session error (non-fatal): {_err}")
@@ -4115,6 +4144,22 @@ def load_analysis_session_by_id(session_id: int):
             row_dict["selected_picks"] = json.loads(row_dict.get("selected_picks_json") or "[]")
         except Exception:
             row_dict["selected_picks"] = []
+        # Content date guard — same as load_latest_analysis_session
+        _today = _nba_today_iso()
+        _raw_results = row_dict["analysis_results"]
+        if _raw_results:
+            row_dict["analysis_results"] = [
+                r for r in _raw_results
+                if r.get("pick_date", _today) >= _today
+                or r.get("game_date", _today) >= _today
+            ]
+        _raw_sel = row_dict["selected_picks"]
+        if _raw_sel:
+            row_dict["selected_picks"] = [
+                r for r in _raw_sel
+                if r.get("pick_date", _today) >= _today
+                or r.get("game_date", _today) >= _today
+            ]
         return row_dict
     except Exception as _err:
         _logger.warning(f"load_analysis_session_by_id({session_id}) error (non-fatal): {_err}")

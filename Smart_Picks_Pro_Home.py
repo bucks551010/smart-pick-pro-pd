@@ -540,50 +540,21 @@ st.markdown(f"""
   <span class="live-dot"></span>
   <span class="lab-accent">LIVE</span>
   <span class="lab-dim">&nbsp;&mdash;&nbsp;</span>
-  <span>Neural Engine V6.0 &nbsp;&bull;&nbsp; {game_count_text} &nbsp;&bull;&nbsp; <span class="lab-accent">6 AI models active</span></span>
+  <span>NBA prop engine active &nbsp;&bull;&nbsp; {game_count_text} &nbsp;&bull;&nbsp; <span class="lab-accent">Quantum online</span></span>
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown(f"""
-<div class="hero-cinema lp-anim">
-  <div class="hero-cinema-bg"></div>
-  <div class="hero-cinema-scan"></div>
-  <div class="hero-cinema-inner">
+<div class="hero-hud lp-anim">
+  <div class="hero-hud-inner-glow"></div>
+  <div class="hero-hud-text">
     <div class="hero-badge-row">
       <span class="hero-badge hero-badge-ai">🤖 Quantum AI</span>
       <span class="hero-badge hero-badge-free">✅ Free Picks Daily</span>
       <span class="hero-badge hero-badge-dfs">🏀 PrizePicks + Underdog</span>
     </div>
-    <div class="hero-headline">
-      <div class="hero-hl-line1">THE HOUSE</div>
-      <div class="hero-hl-line2">HAS A PROBLEM.</div>
-      <div class="hero-hl-line3">IT'S US.</div>
-    </div>
-    <div class="hero-sub">
-      <strong>5,000+ Live Props &nbsp;·&nbsp; 1,000 Simulations Each &nbsp;·&nbsp; Zero Black Boxes.</strong><br>
-      AI edge detection built for serious players. Know the edge before you enter.
-    </div>
-    <div class="hero-stats-strip">
-      <div class="hero-stat">
-        <span class="hero-stat-num green">63.4%</span>
-        <span class="hero-stat-label">Career Win Rate</span>
-      </div>
-      <div class="hero-stat-div"></div>
-      <div class="hero-stat">
-        <span class="hero-stat-num blue">5,000+</span>
-        <span class="hero-stat-label">Live Props Nightly</span>
-      </div>
-      <div class="hero-stat-div"></div>
-      <div class="hero-stat">
-        <span class="hero-stat-num gold">1,000×</span>
-        <span class="hero-stat-label">Sims Per Prop</span>
-      </div>
-      <div class="hero-stat-div"></div>
-      <div class="hero-stat">
-        <span class="hero-stat-num" style="color:#e879f9">6</span>
-        <span class="hero-stat-label">AI Models Blended</span>
-      </div>
-    </div>
+    <div class="hero-tagline">THE NBA PROP ENGINE THAT SHOWS ITS WORK</div>
+    <div class="hero-subtext"><strong>5,000+ Live Props. 1,000 Simulations Each. Zero Black Boxes.</strong> Know the edge before you enter.</div>
     <div class="hero-date">📅 {today_str} &nbsp;&bull;&nbsp; <span class="game-count-live">{game_count_text}</span></div>
   </div>
 </div>

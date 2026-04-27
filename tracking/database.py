@@ -4536,6 +4536,16 @@ def save_page_state(session_dict):
             if isinstance(v, (list, dict)) and not v:
                 continue
             filtered[k] = v
+        # Don't persist analysis_results whose picks lack pick_date (manual QAM
+        # analysis) or carry a prior-day pick_date — both would be re-loaded as
+        # "today's picks" by _auto_restore_page_state() on the next render.
+        # Manual-analysis results are recovered via analysis_sessions (date-guarded);
+        # slate-worker results always stamp pick_date.
+        _ar_to_save = filtered.get("analysis_results")
+        if _ar_to_save and isinstance(_ar_to_save, list) and _ar_to_save:
+            _first_pd = str(_ar_to_save[0].get("pick_date") or "")[:10]
+            if not _first_pd or _first_pd < _nba_today_iso():
+                filtered.pop("analysis_results", None)
         if not filtered:
             return True  # Nothing to save
         # Merge with existing saved state so keys from other pages
@@ -4599,11 +4609,11 @@ def load_page_state():
         _saved_picks = raw.get("analysis_results")
         if _saved_picks and isinstance(_saved_picks, list) and len(_saved_picks) > 0:
             _pick_date = str(_saved_picks[0].get("pick_date") or "")[:10]
-            if _pick_date and _pick_date < _nba_today_iso():
+            if not _pick_date or _pick_date < _nba_today_iso():
                 _logger.info(
-                    "load_page_state: discarding prior-day analysis_results "
-                    "(pick_date=%s, today=%s) — also clearing todays_games",
-                    _pick_date, _nba_today_iso(),
+                    "load_page_state: discarding analysis_results with "
+                    "pick_date=%r (today=%s) — also clearing todays_games",
+                    _pick_date or "<missing>", _nba_today_iso(),
                 )
                 raw.pop("analysis_results", None)
                 raw.pop("todays_games", None)   # games belong to the same prior-day slate

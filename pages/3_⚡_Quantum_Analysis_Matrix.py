@@ -371,6 +371,23 @@ st.session_state.setdefault("joseph_page_context", "page_analysis")
 inject_joseph_floating()
 render_joseph_hero_banner()
 
+# ── Stale-pick guard: clear explicit prior-day picks restored from page_state ──
+# _auto_restore_page_state() (called inside inject_joseph_floating above) can
+# load slate-worker picks with an explicit prior-day pick_date when the SQLite
+# page_state was saved across the midnight boundary.  Clear them here before the
+# session-bridge block at line ~399 so QAM never silently renders yesterday's slate.
+_qam_restored_ar = st.session_state.get("analysis_results")
+if _qam_restored_ar and isinstance(_qam_restored_ar, list) and _qam_restored_ar:
+    try:
+        from tracking.database import _nba_today_iso as _qam_today_fn
+        _qam_today = _qam_today_fn()
+        _qam_first_pd = str(_qam_restored_ar[0].get("pick_date") or "")[:10]
+        if _qam_first_pd and _qam_first_pd < _qam_today:
+            for _k in ("analysis_results", "todays_games", "selected_picks"):
+                st.session_state.pop(_k, None)
+    except Exception:
+        pass
+
 # ── Premium Status (partial gate — free users capped at 3 props) ──
 from utils.auth import is_premium_user as _is_premium_user
 try:
@@ -414,68 +431,12 @@ if not st.session_state.get("analysis_results"):
             if _saved_session.get("selected_picks") and not st.session_state.get("selected_picks"):
                 st.session_state["selected_picks"] = _saved_session["selected_picks"]
             # Record the timestamp so the UI can show when the session was saved
-            _session_ts = _saved_session.get("analysis_timestamp", "")
-            st.session_state["_analysis_session_reloaded_at"] = _session_ts
-            # Track whether this is a prior-day session so the UI can show a banner
-            try:
-                from zoneinfo import ZoneInfo as _ZI_sb
-                import datetime as _dt_sb
-                _today_iso_sb = _dt_sb.datetime.now(_ZI_sb("America/New_York")).date().isoformat()
-            except Exception:
-                import datetime as _dt_sb
-                _today_iso_sb = _dt_sb.date.today().isoformat()
-            _session_date_sb = ""
-            if _session_ts:
-                try:
-                    _session_date_sb = _dt_sb.datetime.fromisoformat(_session_ts.rstrip("Z")).date().isoformat()
-                except Exception:
-                    pass
-            st.session_state["_qam_session_date"] = _session_date_sb
-            st.session_state["_qam_session_is_prior_day"] = bool(_session_date_sb and _session_date_sb < _today_iso_sb)
+            st.session_state["_analysis_session_reloaded_at"] = _saved_session.get("analysis_timestamp", "")
             # Prevent the auto-run guard from re-triggering the engine when we
             # already have results from the DB.
             st.session_state["_qam_db_restored"] = True
     except Exception:
         pass  # Non-fatal — just show empty state
-
-# ─── Final fallback: load today's auto-run picks from all_analysis_picks ────
-# If neither session_state nor analysis_sessions has results, fall back to the
-# auto-run picks written by slate_worker / scheduler.  This covers the case
-# where a user navigates directly to QAM (no home-page visit) and no manual
-# session has been saved yet for today.
-if not st.session_state.get("analysis_results"):
-    try:
-        from tracking.database import get_slate_picks_for_today as _gsp_qam
-        _auto_picks = _gsp_qam()
-        if _auto_picks:
-            st.session_state["analysis_results"] = _auto_picks
-            st.session_state["_qam_db_restored"] = True
-    except Exception:
-        pass  # Non-fatal
-
-# ─── Restore todays_games independently if still missing ────────────────────
-# The session bridge above only fires when analysis_results is absent.
-# But the home page now seeds analysis_results from get_slate_picks_for_today()
-# without also setting todays_games.  When the user navigates directly to QAM
-# after the home-page slate seed, analysis_results is populated but
-# todays_games is empty → all players fall into "Other" with no game headers.
-# This block repairs that by loading games from the latest saved session
-# whenever todays_games is missing, independently of analysis_results state.
-if not st.session_state.get("todays_games"):
-    try:
-        from tracking.database import (
-            load_latest_analysis_session as _load_session_for_games,
-            load_analysis_session_by_id as _load_session_by_id_for_games,
-        )
-        _qam_sid_games = st.query_params.get("sid")
-        if _qam_sid_games:
-            _games_session = _load_session_by_id_for_games(int(_qam_sid_games))
-        else:
-            _games_session = _load_session_for_games()
-        if _games_session and _games_session.get("todays_games"):
-            st.session_state["todays_games"] = _games_session["todays_games"]
-    except Exception:
-        pass  # Non-fatal
 
 # ─── Auto-refresh injury data if empty or stale (>4 hours) ──
 # Use a 30-minute in-session cooldown to avoid re-loading on every
@@ -646,26 +607,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ── Prior-day session banner ───────────────────────────────────
-# If the loaded session is from a previous game day, show a notice so users
-# know they're viewing yesterday's picks.  The picks stay visible until noon
-# CT on the new day when the auto-reset fires.
-if st.session_state.get("_qam_session_is_prior_day"):
-    _prior_date = st.session_state.get("_qam_session_date", "")
-    _prior_label = _prior_date if _prior_date else "a prior game day"
-    try:
-        from zoneinfo import ZoneInfo as _ZI_banner
-        import datetime as _dt_banner
-        _now_ct_banner = _dt_banner.datetime.now(_ZI_banner("America/Chicago"))
-    except Exception:
-        pass
-    st.info(
-        f"📅 **Showing picks from {_prior_label}.** "
-        "These picks stay visible until midnight Central time, then today's new slate loads automatically. "
-        "You can also click **🚀 Run Analysis** below to refresh now.",
-        icon="📅",
-    )
-
 # ── Sidebar: How to Use, Settings, Roster Health, Framework Logic ──
 # Moved out of the main column to reduce pre-flight scroll distance.
 with st.sidebar:
@@ -787,63 +728,23 @@ if _dedup_removed > 0:
 # SECTION: Analysis Runner
 # ============================================================
 
-# ── Daily reset at midnight Central time ─────────────────────
-# At the start of each new CT calendar day (midnight) we clear all
-# prior-session data so users start fresh for the new game day.
-# The reset fires once per date (tracked via "_qam_noon_reset_date").
-try:
-    from zoneinfo import ZoneInfo as _ZI_noon
-    import datetime as _dt_noon
-    _now_ct = _dt_noon.datetime.now(_ZI_noon("America/Chicago"))
-except Exception:
-    import datetime as _dt_noon
-    _now_ct = _dt_noon.datetime.now()
-
-_ct_date_key = _now_ct.date().isoformat()
-_already_reset_today = st.session_state.get("_qam_noon_reset_date") == _ct_date_key
-
-if not _already_reset_today:
-    # Clear all prior analysis data so the new game day starts clean
-    for _clr_key in (
-        "analysis_results", "todays_games", "selected_picks",
-        "joseph_results", "joseph_bets_logged",
-        "_qam_db_restored", "_qam_analysis_requested",
-        "_qam_session_is_prior_day", "_qam_session_date",
-        "_analysis_session_reloaded_at", "_qam_auto_run_date",
-    ):
-        st.session_state.pop(_clr_key, None)
-    st.session_state["_qam_noon_reset_date"] = _ct_date_key
-
-# ── Auto-trigger: run analysis if props exist but no results yet today ──
-# Guard: only auto-trigger when there is a manageable props set so we don't
-# OOM the Railway container by sending 3000+ unfiltered props through
-# 2000-depth simulations.  Without tonight's games loaded, every PrizePicks
-# prop passes the team filter — that's ~3808 props × 2000 sims = likely OOM.
-# Auto-trigger requires EITHER games are loaded OR the prop set is small (≤200).
+# ── Auto-trigger: run analysis immediately if props exist but no results ──
 _qam_auto_triggered = False
-_qam_today_ct = _now_ct.date().isoformat()
-_qam_auto_safe = bool(todays_games) or len(final_props) <= 200
 if (final_props
-        and _qam_auto_safe
         and not st.session_state.get("analysis_results")
         and not st.session_state.get("_qam_analysis_requested")
         and not st.session_state.get("_qam_db_restored")):
-    if st.session_state.get("_qam_auto_run_date") != _qam_today_ct:
-        st.session_state["_qam_auto_run_date"] = _qam_today_ct
+    try:
+        from zoneinfo import ZoneInfo as _ZI_qam
+        import datetime as _dt_qam
+        _qam_today = _dt_qam.datetime.now(_ZI_qam("America/New_York")).date().isoformat()
+    except Exception:
+        import datetime as _dt_qam
+        _qam_today = _dt_qam.date.today().isoformat()
+    if st.session_state.get("_qam_auto_run_date") != _qam_today:
+        st.session_state["_qam_auto_run_date"] = _qam_today
         st.session_state["_qam_analysis_requested"] = True
         _qam_auto_triggered = True
-elif (final_props
-        and not _qam_auto_safe
-        and not st.session_state.get("analysis_results")
-        and not st.session_state.get("_qam_db_restored")
-        and not st.session_state.get("_qam_analysis_requested")):
-    # Too many props with no game context — show a targeted warning.
-    st.info(
-        f"⚡ **{len(final_props)} props loaded.** Go to **🏟️ Live Games** → "
-        "**Auto-Load Tonight's Games** first so analysis only runs props for tonight's teams. "
-        "Click 🚀 Run Analysis to proceed anyway.",
-        icon="⚠️",
-    )
 
 run_analysis = st.button(
     "🚀 Run Analysis",
@@ -877,9 +778,7 @@ if run_analysis:
         _joseph_loader = joseph_loading_placeholder("Running Quantum Matrix Analysis")
     except Exception:
         _joseph_loader = None
-    _progress_status = st.empty()
-    _progress_status.caption("Starting analysis…")
-    progress_bar         = st.progress(0)
+    progress_bar         = st.progress(0, text="Starting analysis...")
 
     # ── Show Joseph's animated loading screen with NBA fun facts ──
     try:
@@ -1051,10 +950,7 @@ if run_analysis:
         total_props_count    = len(props_to_analyze)
         if total_props_count == 0:
             st.warning("⚠️ No props remain after filtering to tonight's teams / injury status. Check your games and props.")
-            _progress_status.empty()
             progress_bar.empty()
-            # Clear the requested flag so the auto-retry notice doesn't loop
-            st.session_state.pop("_qam_analysis_requested", None)
             st.stop()
 
         # ── Analysis proceeds with all available props (no cap) ────
@@ -1097,8 +993,10 @@ if run_analysis:
         _line_snapshots = st.session_state.setdefault("line_snapshots", {})
 
         def _progress_cb(idx: int, total: int, name: str):
-            _progress_status.caption(f"Analyzing {name}… ({idx + 1}/{total})")
-            progress_bar.progress((idx + 1) / total)
+            progress_bar.progress(
+                (idx + 1) / total,
+                text=f"Analyzing {name}… ({idx + 1}/{total})",
+            )
 
         analysis_results_list = _analyze_batch(
             props_to_analyze,
@@ -1202,7 +1100,6 @@ if run_analysis:
                 st.session_state.pop("_qam_db_restored", None)
         except Exception as _persist_err:
             pass  # Non-fatal — session state still has results
-        _progress_status.empty()
         progress_bar.empty()
         # Dismiss the Joseph loading screen
         if _joseph_loader is not None:
@@ -1218,23 +1115,17 @@ if run_analysis:
 
         # ── Store ALL picks to all_analysis_picks table ──────────────
         try:
-            from tracking.database import insert_analysis_picks as _insert_picks, _bump_data_version as _qam_bump, _nba_today_iso as _qam_today_fn
+            from tracking.database import insert_analysis_picks as _insert_picks
             _stored = _insert_picks(analysis_results_list)
             if _stored > 0:
                 _logger.info(f"Stored {_stored} analysis picks to all_analysis_picks table.")
-                # Belt-and-suspenders: bump data_version so the home page 60-second
-                # poller detects fresh picks and auto-refreshes all connected sessions.
-                try:
-                    _qam_bump(_qam_today_fn())
-                except Exception:
-                    pass
         except Exception as _store_err:
             _logger.warning(f"Store analysis picks error (non-fatal): {_store_err}")
 
         # ── Auto-log all qualifying picks to the Bet Tracker ────────
         try:
             from tracking.bet_tracker import auto_log_analysis_bets as _auto_log
-            _auto_logged = _auto_log(analysis_results_list, minimum_edge=minimum_edge, max_bets=len(analysis_results_list), log_all=True)
+            _auto_logged = _auto_log(analysis_results_list, minimum_edge=minimum_edge, max_bets=len(analysis_results_list))
             if _auto_logged > 0:
                 st.info(
                     f"📊 Auto-logged **{_auto_logged}** qualifying pick(s) to the Bet Tracker."
@@ -1242,44 +1133,6 @@ if run_analysis:
         except Exception as _auto_log_err:
             # Auto-logging is best-effort — never block the main analysis flow
             _logger.warning(f"Auto-log error (non-fatal): {_auto_log_err}")
-
-        # ── Auto-log Joseph M. Smith's picks without needing The Studio ──
-        # Assign verdicts from tier/confidence directly so joseph_auto_log_bets
-        # can run immediately after analysis — no fragment or Studio visit needed.
-        if not st.session_state.get("joseph_bets_logged", False):
-            try:
-                from engine.joseph_bets import joseph_auto_log_bets as _joseph_log
-                _joseph_auto_results = []
-                for _r in analysis_results_list:
-                    if _r.get("player_is_out", False):
-                        continue
-                    _tier = str(_r.get("tier", ""))
-                    _conf = float(_r.get("confidence_score", 0) or 0)
-                    _edge = float(_r.get("edge_percentage", 0) or 0)
-                    if _tier in ("Platinum", "Gold") or _conf >= 70:
-                        _verdict = "SMASH"
-                    elif _tier == "Silver" or _conf >= 55:
-                        _verdict = "LEAN"
-                    else:
-                        continue  # Bronze/low confidence — skip
-                    _joseph_auto_results.append({
-                        "player_name": _r.get("player_name", ""),
-                        "stat_type":   _r.get("stat_type", ""),
-                        "line":        _r.get("line", _r.get("prop_line", 0)),
-                        "direction":   _r.get("direction", "OVER"),
-                        "verdict":     _verdict,
-                        "confidence_pct": _conf,
-                        "joseph_edge": _edge,
-                        "one_liner":   _r.get("explanation", ""),
-                        "player_team": _r.get("team", ""),
-                    })
-                if _joseph_auto_results:
-                    _j_count, _j_msg = _joseph_log(_joseph_auto_results)
-                    if _j_count > 0:
-                        st.toast(f"🎙️ {_j_msg}")
-                st.session_state["joseph_bets_logged"] = True
-            except Exception as _joseph_auto_err:
-                _logger.warning(f"Joseph auto-log error (non-fatal): {_joseph_auto_err}")
 
         # NOTE: st.rerun() was removed here.  The results are already
         # stored in st.session_state["analysis_results"] and will render
@@ -1292,7 +1145,6 @@ if run_analysis:
         if "WebSocketClosedError" not in _err_str and "StreamClosedError" not in _err_str:
             st.error(f"❌ Analysis failed: {_analysis_err}")
     finally:
-        _progress_status.empty()
         try:
             progress_bar.empty()
         except Exception:
@@ -1492,47 +1344,9 @@ def _render_results_fragment():
             st.session_state.pop("analysis_results", None)
             _frag_analysis_results = []
 
-    # ── Scrub results to today's active teams ─────────────────────
-    # Runs before any rendering so stale picks (from a prior analysis
-    # run that included teams not playing today) are dropped at the
-    # earliest possible point — before counts, filters, or cards.
-    if _frag_analysis_results:
-        try:
-            from data.nba_data_service import get_todays_games as _get_tg_scrub
-            _scrub_games = st.session_state.get("todays_games") or _get_tg_scrub() or []
-            _scrub_abbrs: set[str] = set()
-            for _sg in _scrub_games:
-                _sh = (_sg.get("home_team") or "").upper().strip()
-                _sa = (_sg.get("away_team") or "").upper().strip()
-                if _sh:
-                    _scrub_abbrs.add(_sh)
-                if _sa:
-                    _scrub_abbrs.add(_sa)
-            if _scrub_abbrs:
-                _frag_analysis_results = [
-                    r for r in _frag_analysis_results
-                    if (
-                        (r.get("player_team") or r.get("team") or "")
-                        .upper().strip()
-                    ) in _scrub_abbrs
-                ]
-                st.session_state["analysis_results"] = _frag_analysis_results
-        except Exception:
-            pass
-
     _frag_current_props = load_props_from_session(st.session_state)
     _frag_minimum_edge = st.session_state.get("minimum_edge_threshold", 5.0)
     _frag_todays_games = st.session_state.get("todays_games", [])
-    # Fallback: if session state has no game data, fetch directly so game
-    # banners always render even when the user navigates straight to QAM.
-    if not _frag_todays_games:
-        try:
-            from data.nba_data_service import get_todays_games as _get_games_direct
-            _frag_todays_games = _get_games_direct() or []
-            if _frag_todays_games:
-                st.session_state["todays_games"] = _frag_todays_games
-        except Exception:
-            pass
     _frag_players_data = load_players_data()
 
     # Build player → news lookup inside the fragment (was a closure before).
@@ -1731,27 +1545,6 @@ def _render_results_fragment():
             _seen_result_keys.add(_rkey)
             _deduped.append(_r)
     displayed_results = _deduped
-
-    # ── Filter to today's active teams only ──────────────────────
-    # Prevents stale results from previous days (e.g. CHI, ATL) from
-    # bleeding through when the DB session is older than today's schedule.
-    if _frag_todays_games:
-        _todays_abbrs: set[str] = set()
-        for _tg in _frag_todays_games:
-            _tg_h = (_tg.get("home_team") or "").upper().strip()
-            _tg_a = (_tg.get("away_team") or "").upper().strip()
-            if _tg_h:
-                _todays_abbrs.add(_tg_h)
-            if _tg_a:
-                _todays_abbrs.add(_tg_a)
-        if _todays_abbrs:
-            displayed_results = [
-                r for r in displayed_results
-                if (
-                    (r.get("player_team") or r.get("team") or "")
-                    .upper().strip()
-                ) in _todays_abbrs
-            ]
 
     # ── Summary metrics ────────────────────────────────────────
     total_analyzed   = len(_frag_analysis_results)
@@ -1953,124 +1746,6 @@ def _render_results_fragment():
             else:
                 st.info("All Gold+ picks already added.")
 
-    # ── 🪣 Live Entry Bucket controls (per-user staging) ─────────────
-    # Lets the user stash specific picks into a personal bucket that
-    # persists across sessions in their own DB row, then review them on
-    # the dedicated Live Entry Bucket page before locking into the
-    # Entry Builder.
-    try:
-        from utils.user_session import get_current_user_email, get_user_display_label
-        from tracking.live_bucket import (
-            add_to_bucket as _bucket_add,
-            add_many_to_bucket as _bucket_add_many,
-            bucket_count as _bucket_count,
-        )
-        _qam_user_email = get_current_user_email()
-    except Exception as _bucket_imp_err:
-        _qam_user_email = ""
-        _bucket_add = _bucket_add_many = _bucket_count = None  # type: ignore
-
-    if _qam_user_email and _bucket_add is not None:
-        st.markdown(
-            f"<div style='margin:10px 0 4px 0;font-size:0.82rem;color:#9ca3af;'>"
-            f"🪣 <b>Live Entry Bucket</b> · {get_user_display_label()} · "
-            f"<span style='color:#00f0ff;font-weight:700;'>"
-            f"{_bucket_count(_qam_user_email)} pick(s) staged</span> · "
-            "review on the <b>🪣 Live Entry Bucket</b> page</div>",
-            unsafe_allow_html=True,
-        )
-        _bk_c1, _bk_c2, _bk_c3, _bk_c4 = st.columns([1, 1, 2, 1])
-
-        # Pool of "bucketable" picks (exclude OUT / AVOID players)
-        _bucketable = [
-            r for r in displayed_results
-            if not r.get("player_is_out", False)
-            and not r.get("should_avoid", False)
-            and r.get("tier") in ("Platinum", "Gold", "Silver", "Bronze")
-        ]
-
-        def _row_to_bucket_pick(r: dict) -> dict:
-            _stat = r.get("stat_type", "").lower()
-            _line = r.get("line", 0)
-            _dir  = r.get("direction", "OVER")
-            _tier = r.get("tier", "")
-            _tier_emoji = {
-                "Platinum": "💎", "Gold": "🥇",
-                "Silver": "🥈", "Bronze": "🥉",
-            }.get(_tier, "")
-            return {
-                "key":              f"{r.get('player_name', '')}_{_stat}_{_line}_{_dir}",
-                "player_name":      r.get("player_name", ""),
-                "team":             r.get("team", "") or "",
-                "stat_type":        _stat,
-                "prop_line":        _line,
-                "direction":        _dir,
-                "platform":         r.get("platform", ""),
-                "tier":             _tier,
-                "tier_emoji":       _tier_emoji,
-                "confidence_score": r.get("confidence_score", 0),
-                "probability_over": r.get("probability_over", 0),
-                "edge_percentage":  r.get("edge_percentage", 0),
-                "bet_type":         r.get("bet_type", "normal"),
-                "odds_type":        r.get("odds_type", "standard"),
-            }
-
-        with _bk_c1:
-            if st.button("🪣 Bucket Platinum", key="_bucket_plat",
-                         help="Stage all Platinum picks to your personal bucket"):
-                _picks = [_row_to_bucket_pick(r) for r in _bucketable
-                          if r.get("tier") == "Platinum"]
-                _n = _bucket_add_many(_qam_user_email, _picks)
-                st.toast(f"🪣 +{_n} Platinum pick(s) bucketed" if _n else
-                         "All Platinum already in bucket")
-                st.rerun()
-
-        with _bk_c2:
-            if st.button("🪣 Bucket Gold+", key="_bucket_gold",
-                         help="Stage all Platinum + Gold picks to your bucket"):
-                _picks = [_row_to_bucket_pick(r) for r in _bucketable
-                          if r.get("tier") in ("Platinum", "Gold")]
-                _n = _bucket_add_many(_qam_user_email, _picks)
-                st.toast(f"🪣 +{_n} Gold+ pick(s) bucketed" if _n else
-                         "All Gold+ already in bucket")
-                st.rerun()
-
-        with _bk_c3:
-            _opt_labels = {}
-            for _r in _bucketable[:120]:  # cap dropdown size
-                _bk_pick = _row_to_bucket_pick(_r)
-                _label = (
-                    f"{_bk_pick.get('tier_emoji','')} {_bk_pick['player_name']} · "
-                    f"{_bk_pick['stat_type']} {_bk_pick['direction']} {_bk_pick['prop_line']} "
-                    f"({_bk_pick.get('platform','')})"
-                )
-                _opt_labels[_label] = _bk_pick
-            _picked_labels = st.multiselect(
-                "🎯 Pick specific props for your bucket",
-                options=list(_opt_labels.keys()),
-                key="_bucket_multi_select",
-                help="Selectively add individual props — your personal bucket "
-                     "persists across sessions in the database.",
-            )
-            if st.button("➕ Add selected to bucket", key="_bucket_add_selected"):
-                if not _picked_labels:
-                    st.warning("Select one or more props above first.")
-                else:
-                    _picks = [_opt_labels[l] for l in _picked_labels]
-                    _n = _bucket_add_many(_qam_user_email, _picks)
-                    st.toast(f"🪣 +{_n} pick(s) added to your bucket"
-                             if _n else "All selected already in bucket")
-                    st.rerun()
-
-        with _bk_c4:
-            try:
-                if st.button("🪣 Open Bucket", key="_bucket_open",
-                             help="Review and lock your bucket"):
-                    st.switch_page("pages/17_🪣_Live_Entry_Bucket.py")
-            except Exception:
-                pass
-
-
     if unmatched_count > 0:
         # Deduplicate: same player may have multiple stat types, each flagged separately.
         # Only count and list each unique player name once.
@@ -2268,95 +1943,23 @@ def _render_results_fragment():
         # ── Full Analysis view ─────────────────────────────────────
 
         # ── 🎯 Strongly Suggested Parlays (at TOP for maximum visibility) ─
-        # Grouped by game with horizontal scrolling for each matchup
+        # Rendered natively via st.html() so content is part of the normal
+        # page flow — no iframe to capture scroll events on desktop.
         strategy_entries = _build_entry_strategy(displayed_results)
         if strategy_entries:
-            # Group parlays by game matchup
-            _parlays_by_game = {}
-            for entry in strategy_entries:
-                # Extract teams from raw_picks
-                teams = set()
-                for pick in entry.get("raw_picks", []):
-                    team = (pick.get("player_team") or pick.get("team") or "").upper().strip()
-                    if team:
-                        teams.add(team)
-                
-                # Use teams as game key; if no teams found, use "Mixed" as fallback
-                if len(teams) >= 2:
-                    game_key = " vs ".join(sorted(teams))
-                elif len(teams) == 1:
-                    game_key = list(teams)[0]
-                else:
-                    game_key = "Mixed"
-                
-                if game_key not in _parlays_by_game:
-                    _parlays_by_game[game_key] = []
-                _parlays_by_game[game_key].append(entry)
-            
-            # Render header and game-by-game sections with horizontal scrolling
             st.markdown(
                 _render_parlays_header_html(),
                 unsafe_allow_html=True,
             )
-            
-            # Render each game's parlays in a horizontally scrollable container
-            _global_card_idx = 0
-            for _game_idx, (_game_key, _game_parlays) in enumerate(_parlays_by_game.items()):
-                _game_cards = ""
-                for _i, entry in enumerate(_game_parlays):
-                    _game_cards += _render_parlay_card_html(entry, _global_card_idx)
-                    _global_card_idx += 1
-                
-                # Horizontal scroll container for this game's parlays
-                _game_html = (
-                    f'<div class="qam-game-section">'
-                    f'  <div class="qam-game-title">{_html.escape(_game_key)}</div>'
-                    f'  <div class="qam-parlay-scroll-container">'
-                    f'    <div class="qam-parlay-container">{_game_cards}</div>'
-                    f'  </div>'
-                    f'</div>'
-                )
-                _parlay_css = _get_qcm_css() + """
-                <style>
-                .qam-game-section {
-                    margin: 16px 0;
-                    border-radius: 8px;
-                    background: rgba(255,255,255,0.02);
-                    padding: 12px;
-                }
-                .qam-game-title {
-                    font-weight: 600;
-                    font-size: 14px;
-                    margin-bottom: 8px;
-                    color: #a78bfa;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                }
-                .qam-parlay-scroll-container {
-                    overflow-x: auto;
-                    overflow-y: hidden;
-                    -webkit-overflow-scrolling: touch;
-                    padding-bottom: 8px;
-                    scrollbar-width: thin;
-                    scrollbar-color: rgba(167,139,250,0.4) rgba(255,255,255,0.05);
-                }
-                .qam-parlay-scroll-container::-webkit-scrollbar {
-                    height: 6px;
-                }
-                .qam-parlay-scroll-container::-webkit-scrollbar-track {
-                    background: rgba(255,255,255,0.02);
-                    border-radius: 3px;
-                }
-                .qam-parlay-scroll-container::-webkit-scrollbar-thumb {
-                    background: rgba(167,139,250,0.4);
-                    border-radius: 3px;
-                }
-                .qam-parlay-scroll-container::-webkit-scrollbar-thumb:hover {
-                    background: rgba(167,139,250,0.6);
-                }
-                </style>
-                """
-                _render_card_native(_parlay_css + _game_html)
+            _parlay_cards = "".join(
+                _render_parlay_card_html(entry, _i)
+                for _i, entry in enumerate(strategy_entries)
+            )
+            _parlay_html = (
+                f'<div class="qam-parlay-container">{_parlay_cards}</div>'
+            )
+            _parlay_css = _get_qcm_css()
+            _render_card_native(_parlay_css + _parlay_html)
         else:
             st.info("Not enough high-edge picks to build parlay combinations. Lower the edge threshold or add more props.")
 
@@ -2449,13 +2052,8 @@ def _render_results_fragment():
             _game_groups: dict[str, dict[str, dict]] = {}
             _no_game = "Other"
             for _pname, _pdata in _grouped.items():
-                _vitals_team = (_pdata.get("vitals") or {}).get("team", "") or ""
-                # "N/A" is returned when enrich_player_data can't find the player —
-                # treat it as missing and fall back to the raw prop team fields.
-                if _vitals_team.upper().strip() in ("", "N/A", "NA"):
-                    _vitals_team = ""
                 _pteam = (
-                    _vitals_team
+                    (_pdata.get("vitals") or {}).get("team", "")
                     or (_pdata["props"][0].get("player_team", "") if _pdata.get("props") else "")
                     or (_pdata["props"][0].get("team", "") if _pdata.get("props") else "")
                 ).upper().strip()
@@ -2492,33 +2090,38 @@ def _render_results_fragment():
                     'font-size:0.78rem;font-weight:700;color:#94A3B8;'
                     'text-transform:uppercase;letter-spacing:0.08em;margin:10px 0 4px;'
                 )
-                # Group players by actual team from player data (robust — no reliance on meta match)
-                _teams_in_group: dict = {}
-                for _pn, _pd in _game_players.items():
-                    _vt = (_pd.get("vitals") or {}).get("team", "") or ""
-                    if _vt.upper().strip() in ("", "N/A", "NA"):
-                        _vt = ""
-                    _pt = (
-                        _vt
-                        or (_pd["props"][0].get("player_team", "") if _pd.get("props") else "")
-                        or (_pd["props"][0].get("team", "") if _pd.get("props") else "")
-                    ).upper().strip() or "UNK"
-                    _teams_in_group.setdefault(_pt, {})[_pn] = _pd
-
-                # Order: away team first, home team second (when game meta known), then others alpha
-                _t_order: list = []
                 if _gm and _game_label != _no_game:
-                    for _t_pref in [_mc_at, _mc_ht]:
-                        if _t_pref in _teams_in_group:
-                            _t_order.append(_t_pref)
-                for _t in sorted(_teams_in_group.keys()):
-                    if _t not in _t_order:
-                        _t_order.append(_t)
-
-                for _t in _t_order:
-                    _t_players = _teams_in_group[_t]
-                    st.markdown(f'<div style="{_team_lbl_css}">{_t}</div>', unsafe_allow_html=True)
-                    _render_card_native(_compile_cards_flat(_t_players))
+                    # Split players into away-team row and home-team row
+                    _away_row: dict = {}
+                    _home_row: dict = {}
+                    _other_row: dict = {}
+                    for _pn, _pd in _game_players.items():
+                        _pt = (
+                            (_pd.get("vitals") or {}).get("team", "")
+                            or (_pd["props"][0].get("player_team", "") if _pd.get("props") else "")
+                            or (_pd["props"][0].get("team", "") if _pd.get("props") else "")
+                        ).upper().strip()
+                        if _pt == _mc_at:
+                            _away_row[_pn] = _pd
+                        elif _pt == _mc_ht:
+                            _home_row[_pn] = _pd
+                        else:
+                            _other_row[_pn] = _pd
+                    if _away_row:
+                        st.markdown(f'<div style="{_team_lbl_css}">{_mc_at}</div>', unsafe_allow_html=True)
+                        _render_card_native(_compile_cards_flat(_away_row))
+                    if _home_row:
+                        st.markdown(f'<div style="{_team_lbl_css}">{_mc_ht}</div>', unsafe_allow_html=True)
+                        _render_card_native(_compile_cards_flat(_home_row))
+                    if _other_row:
+                        _render_card_native(_compile_cards_flat(_other_row))
+                else:
+                    # No game meta — render all players in one flat row
+                    st.markdown(
+                        f'<div style="{_team_lbl_css}">{_game_label}</div>',
+                        unsafe_allow_html=True,
+                    )
+                    _render_card_native(_compile_cards_flat(_game_players))
 
     # Show OUT players in a separate collapsed section
     _out_display = [r for r in displayed_results if r.get("player_is_out", False)]

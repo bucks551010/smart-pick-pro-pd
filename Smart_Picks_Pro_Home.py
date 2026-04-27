@@ -266,6 +266,7 @@ def _load_cached_slate() -> tuple[list, list]:
 _today_iso = _nba_today_iso_fn()
 if st.session_state.get("_auto_init_date") != _today_iso:
     # New sports day — clear everything so the seeding gate re-runs fresh.
+    _was_prior_day_session = st.session_state.get("_auto_init_date") is not None
     for _k in (
         "_picks_seeded", "analysis_results", "current_props",
         "platform_props", "todays_games", "session_props",
@@ -273,6 +274,12 @@ if st.session_state.get("_auto_init_date") != _today_iso:
     ):
         st.session_state.pop(_k, None)
     st.session_state["_auto_init_date"] = _today_iso
+    if _was_prior_day_session:
+        # inject_joseph_floating() (called later at line ~501) runs
+        # _auto_restore_page_state(), which would re-load stale page_state
+        # into analysis_results — undoing the clear above.  Setting this flag
+        # makes that call a no-op so the boundary clear actually sticks.
+        st.session_state["_page_state_restored"] = True
     try:
         _load_cached_slate.clear()
     except Exception:

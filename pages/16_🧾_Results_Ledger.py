@@ -226,14 +226,11 @@ class LedgerSummary:
     all_time_roi: Optional[float] = None
 
 
-def _load_ledger(days_back: int):
-    """Load resolved bets from tracking.database for the given look-back window."""
+def _load_ledger(start_date, end_date):
+    """Load resolved bets from tracking.database for the given date range."""
     try:
         from tracking.database import load_bets_by_date_range
-        from datetime import date, timedelta
-        end = date.today()
-        start = end - timedelta(days=days_back)
-        rows = load_bets_by_date_range(start.isoformat(), end.isoformat())
+        rows = load_bets_by_date_range(str(start_date), str(end_date))
         entries = [
             LedgerEntry(
                 player_name=r.get("player_name"),
@@ -301,17 +298,56 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Controls ───────────────────────────────────────────────────
-col_a, col_b, col_c, _ = st.columns([1, 1, 1, 3])
-with col_a:
-    days_back = st.selectbox("Time window", [7, 14, 30, 60, 90], index=2,
-                             format_func=lambda d: f"Last {d} days")
-with col_b:
-    result_filter = st.selectbox("Result", ["All", "Wins only", "Losses only", "Push"])
-with col_c:
-    platform_filter = st.selectbox("Platform", ["All", "PrizePicks", "Underdog", "DK Pick6"])
+from datetime import date as _date, timedelta as _td
+
+_today = _date.today()
+
+col_mode, col_b, col_c, _ = st.columns([2, 1, 1, 1])
+with col_mode:
+    date_mode = st.radio(
+        "Date range",
+        ["Preset", "Custom"],
+        horizontal=True,
+        key="rl_date_mode",
+    )
+
+if date_mode == "Preset":
+    col_preset, col_b2, col_c2, _ = st.columns([2, 1, 1, 1])
+    with col_preset:
+        preset = st.selectbox(
+            "Time window",
+            ["Today", "Yesterday", "Last 7 days", "Last 14 days", "Last 30 days", "Last 60 days", "Last 90 days", "All time"],
+            index=2,
+            key="rl_preset",
+        )
+    with col_b2:
+        result_filter = st.selectbox("Result", ["All", "Wins only", "Losses only", "Push"])
+    with col_c2:
+        platform_filter = st.selectbox("Platform", ["All", "PrizePicks", "Underdog", "DK Pick6"])
+    _preset_map = {
+        "Today":        (_today, _today),
+        "Yesterday":    (_today - _td(days=1), _today - _td(days=1)),
+        "Last 7 days":  (_today - _td(days=6), _today),
+        "Last 14 days": (_today - _td(days=13), _today),
+        "Last 30 days": (_today - _td(days=29), _today),
+        "Last 60 days": (_today - _td(days=59), _today),
+        "Last 90 days": (_today - _td(days=89), _today),
+        "All time":     (_date(2024, 1, 1), _today),
+    }
+    _start_date, _end_date = _preset_map[preset]
+else:
+    col_d1, col_d2, col_b2, col_c2 = st.columns([1, 1, 1, 1])
+    with col_d1:
+        _start_date = st.date_input("From", value=_today - _td(days=6), max_value=_today, key="rl_start")
+    with col_d2:
+        _end_date = st.date_input("To", value=_today, min_value=_start_date, max_value=_today, key="rl_end")
+    with col_b2:
+        result_filter = st.selectbox("Result", ["All", "Wins only", "Losses only", "Push"])
+    with col_c2:
+        platform_filter = st.selectbox("Platform", ["All", "PrizePicks", "Underdog", "DK Pick6"])
 
 # ── Load & Filter ──────────────────────────────────────────────
-ledger = _load_ledger(days_back)
+ledger = _load_ledger(_start_date, _end_date)
 
 if ledger is None:
     st.markdown("""
@@ -327,9 +363,9 @@ if ledger is None:
 if not ledger.entries:
     st.markdown("""
     <div class="rl-no-data">
-      NO PICKS LOGGED FOR THIS TIME WINDOW<br>
+      NO PICKS LOGGED FOR THIS DATE RANGE<br>
       <span style="font-size:0.7rem;opacity:0.5">
-        Try a wider time window — results appear after games are resolved
+        Try a different date range — results appear after games are resolved
       </span>
     </div>
     """, unsafe_allow_html=True)
@@ -391,7 +427,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-st.caption(f"Showing {len(entries)} picks · last {days_back} days · "
+st.caption(f"Showing {len(entries)} picks · {_start_date} → {_end_date} · "
            f"filter: {result_filter} · platform: {platform_filter}")
 
 # ── Results Table ──────────────────────────────────────────────

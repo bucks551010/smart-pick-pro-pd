@@ -98,6 +98,18 @@ if not premium_gate("Game Report"):
 todays_games     = st.session_state.get("todays_games",     [])
 analysis_results = st.session_state.get("analysis_results", [])
 
+# Fallback: load today's pre-computed picks from DB when session is empty
+# (e.g. user navigates directly to this page without visiting Home first)
+if not analysis_results:
+    try:
+        from tracking.database import get_slate_picks_for_today as _gr_gsp
+        _gr_picks = _gr_gsp()
+        if _gr_picks:
+            analysis_results = _gr_picks
+            st.session_state["analysis_results"] = _gr_picks
+    except Exception:
+        pass
+
 # Load team stats for game predictions (pace, ortg, drtg)
 try:
     from data.data_manager import load_teams_data as _load_teams
@@ -463,7 +475,7 @@ def _build_entry_strategy(results):
 
     def _fmt(picks):
         return [
-            f"{r['player_name']} {r['direction']} {r['line']} {r['stat_type'].title()}"
+            f"{r['player_name']} {r['direction']} {r.get('prop_line', r.get('line', ''))} {r['stat_type'].title()}"
             for r in picks
         ]
 
@@ -542,7 +554,7 @@ def _build_all_picks_table(results):
             continue
 
         proj = round(r.get("adjusted_projection", r.get("projected_value", r.get("projection", 0))) or 0, 1)
-        line = r.get("line", 0)
+        line = r.get("prop_line", r.get("line", 0)) or 0
         stat = r.get("stat_type", "")
 
         # Season average lookup
@@ -1020,7 +1032,7 @@ with _tab_report:
                                 f'<div style="font-weight:700;color:#EEF0F6;font-size:0.9rem;">'
                                 f'{_vp.get("player_name", "?")}</div>'
                                 f'<div style="color:#6B7A9A;font-size:0.78rem;margin:4px 0;">'
-                                f'{_dir_icon} {_vp_dir} {_vp.get("line", 0)} {_vp.get("stat_type", "").title()}</div>'
+                                f'{_dir_icon} {_vp_dir} {_vp.get("prop_line", _vp.get("line", 0))} {_vp.get("stat_type", "").title()}</div>'
                                 f'<div style="color:{_edge_color};font-weight:700;font-size:1.1rem;">'
                                 f'{_vp_edge:+.1f}% Edge</div>'
                                 f'<div style="color:#6B7A9A;font-size:0.72rem;margin-top:4px;">'

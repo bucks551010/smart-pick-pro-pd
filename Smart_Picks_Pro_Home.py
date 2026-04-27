@@ -315,13 +315,13 @@ def _data_version_poller() -> None:  # noqa: ANN201
     except Exception:
         pass  # never block the UI
 
-_data_version_poller()
-
 # ─── No picks yet — slate_worker hasn't run today ─────────────────────────
 # Show a non-blocking info banner with a manual refresh button so users can
 # force-check the DB instead of waiting for the next auto-refresh cycle.
 if not st.session_state.get("analysis_results"):
-    # Try one more DB hit in case the startup slate just finished writing.
+    # Cache-bust read: clears the ttl=300 cache to catch picks written
+    # between the seeding-gate call and now.  The render continues on THIS
+    # pass with the freshly-populated state — no st.rerun() needed.
     try:
         _load_cached_slate.clear()
         _retry_picks, _retry_props = _load_cached_slate()
@@ -330,7 +330,6 @@ if not st.session_state.get("analysis_results"):
             if _retry_props:
                 st.session_state.setdefault("current_props", _retry_props)
                 st.session_state.setdefault("platform_props", _retry_props)
-            st.rerun()
     except Exception:
         pass
 
@@ -501,12 +500,6 @@ inject_aria_enhancements()
 # ============================================================
 # END SECTION: Initialize App on Startup
 # ============================================================
-
-# ─── Theme re-injection guard ─────────────────────────────────────────────
-# Executing a second inject_theme_css() here guarantees the full CSS suite
-# is in the DOM even if an exception fired in the setup block above and
-# Streamlit skipped the first injection's render pass.
-inject_theme_css()
 
 # ============================================================
 # SECTION 1: Cinematic Hero — Joseph Banner + Hero HUD + CTA
@@ -852,6 +845,11 @@ if not _has_analysis and not _onboard_dismissed:
 # SECTION 1A: Top 3 Tonight — Hero Cards
 # ============================================================
 
+# QCM CSS — injected once here, shared by Section 1A (hero cards) and
+# Section 1B (edge-gap cards).  Duplicate calls inside each conditional
+# block were stamping redundant <style> nodes on every render pass.
+st.markdown(_get_qcm_css(), unsafe_allow_html=True)
+
 _home_analysis = st.session_state.get("analysis_results", [])
 
 if _user_tier == TIER_FREE:
@@ -946,7 +944,6 @@ if _user_tier != TIER_FREE and _hero_pool:
         except Exception:
             pass
 
-    st.markdown(_get_qcm_css(), unsafe_allow_html=True)
     st.markdown(
         _render_hero_section_html(_hero_pool),
         unsafe_allow_html=True,
@@ -971,7 +968,6 @@ _home_edge_gap_picks = sorted(
 )
 
 if _user_tier != TIER_FREE and _home_edge_gap_picks:
-    st.markdown(_get_qcm_css(), unsafe_allow_html=True)
     st.markdown(
         _render_edge_gap_banner_html(_home_edge_gap_picks),
         unsafe_allow_html=True,
@@ -1758,6 +1754,13 @@ with st.expander("⚠️ Important Legal Disclaimer — Please Read", expanded=F
 # ── Full JMS attribution footer (replaces static lp-footer) ─
 from utils.components import render_attribution_footer as _render_home_footer
 _render_home_footer()
+
+# ─── Real-Time Polling fragment — placed LAST in the render tree ──────────
+# The fragment emits no visible content; it only polls data_version and
+# calls st.rerun() when new picks arrive.  Placing it at the END of the
+# render tree means its 60-second interval fires never interrupt or
+# interleave with content rendering above it.
+_data_version_poller()
 
 # ============================================================
 # END SECTION 10: Footer

@@ -1,4 +1,4 @@
-﻿import ast
+import ast
 path = u"pages/1_\U0001f4e1_Live_Games.py"
 with open(path, encoding="utf-8") as f:
     content = f.read()

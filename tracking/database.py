@@ -4747,25 +4747,40 @@ def update_worker_state(
     """
     now_iso = datetime.datetime.utcnow().isoformat() + "Z"
     if _DATABASE_URL:
-        sql = (
-            "INSERT INTO worker_state (job_name, last_run_at, last_status, last_error, run_count) "
-            "VALUES (?, ?, ?, ?, 1) "
-            "ON CONFLICT (job_name) DO UPDATE "
-            "SET last_run_at = EXCLUDED.last_run_at, "
-            "    last_status = EXCLUDED.last_status, "
-            "    last_error = EXCLUDED.last_error, "
-            "    run_count = worker_state.run_count + 1"
-        )
-    else:
-        sql = (
-            "INSERT INTO worker_state (job_name, last_run_at, last_status, last_error, run_count) "
-            "VALUES (?, ?, ?, ?, 1) "
-            "ON CONFLICT(job_name) DO UPDATE SET "
-            "    last_run_at = excluded.last_run_at, "
-            "    last_status = excluded.last_status, "
-            "    last_error = excluded.last_error, "
-            "    run_count = worker_state.run_count + 1"
-        )
+        # Use a direct PG connection to bypass _to_pg_sql so the UPSERT
+        # syntax is guaranteed correct and errors are visible (not silently
+        # swallowed by the _db_write retry loop).
+        try:
+            conn = _pg_conn()
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO worker_state (job_name, last_run_at, last_status, last_error, run_count) "
+                "VALUES (%s, %s, %s, %s, 1) "
+                "ON CONFLICT (job_name) DO UPDATE "
+                "SET last_run_at = EXCLUDED.last_run_at, "
+                "    last_status = EXCLUDED.last_status, "
+                "    last_error = EXCLUDED.last_error, "
+                "    run_count = worker_state.run_count + 1",
+                (job_name, now_iso, status, error),
+            )
+            conn.commit()
+            _pg_putconn(conn)
+        except Exception as _ws_err:
+            _logger.warning("update_worker_state PG failed for %s: %s", job_name, _ws_err)
+            try:
+                _pg_pool().putconn(conn)
+            except Exception:
+                pass
+        return
+    sql = (
+        "INSERT INTO worker_state (job_name, last_run_at, last_status, last_error, run_count) "
+        "VALUES (?, ?, ?, ?, 1) "
+        "ON CONFLICT(job_name) DO UPDATE SET "
+        "    last_run_at = excluded.last_run_at, "
+        "    last_status = excluded.last_status, "
+        "    last_error = excluded.last_error, "
+        "    run_count = worker_state.run_count + 1"
+    )
     _db_write(sql, (job_name, now_iso, status, error), caller="update_worker_state")
 
 

@@ -164,6 +164,11 @@ def run_slate(dry_run: bool = False) -> int:
         # ── Step 2: Active rosters + injury map ──────────────────────────
         _logger.info("[2] Loading rosters + injury map…")
         players_today = get_todays_players(games)
+        # get_todays_players should return a list; guard against bool in case
+        # the live fetcher path returns True/False instead of a player list.
+        if isinstance(players_today, bool):
+            _logger.warning("[2] get_todays_players returned bool (%s) — treating as empty list.", players_today)
+            players_today = []
         players_data = load_players_data()
         # Merge game-day players so the engine finds all roster context.
         if players_today:

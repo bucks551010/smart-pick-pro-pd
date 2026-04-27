@@ -296,8 +296,23 @@ def get_todays_players(todays_games, progress_callback=None,
                 progress_callback=progress_callback,
                 precomputed_injury_map=precomputed_injury_map,
             )
-            if result:
-                _logger.info("get_todays_players: live fetcher succeeded")
+            # fetch_todays_players_only returns True/False (bool) on success/failure,
+            # NOT a list.  It writes players.csv as a side-effect.  When it
+            # succeeds, reload from CSV so callers always get an iterable list.
+            if isinstance(result, bool):
+                if result:
+                    _logger.info("get_todays_players: live fetcher wrote players.csv — reloading")
+                    try:
+                        from data.data_manager import load_players_data as _ldp
+                        loaded = _ldp()
+                        if loaded:
+                            return loaded
+                    except Exception as _reload_exc:
+                        _logger.debug("get_todays_players reload failed: %s", _reload_exc)
+                else:
+                    _logger.warning("get_todays_players: live fetcher returned False")
+            elif result:
+                _logger.info("get_todays_players: live fetcher returned %d players", len(result))
                 return result
         except Exception as exc:
             _logger.warning("get_todays_players live fetcher failed: %s", exc)

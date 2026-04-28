@@ -1614,27 +1614,33 @@ def _get_logo_b64() -> str:
 
 _GATE_CSS = r"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=Space+Grotesk:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black:ital@0;1&family=Syne:wght@700;800;900&family=Space+Grotesk:wght@300;400;500;600;700;800&family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
 
 /* ── Design tokens ───────────────────────────────────────────── */
 :root {
-    --c-bg:          #020509;
-    --c-surface:     rgba(255,255,255,0.032);
-    --c-surface-2:   rgba(255,255,255,0.058);
-    --c-border:      rgba(255,255,255,0.07);
-    --c-border-hi:   rgba(255,255,255,0.14);
-    --c-green:       #00E87A;
-    --c-green-dim:   #00C464;
-    --c-green-hi:    #00FF90;
-    --c-green-glow:  rgba(0,232,122,0.18);
+    --c-bg:          #05070a;
+    --c-surface:     rgba(10,15,20,0.70);
+    --c-surface-2:   rgba(10,15,20,0.85);
+    --c-border:      rgba(0,255,128,0.10);
+    --c-border-hi:   rgba(0,255,128,0.22);
+    --c-green:       #00ff80;
+    --c-green-dim:   #00cc66;
+    --c-green-hi:    #66ffb2;
+    --c-green-glow:  rgba(0,255,128,0.20);
+    --c-cyan:        #00e5ff;
+    --c-cyan-glow:   rgba(0,229,255,0.18);
     --c-blue:        #3B9EFF;
     --c-blue-glow:   rgba(59,158,255,0.14);
     --c-purple:      #c084fc;
     --c-gold:        #F9C62B;
     --c-plasma:      #a3f7e0;
-    --font-head:     'Syne', 'Space Grotesk', sans-serif;
+    --c-depth:       linear-gradient(135deg, #050a0f 0%, #020d07 100%);
+    --font-head:     'Archivo Black', 'Syne', 'Space Grotesk', sans-serif;
     --font-body:     'Inter', sans-serif;
     --font-mono:     'JetBrains Mono', monospace;
+    --glass-blur:    blur(15px);
+    --glass-bg:      rgba(10,15,20,0.70);
+    --glass-border:  rgba(0,255,128,0.10);
     --ease-spring:   cubic-bezier(0.16, 1, 0.3, 1);
     --ease-out:      cubic-bezier(0.22, 1, 0.36, 1);
     --r-card:        20px;
@@ -1655,7 +1661,7 @@ html, body {
 }
 
 .stApp {
-    background: var(--c-bg, #020509) !important;
+    background: var(--c-bg, #05070a) !important;
     overflow-x: hidden !important;
     max-width: 100% !important;
 }
@@ -1665,12 +1671,21 @@ html, body {
     position: fixed;
     inset: 0;
     background-image:
-        radial-gradient(circle, rgba(255,255,255,0.038) 0.5px, transparent 0.5px),
-        radial-gradient(circle, rgba(0,232,122,0.022) 0.5px, transparent 0.5px);
+        radial-gradient(circle, rgba(0,255,128,0.028) 0.5px, transparent 0.5px),
+        radial-gradient(circle, rgba(0,229,255,0.016) 0.5px, transparent 0.5px);
     background-size: 28px 28px, 56px 56px;
     background-position: 0 0, 14px 14px;
     pointer-events: none;
     z-index: 0;
+}
+/* Global vignette — keeps focus on the central terminal data */
+.stApp::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.72) 100%);
+    pointer-events: none;
+    z-index: 1;
 }
 
 .stApp > [data-testid="stAppViewContainer"] {
@@ -1842,11 +1857,11 @@ html, body, .stApp, .stApp * {
 .ag-bg {
     position: fixed; inset: 0; z-index: 0; pointer-events: none;
     background:
-        radial-gradient(ellipse at 50% -5%,  rgba(0,232,122,0.28)   0%, transparent 42%),
-        radial-gradient(ellipse at 88% 78%,  rgba(59,158,255,0.22)  0%, transparent 38%),
-        radial-gradient(ellipse at 10% 52%,  rgba(192,132,252,0.14) 0%, transparent 38%),
-        radial-gradient(ellipse at 50% 108%, rgba(0,232,122,0.09)   0%, transparent 30%),
-        var(--c-bg, #020509);
+        radial-gradient(ellipse at 50% -5%,  rgba(0,255,128,0.22)   0%, transparent 42%),
+        radial-gradient(ellipse at 88% 78%,  rgba(0,229,255,0.16)   0%, transparent 38%),
+        radial-gradient(ellipse at 10% 52%,  rgba(0,255,128,0.10)   0%, transparent 38%),
+        radial-gradient(ellipse at 50% 108%, rgba(0,229,255,0.07)   0%, transparent 30%),
+        linear-gradient(135deg, #050a0f 0%, #020d07 100%);
     overflow: hidden;
 }
 /* Premium node-grid overlay */
@@ -1875,17 +1890,17 @@ html, body, .stApp, .stApp * {
 }
 .ag-orb-1 {
     width: 800px; height: 800px; top: -220px; left: -180px;
-    background: radial-gradient(circle, rgba(0,232,122,0.32) 0%, rgba(0,200,100,0.12) 50%, transparent 70%);
+    background: radial-gradient(circle, rgba(0,255,128,0.28) 0%, rgba(0,204,102,0.10) 50%, transparent 70%);
 }
 .ag-orb-2 {
     width: 700px; height: 700px; bottom: -180px; right: -160px;
-    background: radial-gradient(circle, rgba(59,158,255,0.26) 0%, rgba(30,100,200,0.1) 50%, transparent 70%);
+    background: radial-gradient(circle, rgba(0,229,255,0.22) 0%, rgba(0,160,200,0.08) 50%, transparent 70%);
     animation: agOrbFloat2 24s ease-in-out infinite;
 }
 .ag-orb-3 {
     width: 580px; height: 580px; top: 35%; left: 50%;
     transform: translateX(-50%);
-    background: radial-gradient(circle, rgba(163,247,224,0.07) 0%, rgba(0,232,122,0.03) 60%, transparent 75%);
+    background: radial-gradient(circle, rgba(0,229,255,0.06) 0%, rgba(0,255,128,0.03) 60%, transparent 75%);
     animation-delay: -12s;
 }
 /* Pulse ring — AI "thinking" radar */
@@ -1920,10 +1935,12 @@ html, body, .stApp, .stApp * {
 .ag-app-preview { margin: 0 20px 36px; }
 .ag-mockup { max-width: 680px; margin: 0 auto; }
 .ag-mockup-window {
-    background: rgba(6, 10, 20, 0.95);
-    border: 1px solid rgba(0, 213, 89, 0.1);
+    background: rgba(5, 7, 10, 0.96);
+    border: 1px solid var(--glass-border);
     border-radius: 16px; overflow: hidden;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7), 0 0 40px rgba(0, 213, 89, 0.04), 0 0 0 1px rgba(0,213,89,0.03) inset;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.8), 0 0 60px rgba(0,255,128,0.05), 0 0 0 1px rgba(0,255,128,0.04) inset;
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
 }
 .ag-mockup-titlebar {
     display: flex; align-items: center; gap: 6px;
@@ -2049,7 +2066,11 @@ html, body, .stApp, .stApp * {
     letter-spacing: 0.03em;
 }
 .ag-ticker-item .sep { color: rgba(255,255,255,0.1); margin: 0 2px; }
-.ag-ticker-item .v { font-weight: 700; color: var(--c-green); text-shadow: 0 0 14px rgba(0,232,122,0.25); }
+.ag-ticker-item .v {
+    font-weight: 700; color: var(--c-green);
+    text-shadow: 0 0 14px rgba(0,255,128,0.30);
+    font-variant-numeric: tabular-nums;
+}
 .ag-ticker-item .lbl { color: rgba(255,255,255,0.18); font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.08em; }
 .ag-ticker-live {
     display: inline-flex; align-items: center; gap: 5px;
@@ -2319,15 +2340,17 @@ html, body, .stApp, .stApp * {
 .ag-hero-cta-primary {
     display: inline-flex; align-items: center; gap: 10px;
     font-family: var(--font-head);
-    font-size: 0.92rem; font-weight: 800; color: #020509;
+    font-size: 0.92rem; font-weight: 900; font-style: italic; color: #020509;
     background: linear-gradient(135deg, var(--c-green-hi) 0%, var(--c-green) 40%, var(--c-green-dim) 100%);
     padding: 18px 52px; border-radius: 10px;
-    text-decoration: none; text-transform: uppercase; letter-spacing: 0.1em;
-    border: 1px solid rgba(255,255,255,0.15);
+    text-decoration: none; text-transform: uppercase; letter-spacing: 0.08em;
+    border: 1px solid rgba(0,255,128,0.35);
     box-shadow:
-        0 0 0 1px rgba(0,232,122,0.3),
-        0 0 50px rgba(0,232,122,0.45),
-        0 8px 32px rgba(0,232,122,0.25),
+        0 0 0 1px rgba(0,255,128,0.30),
+        0 0 24px rgba(0,255,128,0.60),
+        0 0 60px rgba(0,255,128,0.35),
+        0 0 120px rgba(0,255,128,0.12),
+        0 8px 32px rgba(0,255,128,0.25),
         inset 0 1px 0 rgba(255,255,255,0.28);
     transition: all 0.3s var(--ease-spring);
     position: relative; overflow: hidden; cursor: pointer;
@@ -2341,31 +2364,39 @@ html, body, .stApp, .stApp * {
 .ag-hero-cta-primary:hover {
     transform: translateY(-5px) scale(1.02);
     box-shadow:
-        0 0 0 1px rgba(0,232,122,0.5),
-        0 0 90px rgba(0,232,122,0.65),
-        0 16px 56px rgba(0,232,122,0.35),
+        0 0 0 1px rgba(0,255,128,0.55),
+        0 0 40px rgba(0,255,128,0.85),
+        0 0 90px rgba(0,255,128,0.55),
+        0 0 180px rgba(0,255,128,0.18),
+        0 16px 56px rgba(0,255,128,0.30),
         inset 0 1px 0 rgba(255,255,255,0.3);
-    background: linear-gradient(135deg, #00FFAA 0%, var(--c-green-hi) 40%, var(--c-green) 100%);
+    background: linear-gradient(135deg, #b3ffd9 0%, var(--c-green-hi) 40%, var(--c-green) 100%);
     color: #010304;
 }
 .ag-hero-cta-secondary {
     display: inline-flex; align-items: center; gap: 7px;
-    font-family: var(--font-body);
-    font-size: 0.85rem; font-weight: 600;
-    color: rgba(255,255,255,0.5);
-    background: rgba(255,255,255,0.03);
+    font-family: var(--font-head);
+    font-size: 0.85rem; font-weight: 700; font-style: italic;
+    color: var(--c-cyan);
+    background: rgba(0,229,255,0.04);
     padding: 17px 28px; border-radius: 10px;
     text-decoration: none; letter-spacing: 0.03em;
-    border: 1px solid rgba(255,255,255,0.09);
+    border: 1px solid rgba(0,229,255,0.22);
     transition: all 0.25s var(--ease-spring);
-    backdrop-filter: blur(8px);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: 0 0 18px rgba(0,229,255,0.12), inset 0 1px 0 rgba(0,229,255,0.06);
 }
 .ag-hero-cta-secondary:hover {
-    color: rgba(255,255,255,0.85);
-    border-color: rgba(255,255,255,0.22);
-    background: rgba(255,255,255,0.07);
+    color: #fff;
+    border-color: rgba(0,229,255,0.5);
+    background: rgba(0,229,255,0.08);
     transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    box-shadow:
+        0 0 28px rgba(0,229,255,0.35),
+        0 0 60px rgba(0,229,255,0.18),
+        0 8px 24px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(0,229,255,0.1);
 }
 .ag-hero-cta-trust {
     width: 100%; text-align: center;
@@ -2409,19 +2440,19 @@ html, body, .stApp, .stApp * {
 .ag-proof-stat {
     text-align: center;
     padding: 32px 16px 26px;
-    background:
-        linear-gradient(168deg, rgba(255,255,255,0.038), rgba(255,255,255,0.012));
-    border: 0.5px solid rgba(255,255,255,0.09);
-    border-top: 1px solid rgba(255,255,255,0.14);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid rgba(0,255,128,0.22);
     border-radius: var(--r-card);
     animation: agProofCardReveal 0.7s 0.2s var(--ease-out) both;
     transition: all 0.35s var(--ease-spring);
     position: relative; overflow: hidden;
     box-shadow:
-        0 4px 24px rgba(0,0,0,0.35),
-        inset 0 1px 0 rgba(255,255,255,0.06),
-        inset 0 -1px 0 rgba(0,0,0,0.2);
-    backdrop-filter: blur(16px);
+        0 4px 24px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(0,255,128,0.06),
+        inset 0 -1px 0 rgba(0,0,0,0.3);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
 }
 /* Top accent beam per card */
 .ag-proof-stat::before {
@@ -2457,14 +2488,15 @@ html, body, .stApp, .stApp * {
 .ag-proof-stat:nth-child(4):hover { border-color: rgba(249,198,43,0.28); border-top-color: rgba(249,198,43,0.5); }
 .ag-proof-stat:nth-child(4)::after { background: radial-gradient(ellipse at 50% 0%, rgba(249,198,43,0.06) 0%, transparent 60%); }
 .ag-proof-big {
-    font-family: var(--font-head);
+    font-family: var(--font-mono);
     font-size: 4.2rem; font-weight: 900;
     letter-spacing: -0.045em; line-height: 1;
+    font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum', 'salt';
-    background: linear-gradient(135deg, var(--c-green) 0%, var(--c-plasma) 100%);
+    background: linear-gradient(135deg, var(--c-green) 0%, var(--c-cyan) 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
-    filter: drop-shadow(0 0 20px rgba(0,232,122,0.15));
+    filter: drop-shadow(0 0 20px rgba(0,255,128,0.18));
 }
 .ag-proof-stat:nth-child(2) .ag-proof-big {
     background: linear-gradient(135deg, var(--c-blue), #a78bfa);
@@ -2518,12 +2550,14 @@ html, body, .stApp, .stApp * {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
 }
 .ag-inside-card {
-    background: linear-gradient(168deg, rgba(8, 14, 28, 0.97), rgba(5, 9, 16, 0.99));
-    border: 1px solid rgba(0, 213, 89, 0.08);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
     border-radius: 18px; padding: 24px 20px 20px;
     position: relative; overflow: hidden;
     transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.02);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(0,255,128,0.04);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
 }
 .ag-inside-card:hover {
     border-color: rgba(0, 213, 89, 0.35);
@@ -2600,13 +2634,13 @@ html, body, .stApp, .stApp * {
 
 /* ── Form card ───────────────────────────────────────────────── */
 [data-testid="stForm"] {
-    background: linear-gradient(168deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)) !important;
-    border: 0.5px solid rgba(255,255,255,0.1) !important;
+    background: var(--glass-bg) !important;
+    border: 1px solid var(--glass-border) !important;
     border-radius: var(--r-card) !important;
     padding: 30px 26px 26px !important;
-    backdrop-filter: blur(40px) saturate(160%) !important;
-    -webkit-backdrop-filter: blur(40px) saturate(160%) !important;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+    backdrop-filter: var(--glass-blur) saturate(160%) !important;
+    -webkit-backdrop-filter: var(--glass-blur) saturate(160%) !important;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(0,255,128,0.06) !important;
     position: relative; overflow: hidden;
 }
 [data-testid="stForm"]::before {
@@ -2649,24 +2683,27 @@ html, body, .stApp, .stApp * {
     color: rgba(255,255,255,0.25) !important;
 }
 
-/* ── CTA button — premium shimmer ──────────────────────────────── */
+/* ── CTA button — True Neon glow ──────────────────────────────── */
 [data-testid="stForm"] button[kind="primaryFormSubmit"],
 [data-testid="stForm"] button[type="submit"] {
     background: linear-gradient(135deg, var(--c-green-hi) 0%, var(--c-green) 50%, var(--c-green-dim) 100%) !important;
     color: #010304 !important;
     font-family: var(--font-head) !important;
     font-weight: 800 !important;
+    font-style: italic !important;
     font-size: 0.85rem !important;
-    border: 0.5px solid rgba(255,255,255,0.2) !important;
+    border: 1px solid rgba(0,255,128,0.3) !important;
     border-radius: 8px !important;
     padding: 14px 28px !important;
     margin-top: 10px !important;
-    letter-spacing: 0.1em !important;
+    letter-spacing: 0.08em !important;
     text-transform: uppercase !important;
     box-shadow:
-        0 0 0 1px rgba(0,232,122,0.2),
-        0 0 32px rgba(0,232,122,0.4),
-        0 4px 20px rgba(0,232,122,0.2),
+        0 0 0 1px rgba(0,255,128,0.25),
+        0 0 24px rgba(0,255,128,0.55),
+        0 0 60px rgba(0,255,128,0.30),
+        0 0 120px rgba(0,255,128,0.12),
+        0 4px 20px rgba(0,255,128,0.25),
         inset 0 1px 0 rgba(255,255,255,0.28) !important;
     transition: all 0.25s var(--ease-spring) !important;
     position: relative; overflow: hidden;
@@ -2683,11 +2720,13 @@ html, body, .stApp, .stApp * {
 [data-testid="stForm"] button[type="submit"]:hover {
     transform: translateY(-3px) scale(1.01) !important;
     box-shadow:
-        0 0 0 1px rgba(0,232,122,0.4),
-        0 0 56px rgba(0,232,122,0.55),
-        0 8px 32px rgba(0,232,122,0.28),
+        0 0 0 1px rgba(0,255,128,0.5),
+        0 0 32px rgba(0,255,128,0.75),
+        0 0 80px rgba(0,255,128,0.45),
+        0 0 160px rgba(0,255,128,0.18),
+        0 8px 32px rgba(0,255,128,0.30),
         inset 0 1px 0 rgba(255,255,255,0.3) !important;
-    background: linear-gradient(135deg, #00FFAA 0%, var(--c-green-hi) 50%, var(--c-green) 100%) !important;
+    background: linear-gradient(135deg, #80ffcc 0%, var(--c-green-hi) 50%, var(--c-green) 100%) !important;
 }
 
 /* ── Section header ─────────────────────────────────────────── */
@@ -2706,11 +2745,12 @@ html, body, .stApp, .stApp * {
 .ag-section-head h3 {
     font-family: var(--font-head);
     font-size: 2.8rem; font-weight: 900;
+    font-style: italic;
     color: #fff; margin: 0 0 12px;
-    letter-spacing: -0.055em;
+    letter-spacing: -0.04em;
     text-transform: uppercase;
     line-height: 0.95;
-    text-shadow: 0 0 60px rgba(0,232,122,0.08), 0 0 120px rgba(59,158,255,0.04);
+    text-shadow: 0 0 60px rgba(0,255,128,0.10), 0 0 120px rgba(0,229,255,0.05);
 }
 .ag-section-head h3 .em {
     background: linear-gradient(135deg, var(--c-green) 0%, var(--c-plasma) 40%, var(--c-blue) 80%);
@@ -2755,6 +2795,7 @@ html, body, .stApp, .stApp * {
 .ag-gy-head h3 {
     font-family: var(--font-head);
     font-size: 2.8rem; font-weight: 900;
+    font-style: italic;
     color: #fff; margin: 0 0 14px;
     letter-spacing: -0.04em;
     text-transform: uppercase; line-height: 1.0;
@@ -2881,16 +2922,17 @@ html, body, .stApp, .stApp * {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
 }
 .ag-fcard {
-    background: linear-gradient(168deg, rgba(255,255,255,0.038), rgba(255,255,255,0.012));
-    border: 0.5px solid rgba(255,255,255,0.08);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
     border-radius: var(--r-card); padding: 28px 22px 24px;
     position: relative; overflow: hidden;
     transition: border-color 0.35s var(--ease-spring), transform 0.35s var(--ease-spring), box-shadow 0.35s;
     box-shadow:
-        0 4px 32px rgba(0,0,0,0.45),
-        inset 0 1px 0 rgba(255,255,255,0.06),
-        inset 0 -1px 0 rgba(0,0,0,0.15);
-    backdrop-filter: blur(12px);
+        0 4px 32px rgba(0,0,0,0.55),
+        inset 0 1px 0 rgba(0,255,128,0.06),
+        inset 0 -1px 0 rgba(0,0,0,0.25);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
 }
 .ag-fcard::before {
     content: ''; position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
@@ -3023,16 +3065,17 @@ html, body, .stApp, .stApp * {
 }
 .ag-stat:last-child { border-right: none; }
 .ag-stat-val {
-    font-family: var(--font-head);
+    font-family: var(--font-mono);
     font-size: 3.4rem; font-weight: 900;
+    font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum', 'salt';
-    background: linear-gradient(135deg, var(--c-green) 0%, var(--c-plasma) 50%, var(--c-blue) 100%);
+    background: linear-gradient(135deg, var(--c-green) 0%, var(--c-cyan) 50%, var(--c-blue) 100%);
     background-size: 300% 300%;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: agPlasmaFlow 6s ease infinite;
     line-height: 1;
-    filter: drop-shadow(0 0 24px rgba(0,232,122,0.12));
+    filter: drop-shadow(0 0 24px rgba(0,255,128,0.15));
 }
 .ag-stat-label {
     font-family: var(--font-mono);
@@ -5833,15 +5876,15 @@ def require_login() -> bool:
 
     # ── Ticker items ──────────────────────────────────────
     _ticker = (
-        '<span class="ag-ticker-live"><span class="ag-ticker-dot"></span> LIVE</span>'
-        '<span class="ag-ticker-item">Hit Rate <span class="v">62.4%</span></span>'
-        '<span class="ag-ticker-item">Props Scanned <span class="v">347</span></span>'
-        '<span class="ag-ticker-item">Models Active <span class="v">6/6</span></span>'
-        '<span class="ag-ticker-item">SAFE Score Avg <span class="v">71.2</span></span>'
-        '<span class="ag-ticker-item">Edge Detected <span class="v">+4.8%</span></span>'
-        '<span class="ag-ticker-item">Bankroll ROI <span class="v">+18.3%</span></span>'
-        '<span class="ag-ticker-item">CLV Capture <span class="v">92%</span></span>'
-        '<span class="ag-ticker-item">Users Online <span class="v">1,247</span></span>'
+        '<span class="ag-ticker-live"><span class="ag-ticker-dot"></span> TERMINAL ACTIVE</span>'
+        '<span class="ag-ticker-item"><span class="lbl">Neural Convergence</span> <span class="v">62.4%</span></span>'
+        '<span class="ag-ticker-item"><span class="lbl">Props Ingested</span> <span class="v">347</span></span>'
+        '<span class="ag-ticker-item"><span class="lbl">Ensemble Models</span> <span class="v">6/6</span></span>'
+        '<span class="ag-ticker-item"><span class="lbl">SAFE Score Avg</span> <span class="v">71.2</span></span>'
+        '<span class="ag-ticker-item"><span class="lbl">Edge Detected</span> <span class="v">+4.8%</span></span>'
+        '<span class="ag-ticker-item"><span class="lbl">Bankroll ROI</span> <span class="v">+18.3%</span></span>'
+        '<span class="ag-ticker-item"><span class="lbl">CLV Capture</span> <span class="v">92%</span></span>'
+        '<span class="ag-ticker-item"><span class="lbl">Quants Online</span> <span class="v">1,247</span></span>'
     )
 
     # ── Above-fold: BG + Ticker + Logo + Hero + Proof ─────
@@ -5869,27 +5912,27 @@ def require_login() -> bool:
     <div class="ag-hero">
       <div class="ag-hero-bg"></div>
       <div class="ag-hero-inner">
-      <div class="ag-hero-ai-badge"><span class="ai-dot"></span> NEURAL ENGINE v6.0 &mdash; 6 AI MODELS ACTIVE</div>
+      <div class="ag-hero-ai-badge"><span class="ai-dot"></span> NEURAL ENGINE v6.0 &mdash; ENSEMBLE MODELING ACTIVE &mdash; 6/6 MODELS ONLINE</div>
       <h1><span class="hero-l1">The House</span><span class="hero-l2">Has a Problem.</span></h1>
       <div class="ag-hero-divider"></div>
       <div class="ag-hero-its-us">It&rsquo;s Us.</div>
       <div class="ag-hero-sub">
-        <strong>The NBA prop machine the Twitter gurus don&rsquo;t want you to know about.</strong><br>
-        Every night, 6 AI models scan 300+ props across PrizePicks, DraftKings &amp; Underdog
-        and score each one with a proprietary <strong>SAFE Score&trade;</strong> &mdash; a 0&ndash;100
-        confidence rating powered by Quantum simulation, ensemble modeling &amp; real-time edge
-        detection. Stop playing blind. Start playing with a verifiable edge.
+        <strong>A proprietary quantitative intelligence terminal. Not a tipster. Not a tout.</strong><br>
+        Every night, 6 ensemble models execute a full Quantitative Simulation across 300+ props on
+        PrizePicks, DraftKings &amp; Underdog &mdash; generating a <strong>SAFE Score&trade;</strong> (0&ndash;100)
+        via Neural Convergence, real-time Edge Detection &amp; closing-line value analysis.
+        The uninformed public bets on instinct. You bet on <strong>mathematical precision</strong>.
       </div>
       <div class="ag-hero-badges">
-        <span class="ag-hero-badge primary"><span class="badge-ico">&#x26A1;</span> Free Forever</span>
-        <span class="ag-hero-badge"><span class="badge-ico">&#x1F3AF;</span> 62.4% Hit Rate</span>
-        <span class="ag-hero-badge"><span class="badge-ico">&#x1F4CA;</span> SAFE Score&trade; System</span>
-        <span class="ag-hero-badge"><span class="badge-ico">&#x1F3C0;</span> NBA Specialists</span>
+        <span class="ag-hero-badge primary"><span class="badge-ico">&#x26A1;</span> Free Terminal Access</span>
+        <span class="ag-hero-badge"><span class="badge-ico">&#x25C6;</span> 62.4% Neural Convergence</span>
+        <span class="ag-hero-badge"><span class="badge-ico">&#x2022;</span> SAFE Score&trade; Algorithm</span>
+        <span class="ag-hero-badge"><span class="badge-ico">&#x25A0;</span> NBA Edge Detection</span>
       </div>
       <div class="ag-hero-cta">
-        <a class="ag-hero-cta-primary" href="?auth=signup">&#x26A1; Create Free Account &mdash; It&rsquo;s Free</a>
-        <a class="ag-hero-cta-secondary" href="?auth=login">Already a member? Log In &#x2192;</a>
-        <div class="ag-hero-cta-trust">&#x1F512; No credit card &nbsp;&middot;&nbsp; 10-second signup &nbsp;&middot;&nbsp; 2,400+ sharps already winning</div>
+        <a class="ag-hero-cta-primary" href="?auth=signup">&#x26A1; Access Free Terminal &mdash; Zero Cost</a>
+        <a class="ag-hero-cta-secondary" href="?auth=login">Existing Operator? Log In &#x2192;</a>
+        <div class="ag-hero-cta-trust">&#x1F512; No credit card &nbsp;&middot;&nbsp; 10-second deployment &nbsp;&middot;&nbsp; 2,400+ quants already extracting edge</div>
       </div>
       </div>
     </div>
@@ -5899,23 +5942,23 @@ def require_login() -> bool:
       <div class="ag-proof-inner">
         <div class="ag-proof-stat">
           <div class="ag-proof-big">62.4%</div>
-          <div class="ag-proof-label">Hit Rate</div>
-          <div class="ag-proof-sub">8,400+ verified picks</div>
+          <div class="ag-proof-label">Neural Convergence Rate</div>
+          <div class="ag-proof-sub">8,400+ quantified outputs</div>
         </div>
         <div class="ag-proof-stat">
           <div class="ag-proof-big">300+</div>
-          <div class="ag-proof-label">Props / Night</div>
-          <div class="ag-proof-sub">3 platforms scanned</div>
+          <div class="ag-proof-label">Props Simulated / Night</div>
+          <div class="ag-proof-sub">3 platforms, full market coverage</div>
         </div>
         <div class="ag-proof-stat">
           <div class="ag-proof-big">+18.3%</div>
-          <div class="ag-proof-label">Avg ROI</div>
-          <div class="ag-proof-sub">Rolling 30-day window</div>
+          <div class="ag-proof-label">Verified ROI Edge</div>
+          <div class="ag-proof-sub">Rolling 30-day sim window</div>
         </div>
         <div class="ag-proof-stat">
           <div class="ag-proof-big">$0</div>
-          <div class="ag-proof-label">Forever</div>
-          <div class="ag-proof-sub">Others charge $99&ndash;$299/mo</div>
+          <div class="ag-proof-label">Terminal Access Cost</div>
+          <div class="ag-proof-sub">Competitors charge $99&ndash;$299/mo</div>
         </div>
       </div>
     </div>
@@ -5931,19 +5974,19 @@ def require_login() -> bool:
     st.markdown("""
 <div style="text-align:center;padding:8px 0 4px;">
   <div style="display:inline-block;font-family:'JetBrains Mono',monospace;font-size:0.52rem;font-weight:800;
-    color:#080C18;background:linear-gradient(135deg,#00D559,#2D9EFF);padding:3px 14px;border-radius:100px;
-    letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">&#x26A1; Live Tonight</div>
-  <h2 style="font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:800;color:#fff;margin:0 0 6px;">
-    Tonight&rsquo;s AI Picks &mdash; Free</h2>
-  <p style="font-size:0.78rem;color:rgba(255,255,255,0.35);margin:0 0 4px;">
-    The top 5 highest-confidence props from tonight&rsquo;s Quantum Analysis Matrix. No paywall. Updated nightly.</p>
+    color:#020509;background:linear-gradient(135deg,#00ff80,#00e5ff);padding:3px 14px;border-radius:4px;
+    letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;">&#x25C6; QUANTITATIVE SIMULATION OUTPUT</div>
+  <h2 style="font-family:'Archivo Black','Syne',sans-serif;font-size:1.35rem;font-weight:900;font-style:italic;color:#fff;margin:0 0 6px;text-transform:uppercase;letter-spacing:-0.02em;">
+    Tonight&rsquo;s Edge Detections &mdash; Unrestricted Access</h2>
+  <p style="font-size:0.78rem;color:rgba(255,255,255,0.35);margin:0 0 4px;font-family:'JetBrains Mono',monospace;">
+    Top 5 highest SAFE Score&trade; outputs from tonight&rsquo;s Ensemble Model pass. No paywall. Refreshed each simulation cycle.</p>
 </div>""", unsafe_allow_html=True)
     _render_free_picks_fragment()
 
-    st.markdown('<div style="margin:8px 0 4px;border-top:1px solid rgba(0,213,89,0.08);"></div>', unsafe_allow_html=True)
+    st.markdown('<div style="margin:8px 0 4px;border-top:1px solid rgba(0,255,128,0.08);"></div>', unsafe_allow_html=True)
 
     # ── Auth tabs + forms ─────────────────────────────────
-    tab_signup, tab_login = st.tabs(["\u26A1  Create Free Account", "\U0001F513  Log In"])
+    tab_signup, tab_login = st.tabs(["\u26A1  Deploy Free Terminal", "\U0001F513  Operator Login"])
 
     with tab_signup:
         _render_signup_form()
@@ -6345,29 +6388,29 @@ a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
     <div class="ag-section">
     <div class="ag-how">
       <div class="ag-section-head">
-        <h3>From Zero to <span class="em">Edge</span> in 3 Steps</h3>
-        <p>Signup takes 30 seconds. Your first AI-rated picks are ready immediately.</p>
+        <h3>From Zero to <span class="em">Quantifiable Edge</span> in 3 Deployments</h3>
+        <p>Terminal initialization takes 30 seconds. Your first ensemble-graded outputs are ready immediately.</p>
       </div>
       <div class="ag-how-steps">
         <div class="ag-how-step">
           <span class="ag-how-num">1</span>
           <span class="ag-how-ico">&#x1F4DD;</span>
-          <div class="ag-how-title">Create Your Free Account</div>
-          <div class="ag-how-desc">Email and password &mdash; done. No credit card. No 7-day trial that expires. You get full, permanent access to the Quantum Analysis Matrix, all 6 AI models, and every SAFE Score.</div>
+          <div class="ag-how-title">Initialize Your Free Terminal</div>
+          <div class="ag-how-desc">Email and password &mdash; done. No credit card. No trial window. You receive full, permanent access to the Quantitative Simulation Matrix, all 6 ensemble models, and every SAFE Score output. Permanent. Zero cost.</div>
           <span class="ag-how-arrow">&#x25B6;</span>
         </div>
         <div class="ag-how-step">
           <span class="ag-how-num">2</span>
           <span class="ag-how-ico">&#x1F3AF;</span>
-          <div class="ag-how-title">Pick High-Confidence Props</div>
-          <div class="ag-how-desc">Every prop gets a 0&ndash;100 SAFE Score&trade;, edge %, win probability, and AI projection. Sort by confidence &mdash; play 70+ and skip the rest. The math does the work.</div>
+          <div class="ag-how-title">Execute on High-Confidence Edge Signals</div>
+          <div class="ag-how-desc">Every prop receives a SAFE Score&trade; (0&ndash;100), edge %, neural convergence probability, and AI projection. Filter for 70+ scores and eliminate the noise. Ensemble modeling does the quantitative work for you.</div>
           <span class="ag-how-arrow">&#x25B6;</span>
         </div>
         <div class="ag-how-step">
           <span class="ag-how-num">3</span>
           <span class="ag-how-ico">&#x1F4B0;</span>
-          <div class="ag-how-title">Win More. Track Everything.</div>
-          <div class="ag-how-desc">62.4% hit rate across 8,400+ graded picks. The built-in Bet Tracker auto-grades your results, tracks bankroll growth, ROI by platform, and shows exactly which SAFE Score ranges are printing for you.</div>
+          <div class="ag-how-title">Extract ROI. Track Everything.</div>
+          <div class="ag-how-desc">62.4% neural convergence rate across 8,400+ graded outputs. The built-in Bet Tracker auto-grades results, monitors bankroll trajectory, calculates ROI by platform, and identifies which SAFE Score thresholds are generating alpha for your strategy.</div>
         </div>
       </div>
     </div>
@@ -6383,13 +6426,13 @@ a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
 html,body{background:transparent;overflow-y:hidden}
 </style>
 <div style="text-align:center;padding:48px 20px 32px;max-width:680px;margin:0 auto">
-  <div style="font-family:'Space Grotesk',sans-serif;font-size:0.65rem;font-weight:700;
-       color:rgba(0,213,89,0.6);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">
-    Our Secret Weapon</div>
-  <div style="font-family:'Space Grotesk',sans-serif;font-size:1.15rem;font-weight:800;
-       color:rgba(255,255,255,0.9);margin-bottom:24px">
-    How the <span style="background:linear-gradient(135deg,#00D559,#2D9EFF);
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">SAFE Score&trade;</span> Works</div>
+<div style="font-family:'Archivo Black','Space Grotesk',sans-serif;font-size:0.65rem;font-weight:900;font-style:italic;
+           color:rgba(0,255,128,0.65);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">
+        Proprietary Intelligence Stack</div>
+      <div style="font-family:'Archivo Black','Syne',sans-serif;font-size:1.15rem;font-weight:900;font-style:italic;
+           color:rgba(255,255,255,0.9);margin-bottom:24px;text-transform:uppercase;letter-spacing:-0.02em">
+        How the <span style="background:linear-gradient(135deg,#00ff80,#00e5ff);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">SAFE Score&trade;</span> Algorithm Executes</div>
 
   <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:24px">
     <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:360px">
@@ -6464,15 +6507,15 @@ html,body{background:transparent;overflow-y:hidden}
     <div class="ag-section">
     <!-- ── 60-Second Demo ── -->
     <div class="ag-reveal" style="text-align:center;padding:40px 0 16px">
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:0.65rem;font-weight:700;
-           color:rgba(0,213,89,0.6);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">
-        See It In Action</div>
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:1.15rem;font-weight:800;
-           color:rgba(255,255,255,0.9);margin-bottom:8px">
-        What You&rsquo;ll See in <span style="background:linear-gradient(135deg,#00D559,#2D9EFF);
+      <div style="font-family:'Archivo Black','Space Grotesk',sans-serif;font-size:0.65rem;font-weight:900;font-style:italic;
+           color:rgba(0,255,128,0.6);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">
+        Intelligence Architecture</div>
+      <div style="font-family:'Archivo Black','Syne',sans-serif;font-size:1.15rem;font-weight:900;font-style:italic;
+           color:rgba(255,255,255,0.9);margin-bottom:8px;text-transform:uppercase;letter-spacing:-0.02em">
+        What You&rsquo;ll Access in <span style="background:linear-gradient(135deg,#00ff80,#00e5ff);
         -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">60 Seconds</span></div>
       <p style="font-family:'Inter',sans-serif;font-size:0.75rem;color:rgba(255,255,255,0.4);max-width:460px;margin:0 auto 24px">
-        Sign up, pick a platform, and start seeing AI-rated props instantly. No setup required.</p>
+        Deploy your terminal, configure your platform, and start receiving quantitative edge signals immediately. Zero configuration required.</p>
       <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;max-width:820px;margin:0 auto">
         <div style="flex:1;min-width:220px;max-width:260px;background:rgba(255,255,255,0.02);
              border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px 16px;
@@ -6589,21 +6632,21 @@ html,body{background:transparent;overflow-y:hidden}
     <div class="ag-divider"></div>
     <div class="ag-inside ag-reveal" id="sec-features" data-section-id="features">
       <div class="ag-section-head">
-        <h3>What&rsquo;s Inside<br><span class="em">Smart Pick Pro</span></h3>
-        <p>Everything you need to beat the books &mdash; in one platform</p>
+        <h3>What&rsquo;s Inside<br><span class="em">The Terminal</span></h3>
+        <p>The complete quantitative intelligence stack &mdash; precision-built to extract edge the public can&rsquo;t see</p>
       </div>
       <div class="ag-inside-grid">
         <div class="ag-inside-card">
           <div class="ag-inside-ico">&#x26A1;</div>
-          <div class="ag-inside-name">Quantum Analysis Matrix</div>
-          <div class="ag-inside-desc">The core engine. Scans 300+ player props nightly across PrizePicks, DraftKings, and Underdog. Each prop is analyzed by 6 fused AI models that output a SAFE Score (0&ndash;100), edge percentage, win probability, and adjusted projection.</div>
+          <div class="ag-inside-name">Quantitative Simulation Matrix</div>
+          <div class="ag-inside-desc">The core engine. Ingests 300+ player props nightly across PrizePicks, DraftKings, and Underdog. Each prop is independently processed by 6 ensemble models and converged into a SAFE Score (0&ndash;100), edge %, neural convergence probability, and adjusted line projection.</div>
           <div class="ag-inside-tag">CORE ENGINE</div>
         </div>
         <div class="ag-inside-card">
           <div class="ag-inside-ico">&#x1F9E0;</div>
-          <div class="ag-inside-name">SAFE Score System</div>
-          <div class="ag-inside-desc">Proprietary 0&ndash;100 confidence rating that fuses Quantum simulation, Ridge regression, Random Forest, XGBoost, LSTM sequence modeling, and Bayesian networks. One number tells you if a prop is worth playing.</div>
-          <div class="ag-inside-tag">AI CONFIDENCE</div>
+          <div class="ag-inside-name">SAFE Score&trade; Algorithm</div>
+          <div class="ag-inside-desc">Proprietary 0&ndash;100 edge-detection rating that fuses Neural Convergence outputs from Ridge regression, Random Forest, XGBoost, LSTM sequence modeling, LightGBM, and Bayesian ensemble networks. One signal. Maximum information density.</div>
+          <div class="ag-inside-tag">NEURAL CONVERGENCE</div>
         </div>
         <div class="ag-inside-card">
           <div class="ag-inside-ico">&#x1F4CA;</div>

@@ -3633,29 +3633,42 @@ def auto_log_smart_money_bets(analysis_results, *, max_bets=20):
     )
 
 
-def auto_log_platform_ai_bets(analysis_results, *, max_bets=20, prizepicks_only=True):
+def auto_log_platform_ai_bets(analysis_results, *, max_bets=8, prizepicks_only=False):
     """Auto-log Platform AI picks with source='platform_ai'.
 
-    Filters:
-      - Only PrizePicks platform (per Phase 5 design)
-      - Only Gold/Platinum tier picks (high-quality only)
-      - edge > 0 (model favours the direction)
+    Filter MUST match the "⚡ Platform AI Picks" section on the QAM page
+    (Smart_Picks_Pro_Home / Quantum_Analysis_Matrix) so the Bet Tracker's
+    Platform Picks tab tracks exactly what the user sees rendered there:
+      - platform value present (any platform)
+      - not should_avoid
+      - not player_is_out
+      - confidence_score >= 60
+      - top 8 by confidence_score (matches the displayed cards)
     """
     if not analysis_results:
         return 0
     filtered: list = []
     for r in analysis_results:
-        plat = (r.get("platform") or "").strip().lower()
-        if prizepicks_only and "prizepicks" not in plat and "prize picks" not in plat:
+        plat = (r.get("platform") or "").strip()
+        if not plat:
+            continue
+        if prizepicks_only:
+            _pl = plat.lower()
+            if "prizepicks" not in _pl and "prize picks" not in _pl:
+                continue
+        if r.get("should_avoid"):
             continue
         if r.get("player_is_out"):
             continue
-        tier = r.get("tier", "Bronze")
-        if tier not in ("Gold", "Platinum"):
-            continue
-        if float(r.get("edge_percentage", 0) or 0) <= 0:
+        if float(r.get("confidence_score", 0) or 0) < 60:
             continue
         filtered.append(r)
+    # Top N by confidence_score — matches QAM display ordering exactly
+    filtered.sort(
+        key=lambda r: float(r.get("confidence_score", 0) or 0),
+        reverse=True,
+    )
+    filtered = filtered[:max_bets]
     return auto_log_analysis_bets(
         filtered, max_bets=max_bets, source="platform_ai"
     )

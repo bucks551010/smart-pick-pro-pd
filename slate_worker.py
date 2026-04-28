@@ -602,13 +602,17 @@ def _job_bet_logging() -> None:
         _logger.warning("[bet_logging] no picks in all_analysis_picks for %s", today)
         return
     picks = [dict(r) for r in rows]
+    # platform_ai MUST run first — it logs PrizePicks Gold/Platinum picks with
+    # source='platform_ai'.  auto_log_analysis_bets builds existing_keys from
+    # ALL today's bets, so if quantum runs first it locks those picks out and
+    # auto_log_platform_ai_bets logs 0 rows every time.
+    n_pa = auto_log_platform_ai_bets(picks)
     n_qam = auto_log_analysis_bets(picks, source="quantum")
     n_qeg = auto_log_qeg_bets(picks)
     n_sm = auto_log_smart_money_bets(picks)
-    n_pa = auto_log_platform_ai_bets(picks)
     _logger.info(
-        "[bet_logging] quantum=%d qeg=%d smart_money=%d platform_ai=%d",
-        n_qam, n_qeg, n_sm, n_pa,
+        "[bet_logging] platform_ai=%d quantum=%d qeg=%d smart_money=%d",
+        n_pa, n_qam, n_qeg, n_sm,
     )
 
 

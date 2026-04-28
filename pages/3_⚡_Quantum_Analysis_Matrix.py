@@ -1156,6 +1156,18 @@ if run_analysis:
             _logger.warning(f"Store analysis picks error (non-fatal): {_store_err}")
 
         # ── Auto-log all qualifying picks to the Bet Tracker ────────
+        # platform_ai runs FIRST so its source tag isn't blocked by quantum's
+        # dedup (auto_log_analysis_bets loads all today's bets into existing_keys
+        # before logging, so whichever source runs first wins the slot).
+        try:
+            from tracking.bet_tracker import auto_log_platform_ai_bets as _auto_log_pa
+            _pa_logged = _auto_log_pa(analysis_results_list)
+            if _pa_logged > 0:
+                st.info(
+                    f"🤖 Auto-logged **{_pa_logged}** Platform AI pick(s) to the Bet Tracker."
+                )
+        except Exception as _pa_log_err:
+            _logger.warning(f"Platform AI auto-log error (non-fatal): {_pa_log_err}")
         try:
             from tracking.bet_tracker import auto_log_analysis_bets as _auto_log
             _auto_logged = _auto_log(analysis_results_list, minimum_edge=minimum_edge, max_bets=len(analysis_results_list))

@@ -289,6 +289,8 @@ if not st.session_state.get("_picks_seeded"):
     st.session_state["_picks_seeded"] = True
     try:
         _cached_picks, _cached_props = _load_cached_slate()
+        # Filter game-total rows (empty team) — they belong in QAM, not home
+        _cached_picks = [r for r in (_cached_picks or []) if str(r.get("team", "") or r.get("player_team", "")).strip()]
         if _cached_props:
             st.session_state.setdefault("current_props", _cached_props)
             st.session_state.setdefault("platform_props", _cached_props)
@@ -998,6 +1000,19 @@ if _user_tier != TIER_FREE and _hero_pool:
         unsafe_allow_html=True,
     )
     st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
+elif _user_tier != TIER_FREE and _home_analysis:
+    # Picks exist but all filtered out by tier/confidence — show best available
+    _fallback_pool = sorted(
+        [r for r in _home_analysis if not r.get("should_avoid") and not r.get("player_is_out")],
+        key=lambda r: (float(r.get("confidence_score", 0) or 0), abs(r.get("edge_percentage", 0))),
+        reverse=True,
+    )[:3]
+    if _fallback_pool:
+        st.markdown(
+            _render_hero_section_html(_fallback_pool),
+            unsafe_allow_html=True,
+        )
+        st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 
 # ============================================================
 # END SECTION 1A: Top 3 Tonight
@@ -1023,15 +1038,18 @@ _home_edge_gap_picks = sorted(
 )
 
 if _user_tier != TIER_FREE and _home_edge_gap_picks:
-    st.markdown(
-        _render_edge_gap_banner_html(_home_edge_gap_picks),
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        _render_edge_gap_grouped_html(_home_edge_gap_picks),
-        unsafe_allow_html=True,
-    )
-    st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
+    try:
+        st.markdown(
+            _render_edge_gap_banner_html(_home_edge_gap_picks),
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            _render_edge_gap_grouped_html(_home_edge_gap_picks),
+            unsafe_allow_html=True,
+        )
+        st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
+    except Exception as _qeg_err:
+        logging.getLogger(__name__).warning("QEG section render failed: %s", _qeg_err)
 
 # ============================================================
 # END SECTION 1B: Quantum Edge Gap
@@ -1667,8 +1685,14 @@ if todays_games:
 # ============================================================
 
 players_data = load_players_data()
-props_data = load_props_data()
-teams_data = load_teams_data()
+try:
+    props_data = load_props_data()
+except Exception:
+    props_data = []
+try:
+    teams_data = load_teams_data()
+except Exception:
+    teams_data = []
 
 current_props = st.session_state.get("current_props", props_data)
 number_of_current_props = len(current_props)

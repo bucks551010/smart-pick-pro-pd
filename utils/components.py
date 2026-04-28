@@ -519,7 +519,12 @@ def _render_broadcast_ticker():
 
     Shows a scrolling marquee with ambient Joseph lines on every page.
     The ticker re-renders on each page navigation so it appears site-wide.
+    Skipped on the home page, which has its own live-analysis-bar section.
     """
+    # Home page has its own live-analysis-bar — skip the ticker there to
+    # avoid rendering two near-identical "LIVE" bars at the top.
+    if st.session_state.get("joseph_page_context") == "page_home":
+        return
     # Build ticker items from analysis results or defaults
     ticker_items = []
     analysis = st.session_state.get("analysis_results", [])

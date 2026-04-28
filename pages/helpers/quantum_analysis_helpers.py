@@ -1681,8 +1681,7 @@ def render_platform_picks_html(picks: list) -> str:
         proj_color = "#c084fc" if proj_val > line_val_num else "#60a5fa"
 
         cards.append(
-            f'<div class="plat-card" '
-            f'style="animation-delay:{idx * 120}ms;">'
+            f'<div class="plat-card">'
             f'<span class="plat-rank">#{idx + 1}</span>'
             # Status bar: platform badge
             f'<div class="plat-status">'

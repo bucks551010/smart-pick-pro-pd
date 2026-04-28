@@ -1380,42 +1380,61 @@ if analysis_results and st.session_state.get("_analysis_session_reloaded_at"):
     )
 
 # ── ⚡ Platform AI Picks (own section, above Joseph Broadcast Desk) ──────────
-if analysis_results:
-    _outer_plat_ai_pool = [
-        r for r in analysis_results
+@st.fragment
+def _render_platform_ai_picks():
+    """Render Platform AI Picks only after analysis is fully complete.
+
+    Wrapped in a fragment so it renders as an atomic block and is never
+    partially visible during a running analysis.  Guards against showing
+    stale results while a new analysis is in progress.
+    """
+    # Never render during an in-progress analysis run.
+    if st.session_state.get("_qam_analysis_requested", False):
+        return
+
+    _ar = st.session_state.get("analysis_results", [])
+    if not _ar:
+        return
+
+    _plat_ai_pool = [
+        r for r in _ar
         if r.get("platform", "").strip()
         and not r.get("should_avoid", False)
         and not r.get("player_is_out", False)
         and float(r.get("confidence_score", 0)) >= 60
     ]
-    _outer_plat_ai_pool = sorted(
-        _outer_plat_ai_pool,
+    _plat_ai_pool = sorted(
+        _plat_ai_pool,
         key=lambda r: float(r.get("confidence_score", 0)),
         reverse=True,
     )[:8]
-    if _outer_plat_ai_pool:
-        _outer_players_data = locals().get("players_data") or globals().get("players_data")
-        if not _outer_players_data:
-            try:
-                from data.data_manager import load_players_data as _lpd_outer
-                _outer_players_data = _lpd_outer() or []
-            except Exception:
-                _outer_players_data = []
-        if _outer_players_data and any(not r.get("player_id") for r in _outer_plat_ai_pool):
-            _outer_pid_lookup = {
-                str(p.get("name", "")).lower(): str(p.get("player_id", ""))
-                for p in _outer_players_data
-                if p.get("player_id")
-            }
-            for _op in _outer_plat_ai_pool:
-                if not _op.get("player_id"):
-                    _op["player_id"] = _outer_pid_lookup.get(
-                        str(_op.get("player_name", "")).lower(), ""
-                    )
-        st.markdown(
-            _render_platform_picks_html(_outer_plat_ai_pool),
-            unsafe_allow_html=True,
-        )
+    if not _plat_ai_pool:
+        return
+
+    _pd_outer = []
+    try:
+        from data.data_manager import load_players_data as _lpd_outer
+        _pd_outer = _lpd_outer() or []
+    except Exception:
+        pass
+    if _pd_outer and any(not r.get("player_id") for r in _plat_ai_pool):
+        _pid_lookup = {
+            str(p.get("name", "")).lower(): str(p.get("player_id", ""))
+            for p in _pd_outer
+            if p.get("player_id")
+        }
+        for _op in _plat_ai_pool:
+            if not _op.get("player_id"):
+                _op["player_id"] = _pid_lookup.get(
+                    str(_op.get("player_name", "")).lower(), ""
+                )
+
+    st.markdown(
+        _render_platform_picks_html(_plat_ai_pool),
+        unsafe_allow_html=True,
+    )
+
+_render_platform_ai_picks()
 # ── END Platform AI Picks ─────────────────────────────────────────────────────
 
 # ════ JOSEPH M. SMITH LIVE BROADCAST DESK ════

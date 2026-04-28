@@ -210,7 +210,10 @@ _COMPUTED_STATS = {
 # Stats that exist on some platforms but CANNOT be resolved from a
 # standard NBA box score (full-game totals).  Flagged gracefully.
 # NOTE: "dunks" was removed Ã¢â‚¬â€ we now resolve it via play-by-play data.
-_UNRESOLVABLE_STATS = frozenset()
+_UNRESOLVABLE_STATS = frozenset({
+    "double_double",   # boolean milestone — not a box-score column
+    "triple_double",   # boolean milestone — not a box-score column
+})
 
 # Game-segment prop patterns that CANNOT be resolved from PlayerGameLog
 # (which only has full-game totals). These are flagged gracefully instead
@@ -1768,6 +1771,13 @@ def auto_resolve_bet_results(date_str=None):
                     else:
                         errors_list.append(f"#{bet_id} {player_name}: VOID update failed — {msg}")
                 else:
+                    # No logs at all — data definitely unavailable; VOID
+                    success, msg = record_bet_result(bet_id, "VOID", 0.0)
+                    if success:
+                        resolved_count += 1
+                        errors_list.append(f"#{bet_id} {player_name}: no game logs — auto-VOID")
+                    else:
+                        errors_list.append(f"#{bet_id} {player_name}: VOID update failed — {msg}")
                     errors_list.append(f"#{bet_id} {player_name}: no game log found (game data may not be ready)")
                 continue
 
@@ -1780,13 +1790,22 @@ def auto_resolve_bet_results(date_str=None):
                     break
 
             if matching_log is None:
-                # Only VOID if the player IS in the bulk lookup (confirmed
-                # their game was played but they have no log entry — true DNP).
+                # VOID if player is in the bulk lookup (true DNP)
+                # OR if their last game was >7 days before the target date
+                # (team had no game that day — e.g. playoff non-qualifier).
                 _player_in_bulk = _lookup_bulk_row(_bulk_lookup, player_name, _normalize_name) is not None
-                if _player_in_bulk:
+                _last_date_str = logs[0].get("game_date", "") if logs else ""
+                _last_game_date = _parse_game_date(_last_date_str) if _last_date_str else None
+                _stale = (
+                    _last_game_date is not None
+                    and (target_date - _last_game_date).days > 7
+                )
+                if _player_in_bulk or _stale:
+                    _reason = "DNP" if _player_in_bulk else f"no game (last: {_last_date_str})"
                     success, msg = record_bet_result(bet_id, "VOID", 0.0)
                     if success:
                         resolved_count += 1
+                        errors_list.append(f"#{bet_id} {player_name}: {_reason} — auto-VOID")
                     else:
                         errors_list.append(f"#{bet_id} {player_name}: VOID update failed — {msg}")
                 else:

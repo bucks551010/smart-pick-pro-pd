@@ -82,6 +82,19 @@ def group_props_by_player(
 
         aggregated[name]["props"].append(result)
 
+    # Backfill team into vitals from props when enrich_player_data didn't resolve it.
+    # This guards against the player_profile_service fallback returning "N/A" for team,
+    # which is truthy and would otherwise prevent downstream code from reading
+    # player_team/team off the prop rows.
+    for data in aggregated.values():
+        v_team = (data["vitals"].get("team") or "").strip()
+        if not v_team or v_team.upper() == "N/A":
+            for p in data["props"]:
+                t = (p.get("player_team") or p.get("team") or "").strip()
+                if t and t.upper() not in ("N/A", ""):
+                    data["vitals"]["team"] = t
+                    break
+
     # Sort props within each player: highest confidence / best tier first
     for data in aggregated.values():
         data["props"].sort(

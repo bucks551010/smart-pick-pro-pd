@@ -2241,12 +2241,20 @@ def _render_results_fragment():
             # Group players by game matchup
             _game_groups: dict[str, dict[str, dict]] = {}
             _no_game = "Other"
+            def _extract_player_team(pdata):
+                """Return the player's team abbreviation, skipping sentinel values like N/A."""
+                for _src in (
+                    (pdata.get("vitals") or {}).get("team", ""),
+                    pdata["props"][0].get("player_team", "") if pdata.get("props") else "",
+                    pdata["props"][0].get("team", "") if pdata.get("props") else "",
+                ):
+                    _t = str(_src).upper().strip()
+                    if _t and _t != "N/A":
+                        return _t
+                return ""
+
             for _pname, _pdata in _grouped.items():
-                _pteam = (
-                    (_pdata.get("vitals") or {}).get("team", "")
-                    or (_pdata["props"][0].get("player_team", "") if _pdata.get("props") else "")
-                    or (_pdata["props"][0].get("team", "") if _pdata.get("props") else "")
-                ).upper().strip()
+                _pteam = _extract_player_team(_pdata)
                 _game_label = _team_to_game.get(_pteam, _no_game)
                 _game_groups.setdefault(_game_label, {})[_pname] = _pdata
 
@@ -2286,11 +2294,7 @@ def _render_results_fragment():
                     _home_row: dict = {}
                     _other_row: dict = {}
                     for _pn, _pd in _game_players.items():
-                        _pt = (
-                            (_pd.get("vitals") or {}).get("team", "")
-                            or (_pd["props"][0].get("player_team", "") if _pd.get("props") else "")
-                            or (_pd["props"][0].get("team", "") if _pd.get("props") else "")
-                        ).upper().strip()
+                        _pt = _extract_player_team(_pd)
                         if _pt == _mc_at:
                             _away_row[_pn] = _pd
                         elif _pt == _mc_ht:

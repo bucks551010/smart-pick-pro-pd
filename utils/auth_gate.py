@@ -943,8 +943,47 @@ html,body{background:transparent;font-family:'Inter','Space Grotesk',system-ui,-
         "alex sarr": "1641720", "yves missi": "1641736",
     }
 
-    # ── Clean player name (strip stat suffixes like "Lu Dort 3-Pointers Made O/U") ──
+    # ── Build normalized lookup once per call (O(n) dict comprehension) ─────
+    # Strips accents, apostrophes, periods, and suffixes so lookups are
+    # resilient to "Nikola Jokić" vs "Nikola Jokic", "De'Aaron Fox" vs
+    # "Deaaron Fox", "Jaren Jackson Jr." vs "Jaren Jackson Jr", etc.
+    import unicodedata as _ucd
     import re as _re_mod
+
+    def _norm_pname(n: str) -> str:
+        n = _ucd.normalize("NFKD", n).encode("ASCII", "ignore").decode("ASCII")
+        n = _re_mod.sub(r"\s+(jr\.?|sr\.?|ii|iii|iv)$", "", n, flags=_re_mod.IGNORECASE)
+        return _re_mod.sub(r"[.''\u2019-]", "", n).lower().strip()
+
+    _PLAYER_IDS_NORM: dict[str, str] = {
+        _norm_pname(k): v for k, v in _PLAYER_IDS.items()
+    }
+
+    def _lookup_pid(player_name: str, team: str = "") -> str:
+        """Return NBA CDN player-ID string, '' if not found."""
+        norm = _norm_pname(player_name)
+        # 1. Exact normalized match
+        if norm in _PLAYER_IDS_NORM:
+            return _PLAYER_IDS_NORM[norm]
+        # 2. Token-subset: every token in the input must appear in the lookup key
+        #    handles "Shai" → "shai gilgeous alexander", partial names from DB
+        tokens = set(norm.split())
+        if tokens:
+            for key, pid_val in _PLAYER_IDS_NORM.items():
+                if tokens.issubset(set(key.split())):
+                    return pid_val
+        # 3. PlayerIDCache — overrides JSON + optional fuzzy (thefuzz)
+        try:
+            from data.player_id_cache import PlayerIDCache as _PIC
+            _pic = _PIC()
+            pid_int = _pic.get_player_id(player_name, team or None)
+            if pid_int:
+                return str(pid_int)
+        except Exception:
+            pass
+        return ""
+
+    # ── Clean player name (strip stat suffixes like "Lu Dort 3-Pointers Made O/U") ──
     _STAT_SUFFIX_RE = _re_mod.compile(
         r'\s+(?:points|rebounds|assists|steals|blocks|threes|3-pointers?|'
         r'field goals?|free throws?|turnovers?|fantasy|fpts|pts|reb|ast|'
@@ -1003,24 +1042,10 @@ html,body{background:transparent;font-family:'Inter','Space Grotesk',system-ui,-
             "font-weight:800;color:rgba(255,255,255,.35);letter-spacing:.03em;"
         )
 
-        # Headshot URL (NBA CDN) — try dict, then overrides JSON
-        pid = _PLAYER_IDS.get(name_raw.lower(), "")
-        if not pid:
-            # Try player_id_overrides.json as secondary source
-            try:
-                import json as _json_mod
-                _ovr_path = Path(__file__).resolve().parent.parent / "data" / "player_id_overrides.json"
-                if _ovr_path.exists():
-                    _ovr = _json_mod.loads(_ovr_path.read_text(encoding="utf-8"))
-                    for ovr_name, ovr_data in _ovr.items():
-                        if ovr_name.lower() == name_raw.lower():
-                            pid = str(ovr_data.get("id", ""))
-                            break
-            except Exception:
-                pass
+        # Headshot URL — robust lookup: normalized dict → token-subset → PlayerIDCache
+        team_str = (pick.get("team", "") or "").upper()
+        pid = _lookup_pid(name_raw, team_str)
         if pid:
-            # 260x190 is lighter than 1040x760 and loads faster; still sharp enough at 76px.
-            # Include initials div as hidden sibling — onerror activates it if CDN fails.
             hs_url = f"https://cdn.nba.com/headshots/nba/latest/260x190/{pid}.png"
             hs_html = (
                 f'<div class="pv-hs-wrap">'
@@ -1030,7 +1055,7 @@ html,body{background:transparent;font-family:'Inter','Space Grotesk',system-ui,-
                 f'</div>'
             )
         else:
-            # No player ID — show initials immediately (visible from the start)
+            # No player ID found — show initials placeholder
             hs_html = (
                 f'<div class="pv-hs-wrap">'
                 f'<div class="pv-headshot" style="{_initials_style.replace("display:none", "display:inline-flex")}">'

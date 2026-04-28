@@ -1894,7 +1894,13 @@ def _render_results_fragment():
     #    OR edge_percentage ≥ 20%).
     # OVER: line 20–100% below season avg. UNDER: line 20–100% above avg.
     # Only standard odds_type; exclude goblin / demon.
-    _edge_gap_picks = _filter_qeg_picks(displayed_results)
+    _qeg_teams = {
+        t
+        for g in st.session_state.get("todays_games", [])
+        for t in (g.get("home_team", ""), g.get("away_team", ""))
+        if t
+    }
+    _edge_gap_picks = _filter_qeg_picks(displayed_results, todays_teams=_qeg_teams or None)
     _edge_gap_picks = _deduplicate_qeg_picks(_edge_gap_picks)
     _edge_gap_picks = sorted(
         _edge_gap_picks,

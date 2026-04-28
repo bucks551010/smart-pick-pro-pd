@@ -994,7 +994,13 @@ if _user_tier != TIER_FREE and _hero_pool:
 #             (|edge| ≥ 20%, odds_type="standard" only, no goblins/demons)
 # ============================================================
 
-_home_edge_gap_picks = _filter_qeg_picks(_home_analysis)
+_qeg_tonight_teams = {
+    t
+    for g in st.session_state.get("todays_games", [])
+    for t in (g.get("home_team", ""), g.get("away_team", ""))
+    if t
+}
+_home_edge_gap_picks = _filter_qeg_picks(_home_analysis, todays_teams=_qeg_tonight_teams or None)
 _home_edge_gap_picks = _deduplicate_qeg_picks(_home_edge_gap_picks)
 _home_edge_gap_picks = sorted(
     _home_edge_gap_picks,

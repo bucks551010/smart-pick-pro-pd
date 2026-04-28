@@ -1816,6 +1816,18 @@ def auto_resolve_bet_results(date_str=None):
                     )
                 continue
 
+            # VOID bets where player played 0 minutes (DNP / inactive)
+            _raw_min = matching_log.get("minutes", matching_log.get("min", 0))
+            _mins_played = _parse_minutes(_raw_min)
+            if _mins_played == 0.0:
+                success, msg = record_bet_result(bet_id, "VOID", 0.0)
+                if success:
+                    resolved_count += 1
+                    errors_list.append(f"#{bet_id} {player_name}: 0 minutes played — auto-VOID")
+                else:
+                    errors_list.append(f"#{bet_id} {player_name}: VOID (0 min) update failed — {msg}")
+                continue
+
             # Compute actual_value based on stat type
             if is_combo:
                 components = COMBO_STATS[stat_type]
@@ -2634,6 +2646,18 @@ def resolve_all_pending_bets():
 
             if bulk_row is not None:
                 try:
+                    # VOID if player played 0 minutes (DNP / inactive)
+                    _raw_min = bulk_row.get("minutes", bulk_row.get("min", 0))
+                    if _parse_minutes(_raw_min) == 0.0:
+                        ok, _msg = record_bet_result(bet_id, "VOID", 0.0)
+                        if ok:
+                            summary["resolved"] += 1
+                            date_resolved += 1
+                            summary["errors"].append(f"#{bet_id} {player_name}: 0 minutes played — auto-VOID")
+                        else:
+                            summary["errors"].append(f"#{bet_id} {player_name}: VOID (0 min) failed — {_msg}")
+                            summary["pending"] += 1
+                        continue
                     actual_value = _compute_actual_value_from_row(
                         bulk_row, stat_type, stat_col, is_combo, is_fantasy,
                         COMBO_STATS, FANTASY_SCORING, is_computed=is_computed,
@@ -2739,6 +2763,19 @@ def resolve_all_pending_bets():
                 continue
 
             try:
+                # VOID if player played 0 minutes (DNP / inactive)
+                _raw_min = matching_log.get("minutes", matching_log.get("min", 0))
+                if _parse_minutes(_raw_min) == 0.0:
+                    ok, _msg = record_bet_result(bet_id, "VOID", 0.0)
+                    if ok:
+                        summary["resolved"] += 1
+                        date_resolved += 1
+                        summary["errors"].append(f"#{bet_id} {player_name}: 0 minutes played — auto-VOID")
+                    else:
+                        summary["errors"].append(f"#{bet_id} {player_name}: VOID (0 min) failed — {_msg}")
+                        summary["pending"] += 1
+                    continue
+
                 if is_combo:
                     actual_value = sum(
                         float(matching_log.get(_STAT_COL.get(c, c), 0) or 0)

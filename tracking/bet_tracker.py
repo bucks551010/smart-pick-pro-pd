@@ -1473,10 +1473,12 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, s
             if edge < min_required_edge:
                 continue
 
+        # Handle both "line" (engine output) and "prop_line" (all_analysis_picks DB rows)
+        _res_line = float(res.get("line") if res.get("line") is not None else (res.get("prop_line") or 0))
         dedup_key = (
             res.get("player_name", "").lower(),
             res.get("stat_type", ""),
-            float(res.get("line", 0) or 0),
+            _res_line,
             res.get("direction", "OVER"),
         )
         if dedup_key in existing_keys:
@@ -1485,7 +1487,7 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, s
         ok, _msg = log_new_bet(
             player_name=res.get("player_name", ""),
             stat_type=res.get("stat_type", "points"),
-            prop_line=float(res.get("line", 0) or 0),
+            prop_line=_res_line,
             direction=res.get("direction", "OVER"),
             platform=res.get("platform") or "SmartAI-Auto",
             confidence_score=float(res.get("confidence_score", 0) or 0),
@@ -1522,10 +1524,12 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, s
                 continue
             if res.get("player_is_out", False):
                 continue
+            # Handle both "line" (engine output) and "prop_line" (all_analysis_picks DB rows)
+            _res_avoid_line = float(res.get("line") if res.get("line") is not None else (res.get("prop_line") or 0))
             dedup_key = (
                 res.get("player_name", "").lower(),
                 res.get("stat_type", ""),
-                float(res.get("line", 0) or 0),
+                _res_avoid_line,
                 res.get("direction", "OVER"),
             )
             if dedup_key in existing_keys:
@@ -1534,7 +1538,7 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, s
             ok, _msg = log_new_bet(
                 player_name=res.get("player_name", ""),
                 stat_type=res.get("stat_type", "points"),
-                prop_line=float(res.get("line", 0) or 0),
+                prop_line=_res_avoid_line,
                 direction=res.get("direction", "OVER"),
                 platform=res.get("platform") or "SmartAI-Auto",
                 confidence_score=float(res.get("confidence_score", 0) or 0),

@@ -518,6 +518,8 @@ def _first_tip_et_today() -> datetime.datetime | None:
     """Earliest scheduled tip-off for the current sports day, in ET.
 
     Returns None if no games scheduled or the schedule cannot be read.
+    Falls back to 7:00 PM ET when games exist but have no time metadata
+    (common when the ETL DB has game rows without tip-off timestamps).
     """
     try:
         from data.nba_data_service import get_todays_games
@@ -541,7 +543,19 @@ def _first_tip_et_today() -> datetime.datetime | None:
         dt = dt.astimezone(et)
         if earliest is None or dt < earliest:
             earliest = dt
-    return earliest
+    if earliest is not None:
+        return earliest
+    # Games exist but no tip-off times in the DB (common when ETL only
+    # populated the Games table without schedule/time data).  Fall back
+    # to 7:00 PM ET — the typical first tip-off for NBA game nights.
+    # This ensures bet_logging runs at 5:00 PM ET (2h before tip) even
+    # when precise game times are unavailable.
+    now_et = _now_et()
+    _logger.info(
+        "_first_tip_et_today: %d game(s) found but no tip-off times — "
+        "defaulting to 7:00 PM ET.", len(games)
+    )
+    return now_et.replace(hour=19, minute=0, second=0, microsecond=0)
 
 
 def _run_job(name: str, fn, *, dry_run: bool = False) -> None:

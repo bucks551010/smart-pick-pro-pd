@@ -418,6 +418,8 @@ if not st.session_state.get("analysis_results"):
         from tracking.database import (
             load_latest_analysis_session as _load_session,
             load_analysis_session_by_id as _load_session_by_id,
+            get_slate_picks_for_today as _get_slate_today,
+            _nba_today_iso as _nba_today,
         )
         _qam_sid_param = st.query_params.get("sid")
         if _qam_sid_param:
@@ -425,18 +427,52 @@ if not st.session_state.get("analysis_results"):
         else:
             _saved_session = _load_session()
         if _saved_session and _saved_session.get("analysis_results"):
-            # Filter out analysis results with no opponent (non-playing-team
-            # props or synthetic game-total entries like "DET @ ORL Total").
             _raw_ar = _saved_session["analysis_results"] or []
             _games_loaded = (
                 _saved_session.get("todays_games")
                 or st.session_state.get("todays_games")
                 or []
             )
+            # Prefer the canonical today-only slate (deduped + 5/player capped)
+            # over the raw analysis_results JSON, which can include stale
+            # entries from earlier worker runs on the same NBA date.
+            _today_iso = _nba_today()
+            _slate_today = []
+            try:
+                _slate_today = _get_slate_today() or []
+            except Exception:
+                _slate_today = []
+            # Only use the slate when it actually corresponds to "today" — if a
+            # saved session is from an older date, keep its raw AR.
+            _saved_date = (_saved_session.get("analysis_date") or "")[:10]
+            if _slate_today and (not _saved_date or _saved_date == _today_iso):
+                # Build a slate index so we can carry over the rich analysis
+                # fields from AR (confidence_score, std_devs, opponent, etc.)
+                # but constrained to the deduped/capped set.
+                def _key(p):
+                    return (
+                        str(p.get("player_name", "")).lower().strip(),
+                        str(p.get("stat_type", "")).lower().strip(),
+                        str(p.get("direction", "")).upper().strip(),
+                        str(p.get("platform", "")).lower().strip(),
+                        float(p.get("prop_line") or 0),
+                    )
+                _ar_by_key = {}
+                for r in _raw_ar:
+                    _ar_by_key.setdefault(_key(r), r)
+                _merged = []
+                for sp in _slate_today:
+                    k = _key(sp)
+                    if k in _ar_by_key:
+                        # Merge: slate row wins on identity, AR fills extras
+                        m = dict(_ar_by_key[k])
+                        m.update({kk: vv for kk, vv in sp.items() if vv is not None})
+                        _merged.append(m)
+                    else:
+                        _merged.append(sp)
+                _raw_ar = _merged
             # Filter synthetic game-total props ONLY when at least one pick
-            # in the slate carries opponent metadata. Older slate-worker
-            # outputs (and backfilled sessions) don't populate `opponent`,
-            # and applying this filter blindly strips every pick.
+            # carries opponent metadata.
             _any_has_opponent_ar = any(r.get("opponent") for r in _raw_ar)
             if _games_loaded and _any_has_opponent_ar:
                 _raw_ar = [r for r in _raw_ar if r.get("opponent", "")]

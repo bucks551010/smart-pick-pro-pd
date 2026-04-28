@@ -4031,8 +4031,8 @@ html, body, .stApp, .stApp * {
     }
     .ag-section { padding-left: 10px; padding-right: 10px; }
     .ag-full-bleed .ag-section { padding-left: 10px; padding-right: 10px; }
-    .ag-hero h1 .hero-l1 { font-size: 2.4rem; }
-    .ag-hero h1 .hero-l2 { font-size: 1.5rem; }
+    .ag-hero h1 .hero-l1 { font-size: 4.4rem; }
+    .ag-hero h1 .hero-l2 { font-size: 8.5rem; }
     .ag-hero-its-us { font-size: 2.1rem; letter-spacing: 0.08em; }
     .ag-hero p { font-size: 0.78rem; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 1.2rem; }

@@ -919,6 +919,10 @@ def _pg_initialize_database() -> bool:
             "CREATE INDEX IF NOT EXISTS idx_bets_user_email ON bets (user_email)",
             "CREATE INDEX IF NOT EXISTS idx_entries_user_email ON entries (user_email)",
             "CREATE INDEX IF NOT EXISTS idx_leb_user ON live_entry_bucket (user_email)",
+            # Bet-lock columns: freeze selected picks 2h before first game
+            "ALTER TABLE analysis_sessions ADD COLUMN IF NOT EXISTS first_game_time_utc TEXT",
+            "ALTER TABLE analysis_sessions ADD COLUMN IF NOT EXISTS locked_picks_json TEXT",
+            "ALTER TABLE analysis_sessions ADD COLUMN IF NOT EXISTS bets_locked_at TEXT",
         ]
         for _alter in _PG_ALTERS:
             try:
@@ -1417,6 +1421,17 @@ def initialize_database():
                     cursor.execute(_ue_alter)
                 except sqlite3.OperationalError:
                     pass  # column already exists
+
+            # Bet-lock columns on analysis_sessions
+            for _bl_col in (
+                "ALTER TABLE analysis_sessions ADD COLUMN first_game_time_utc TEXT",
+                "ALTER TABLE analysis_sessions ADD COLUMN locked_picks_json TEXT",
+                "ALTER TABLE analysis_sessions ADD COLUMN bets_locked_at TEXT",
+            ):
+                try:
+                    cursor.execute(_bl_col)
+                except sqlite3.OperationalError:
+                    pass  # Column already exists
 
             # Indexes for fast per-user filtering
             for _idx_sql in (
@@ -3983,6 +3998,7 @@ def save_analysis_session(analysis_results, todays_games=None, selected_picks=No
         _games_json = json.dumps(todays_games or [], default=str)
         _picks_json = json.dumps(selected_picks or [], default=str)
         _prop_count = len(analysis_results)
+        _first_game_utc = _extract_first_game_utc(todays_games or [])
         if _DATABASE_URL:
             # PG path: use RETURNING to get the new session_id
             conn = None
@@ -3992,10 +4008,10 @@ def save_analysis_session(analysis_results, todays_games=None, selected_picks=No
                 cur.execute(
                     """INSERT INTO analysis_sessions
                        (analysis_timestamp, analysis_results_json, todays_games_json,
-                        selected_picks_json, prop_count)
-                       VALUES (%s, %s, %s, %s, %s)
+                        selected_picks_json, prop_count, first_game_time_utc)
+                       VALUES (%s, %s, %s, %s, %s, %s)
                        RETURNING session_id""",
-                    (_ts, _results_json, _games_json, _picks_json, _prop_count),
+                    (_ts, _results_json, _games_json, _picks_json, _prop_count, _first_game_utc or None),
                 )
                 row = cur.fetchone()
                 conn.commit()
@@ -4015,9 +4031,9 @@ def save_analysis_session(analysis_results, todays_games=None, selected_picks=No
         cursor = _db_write(
             """INSERT INTO analysis_sessions
                (analysis_timestamp, analysis_results_json, todays_games_json,
-                selected_picks_json, prop_count)
-               VALUES (?, ?, ?, ?, ?)""",
-            (_ts, _results_json, _games_json, _picks_json, _prop_count),
+                selected_picks_json, prop_count, first_game_time_utc)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (_ts, _results_json, _games_json, _picks_json, _prop_count, _first_game_utc or None),
             caller="save_analysis_session",
         )
         if cursor is None:
@@ -4031,6 +4047,68 @@ def save_analysis_session(analysis_results, todays_games=None, selected_picks=No
         return -1
 
 
+def _extract_first_game_utc(todays_games: list) -> str:
+    """Parse the earliest game start time from a games list and return it as a UTC ISO string.
+
+    Games carry ``game_time_et`` display strings like ``'7:30 PM ET'``.  We combine
+    the current NBA date with that time to get an aware UTC datetime.  Returns an
+    empty string when no parseable game time is found.
+    """
+    import re as _re
+    try:
+        from zoneinfo import ZoneInfo as _ZI
+    except ImportError:
+        try:
+            from backports.zoneinfo import ZoneInfo as _ZI  # type: ignore
+        except ImportError:
+            return ""
+    _ET = _ZI("America/New_York")
+    _earliest = None
+    _today_str = _nba_today_iso()  # e.g. "2026-04-27"
+    try:
+        _base_date = datetime.date.fromisoformat(_today_str)
+    except Exception:
+        return ""
+    for _g in (todays_games or []):
+        # Try ISO UTC timestamp first (most precise)
+        for _field in ("gameTimeUTC", "game_time_utc", "start_time_utc"):
+            _raw = _g.get(_field, "")
+            if _raw:
+                try:
+                    _dt = datetime.datetime.fromisoformat(str(_raw).rstrip("Z"))
+                    if _dt.tzinfo is None:
+                        _dt = _dt.replace(tzinfo=datetime.timezone.utc)
+                    else:
+                        _dt = _dt.astimezone(datetime.timezone.utc)
+                    if _earliest is None or _dt < _earliest:
+                        _earliest = _dt
+                    break
+                except Exception:
+                    pass
+        # Fall back to display string like "7:30 PM ET"
+        _disp = str(_g.get("game_time_et", "") or _g.get("game_time", "") or "").strip()
+        _m = _re.match(r"(\d{1,2}):(\d{2})\s*(AM|PM)", _disp, _re.IGNORECASE)
+        if _m:
+            try:
+                _h, _mn, _ap = int(_m.group(1)), int(_m.group(2)), _m.group(3).upper()
+                if _ap == "PM" and _h != 12:
+                    _h += 12
+                elif _ap == "AM" and _h == 12:
+                    _h = 0
+                _dt_et = datetime.datetime.combine(
+                    _base_date, datetime.time(_h, _mn),
+                    tzinfo=_ET,
+                )
+                _dt_utc = _dt_et.astimezone(datetime.timezone.utc)
+                if _earliest is None or _dt_utc < _earliest:
+                    _earliest = _dt_utc
+            except Exception:
+                pass
+    if _earliest is None:
+        return ""
+    return _earliest.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+
+
 def load_latest_analysis_session():
     """
     Load the most recently saved Neural Analysis session from SQLite.
@@ -4038,7 +4116,7 @@ def load_latest_analysis_session():
     Returns:
         dict|None: Session dict with keys:
             'analysis_timestamp', 'analysis_results', 'todays_games', 'selected_picks',
-            'prop_count', 'created_at'
+            'prop_count', 'created_at', 'bets_locked' (bool), 'bets_locked_at' (str|None)
         Returns None if no session found or on error.
     """
     try:
@@ -4097,6 +4175,64 @@ def load_latest_analysis_session():
         # The session is the source of truth — if the slate worker stored these
         # picks, show them until either (a) the 36-hour age guard above fires, or
         # (b) the slate worker writes a new session_id for the next game day.
+
+        # -- Bet-lock logic --------------------------------------------------
+        # Bets are locked 2 hours before the first game.  Once locked, the
+        # selected_picks in this session are frozen — new sessions can still
+        # be written with fresh analysis_results, but the locked picks stay put.
+        _bets_locked_at = row_dict.get("bets_locked_at") or ""
+        _locked_picks_json_raw = row_dict.get("locked_picks_json") or ""
+        _first_game_utc = row_dict.get("first_game_time_utc") or ""
+        import datetime as _dt_lock
+        _now_lock = _dt_lock.datetime.now(_dt_lock.timezone.utc)
+
+        if _bets_locked_at:
+            # Already locked — serve frozen picks regardless of selected_picks_json
+            if _locked_picks_json_raw:
+                try:
+                    row_dict["selected_picks"] = json.loads(_locked_picks_json_raw)
+                except Exception:
+                    pass
+            row_dict["bets_locked"] = True
+        elif _first_game_utc:
+            # Not yet locked — check if we're within the 2-hour window
+            try:
+                _fgt = _dt_lock.datetime.fromisoformat(_first_game_utc.rstrip("Z"))
+                if _fgt.tzinfo is None:
+                    _fgt = _fgt.replace(tzinfo=_dt_lock.timezone.utc)
+                _lock_trigger = _fgt - _dt_lock.timedelta(hours=2)
+                if _now_lock >= _lock_trigger:
+                    # Lock time reached — freeze current selected_picks now
+                    _lock_ts = _now_lock.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+                    _picks_to_lock = row_dict.get("selected_picks", [])
+                    _picks_json_for_lock = json.dumps(_picks_to_lock, default=str)
+                    _sid = row_dict.get("session_id")
+                    try:
+                        _db_write(
+                            "UPDATE analysis_sessions "
+                            "SET locked_picks_json = ?, bets_locked_at = ? "
+                            "WHERE session_id = ?",
+                            (_picks_json_for_lock, _lock_ts, _sid),
+                            caller="bet_lock",
+                        )
+                        _logger.info(
+                            "Bet lock applied for session %s — %d picks locked at %s "
+                            "(first game %s)",
+                            _sid, len(_picks_to_lock), _lock_ts, _first_game_utc,
+                        )
+                    except Exception as _lock_err:
+                        _logger.debug("bet_lock write error (non-fatal): %s", _lock_err)
+                    row_dict["bets_locked"] = True
+                    row_dict["bets_locked_at"] = _lock_ts
+                else:
+                    row_dict["bets_locked"] = False
+                    row_dict["bets_locked_at"] = None
+            except Exception:
+                row_dict["bets_locked"] = False
+                row_dict["bets_locked_at"] = None
+        else:
+            row_dict["bets_locked"] = False
+            row_dict["bets_locked_at"] = None
 
         return row_dict
     except Exception as _err:

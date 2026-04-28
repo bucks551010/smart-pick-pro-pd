@@ -4706,7 +4706,7 @@ def _render_auth_portal(mode: str, logo_b64: str) -> None:
 
 /* ── Narrow centred layout ─────────────────────────────────────── */
 .stApp > [data-testid="stAppViewContainer"] > section.main .block-container {
-  padding: 20px 0 60px !important;
+  padding: 8px 0 40px !important;
   max-width: 520px !important;
   margin: 0 auto !important;
   position: relative;
@@ -4824,13 +4824,13 @@ def _render_auth_portal(mode: str, logo_b64: str) -> None:
   font-weight: 900;
   letter-spacing: -0.04em;
 }
-.ap-brand-smart { font-size: 1.8rem; color: #fff; }
-.ap-brand-pick  { font-size: 2.1rem;
+.ap-brand-smart { font-size: 1.35rem; color: #fff; }
+.ap-brand-pick  { font-size: 1.6rem;
   background: linear-gradient(135deg, #00e87a, #00c4ff);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text; }
-.ap-brand-pro   { font-size: 1.8rem; color: #fff; }
-.ap-brand-ai    { font-size: 0.95rem; color: rgba(0,232,122,0.7);
+.ap-brand-pro   { font-size: 1.35rem; color: #fff; }
+.ap-brand-ai    { font-size: 0.72rem; color: rgba(0,232,122,0.7);
   font-family: 'JetBrains Mono', monospace; font-weight: 700;
   letter-spacing: 0.08em; vertical-align: super; margin-left: 3px; }
 
@@ -4855,8 +4855,8 @@ def _render_auth_portal(mode: str, logo_b64: str) -> None:
 
     logo_html = (
         f'<img src="data:image/png;base64,{logo_b64}" '
-        'style="width:200px;height:200px;object-fit:contain;'
-        'filter:drop-shadow(0 0 32px rgba(0,232,122,0.40)) drop-shadow(0 0 8px rgba(0,196,255,0.25));'
+        'style="width:110px;height:110px;object-fit:contain;'
+        'filter:drop-shadow(0 0 22px rgba(0,232,122,0.40)) drop-shadow(0 0 6px rgba(0,196,255,0.25));'
         'animation:agLogoGlow 4s ease-in-out infinite;" alt="Smart Pick Pro">'
         if logo_b64
         else '<span style="font-size:3.5rem">&#x1F3AF;</span>'
@@ -4870,30 +4870,30 @@ def _render_auth_portal(mode: str, logo_b64: str) -> None:
 
     # Portal header: back link → logo → brand wordmark → headline → sub-text
     st.markdown(f"""
-<div style="text-align:center;padding-top:48px;margin-bottom:24px;">
-  <div style="margin-bottom:22px;">
+<div style="text-align:center;padding-top:16px;margin-bottom:14px;">
+  <div style="margin-bottom:10px;">
     <a href="."
        style="display:inline-flex;align-items:center;gap:6px;
-              font-family:'JetBrains Mono',monospace;font-size:0.72rem;font-weight:700;
+              font-family:'JetBrains Mono',monospace;font-size:0.68rem;font-weight:700;
               color:rgba(255,255,255,0.28);text-decoration:none;
               border:1px solid rgba(0,232,122,0.12);border-radius:100px;
-              padding:6px 18px;background:rgba(0,232,122,0.04);
+              padding:4px 14px;background:rgba(0,232,122,0.04);
               letter-spacing:0.08em;text-transform:uppercase;
               transition:all 0.2s;">
       &#x2190; Back to Home
     </a>
   </div>
   {logo_html}
-  <div class="ap-brand-row">
+  <div class="ap-brand-row" style="margin-top:6px;">
     <span class="ap-brand-smart">Smart</span>
     <span class="ap-brand-pick">Picks</span>
     <span class="ap-brand-pro">Pro</span>
     <span class="ap-brand-ai">AI</span>
   </div>
-  <div style="font-family:'Space Grotesk',sans-serif;font-size:clamp(1.1rem,3.5vw,1.65rem);
-              font-weight:900;color:#fff;letter-spacing:-0.02em;margin-top:22px;
+  <div style="font-family:'Space Grotesk',sans-serif;font-size:clamp(0.95rem,3vw,1.35rem);
+              font-weight:900;color:#fff;letter-spacing:-0.02em;margin-top:10px;
               text-transform:uppercase;line-height:1.2;">{headline}</div>
-  <div class="ap-sub-mono" style="margin-top:10px;max-width:420px;display:inline-block;
+  <div class="ap-sub-mono" style="margin-top:6px;max-width:420px;display:inline-block;
               text-align:center;">
     <span class="ap-live-dot"></span>{sub}
   </div>

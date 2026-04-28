@@ -1648,7 +1648,12 @@ _GATE_CSS = r"""
 [data-testid="stSidebar"],
 header[data-testid="stHeader"],
 [data-testid="stDecoration"],
+[data-testid="stToolbar"],
+[data-testid="stStatusWidget"],
+[data-testid="stConnectionStatus"],
 .stDeployButton,
+a[href*="streamlit.io"],
+a[href*="share.streamlit"],
 footer { display: none !important; }
 [data-testid="stAppViewContainer"] { padding-top: 0 !important; }
 
@@ -5258,7 +5263,13 @@ def render_subscription_success_page(plan_name: str = "Smart Pick Pro") -> bool:
 [data-testid="stSidebar"],
 header[data-testid="stHeader"],
 [data-testid="stDecoration"],
-.stDeployButton, footer {{ display:none!important; }}
+[data-testid="stToolbar"],
+[data-testid="stStatusWidget"],
+[data-testid="stConnectionStatus"],
+.stDeployButton,
+a[href*="streamlit.io"],
+a[href*="share.streamlit"],
+footer {{ display:none!important; }}
 [data-testid="stAppViewContainer"] > div:first-child {{ padding:0!important; }}
 
 /* ── Animations ── */

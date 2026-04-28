@@ -28,6 +28,7 @@ gatherUsageStats = false
 serverAddress = "localhost"
 
 [ui]
-# hideTopBar must be false so the sidebar toggle (hamburger) button
-# remains accessible on mobile after closing the sidebar.
-hideTopBar = false
+# hideTopBar = true removes the Streamlit toolbar (running indicator, deploy
+# button, main menu) at the server level — before any CSS even loads.
+# The sidebar hamburger on mobile is managed entirely by our own CSS/JS.
+hideTopBar = true

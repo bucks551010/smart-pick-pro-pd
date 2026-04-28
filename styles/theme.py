@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: styles/theme.py
 # PURPOSE: All CSS/HTML generators for the SmartBetPro NBA UI.
 #          Provides a futuristic "AI Neural Network Lab" bright
@@ -391,9 +391,15 @@ def get_global_css():
 @keyframes freshness-pulse-red    { 0%,100%{ box-shadow:0 0 0 0 rgba(242,67,54,0.6); } 50%{ box-shadow:0 0 0 5px rgba(242,67,54,0); } }
 
 /* â”€â”€ Streamlit Chrome Reset â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-#MainMenu { visibility: hidden !important; }
-footer    { display: none !important; }
-.stDeployButton { display: none !important; }
+#MainMenu,
+footer,
+.stDeployButton,
+[data-testid="stToolbar"],
+[data-testid="stStatusWidget"],
+[data-testid="stDecoration"],
+[data-testid="stConnectionStatus"],
+a[href*="streamlit.io"],
+a[href*="share.streamlit"] { display: none !important; }
 .block-container { padding-top: 1rem !important; }
 
 /* â"€â"€ Hide home/login from sidebar nav (utility pages, not app sections) â"€â"€ */
@@ -12960,3 +12966,4 @@ div[data-testid="stForm"] .stFormSubmitButton > button:hover {
   .spp-footer-rule::after { max-width: 56px; }
 }
 </style>"""
+

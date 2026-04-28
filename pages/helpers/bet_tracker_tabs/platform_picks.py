@@ -20,13 +20,13 @@ def render(platform_selections, player_search, date_range, direction_filter):
     )
 
     _col1, _col2 = st.columns([2, 5])
-    st.session_state.setdefault("ai_picks_scope", "Last 7 Days")
+    st.session_state.setdefault("ai_picks_scope", "Today")
     with _col1:
         _ai_scope = st.selectbox(
             "Platform Picks Scope",
             ["Today", "Last 7 Days", "Last 30 Days", "All Time"],
             key="ai_picks_scope",
-            help="Date window for Smart Pick Pro auto-logged picks.",
+            help="Date window for Smart Pick Pro auto-logged picks. Defaults to today's Platform AI Picks from QAM.",
         )
     with _col2:
         st.caption("Platform Picks uses strict Smart Pick Pro source tagging to avoid mixing Joseph/manual bets.")

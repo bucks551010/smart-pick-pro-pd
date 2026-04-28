@@ -109,81 +109,81 @@ def render(platform_selections, player_search, date_range, direction_filter):
 
     st.divider()
 
-    # ── Resolve / Re-check by Date ────────────────────────────
-    st.markdown("### 🗓️ Resolve / Re-check Picks by Date")
-    st.caption("Select a past night to view its picks and re-verify results.")
-    _rbd_dates = get_analysis_pick_dates(days=30)
-    _rbd_today = tracker_today_iso()
-    if _rbd_today not in _rbd_dates:
-        if load_analysis_picks_for_date(_rbd_today) or st.session_state.get("analysis_results"):
-            _rbd_dates = [_rbd_today] + _rbd_dates
-    if not _rbd_dates:
-        from utils.components import render_empty_state
-        render_empty_state(
-            "📋", "No Pick History Yet",
-            "Your daily pick history (last 30 days) will appear here after running Neural Analysis.",
-            "💡 Load tonight's slate → Run Analysis → picks are saved automatically.",
-        )
-    else:
-        _rbd_sel = st.selectbox("📅 Select date", _rbd_dates, index=0, key="rbd_date_selectbox")
-
-        # Only show bets from the Railway bets table for this date
-        from tracking.database import load_bets_page as _load_bets_page
-        _rbd_ue = st.session_state.get("_bet_tracker_user_email") or None
-        _rbd_bets = _load_bets_page(
-            start_date=_rbd_sel, end_date=_rbd_sel,
-            exclude_linked=False, limit=500,
-            user_email=_rbd_ue,
-        )
-
-        if not _rbd_bets:
-            st.info(f"No bets logged for {_rbd_sel}.")
-        else:
-            _bw = sum(1 for b in _rbd_bets if b.get("result") == "WIN")
-            _bl = sum(1 for b in _rbd_bets if b.get("result") == "LOSS")
-            _bp = sum(1 for b in _rbd_bets if not b.get("result"))
-            _br_count = _bw + _bl
-            st.markdown(
-                f"**{len(_rbd_bets)} bet(s)** for {_rbd_sel}"
-                + (f" · **{_bw / max(_br_count, 1) * 100:.0f}% win rate**" if _br_count > 0 else "")
-                + f"  \n✅ {_bw} WIN · ❌ {_bl} LOSS · ⏳ {_bp} Pending"
+    # ── Resolve / Re-check by Date (collapsed — use main "Check Results" for quick access) ──
+    with st.expander("🗓️ Resolve / Re-check Picks by Date", expanded=False):
+        st.caption("Select a past night to view its picks and re-verify results.")
+        _rbd_dates = get_analysis_pick_dates(days=30)
+        _rbd_today = tracker_today_iso()
+        if _rbd_today not in _rbd_dates:
+            if load_analysis_picks_for_date(_rbd_today) or st.session_state.get("analysis_results"):
+                _rbd_dates = [_rbd_today] + _rbd_dates
+        if not _rbd_dates:
+            from utils.components import render_empty_state
+            render_empty_state(
+                "📋", "No Pick History Yet",
+                "Your daily pick history (last 30 days) will appear here after running Neural Analysis.",
+                "💡 Load tonight's slate → Run Analysis → picks are saved automatically.",
             )
-            _bet_rows = []
-            for _b in _rbd_bets:
-                _actual = _b.get("actual_value")
-                _bet_rows.append({
-                    "Player": _b.get("player_name", "—"),
-                    "Stat": _b.get("stat_type", "—"),
-                    "Line": _b.get("prop_line", "—"),
-                    "Dir": _b.get("direction", "—"),
-                    "Actual": f"{_actual:.1f}" if _actual is not None else "—",
-                    "Result": {"WIN": "✅ WIN", "LOSS": "❌ LOSS", "EVEN": "🔄 EVEN"}.get(
-                        _b.get("result") or "", "⏳ Pending"),
-                    "Tier": _b.get("tier", "—"),
-                    "Platform": _b.get("platform", "—"),
-                })
-            st.dataframe(_bet_rows, use_container_width=True, hide_index=True)
+        else:
+            _rbd_sel = st.selectbox("📅 Select date", _rbd_dates, index=0, key="rbd_date_selectbox")
 
-            if st.button(f"🔄 Resolve / Re-check {_rbd_sel}", key="rbd_resolve_btn", type="primary"):
-                _loader = joseph_loading_placeholder(f"Resolving bets for {_rbd_sel}") if JOSEPH_LOADING_AVAILABLE else None
-                try:
-                    _bc, _be = auto_resolve_bet_results(date_str=_rbd_sel)
-                    if _loader:
-                        _loader.empty()
-                    if _bc > 0:
-                        st.success(f"✅ Resolved **{_bc}** bet(s) for {_rbd_sel}.")
-                        reload_bets()
-                        st.rerun()
-                    else:
-                        st.warning(f"⚠️ No bets resolved for {_rbd_sel}.")
-                    if _be:
-                        with st.expander(f"⚠️ {len(_be)} error(s)"):
-                            for _e in _be:
-                                st.caption(_e)
-                except Exception as _exc:
-                    if _loader:
-                        _loader.empty()
-                    st.error(f"❌ Resolution failed: {_exc}")
+            # Only show bets from the Railway bets table for this date
+            from tracking.database import load_bets_page as _load_bets_page
+            _rbd_ue = st.session_state.get("_bet_tracker_user_email") or None
+            _rbd_bets = _load_bets_page(
+                start_date=_rbd_sel, end_date=_rbd_sel,
+                exclude_linked=False, limit=500,
+                user_email=_rbd_ue,
+            )
+
+            if not _rbd_bets:
+                st.info(f"No bets logged for {_rbd_sel}.")
+            else:
+                _bw = sum(1 for b in _rbd_bets if b.get("result") == "WIN")
+                _bl = sum(1 for b in _rbd_bets if b.get("result") == "LOSS")
+                _bp = sum(1 for b in _rbd_bets if not b.get("result"))
+                _br_count = _bw + _bl
+                st.markdown(
+                    f"**{len(_rbd_bets)} bet(s)** for {_rbd_sel}"
+                    + (f" · **{_bw / max(_br_count, 1) * 100:.0f}% win rate**" if _br_count > 0 else "")
+                    + f"  \n✅ {_bw} WIN · ❌ {_bl} LOSS · ⏳ {_bp} Pending"
+                )
+                _bet_rows = []
+                for _b in _rbd_bets:
+                    _actual = _b.get("actual_value")
+                    _bet_rows.append({
+                        "Player": _b.get("player_name", "—"),
+                        "Stat": _b.get("stat_type", "—"),
+                        "Line": _b.get("prop_line", "—"),
+                        "Dir": _b.get("direction", "—"),
+                        "Actual": f"{_actual:.1f}" if _actual is not None else "—",
+                        "Result": {"WIN": "✅ WIN", "LOSS": "❌ LOSS", "EVEN": "🔄 EVEN"}.get(
+                            _b.get("result") or "", "⏳ Pending"),
+                        "Tier": _b.get("tier", "—"),
+                        "Platform": _b.get("platform", "—"),
+                    })
+                st.dataframe(_bet_rows, use_container_width=True, hide_index=True)
+
+                if st.button(f"🔄 Resolve / Re-check {_rbd_sel}", key="rbd_resolve_btn", type="primary"):
+                    _loader = joseph_loading_placeholder(f"Resolving bets for {_rbd_sel}") if JOSEPH_LOADING_AVAILABLE else None
+                    try:
+                        _bc, _be = auto_resolve_bet_results(date_str=_rbd_sel)
+                        if _loader:
+                            _loader.empty()
+                        if _bc > 0:
+                            st.success(f"✅ Resolved **{_bc}** bet(s) for {_rbd_sel}.")
+                            reload_bets()
+                            st.rerun()
+                        else:
+                            st.warning(f"⚠️ No bets resolved for {_rbd_sel}.")
+                        if _be:
+                            with st.expander(f"⚠️ {len(_be)} error(s)"):
+                                for _e in _be:
+                                    st.caption(_e)
+                    except Exception as _exc:
+                        if _loader:
+                            _loader.empty()
+                        st.error(f"❌ Resolution failed: {_exc}")
 
     st.divider()
 

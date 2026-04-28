@@ -92,8 +92,19 @@ def _get_eastern_tz():
 
 
 def _nba_today_et():
-    """Return today's date anchored to US/Eastern time."""
-    return datetime.datetime.now(_get_eastern_tz()).date()
+    """Return the current NBA 'sports day' anchored to Eastern Time.
+
+    The sports day boundary is 4:00 AM ET (not midnight). Between
+    12:00 AM and 3:59 AM ET the running slate is still attributed to
+    the *previous* calendar day, matching how sportsbooks treat
+    West-Coast games that finish at 1–2 AM ET. This must match
+    ``tracking.database._nba_today_iso`` so bet_date filters align
+    with slate/analysis dates.
+    """
+    now_et = datetime.datetime.now(_get_eastern_tz())
+    if now_et.hour < 4:
+        now_et = now_et - datetime.timedelta(days=1)
+    return now_et.date()
 
 
 # Ordered list of date formats returned by upstream APIs.

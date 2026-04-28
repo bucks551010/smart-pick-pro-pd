@@ -4042,35 +4042,43 @@ def load_latest_analysis_session():
         Returns None if no session found or on error.
     """
     try:
+        # Fetch the 10 most recent sessions and pick the most complete one
+        # within the 36-hour window.  This prevents a low-prop-count slate-worker
+        # run (e.g. 167 picks) from overriding a full backfilled session (537 picks)
+        # simply because it has a higher session_id.
         rows = _db_read(
-            "SELECT * FROM analysis_sessions ORDER BY session_id DESC LIMIT 1"
+            "SELECT * FROM analysis_sessions ORDER BY session_id DESC LIMIT 10"
         )
         if not rows:
             return None
-        row_dict = rows[0]
-        # Date guard: if the session is from a prior sports day, return None.
-        # The QAM page falls back to get_slate_picks_for_today() when this
-        # returns None, which has a hard pick_date = today filter.
-        _session_ts = row_dict.get("analysis_timestamp", "")
-        if _session_ts:
+
+        import datetime as _dt_guard
+        _now_utc = _dt_guard.datetime.now(_dt_guard.timezone.utc)
+        _best_row = None
+        _best_count = -1
+
+        for _candidate in rows:
+            _session_ts = _candidate.get("analysis_timestamp", "")
+            if not _session_ts:
+                continue
             try:
-                # Keep picks until a new slate is generated (36-hour window).
-                # This lets picks persist across midnight and into the next morning
-                # until the slate worker writes a new session for the next game day.
-                import datetime as _dt_guard
                 _saved_at = _dt_guard.datetime.fromisoformat(_session_ts.rstrip("Z"))
                 if _saved_at.tzinfo is None:
                     _saved_at = _saved_at.replace(tzinfo=_dt_guard.timezone.utc)
-                _age_hours = (_dt_guard.datetime.now(_dt_guard.timezone.utc) - _saved_at).total_seconds() / 3600
+                _age_hours = (_now_utc - _saved_at).total_seconds() / 3600
                 if _age_hours > 36:
-                    _logger.debug(
-                        "load_latest_analysis_session: session %s is %.1f h old (>36h) \u2014 skipping",
-                        row_dict.get("session_id"),
-                        _age_hours,
-                    )
-                    return None
+                    continue  # too old
+                _cnt = _candidate.get("prop_count") or 0
+                if _cnt > _best_count:
+                    _best_count = _cnt
+                    _best_row = _candidate
             except Exception:
-                pass  # If date parse fails, still return the session
+                continue
+
+        if _best_row is None:
+            return None
+
+        row_dict = _best_row
         # Deserialize JSON blobs
         try:
             row_dict["analysis_results"] = json.loads(row_dict.get("analysis_results_json") or "[]")

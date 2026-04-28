@@ -4198,7 +4198,7 @@ def _render_login_form() -> None:
     with st.form("login_form", clear_on_submit=False):
         li_email = st.text_input("Email Address", placeholder="you@example.com", key="_li_email")
         li_pw = st.text_input("Password", type="password", placeholder="Enter your password", key="_li_pw")
-        li_submit = st.form_submit_button("\U0001F513 Log In", use_container_width=True, type="primary")
+        li_submit = st.form_submit_button("\U0001F513 Authenticate \u0026 Enter Terminal", use_container_width=True, type="primary")
 
     if li_submit:
         # CWE-20 / CWE-79 / CWE-89: sanitize email at login boundary
@@ -4549,7 +4549,7 @@ def _render_login_form() -> None:
     with st.form("login_form", clear_on_submit=False):
         li_email = st.text_input("Email Address", placeholder="you@example.com", key="_li_email")
         li_pw = st.text_input("Password", type="password", placeholder="Enter your password", key="_li_pw")
-        li_submit = st.form_submit_button("\U0001F513 Log In", use_container_width=True, type="primary")
+        li_submit = st.form_submit_button("\U0001F513 Authenticate \u0026 Enter Terminal", use_container_width=True, type="primary")
 
     if li_submit:
         # CWE-20 / CWE-79 / CWE-89: sanitize email at login boundary
@@ -4679,27 +4679,184 @@ def _render_auth_portal(mode: str, logo_b64: str) -> None:
     """
     other_mode  = "login" if mode == "signup" else "signup"
     other_label = "Log In" if mode == "signup" else "Sign Up Free"
-    switch_msg  = "Already have an account?" if mode == "signup" else "Don't have an account?"
-    headline    = "Create Account" if mode == "signup" else "Welcome Back"
+    switch_msg  = "Already have an account?" if mode == "signup" else "No account? Form your Five Pillar strategy."
+    switch_cta  = "Log In" if mode == "signup" else "Sign Up Free"
+    headline    = "Create Account" if mode == "signup" else "ACCESS YOUR STRATEGY TERMINAL"
     sub         = (
         "Free forever &mdash; no credit card required."
         if mode == "signup"
-        else "Log in to your AI picks dashboard."
+        else "Access your personalized quantitative analyses and metaphysical-aligned sports strategies."
     )
 
-    # Narrow centred layout — overrides the default block-container width
-    st.markdown("""<style>
+    # ── Portal-specific CSS: glassmorphism card, vignette, neon glow, monospace ──
+    st.markdown("""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ── Deep Space Vignette ───────────────────────────────────────── */
+.stApp::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 44%, transparent 28%, rgba(0,0,0,0.72) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Narrow centred layout ─────────────────────────────────────── */
 .stApp > [data-testid="stAppViewContainer"] > section.main .block-container {
-    padding: 20px 0 60px !important;
-    max-width: 500px !important;
-    margin: 0 auto !important;
+  padding: 20px 0 60px !important;
+  max-width: 520px !important;
+  margin: 0 auto !important;
+  position: relative;
+  z-index: 1;
 }
 [data-testid="stTabs"] { max-width: 100% !important; }
-</style>""", unsafe_allow_html=True)
+
+/* ── Glassmorphism form card ───────────────────────────────────── */
+[data-testid="stForm"] {
+  background: rgba(8, 14, 22, 0.72) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  border: 1px solid rgba(0, 232, 122, 0.18) !important;
+  border-radius: 18px !important;
+  padding: 28px 24px !important;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 48px rgba(0, 232, 122, 0.07), inset 0 0 80px rgba(0,0,0,0.3) !important;
+  animation: apCardGlow 4s ease-in-out infinite !important;
+}
+[data-testid="stForm"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,232,122,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,232,122,0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  border-radius: 18px;
+}
+
+/* ── Card glow pulse ───────────────────────────────────────────── */
+@keyframes apCardGlow {
+  0%, 100% { box-shadow: 0 0 40px rgba(0,232,122,0.07), inset 0 0 80px rgba(0,0,0,0.3); border-color: rgba(0,232,122,0.18); }
+  50%       { box-shadow: 0 0 72px rgba(0,232,122,0.18), inset 0 0 80px rgba(0,0,0,0.3); border-color: rgba(0,232,122,0.36); }
+}
+
+/* ── Input fields: circuit texture + neon focus glow ──────────── */
+[data-testid="stTextInput"] input {
+  background: rgba(5, 10, 18, 0.85) !important;
+  border: 1px solid rgba(0,232,122,0.15) !important;
+  border-radius: 10px !important;
+  color: #e8f5e9 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.88rem !important;
+  letter-spacing: 0.03em !important;
+  transition: box-shadow 0.25s, border-color 0.25s !important;
+  caret-color: #00e87a !important;
+}
+[data-testid="stTextInput"] input:focus {
+  box-shadow: 0 0 0 2px rgba(0,232,122,0.30), 0 0 18px rgba(0,232,122,0.18) !important;
+  border-color: rgba(0,232,122,0.55) !important;
+  outline: none !important;
+}
+[data-testid="stTextInput"] label {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: rgba(0,232,122,0.65) !important;
+}
+
+/* ── Primary button: neon green + circuit pulse ────────────────── */
+[data-testid="stFormSubmitButton"] > button[kind="primaryFormSubmit"],
+[data-testid="stFormSubmitButton"] > button[data-testid="baseButton-primaryFormSubmit"] {
+  background: linear-gradient(135deg, #00e87a 0%, #00c462 60%, #00a050 100%) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  color: #000 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  box-shadow: 0 0 18px rgba(0,232,122,0.45), 0 0 48px rgba(0,232,122,0.18) !important;
+  animation: apBtnGlow 3s ease-in-out infinite !important;
+  position: relative;
+  overflow: hidden;
+}
+[data-testid="stFormSubmitButton"] > button[kind="primaryFormSubmit"]::after,
+[data-testid="stFormSubmitButton"] > button[data-testid="baseButton-primaryFormSubmit"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,0,0,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.07) 1px, transparent 1px);
+  background-size: 14px 14px;
+  pointer-events: none;
+}
+@keyframes apBtnGlow {
+  0%, 100% { box-shadow: 0 0 18px rgba(0,232,122,0.45), 0 0 48px rgba(0,232,122,0.18); }
+  50%       { box-shadow: 0 0 32px rgba(0,232,122,0.75), 0 0 80px rgba(0,232,122,0.30); }
+}
+
+/* ── Subtext: monospace terminal font ─────────────────────────── */
+.ap-sub-mono {
+  font-family: 'JetBrains Mono', 'Space Mono', monospace;
+  font-size: 0.78rem;
+  color: rgba(0,232,122,0.55);
+  letter-spacing: 0.04em;
+  line-height: 1.7;
+}
+
+/* ── Brand wordmark prominence ─────────────────────────────────── */
+.ap-brand-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0;
+  margin-top: 12px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+.ap-brand-smart { font-size: 1.8rem; color: #fff; }
+.ap-brand-pick  { font-size: 2.1rem;
+  background: linear-gradient(135deg, #00e87a, #00c4ff);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; }
+.ap-brand-pro   { font-size: 1.8rem; color: #fff; }
+.ap-brand-ai    { font-size: 0.95rem; color: rgba(0,232,122,0.7);
+  font-family: 'JetBrains Mono', monospace; font-weight: 700;
+  letter-spacing: 0.08em; vertical-align: super; margin-left: 3px; }
+
+/* ── Live indicator dot ────────────────────────────────────────── */
+.ap-live-dot {
+  display: inline-block; width: 7px; height: 7px;
+  background: #00e87a; border-radius: 50%;
+  box-shadow: 0 0 8px rgba(0,232,122,0.9);
+  animation: agDotPulse 1.6s ease-in-out infinite;
+  margin-right: 6px; vertical-align: middle;
+}
+
+@media (max-width: 600px) {
+  .ap-brand-smart { font-size: 1.4rem; }
+  .ap-brand-pick  { font-size: 1.65rem; }
+  .ap-brand-pro   { font-size: 1.4rem; }
+  .ap-brand-ai    { font-size: 0.75rem; }
+  [data-testid="stForm"] { padding: 20px 14px !important; }
+}
+</style>
+""", unsafe_allow_html=True)
 
     logo_html = (
         f'<img src="data:image/png;base64,{logo_b64}" '
-        'style="width:360px;height:360px;object-fit:contain;'
+        'style="width:200px;height:200px;object-fit:contain;'
+        'filter:drop-shadow(0 0 32px rgba(0,232,122,0.40)) drop-shadow(0 0 8px rgba(0,196,255,0.25));'
         'animation:agLogoGlow 4s ease-in-out infinite;" alt="Smart Pick Pro">'
         if logo_b64
         else '<span style="font-size:3.5rem">&#x1F3AF;</span>'
@@ -4713,30 +4870,33 @@ def _render_auth_portal(mode: str, logo_b64: str) -> None:
 
     # Portal header: back link → logo → brand wordmark → headline → sub-text
     st.markdown(f"""
-<div style="text-align:center;padding-top:56px;margin-bottom:28px;">
-  <div style="margin-bottom:28px;">
+<div style="text-align:center;padding-top:48px;margin-bottom:24px;">
+  <div style="margin-bottom:22px;">
     <a href="."
        style="display:inline-flex;align-items:center;gap:6px;
-              font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:600;
-              color:rgba(255,255,255,0.3);text-decoration:none;
-              border:1px solid rgba(255,255,255,0.06);border-radius:100px;
-              padding:6px 16px;background:rgba(255,255,255,0.02);
+              font-family:'JetBrains Mono',monospace;font-size:0.72rem;font-weight:700;
+              color:rgba(255,255,255,0.28);text-decoration:none;
+              border:1px solid rgba(0,232,122,0.12);border-radius:100px;
+              padding:6px 18px;background:rgba(0,232,122,0.04);
+              letter-spacing:0.08em;text-transform:uppercase;
               transition:all 0.2s;">
       &#x2190; Back to Home
     </a>
   </div>
   {logo_html}
-  <div style="font-family:'Space Grotesk',sans-serif;font-size:1.35rem;
-              font-weight:800;color:#fff;letter-spacing:-0.04em;margin-top:10px;">
-    Smart<span style="background:linear-gradient(135deg,#00D559,#2D9EFF);
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      background-clip:text;">Pick</span>Pro
+  <div class="ap-brand-row">
+    <span class="ap-brand-smart">Smart</span>
+    <span class="ap-brand-pick">Picks</span>
+    <span class="ap-brand-pro">Pro</span>
+    <span class="ap-brand-ai">AI</span>
   </div>
-  <div style="font-family:'Space Grotesk',sans-serif;font-size:2rem;
-              font-weight:800;color:#fff;letter-spacing:-0.04em;margin-top:20px;
-              text-transform:uppercase;">{headline}</div>
-  <div style="font-size:0.85rem;color:rgba(255,255,255,0.4);
-              margin-top:6px;line-height:1.6;">{sub}</div>
+  <div style="font-family:'Space Grotesk',sans-serif;font-size:clamp(1.1rem,3.5vw,1.65rem);
+              font-weight:900;color:#fff;letter-spacing:-0.02em;margin-top:22px;
+              text-transform:uppercase;line-height:1.2;">{headline}</div>
+  <div class="ap-sub-mono" style="margin-top:10px;max-width:420px;display:inline-block;
+              text-align:center;">
+    <span class="ap-live-dot"></span>{sub}
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -4747,22 +4907,23 @@ def _render_auth_portal(mode: str, logo_b64: str) -> None:
         _render_login_form()
 
     # Mode-switch footer + trust badges
+    if mode == "login":
+        footer_link = f'<a href="?auth={other_mode}" style="color:#00e87a;font-weight:700;text-decoration:none;margin-left:6px;font-family:\'JetBrains Mono\',monospace;font-size:0.78rem;letter-spacing:0.06em;">Sign Up Free &#x2192;</a>'
+        footer_line = f'<span style="color:rgba(255,255,255,0.32);font-family:\'JetBrains Mono\',monospace;font-size:0.72rem;">{switch_msg}</span>{footer_link}'
+    else:
+        footer_link = f'<a href="?auth={other_mode}" style="color:#00e87a;font-weight:700;text-decoration:none;margin-left:6px;">{switch_cta}</a>'
+        footer_line = f'<span style="color:rgba(255,255,255,0.35);font-family:\'Inter\',sans-serif;font-size:0.82rem;">{switch_msg}{footer_link}</span>'
+
     st.markdown(f"""
-<div style="text-align:center;margin-top:28px;
-            font-size:0.82rem;color:rgba(255,255,255,0.35);
-            font-family:'Inter',sans-serif;">
-  {switch_msg}
-  <a href="?auth={other_mode}"
-     style="color:#00D559;font-weight:700;text-decoration:none;margin-left:6px;">
-    {other_label}
-  </a>
+<div style="text-align:center;margin-top:28px;">
+  {footer_line}
 </div>
 <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;
-            margin-top:20px;font-size:0.65rem;color:rgba(255,255,255,0.18);
-            font-family:'JetBrains Mono',monospace;">
-  <span>&#x1F512; Encrypted &amp; Secure</span>
-  <span>&#x26A1; Free Forever</span>
-  <span>&#x1F6AB; No Credit Card</span>
+            margin-top:20px;font-size:0.62rem;color:rgba(0,232,122,0.30);
+            font-family:'JetBrains Mono',monospace;letter-spacing:0.08em;">
+  <span>&#x1F512;&nbsp;ENCRYPTED</span>
+  <span>&#x26A1;&nbsp;FREE&nbsp;ACCESS</span>
+  <span>&#x2715;&nbsp;NO&nbsp;CREDIT&nbsp;CARD</span>
 </div>
 """, unsafe_allow_html=True)
 

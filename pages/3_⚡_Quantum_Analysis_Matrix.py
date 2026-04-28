@@ -459,7 +459,7 @@ if not st.session_state.get("analysis_results"):
                         str(p.get("stat_type", "")).lower().strip(),
                         str(p.get("direction", "")).upper().strip(),
                         str(p.get("platform", "")).lower().strip(),
-                        float(p.get("prop_line") or 0),
+                        float(p.get("prop_line") or p.get("line") or 0),
                     )
                 _ar_by_key = {}
                 for r in _raw_ar:

@@ -1165,7 +1165,7 @@ def _render_single_leg_html(leg_info: dict, raw_picks: list) -> str:
     pname = _html.escape(str(leg_info.get("player_name", "")))
     team = _html.escape((leg_info.get("player_team", leg_info.get("team", "")) or "").upper())
     direction = (leg_info.get("direction", "") or "").upper()
-    line = leg_info.get("line", "")
+    line = leg_info.get("line", leg_info.get("prop_line", ""))
     raw_stat = (leg_info.get("stat_type", "") or "").lower().strip()
     stat = _html.escape(_display_stat_name(raw_stat))
     edge = leg_info.get("edge_percentage", 0) or 0

@@ -495,6 +495,20 @@ if not st.session_state.get("analysis_results"):
     except Exception:
         pass  # Non-fatal — just show empty state
 
+# ── Final safety net: if analysis_results is STILL empty after rehydrate
+# (e.g. fresh visit with no saved session, or rehydrate exception), seed
+# directly from the canonical today-only deduped slate.  This guarantees the
+# QAM page always renders today's picks even when there's no saved session.
+if not st.session_state.get("analysis_results"):
+    try:
+        from tracking.database import get_slate_picks_for_today as _qam_seed_slate
+        _qam_seed = _qam_seed_slate() or []
+        if _qam_seed:
+            st.session_state["analysis_results"] = _qam_seed
+            st.session_state["_qam_db_restored"] = True
+    except Exception:
+        pass
+
 # ── Auto-populate selected_picks with top-tier picks if empty.
 # Covers the case where the analysis session was saved without picks
 # (e.g. a UI-triggered run that didn't reach the selection step) and

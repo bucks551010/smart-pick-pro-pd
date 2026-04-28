@@ -316,6 +316,18 @@ if not st.session_state.get("_picks_seeded"):
                 st.session_state["analysis_results"] = _latest_sess["analysis_results"]
         except Exception:
             pass
+    # Final safety net: if analysis_results is STILL empty (e.g. fresh
+    # container with no slate cache and no saved session), seed directly
+    # from the canonical today-only deduped slate so Top 3, QEG, and any
+    # downstream display always have data.
+    if not st.session_state.get("analysis_results"):
+        try:
+            from tracking.database import get_slate_picks_for_today as _home_seed_slate
+            _home_seed = _home_seed_slate() or []
+            if _home_seed:
+                st.session_state["analysis_results"] = _home_seed
+        except Exception:
+            pass
     # Stamp _data_version_seen now so the poller's first registration fire
     # does NOT clear freshly-loaded picks and trigger an unnecessary rerun.
     try:

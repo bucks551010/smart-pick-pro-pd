@@ -1659,15 +1659,6 @@ html, body {
     overflow-x: hidden !important;
     max-width: 100% !important;
 }
-/* ── Vignette depth overlay ─────────────────────────────────── */
-.stApp::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse at 50% 50%, transparent 38%, rgba(0,0,0,0.62) 100%);
-    pointer-events: none;
-    z-index: 1;
-}
 /* Elite AI matrix texture — dual-layer node grid */
 .stApp::before {
     content: '';
@@ -1790,20 +1781,6 @@ html, body, .stApp, .stApp * {
 @keyframes agLivePulse {
     0%, 100% { box-shadow: 0 0 0 0 rgba(0, 213, 89, 0.5); }
     50%      { box-shadow: 0 0 0 5px rgba(0, 213, 89, 0); }
-}
-@keyframes agDotPulse {
-    0%, 100% { box-shadow: 0 0 6px 0 rgba(0,232,122,0.9); transform: scale(1); opacity: 1; }
-    50%      { box-shadow: 0 0 18px 6px rgba(0,232,122,0.45); transform: scale(1.4); opacity: 0.85; }
-}
-@keyframes agBorderPulse {
-    0%, 100% {
-        border-color: rgba(0, 213, 89, 0.4);
-        box-shadow: 0 0 80px rgba(0, 213, 89, 0.12), 0 24px 64px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(0, 213, 89, 0.15);
-    }
-    50% {
-        border-color: rgba(0, 213, 89, 0.82);
-        box-shadow: 0 0 130px rgba(0, 213, 89, 0.28), 0 24px 64px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(0, 213, 89, 0.28);
-    }
 }
 @keyframes agHeroTextReveal {
     0%   { opacity: 0; transform: translateY(40px) scale(0.96); filter: blur(8px); }
@@ -2099,7 +2076,7 @@ html, body, .stApp, .stApp * {
     position: relative;
 }
 .ag-logo-img {
-    width: 160px;
+    width: 220px;
     height: auto;
     animation: agLogoGlow 5s ease-in-out infinite;
     position: relative;
@@ -2233,8 +2210,7 @@ html, body, .stApp, .stApp * {
     width: 7px; height: 7px; border-radius: 50%;
     background: var(--c-green);
     box-shadow: 0 0 12px rgba(0,232,122,0.70);
-    animation: agDotPulse 1.6s ease-in-out infinite;
-    flex-shrink: 0;
+    animation: agLivePulse 2s ease-in-out infinite;
 }
 .ag-hero h1 {
     font-family: var(--font-head);
@@ -2246,8 +2222,8 @@ html, body, .stApp, .stApp * {
 }
 .ag-hero h1 .hero-l1 {
     display: block;
-    font-size: clamp(6rem, 15vw, 14rem);
-    letter-spacing: -0.04em;
+    font-size: clamp(5.5rem, 14vw, 12.5rem);
+    letter-spacing: -0.06em;
     text-shadow:
         0 0 220px rgba(0,232,122,0.16),
         0 0 480px rgba(59,158,255,0.08),
@@ -2257,15 +2233,15 @@ html, body, .stApp, .stApp * {
 }
 .ag-hero h1 .hero-l2 {
     display: block;
-    font-size: clamp(3.4rem, 8.5vw, 7.5rem);
-    letter-spacing: -0.04em;
-    color: rgba(195,215,240,0.60);
+    font-size: clamp(4.8rem, 12vw, 11rem);
+    letter-spacing: -0.05em;
+    color: rgba(195,215,240,0.72);
     text-shadow: 0 4px 0 rgba(0,0,0,0.5);
     animation: agHeroL2In 0.9s 0.40s var(--ease-out) both;
-    margin-top: 4px;
+    margin-top: 2px;
 }
 .ag-hero-divider {
-    width: 80px; height: 2px; margin: 30px auto 26px;
+    width: 80px; height: 2px; margin: 18px auto 16px;
     background: linear-gradient(90deg, transparent, rgba(0,232,122,0.6), rgba(59,158,255,0.5), transparent);
     border-radius: 2px;
     animation: agHeroDividerIn 0.8s 0.58s cubic-bezier(0.22,1,0.36,1) both;
@@ -2276,9 +2252,9 @@ html, body, .stApp, .stApp * {
     font-family: var(--font-head);
     font-weight: 900;
     text-transform: uppercase;
-    font-size: clamp(5.2rem, 13.5vw, 12rem);
-    letter-spacing: 0.20em;
-    line-height: 1.0;
+    font-size: clamp(5.8rem, 14.5vw, 13rem);
+    letter-spacing: -0.03em;
+    line-height: 0.95;
     background: linear-gradient(135deg, var(--c-green) 0%, var(--c-plasma) 30%, var(--c-blue) 55%, var(--c-purple) 78%, var(--c-gold) 100%);
     background-size: 300% 200%;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -2291,8 +2267,8 @@ html, body, .stApp, .stApp * {
     font-family: var(--font-body);
     font-size: clamp(1.0rem, 1.8vw, 1.30rem); font-weight: 400;
     color: rgba(200,215,235,0.80);
-    line-height: 1.45; margin-top: 48px;
-    max-width: 720px; margin-left: auto; margin-right: auto;
+    line-height: 1.85; margin-top: 48px;
+    max-width: 660px; margin-left: auto; margin-right: auto;
     animation: agHeroTextReveal 0.9s 0.65s var(--ease-out) both;
     letter-spacing: 0.01em;
 }
@@ -2320,10 +2296,10 @@ html, body, .stApp, .stApp * {
     backdrop-filter: blur(8px);
 }
 .ag-hero-badge:hover {
-    border-color: rgba(0,232,122,0.55);
-    background: rgba(0,232,122,0.08);
-    color: rgba(255,255,255,0.92);
-    box-shadow: 0 0 32px rgba(0,232,122,0.38), 0 0 64px rgba(0,232,122,0.12), 0 4px 16px rgba(0,0,0,0.3);
+    border-color: rgba(0,232,122,0.38);
+    background: rgba(0,232,122,0.06);
+    color: rgba(255,255,255,0.85);
+    box-shadow: 0 0 24px rgba(0,232,122,0.10);
     transform: translateY(-2px);
 }
 .ag-hero-badge .badge-ico { font-size: 1.0rem; }
@@ -2343,15 +2319,15 @@ html, body, .stApp, .stApp * {
 .ag-hero-cta-primary {
     display: inline-flex; align-items: center; gap: 10px;
     font-family: var(--font-head);
-    font-size: 0.92rem; font-weight: 800; color: #000000;
+    font-size: 0.92rem; font-weight: 800; color: #020509;
     background: linear-gradient(135deg, var(--c-green-hi) 0%, var(--c-green) 40%, var(--c-green-dim) 100%);
     padding: 18px 52px; border-radius: 10px;
     text-decoration: none; text-transform: uppercase; letter-spacing: 0.1em;
     border: 1px solid rgba(255,255,255,0.15);
     box-shadow:
-        0 0 12px 2px rgba(0,232,122,0.55),
-        0 0 40px 6px rgba(0,232,122,0.28),
-        0 8px 48px 0 rgba(0,232,122,0.15),
+        0 0 0 1px rgba(0,232,122,0.3),
+        0 0 50px rgba(0,232,122,0.45),
+        0 8px 32px rgba(0,232,122,0.25),
         inset 0 1px 0 rgba(255,255,255,0.28);
     transition: all 0.3s var(--ease-spring);
     position: relative; overflow: hidden; cursor: pointer;
@@ -2365,18 +2341,18 @@ html, body, .stApp, .stApp * {
 .ag-hero-cta-primary:hover {
     transform: translateY(-5px) scale(1.02);
     box-shadow:
-        0 0 18px 4px rgba(0,232,122,0.80),
-        0 0 60px 10px rgba(0,232,122,0.40),
-        0 16px 64px 0 rgba(0,232,122,0.22),
+        0 0 0 1px rgba(0,232,122,0.5),
+        0 0 90px rgba(0,232,122,0.65),
+        0 16px 56px rgba(0,232,122,0.35),
         inset 0 1px 0 rgba(255,255,255,0.3);
     background: linear-gradient(135deg, #00FFAA 0%, var(--c-green-hi) 40%, var(--c-green) 100%);
-    color: #000000;
+    color: #010304;
 }
 .ag-hero-cta-secondary {
     display: inline-flex; align-items: center; gap: 7px;
     font-family: var(--font-body);
     font-size: 0.85rem; font-weight: 600;
-    color: rgba(255,255,255,0.78);
+    color: rgba(255,255,255,0.5);
     background: rgba(255,255,255,0.03);
     padding: 17px 28px; border-radius: 10px;
     text-decoration: none; letter-spacing: 0.03em;
@@ -2432,7 +2408,7 @@ html, body, .stApp, .stApp * {
 }
 .ag-proof-stat {
     text-align: center;
-    padding: 32px 20px 26px;
+    padding: 32px 16px 26px;
     background:
         linear-gradient(168deg, rgba(255,255,255,0.038), rgba(255,255,255,0.012));
     border: 0.5px solid rgba(255,255,255,0.09);
@@ -2440,7 +2416,7 @@ html, body, .stApp, .stApp * {
     border-radius: var(--r-card);
     animation: agProofCardReveal 0.7s 0.2s var(--ease-out) both;
     transition: all 0.35s var(--ease-spring);
-    position: relative; overflow: visible;
+    position: relative; overflow: hidden;
     box-shadow:
         0 4px 24px rgba(0,0,0,0.35),
         inset 0 1px 0 rgba(255,255,255,0.06),
@@ -2460,12 +2436,12 @@ html, body, .stApp, .stApp * {
 }
 .ag-proof-stat:hover::after { opacity: 1; }
 .ag-proof-stat:hover {
-    border-color: rgba(0,232,122,0.38);
-    border-top-color: rgba(0,232,122,0.65);
-    transform: translateY(-8px) scale(1.02);
+    border-color: rgba(0,232,122,0.28);
+    border-top-color: rgba(0,232,122,0.5);
+    transform: translateY(-10px) scale(1.025);
     box-shadow:
         0 32px 80px rgba(0,0,0,0.55),
-        0 0 60px rgba(0,232,122,0.14),
+        0 0 60px rgba(0,232,122,0.1),
         inset 0 1px 0 rgba(255,255,255,0.1);
 }
 .ag-proof-stat:nth-child(2) { animation-delay: 0.35s; }
@@ -2481,10 +2457,9 @@ html, body, .stApp, .stApp * {
 .ag-proof-stat:nth-child(4):hover { border-color: rgba(249,198,43,0.28); border-top-color: rgba(249,198,43,0.5); }
 .ag-proof-stat:nth-child(4)::after { background: radial-gradient(ellipse at 50% 0%, rgba(249,198,43,0.06) 0%, transparent 60%); }
 .ag-proof-big {
-    font-family: var(--font-mono);
-    font-size: 3.6rem; font-weight: 900;
-    letter-spacing: -0.04em; line-height: 1;
-    font-variant-numeric: tabular-nums;
+    font-family: var(--font-head);
+    font-size: 4.2rem; font-weight: 900;
+    letter-spacing: -0.045em; line-height: 1;
     font-feature-settings: 'tnum', 'salt';
     background: linear-gradient(135deg, var(--c-green) 0%, var(--c-plasma) 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -2543,10 +2518,8 @@ html, body, .stApp, .stApp * {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
 }
 .ag-inside-card {
-    background: rgba(10, 15, 20, 0.60);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(0, 255, 128, 0.15);
+    background: linear-gradient(168deg, rgba(8, 14, 28, 0.97), rgba(5, 9, 16, 0.99));
+    border: 1px solid rgba(0, 213, 89, 0.08);
     border-radius: 18px; padding: 24px 20px 20px;
     position: relative; overflow: hidden;
     transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
@@ -2848,14 +2821,12 @@ html, body, .stApp, .stApp * {
 /* Our card (the winner) */
 .ag-us {
     display: flex; flex-direction: column; align-items: center;
-    background: rgba(10, 15, 20, 0.60);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: linear-gradient(168deg, rgba(0, 213, 89, 0.1), rgba(5, 9, 16, 0.97));
     border: 2px solid rgba(0, 213, 89, 0.4);
     border-radius: 24px; padding: 40px 28px 36px;
     text-align: center; position: relative;
     margin-top: 14px;
-    animation: agBorderPulse 2.5s ease-in-out infinite;
+    animation: agPulse 3s ease-in-out infinite;
     box-shadow: 0 0 80px rgba(0, 213, 89, 0.12), 0 24px 64px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(0, 213, 89, 0.15);
 }
 .ag-us::before {
@@ -2878,11 +2849,9 @@ html, body, .stApp, .stApp * {
     color: #00D559; margin-bottom: 4px; margin-top: 8px;
 }
 .ag-us-price {
-    font-family: var(--font-mono);
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 5rem; font-weight: 800; color: #fff;
     line-height: 1; position: relative;
-    font-variant-numeric: tabular-nums;
-    display: flex; align-items: baseline; gap: 10px; justify-content: center;
 }
 .ag-us-price .free {
     background: linear-gradient(135deg, #00D559, #2D9EFF, #c084fc);
@@ -3417,10 +3386,8 @@ html, body, .stApp, .stApp * {
     position: relative;
 }
 .ag-how-step {
-    background: rgba(10, 15, 20, 0.60);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(0, 255, 128, 0.15);
+    background: linear-gradient(168deg, rgba(8, 14, 28, 0.98), rgba(5, 9, 16, 0.99));
+    border: 1px solid rgba(0, 213, 89, 0.12);
     border-radius: 24px; padding: 36px 24px 30px;
     text-align: center; position: relative; overflow: hidden;
     transition: border-color 0.35s, transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s;
@@ -3932,8 +3899,8 @@ html, body, .stApp, .stApp * {
     .ag-full-bleed .ag-section { padding-left: 18px; padding-right: 18px; }
     .ag-full-bleed { padding: 36px 0; }
     .ag-hero h1 .hero-l1 { font-size: 4.5rem; }
-    .ag-hero h1 .hero-l2 { font-size: 2.7rem; }
-    .ag-hero-its-us { font-size: 4.0rem; letter-spacing: 0.15em; }
+    .ag-hero h1 .hero-l2 { font-size: 3.8rem; }
+    .ag-hero-its-us { font-size: 4.5rem; letter-spacing: -0.02em; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 2rem; }
     .ag-cta2-head { font-size: 1.9rem; }
     .ag-proof-big { font-size: 2.4rem; }
@@ -3971,13 +3938,13 @@ html, body, .stApp, .stApp * {
     .ag-full-bleed .ag-section { padding-left: 14px; padding-right: 14px; }
     .ag-full-bleed { padding: 28px 0; }
     .ag-hero h1 .hero-l1 { font-size: 3.0rem; line-height: 0.88; }
-    .ag-hero h1 .hero-l2 { font-size: 1.85rem; }
-    .ag-hero-its-us { font-size: 2.6rem; letter-spacing: 0.12em; }
+    .ag-hero h1 .hero-l2 { font-size: 2.6rem; }
+    .ag-hero-its-us { font-size: 3.0rem; letter-spacing: -0.02em; }
     .ag-hero p { font-size: 0.82rem; padding: 0 8px; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 1.5rem; }
     .ag-section-head p { font-size: 0.78rem; padding: 0 4px; }
-    .ag-logo-img { width: 120px; }
-    .ag-logo-ring { width: 150px; height: 150px; }
+    .ag-logo-img { width: 160px; }
+    .ag-logo-ring { width: 190px; height: 190px; }
     .ag-logo-section { padding-top: 40px; }
     .ag-hero-badges { gap: 6px; flex-wrap: wrap; justify-content: center; }
     .ag-hero-badge { padding: 8px 14px; font-size: 0.64rem; }
@@ -4031,14 +3998,14 @@ html, body, .stApp, .stApp * {
     }
     .ag-section { padding-left: 10px; padding-right: 10px; }
     .ag-full-bleed .ag-section { padding-left: 10px; padding-right: 10px; }
-    .ag-hero h1 .hero-l1 { font-size: 4.4rem; }
-    .ag-hero h1 .hero-l2 { font-size: 8.5rem; }
-    .ag-hero-its-us { font-size: 2.1rem; letter-spacing: 0.08em; }
+    .ag-hero h1 .hero-l1 { font-size: 2.4rem; }
+    .ag-hero h1 .hero-l2 { font-size: 2.1rem; }
+    .ag-hero-its-us { font-size: 2.4rem; letter-spacing: -0.02em; }
     .ag-hero p { font-size: 0.78rem; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 1.2rem; }
     .ag-cta2-head { font-size: 1.1rem; }
-    .ag-logo-img { width: 105px; }
-    .ag-logo-ring { width: 135px; height: 135px; }
+    .ag-logo-img { width: 140px; }
+    .ag-logo-ring { width: 170px; height: 170px; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 1.3rem; }
     .ag-proof-inner { grid-template-columns: 1fr 1fr; gap: 6px; }
     .ag-proof-big { font-size: 1.5rem; }
@@ -4198,7 +4165,7 @@ def _render_login_form() -> None:
     with st.form("login_form", clear_on_submit=False):
         li_email = st.text_input("Email Address", placeholder="you@example.com", key="_li_email")
         li_pw = st.text_input("Password", type="password", placeholder="Enter your password", key="_li_pw")
-        li_submit = st.form_submit_button("\U0001F513 Authenticate \u0026 Enter Terminal", use_container_width=True, type="primary")
+        li_submit = st.form_submit_button("\U0001F513 Log In", use_container_width=True, type="primary")
 
     if li_submit:
         # CWE-20 / CWE-79 / CWE-89: sanitize email at login boundary
@@ -4549,7 +4516,7 @@ def _render_login_form() -> None:
     with st.form("login_form", clear_on_submit=False):
         li_email = st.text_input("Email Address", placeholder="you@example.com", key="_li_email")
         li_pw = st.text_input("Password", type="password", placeholder="Enter your password", key="_li_pw")
-        li_submit = st.form_submit_button("\U0001F513 Authenticate \u0026 Enter Terminal", use_container_width=True, type="primary")
+        li_submit = st.form_submit_button("\U0001F513 Log In", use_container_width=True, type="primary")
 
     if li_submit:
         # CWE-20 / CWE-79 / CWE-89: sanitize email at login boundary
@@ -4679,184 +4646,27 @@ def _render_auth_portal(mode: str, logo_b64: str) -> None:
     """
     other_mode  = "login" if mode == "signup" else "signup"
     other_label = "Log In" if mode == "signup" else "Sign Up Free"
-    switch_msg  = "Already have an account?" if mode == "signup" else "No account? Form your Five Pillar strategy."
-    switch_cta  = "Log In" if mode == "signup" else "Sign Up Free"
-    headline    = "Create Account" if mode == "signup" else "ACCESS YOUR STRATEGY TERMINAL"
+    switch_msg  = "Already have an account?" if mode == "signup" else "Don't have an account?"
+    headline    = "Create Account" if mode == "signup" else "Welcome Back"
     sub         = (
         "Free forever &mdash; no credit card required."
         if mode == "signup"
-        else "Access your personalized quantitative analyses and metaphysical-aligned sports strategies."
+        else "Log in to your AI picks dashboard."
     )
 
-    # ── Portal-specific CSS: glassmorphism card, vignette, neon glow, monospace ──
-    st.markdown("""
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
-/* ── Deep Space Vignette ───────────────────────────────────────── */
-.stApp::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(ellipse at 50% 44%, transparent 28%, rgba(0,0,0,0.72) 100%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* ── Narrow centred layout ─────────────────────────────────────── */
+    # Narrow centred layout — overrides the default block-container width
+    st.markdown("""<style>
 .stApp > [data-testid="stAppViewContainer"] > section.main .block-container {
-  padding: 8px 0 40px !important;
-  max-width: 520px !important;
-  margin: 0 auto !important;
-  position: relative;
-  z-index: 1;
+    padding: 20px 0 60px !important;
+    max-width: 500px !important;
+    margin: 0 auto !important;
 }
 [data-testid="stTabs"] { max-width: 100% !important; }
-
-/* ── Glassmorphism form card ───────────────────────────────────── */
-[data-testid="stForm"] {
-  background: rgba(8, 14, 22, 0.72) !important;
-  backdrop-filter: blur(18px) !important;
-  -webkit-backdrop-filter: blur(18px) !important;
-  border: 1px solid rgba(0, 232, 122, 0.18) !important;
-  border-radius: 18px !important;
-  padding: 28px 24px !important;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 0 48px rgba(0, 232, 122, 0.07), inset 0 0 80px rgba(0,0,0,0.3) !important;
-  animation: apCardGlow 4s ease-in-out infinite !important;
-}
-[data-testid="stForm"]::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(0,232,122,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,232,122,0.04) 1px, transparent 1px);
-  background-size: 28px 28px;
-  pointer-events: none;
-  border-radius: 18px;
-}
-
-/* ── Card glow pulse ───────────────────────────────────────────── */
-@keyframes apCardGlow {
-  0%, 100% { box-shadow: 0 0 40px rgba(0,232,122,0.07), inset 0 0 80px rgba(0,0,0,0.3); border-color: rgba(0,232,122,0.18); }
-  50%       { box-shadow: 0 0 72px rgba(0,232,122,0.18), inset 0 0 80px rgba(0,0,0,0.3); border-color: rgba(0,232,122,0.36); }
-}
-
-/* ── Input fields: circuit texture + neon focus glow ──────────── */
-[data-testid="stTextInput"] input {
-  background: rgba(5, 10, 18, 0.85) !important;
-  border: 1px solid rgba(0,232,122,0.15) !important;
-  border-radius: 10px !important;
-  color: #e8f5e9 !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 0.88rem !important;
-  letter-spacing: 0.03em !important;
-  transition: box-shadow 0.25s, border-color 0.25s !important;
-  caret-color: #00e87a !important;
-}
-[data-testid="stTextInput"] input:focus {
-  box-shadow: 0 0 0 2px rgba(0,232,122,0.30), 0 0 18px rgba(0,232,122,0.18) !important;
-  border-color: rgba(0,232,122,0.55) !important;
-  outline: none !important;
-}
-[data-testid="stTextInput"] label {
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 0.7rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.12em !important;
-  text-transform: uppercase !important;
-  color: rgba(0,232,122,0.65) !important;
-}
-
-/* ── Primary button: neon green + circuit pulse ────────────────── */
-[data-testid="stFormSubmitButton"] > button[kind="primaryFormSubmit"],
-[data-testid="stFormSubmitButton"] > button[data-testid="baseButton-primaryFormSubmit"] {
-  background: linear-gradient(135deg, #00e87a 0%, #00c462 60%, #00a050 100%) !important;
-  border: none !important;
-  border-radius: 12px !important;
-  color: #000 !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 0.82rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.12em !important;
-  text-transform: uppercase !important;
-  box-shadow: 0 0 18px rgba(0,232,122,0.45), 0 0 48px rgba(0,232,122,0.18) !important;
-  animation: apBtnGlow 3s ease-in-out infinite !important;
-  position: relative;
-  overflow: hidden;
-}
-[data-testid="stFormSubmitButton"] > button[kind="primaryFormSubmit"]::after,
-[data-testid="stFormSubmitButton"] > button[data-testid="baseButton-primaryFormSubmit"]::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(0,0,0,0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,0,0,0.07) 1px, transparent 1px);
-  background-size: 14px 14px;
-  pointer-events: none;
-}
-@keyframes apBtnGlow {
-  0%, 100% { box-shadow: 0 0 18px rgba(0,232,122,0.45), 0 0 48px rgba(0,232,122,0.18); }
-  50%       { box-shadow: 0 0 32px rgba(0,232,122,0.75), 0 0 80px rgba(0,232,122,0.30); }
-}
-
-/* ── Subtext: monospace terminal font ─────────────────────────── */
-.ap-sub-mono {
-  font-family: 'JetBrains Mono', 'Space Mono', monospace;
-  font-size: 0.78rem;
-  color: rgba(0,232,122,0.55);
-  letter-spacing: 0.04em;
-  line-height: 1.7;
-}
-
-/* ── Brand wordmark prominence ─────────────────────────────────── */
-.ap-brand-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 0;
-  margin-top: 12px;
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 900;
-  letter-spacing: -0.04em;
-}
-.ap-brand-smart { font-size: 1.35rem; color: #fff; }
-.ap-brand-pick  { font-size: 1.6rem;
-  background: linear-gradient(135deg, #00e87a, #00c4ff);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text; }
-.ap-brand-pro   { font-size: 1.35rem; color: #fff; }
-.ap-brand-ai    { font-size: 0.72rem; color: rgba(0,232,122,0.7);
-  font-family: 'JetBrains Mono', monospace; font-weight: 700;
-  letter-spacing: 0.08em; vertical-align: super; margin-left: 3px; }
-
-/* ── Live indicator dot ────────────────────────────────────────── */
-.ap-live-dot {
-  display: inline-block; width: 7px; height: 7px;
-  background: #00e87a; border-radius: 50%;
-  box-shadow: 0 0 8px rgba(0,232,122,0.9);
-  animation: agDotPulse 1.6s ease-in-out infinite;
-  margin-right: 6px; vertical-align: middle;
-}
-
-@media (max-width: 600px) {
-  .ap-brand-smart { font-size: 1.4rem; }
-  .ap-brand-pick  { font-size: 1.65rem; }
-  .ap-brand-pro   { font-size: 1.4rem; }
-  .ap-brand-ai    { font-size: 0.75rem; }
-  [data-testid="stForm"] { padding: 20px 14px !important; }
-}
-</style>
-""", unsafe_allow_html=True)
+</style>""", unsafe_allow_html=True)
 
     logo_html = (
         f'<img src="data:image/png;base64,{logo_b64}" '
-        'style="width:110px;height:110px;object-fit:contain;'
-        'filter:drop-shadow(0 0 22px rgba(0,232,122,0.40)) drop-shadow(0 0 6px rgba(0,196,255,0.25));'
+        'style="width:360px;height:360px;object-fit:contain;'
         'animation:agLogoGlow 4s ease-in-out infinite;" alt="Smart Pick Pro">'
         if logo_b64
         else '<span style="font-size:3.5rem">&#x1F3AF;</span>'
@@ -4870,33 +4680,30 @@ def _render_auth_portal(mode: str, logo_b64: str) -> None:
 
     # Portal header: back link → logo → brand wordmark → headline → sub-text
     st.markdown(f"""
-<div style="text-align:center;padding-top:16px;margin-bottom:14px;">
-  <div style="margin-bottom:10px;">
+<div style="text-align:center;padding-top:56px;margin-bottom:28px;">
+  <div style="margin-bottom:28px;">
     <a href="."
        style="display:inline-flex;align-items:center;gap:6px;
-              font-family:'JetBrains Mono',monospace;font-size:0.68rem;font-weight:700;
-              color:rgba(255,255,255,0.28);text-decoration:none;
-              border:1px solid rgba(0,232,122,0.12);border-radius:100px;
-              padding:4px 14px;background:rgba(0,232,122,0.04);
-              letter-spacing:0.08em;text-transform:uppercase;
+              font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:600;
+              color:rgba(255,255,255,0.3);text-decoration:none;
+              border:1px solid rgba(255,255,255,0.06);border-radius:100px;
+              padding:6px 16px;background:rgba(255,255,255,0.02);
               transition:all 0.2s;">
       &#x2190; Back to Home
     </a>
   </div>
   {logo_html}
-  <div class="ap-brand-row" style="margin-top:6px;">
-    <span class="ap-brand-smart">Smart</span>
-    <span class="ap-brand-pick">Picks</span>
-    <span class="ap-brand-pro">Pro</span>
-    <span class="ap-brand-ai">AI</span>
+  <div style="font-family:'Space Grotesk',sans-serif;font-size:1.35rem;
+              font-weight:800;color:#fff;letter-spacing:-0.04em;margin-top:10px;">
+    Smart<span style="background:linear-gradient(135deg,#00D559,#2D9EFF);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      background-clip:text;">Pick</span>Pro
   </div>
-  <div style="font-family:'Space Grotesk',sans-serif;font-size:clamp(0.95rem,3vw,1.35rem);
-              font-weight:900;color:#fff;letter-spacing:-0.02em;margin-top:10px;
-              text-transform:uppercase;line-height:1.2;">{headline}</div>
-  <div class="ap-sub-mono" style="margin-top:6px;max-width:420px;display:inline-block;
-              text-align:center;">
-    <span class="ap-live-dot"></span>{sub}
-  </div>
+  <div style="font-family:'Space Grotesk',sans-serif;font-size:2rem;
+              font-weight:800;color:#fff;letter-spacing:-0.04em;margin-top:20px;
+              text-transform:uppercase;">{headline}</div>
+  <div style="font-size:0.85rem;color:rgba(255,255,255,0.4);
+              margin-top:6px;line-height:1.6;">{sub}</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -4907,23 +4714,22 @@ def _render_auth_portal(mode: str, logo_b64: str) -> None:
         _render_login_form()
 
     # Mode-switch footer + trust badges
-    if mode == "login":
-        footer_link = f'<a href="?auth={other_mode}" style="color:#00e87a;font-weight:700;text-decoration:none;margin-left:6px;font-family:\'JetBrains Mono\',monospace;font-size:0.78rem;letter-spacing:0.06em;">Sign Up Free &#x2192;</a>'
-        footer_line = f'<span style="color:rgba(255,255,255,0.32);font-family:\'JetBrains Mono\',monospace;font-size:0.72rem;">{switch_msg}</span>{footer_link}'
-    else:
-        footer_link = f'<a href="?auth={other_mode}" style="color:#00e87a;font-weight:700;text-decoration:none;margin-left:6px;">{switch_cta}</a>'
-        footer_line = f'<span style="color:rgba(255,255,255,0.35);font-family:\'Inter\',sans-serif;font-size:0.82rem;">{switch_msg}{footer_link}</span>'
-
     st.markdown(f"""
-<div style="text-align:center;margin-top:28px;">
-  {footer_line}
+<div style="text-align:center;margin-top:28px;
+            font-size:0.82rem;color:rgba(255,255,255,0.35);
+            font-family:'Inter',sans-serif;">
+  {switch_msg}
+  <a href="?auth={other_mode}"
+     style="color:#00D559;font-weight:700;text-decoration:none;margin-left:6px;">
+    {other_label}
+  </a>
 </div>
 <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;
-            margin-top:20px;font-size:0.62rem;color:rgba(0,232,122,0.30);
-            font-family:'JetBrains Mono',monospace;letter-spacing:0.08em;">
-  <span>&#x1F512;&nbsp;ENCRYPTED</span>
-  <span>&#x26A1;&nbsp;FREE&nbsp;ACCESS</span>
-  <span>&#x2715;&nbsp;NO&nbsp;CREDIT&nbsp;CARD</span>
+            margin-top:20px;font-size:0.65rem;color:rgba(255,255,255,0.18);
+            font-family:'JetBrains Mono',monospace;">
+  <span>&#x1F512; Encrypted &amp; Secure</span>
+  <span>&#x26A1; Free Forever</span>
+  <span>&#x1F6AB; No Credit Card</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -6075,10 +5881,10 @@ def require_login() -> bool:
         detection. Stop playing blind. Start playing with a verifiable edge.
       </div>
       <div class="ag-hero-badges">
-        <span class="ag-hero-badge primary"><span class="badge-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D559" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span> Free Forever</span>
-        <span class="ag-hero-badge"><span class="badge-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg></span> 62.4% Hit Rate</span>
-        <span class="ag-hero-badge"><span class="badge-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></span> SAFE Score&trade; System</span>
-        <span class="ag-hero-badge"><span class="badge-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg></span> NBA Specialists</span>
+        <span class="ag-hero-badge primary"><span class="badge-ico">&#x26A1;</span> Free Forever</span>
+        <span class="ag-hero-badge"><span class="badge-ico">&#x1F3AF;</span> 62.4% Hit Rate</span>
+        <span class="ag-hero-badge"><span class="badge-ico">&#x1F4CA;</span> SAFE Score&trade; System</span>
+        <span class="ag-hero-badge"><span class="badge-ico">&#x1F3C0;</span> NBA Specialists</span>
       </div>
       <div class="ag-hero-cta">
         <a class="ag-hero-cta-primary" href="?auth=signup">&#x26A1; Create Free Account &mdash; It&rsquo;s Free</a>
@@ -6545,21 +6351,21 @@ a.spp-nav-pill, a.spp-nav-cta, a.spp-btt {{
       <div class="ag-how-steps">
         <div class="ag-how-step">
           <span class="ag-how-num">1</span>
-          <span class="ag-how-ico"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#00D559" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/><circle cx="18" cy="19" r="4" fill="rgba(0,213,89,0.1)" stroke="#00D559"/><line x1="16.5" y1="19" x2="19.5" y2="19"/><line x1="18" y1="17.5" x2="18" y2="20.5"/></svg></span>
+          <span class="ag-how-ico">&#x1F4DD;</span>
           <div class="ag-how-title">Create Your Free Account</div>
           <div class="ag-how-desc">Email and password &mdash; done. No credit card. No 7-day trial that expires. You get full, permanent access to the Quantum Analysis Matrix, all 6 AI models, and every SAFE Score.</div>
           <span class="ag-how-arrow">&#x25B6;</span>
         </div>
         <div class="ag-how-step">
           <span class="ag-how-num">2</span>
-          <span class="ag-how-ico"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#00D559" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="#00D559"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg></span>
+          <span class="ag-how-ico">&#x1F3AF;</span>
           <div class="ag-how-title">Pick High-Confidence Props</div>
           <div class="ag-how-desc">Every prop gets a 0&ndash;100 SAFE Score&trade;, edge %, win probability, and AI projection. Sort by confidence &mdash; play 70+ and skip the rest. The math does the work.</div>
           <span class="ag-how-arrow">&#x25B6;</span>
         </div>
         <div class="ag-how-step">
           <span class="ag-how-num">3</span>
-          <span class="ag-how-ico"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#00D559" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>
+          <span class="ag-how-ico">&#x1F4B0;</span>
           <div class="ag-how-title">Win More. Track Everything.</div>
           <div class="ag-how-desc">62.4% hit rate across 8,400+ graded picks. The built-in Bet Tracker auto-grades your results, tracks bankroll growth, ROI by platform, and shows exactly which SAFE Score ranges are printing for you.</div>
         </div>
@@ -6614,7 +6420,7 @@ html,body{background:transparent;overflow-y:hidden}
       <div style="font-family:'JetBrains Mono',monospace;font-size:0.55rem;font-weight:700;
            color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">
         Ensemble Vote</div>
-      <div style="display:flex;align-items:center;justify-content:center;padding:2px 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00D559" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/><path d="M3 8h18"/></svg></div>
+      <div style="font-size:1.2rem">&#x1F5F3;&#xFE0F;</div>
     </div>
 
     <div style="font-size:1.2rem;color:rgba(255,255,255,0.2)">&#x2192;</div>
@@ -6788,37 +6594,37 @@ html,body{background:transparent;overflow-y:hidden}
       </div>
       <div class="ag-inside-grid">
         <div class="ag-inside-card">
-          <div class="ag-inside-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00D559" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+          <div class="ag-inside-ico">&#x26A1;</div>
           <div class="ag-inside-name">Quantum Analysis Matrix</div>
           <div class="ag-inside-desc">The core engine. Scans 300+ player props nightly across PrizePicks, DraftKings, and Underdog. Each prop is analyzed by 6 fused AI models that output a SAFE Score (0&ndash;100), edge percentage, win probability, and adjusted projection.</div>
           <div class="ag-inside-tag">CORE ENGINE</div>
         </div>
         <div class="ag-inside-card">
-          <div class="ag-inside-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2D9EFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21l8 0"/><path d="M12 17l0 4"/><path d="M7 9h2l2 5 2-9 2 4h2"/></svg></div>
+          <div class="ag-inside-ico">&#x1F9E0;</div>
           <div class="ag-inside-name">SAFE Score System</div>
           <div class="ag-inside-desc">Proprietary 0&ndash;100 confidence rating that fuses Quantum simulation, Ridge regression, Random Forest, XGBoost, LSTM sequence modeling, and Bayesian networks. One number tells you if a prop is worth playing.</div>
           <div class="ag-inside-tag">AI CONFIDENCE</div>
         </div>
         <div class="ag-inside-card">
-          <div class="ag-inside-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00D559" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <div class="ag-inside-ico">&#x1F4CA;</div>
           <div class="ag-inside-name">Live Sweat Mode</div>
           <div class="ag-inside-desc">Watch your active picks track in real time during games. Live box score updates, pace projections, and AI-adjusted confidence as game flow changes. Know if your bet is on track before the final buzzer.</div>
           <div class="ag-inside-tag">REAL-TIME</div>
         </div>
         <div class="ag-inside-card">
-          <div class="ag-inside-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+          <div class="ag-inside-ico">&#x1F52C;</div>
           <div class="ag-inside-name">Prop Scanner</div>
           <div class="ag-inside-desc">Manually enter any player prop or bulk-upload your slip from PrizePicks or DraftKings. Get instant AI analysis: predicted line, SAFE Score, probability, and over/under recommendation in seconds.</div>
           <div class="ag-inside-tag">ON-DEMAND</div>
         </div>
         <div class="ag-inside-card">
-          <div class="ag-inside-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F9C62B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
+          <div class="ag-inside-ico">&#x1F4C8;</div>
           <div class="ag-inside-name">Bet Tracker + Bankroll</div>
           <div class="ag-inside-desc">Log every bet, auto-grade results against final box scores, and track your bankroll growth. See win rate, ROI, CLV capture, and profit/loss by platform, stat type, and SAFE Score range.</div>
           <div class="ag-inside-tag">PERFORMANCE</div>
         </div>
         <div class="ag-inside-card">
-          <div class="ag-inside-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00D559" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></svg></div>
+          <div class="ag-inside-ico">&#x1F3C0;</div>
           <div class="ag-inside-name">Matchup DNA + Injury Intel</div>
           <div class="ag-inside-desc">Defensive matchup ratings, pace adjustments, rest-day impacts, and real-time injury reports from CBS and RotoWire. The AI factors all of this into every SAFE Score automatically.</div>
           <div class="ag-inside-tag">CONTEXT</div>
@@ -6997,7 +6803,7 @@ html,body{background:transparent;overflow-y:hidden}
           <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>10k</em></div><div class="ag-ts-kpi-l">Sims / Player</div></div>
           <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>6</em></div><div class="ag-ts-kpi-l">AI Models Fused</div></div>
           <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>347+</em></div><div class="ag-ts-kpi-l">Props / Night</div></div>
-          <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>91%</em></div><div class="ag-ts-kpi-l">EV Detection Rate</div></div>
+          <div class="ag-ts-kpi"><div class="ag-ts-kpi-n"><em>91%</em></div><div class="ag-ts-kpi-l">Model Accuracy</div></div>
         </div>
       </div>
 
@@ -7294,7 +7100,7 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
 
     <!-- ── COMPETITOR GRAVEYARD ── -->
     <div class="ag-graveyard">
-      <span class="ag-gy-badge"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f24336" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Competitor Analysis</span>
+      <span class="ag-gy-badge">&#x1F50D; Competitor Analysis</span>
       <div class="ag-gy-head">
         <h3>They Charge Hundreds.<br><span class="em">We Do It Better &mdash; Free.</span></h3>
         <p>Every major sports betting tool charges $30&ndash;$300+/mo for <em>less</em> than what you get here.</p>
@@ -7311,7 +7117,7 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
           <div class="ag-comp-x">&#x2717;</div>
           <div class="ag-comp-name">Action Network</div>
           <div class="ag-comp-price">$59.99/mo</div>
-          <div class="ag-comp-miss">Relies on manual EV hunting, no fused AI edge.</div>
+          <div class="ag-comp-miss">No live tracking, no edge detection</div>
         </div>
         <div class="ag-comp">
           <div class="ag-comp-x">&#x2717;</div>
@@ -7334,16 +7140,9 @@ html,body{background:transparent;font-family:'Inter',sans-serif;color:rgba(255,2
       </div>
 
       <div class="ag-us">
-        <div class="ag-us-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="#00D559" style="display:inline-block;vertical-align:middle;margin-right:4px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Smart Pick Pro</div>
+        <div class="ag-us-label">&#x2B50; Smart Pick Pro</div>
         <div class="ag-us-price"><span class="free">$0</span> <span class="p">forever</span></div>
-        <div class="ag-us-detail" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;text-align:left;margin-top:16px;max-width:480px">
-          <div style="display:flex;align-items:center;gap:7px;font-size:0.82rem;color:rgba(255,255,255,0.55)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D559" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span><strong style="color:#fff">6 AI models</strong> fused</span></div>
-          <div style="display:flex;align-items:center;gap:7px;font-size:0.82rem;color:rgba(255,255,255,0.55)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D559" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>300+ props / night</span></div>
-          <div style="display:flex;align-items:center;gap:7px;font-size:0.82rem;color:rgba(255,255,255,0.55)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D559" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Live tracking</span></div>
-          <div style="display:flex;align-items:center;gap:7px;font-size:0.82rem;color:rgba(255,255,255,0.55)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D559" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>SAFE Score&trade; system</span></div>
-          <div style="display:flex;align-items:center;gap:7px;font-size:0.82rem;color:rgba(255,255,255,0.55)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D559" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Bankroll tools</span></div>
-          <div style="display:flex;align-items:center;gap:7px;font-size:0.82rem;color:rgba(255,255,255,0.55)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D559" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span><strong style="color:#fff">All included free.</strong></span></div>
-        </div>
+        <div class="ag-us-detail"><strong>6 AI models</strong> &middot; 300+ props/night &middot; Live tracking &middot; SAFE Score &middot; Bankroll tools &middot; Edge detection &middot; <strong>All included free.</strong></div>
       </div>
     </div>
 

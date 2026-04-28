@@ -1283,10 +1283,12 @@ def render_joseph_live_desk(
         # ─────────────────────────────────────────────────────
         joseph_results = st.session_state.get("joseph_results", [])
 
-        # Invalidate cached joseph_results if analysis_results has changed
-        # (e.g. new day, stale session, or post-run cache).  Compare player
-        # sets: if no overlap exists, the cached results are from a different
-        # slate and must be regenerated to avoid showing yesterday's players.
+        # Invalidate cached joseph_results if analysis_results has changed.
+        # Strategy: if ANY cached player is NOT in today's analysis_results, the
+        # cache is stale (contains a player from a prior slate) and must be
+        # regenerated.  This catches the common case where stars play multiple
+        # consecutive days — the old check (zero-overlap only) would keep
+        # yesterday's full results as long as one player was shared.
         if joseph_results and analysis_results:
             _jr_players = {
                 str(r.get("player", r.get("player_name", ""))).lower().strip()
@@ -1296,7 +1298,9 @@ def render_joseph_live_desk(
                 str(r.get("player_name", r.get("name", ""))).lower().strip()
                 for r in analysis_results
             }
-            if not _jr_players.intersection(_ar_players):
+            # Stale if cached set has players absent from today's slate,
+            # OR today's slate has players not yet analyzed.
+            if _jr_players - _ar_players or _ar_players - _jr_players:
                 joseph_results = []
                 st.session_state.pop("joseph_results", None)
 
@@ -1335,9 +1339,16 @@ def render_joseph_live_desk(
                 player_name = ar.get("player_name", ar.get("player", ar.get("name", "")))
                 player_data = enriched_players.get(str(player_name).lower().strip(), {})
                 game_data = {}
-                player_team = ar.get("team", player_data.get("team", ""))
+                # Props store team as 'player_team'; fall back to 'team' then vitals.
+                # Filter out sentinel values ('N/A') that block the lookup.
+                _raw_team = (
+                    ar.get("player_team")
+                    or ar.get("team")
+                    or player_data.get("team", "")
+                )
+                player_team = _raw_team if str(_raw_team).upper().strip() not in ("", "N/A") else ""
                 for g in todays_games:
-                    if player_team in (g.get("home_team", ""), g.get("away_team", "")):
+                    if player_team and player_team in (g.get("home_team", ""), g.get("away_team", "")):
                         game_data = g
                         break
                 try:

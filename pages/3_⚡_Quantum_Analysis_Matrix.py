@@ -476,9 +476,68 @@ if not st.session_state.get("analysis_results"):
             _any_has_opponent_ar = any(r.get("opponent") for r in _raw_ar)
             if _games_loaded and _any_has_opponent_ar:
                 _raw_ar = [r for r in _raw_ar if r.get("opponent", "")]
+            # Always filter out game-total rows (empty team) — these are
+            # matchup-level props like "ATL @ NYK Total" that have no team
+            # and don't belong in the player-card matrix.
+            _raw_ar = [r for r in _raw_ar if str(r.get("team", "")).strip()]
             st.session_state["analysis_results"] = _raw_ar
-            if _saved_session.get("todays_games") and not st.session_state.get("todays_games"):
-                st.session_state["todays_games"] = _saved_session["todays_games"]
+            # ── Validate session's todays_games against today's slate teams ──
+            # The worker may store yesterday's games if the ETL DB hasn't been
+            # updated yet (common at 4–8 AM ET before games are in the DB).
+            # Detect staleness: if no session-game team appears in the slate,
+            # the games are stale — re-fetch fresh or parse from game-total rows.
+            _session_saved_games = _saved_session.get("todays_games") or []
+            if not st.session_state.get("todays_games"):
+                _slate_teams_set = {
+                    str(r.get("team", "")).upper().strip()
+                    for r in _raw_ar if str(r.get("team", "")).strip()
+                }
+                _session_game_teams: set = set()
+                for _sg in _session_saved_games:
+                    for _gk in ("home_team", "away_team"):
+                        _t = str(_sg.get(_gk, "")).upper().strip()
+                        if _t:
+                            _session_game_teams.add(_t)
+                _games_stale = bool(_session_game_teams) and not (_session_game_teams & _slate_teams_set)
+                if _games_stale or not _session_saved_games:
+                    # Session games are stale — try to get fresh game list
+                    _fresh_games: list = []
+                    try:
+                        from data.nba_data_service import get_todays_games as _get_fresh_games
+                        _candidate_games = _get_fresh_games() or []
+                        # Only accept if teams overlap with today's picks
+                        _candidate_teams: set = set()
+                        for _cg in _candidate_games:
+                            for _gk in ("home_team", "away_team"):
+                                _t = str(_cg.get(_gk, "")).upper().strip()
+                                if _t:
+                                    _candidate_teams.add(_t)
+                        if _candidate_teams & _slate_teams_set:
+                            _fresh_games = _candidate_games
+                    except Exception:
+                        pass
+                    # If live data still stale, parse matchups from game-total rows
+                    # in the raw slate (e.g. player_name="ATL @ NYK Total", team="")
+                    if not _fresh_games:
+                        _seen_mu: set = set()
+                        for _r in _slate_today:
+                            _pn = str(_r.get("player_name", ""))
+                            _rt = str(_r.get("team", "")).strip()
+                            if not _rt and " @ " in _pn:
+                                _mu = _pn.replace(" Total", "").strip()
+                                if _mu not in _seen_mu:
+                                    _seen_mu.add(_mu)
+                                    _pts = _mu.split(" @ ")
+                                    if len(_pts) == 2:
+                                        _fresh_games.append({
+                                            "away_team": _pts[0].strip().upper(),
+                                            "home_team": _pts[1].strip().upper(),
+                                        })
+                    if _fresh_games:
+                        st.session_state["todays_games"] = _fresh_games
+                    # else: leave todays_games unset — better than stale games
+                else:
+                    st.session_state["todays_games"] = _session_saved_games
             if _saved_session.get("selected_picks") and not st.session_state.get("selected_picks"):
                 _raw_sel = _saved_session["selected_picks"] or []
                 _any_has_opponent_sel = any(p.get("opponent") for p in _raw_sel)
@@ -503,9 +562,34 @@ if not st.session_state.get("analysis_results"):
     try:
         from tracking.database import get_slate_picks_for_today as _qam_seed_slate
         _qam_seed = _qam_seed_slate() or []
+        # Filter game-total rows (empty team) before seeding
+        _qam_seed = [r for r in _qam_seed if str(r.get("team", "")).strip()]
         if _qam_seed:
             st.session_state["analysis_results"] = _qam_seed
             st.session_state["_qam_db_restored"] = True
+    except Exception:
+        pass
+
+# ── Seed todays_games if still missing after rehydrate ───────────────────────
+if not st.session_state.get("todays_games") and st.session_state.get("analysis_results"):
+    try:
+        from data.nba_data_service import get_todays_games as _qam_games_seed
+        _qam_games = _qam_games_seed() or []
+        if _qam_games:
+            # Validate against current picks
+            _ar_teams = {
+                str(r.get("team", "")).upper().strip()
+                for r in st.session_state["analysis_results"]
+                if str(r.get("team", "")).strip()
+            }
+            _gm_teams: set = set()
+            for _qg in _qam_games:
+                for _gk in ("home_team", "away_team"):
+                    _t = str(_qg.get(_gk, "")).upper().strip()
+                    if _t:
+                        _gm_teams.add(_t)
+            if _gm_teams & _ar_teams:
+                st.session_state["todays_games"] = _qam_games
     except Exception:
         pass
 

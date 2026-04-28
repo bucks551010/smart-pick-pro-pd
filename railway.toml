@@ -7,7 +7,7 @@ healthcheckPath = "/_stcore/health"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
-# redeploy trigger: 2026-04-26
+# redeploy trigger: 2026-04-28
 
 # ──────────────────────────────────────────────────────────────
 # WORKER SERVICE

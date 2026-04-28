@@ -606,6 +606,13 @@ def inject_joseph_floating():
     _auto_restore_page_state()
     _auto_save_page_state()
 
+    # ── Sidebar nav CSS (active state + section labels + tooltips) ──
+    # Must run on every page because Streamlit rebuilds the DOM on navigation.
+    try:
+        inject_sidebar_nav_tooltips()
+    except Exception as exc:
+        _components_logger.debug("inject_sidebar_nav_tooltips failed: %s", exc)
+
     # ── Global Broadcast Ticker ───────────────────────────────
     try:
         _render_broadcast_ticker()
@@ -954,9 +961,11 @@ _SIDEBAR_NAV_DESCRIPTIONS = {
 
 def inject_sidebar_nav_tooltips() -> None:
     """Inject elite nav CSS + tooltips on sidebar nav items via JavaScript."""
-    if st.session_state.get("_nav_tooltips_injected"):
-        return
-    st.session_state["_nav_tooltips_injected"] = True
+    # NOTE: No session-state guard here.  The CSS must be re-emitted on every
+    # page navigation because Streamlit rebuilds the full DOM when switching
+    # pages and does not carry over st.markdown() output from the previous
+    # page.  The JS block is guarded by window.__sppNavTooltips so the
+    # MutationObserver is only registered once per browser tab.
 
     # Build JS map of page name → tooltip
     import json as _json_mod
@@ -992,9 +1001,20 @@ def inject_sidebar_nav_tooltips() -> None:
   font-weight: inherit !important;
   letter-spacing: inherit !important;
 }
-/* Pill highlight glow on active */
+/* ── "You are here" active page indicator ── */
 [data-testid="stSidebar"] [data-testid="stSidebarNavLink"][aria-current="page"] {
-  text-shadow: 0 0 20px rgba(0,213,89,0.45) !important;
+  background: linear-gradient(90deg,rgba(0,213,89,0.13) 0%,rgba(0,213,89,0.04) 100%) !important;
+  border-left: 3px solid #00D559 !important;
+  border-radius: 0 6px 6px 0 !important;
+  padding-left: calc(1rem - 3px) !important;
+  color: #00D559 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 18px rgba(0,213,89,0.55) !important;
+}
+[data-testid="stSidebar"] [data-testid="stSidebarNavLink"][aria-current="page"] p,
+[data-testid="stSidebar"] [data-testid="stSidebarNavLink"][aria-current="page"] span {
+  color: #00D559 !important;
+  font-weight: 700 !important;
 }
 /* Section header labels injected by JS */
 .spp-nav-section-label {

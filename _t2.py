@@ -1,4 +1,4 @@
-﻿import sqlite3
+import sqlite3
 conn = sqlite3.connect('db/smartpicks.db')
 
 for tbl in ['Player_Game_Logs', 'Players', 'League_Dash_Player_Stats', 'Games', 'Defense_Vs_Position', 'Player_Bio', 'Player_Clutch_Stats', 'Player_Estimated_Metrics', 'Player_Hustle_Stats']:

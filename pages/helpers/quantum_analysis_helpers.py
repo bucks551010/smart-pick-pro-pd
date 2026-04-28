@@ -732,6 +732,7 @@ def render_quantum_edge_gap_card_html(result: dict, rank: int = 0) -> str:
 def filter_qeg_picks(
     results: list,
     edge_threshold: float | None = None,
+    todays_teams: "set | None" = None,
 ) -> list:
     """Return QEG-qualified picks from *results*.
 
@@ -765,6 +766,10 @@ def filter_qeg_picks(
     thr = edge_threshold if edge_threshold is not None else _QEG_LINE_DEVIATION_THRESHOLD
     filtered: list = []
     for r in results:
+        # Skip picks for teams not playing tonight when caller supplies the set.
+        if todays_teams and r.get("team", "") not in todays_teams:
+            continue
+
         # Skip out/injured players and explicitly avoided picks — these have
         # artificially extreme edge_percentage values (-50.0 for OUT players)
         # that would otherwise trigger Criterion B and produce misleading picks.

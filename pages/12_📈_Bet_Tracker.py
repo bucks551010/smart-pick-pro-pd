@@ -658,38 +658,29 @@ st.markdown(f"""
 </script>
 """, unsafe_allow_html=True)
 
-with tab_model_health:
-    health.render(platform_filter_selections, _player_search, _date_range, _direction_filter)
+def _safe_render(tab_ctx, module, label, pf, ps, dr, df):
+    """Render a tab module with error boundary — surfaces exceptions instead of blank tabs."""
+    import traceback as _tb
+    with tab_ctx:
+        try:
+            module.render(pf, ps, dr, df)
+        except Exception as _tab_err:
+            st.error(f"❌ **{label} tab error** — {type(_tab_err).__name__}: {_tab_err}")
+            with st.expander("Show traceback"):
+                st.code(_tb.format_exc())
 
-with tab_ai_picks:
-    platform_picks.render(platform_filter_selections, _player_search, _date_range, _direction_filter)
 
-with tab_all_picks:
-    all_picks.render(platform_filter_selections, _player_search, _date_range, _direction_filter)
-
-with tab_joseph_bets:
-    joseph.render(platform_filter_selections, _player_search, _date_range, _direction_filter)
-
-with tab_auto_resolve:
-    resolve.render(platform_filter_selections, _player_search, _date_range, _direction_filter)
-
-with tab_bets:
-    my_bets.render(platform_filter_selections, _player_search, _date_range, _direction_filter)
-
-with tab_log:
-    log_bet.render(platform_filter_selections, _player_search, _date_range, _direction_filter)
-
-with tab_parlays:
-    parlays.render(platform_filter_selections, _player_search, _date_range, _direction_filter)
-
-with tab_predict:
-    predict.render(platform_filter_selections, _player_search, _date_range, _direction_filter)
-
-with tab_history:
-    history.render(platform_filter_selections, _player_search, _date_range, _direction_filter)
-
-with tab_achievements:
-    achievements.render(platform_filter_selections, _player_search, _date_range, _direction_filter)
+_safe_render(tab_model_health,  health,          "Health",          platform_filter_selections, _player_search, _date_range, _direction_filter)
+_safe_render(tab_ai_picks,      platform_picks,  "Platform Picks",  platform_filter_selections, _player_search, _date_range, _direction_filter)
+_safe_render(tab_all_picks,     all_picks,        "All Picks",       platform_filter_selections, _player_search, _date_range, _direction_filter)
+_safe_render(tab_joseph_bets,   joseph,           "Joseph",          platform_filter_selections, _player_search, _date_range, _direction_filter)
+_safe_render(tab_auto_resolve,  resolve,          "Resolve",         platform_filter_selections, _player_search, _date_range, _direction_filter)
+_safe_render(tab_bets,          my_bets,          "My Bets",         platform_filter_selections, _player_search, _date_range, _direction_filter)
+_safe_render(tab_log,           log_bet,          "Log Bet",         platform_filter_selections, _player_search, _date_range, _direction_filter)
+_safe_render(tab_parlays,       parlays,          "Parlays",         platform_filter_selections, _player_search, _date_range, _direction_filter)
+_safe_render(tab_predict,       predict,          "Predict",         platform_filter_selections, _player_search, _date_range, _direction_filter)
+_safe_render(tab_history,       history,          "History",         platform_filter_selections, _player_search, _date_range, _direction_filter)
+_safe_render(tab_achievements,  achievements,     "Awards",          platform_filter_selections, _player_search, _date_range, _direction_filter)
 
 
 # -- Attribution footer � Joseph M. Smith ----------------------

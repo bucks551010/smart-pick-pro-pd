@@ -1,4 +1,4 @@
-﻿import sqlite3
+import sqlite3
 conn = sqlite3.connect('db/smartpicks.db')
 tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").fetchall()
 print('TABLES:', len(tables))

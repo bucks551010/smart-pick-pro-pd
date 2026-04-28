@@ -370,7 +370,7 @@ def _get_active_bets() -> list[dict]:
     bets: list[dict] = []
 
     def _add(player: str, stat: str, line: float, direction: str,
-             tier: str, source: str) -> None:
+             tier: str, source: str, team: str = "") -> None:
         key = (player.lower().strip(), stat.lower().strip(), line, direction.upper())
         if key in seen or not player:
             return
@@ -382,6 +382,7 @@ def _get_active_bets() -> list[dict]:
             "direction":   direction,
             "tier":        tier,
             "source":      source,
+            "team":        team.upper().strip(),
         })
 
     # Source 1: explicit active_bets in session state (manual locks)
@@ -391,6 +392,7 @@ def _get_active_bets() -> list[dict]:
             float(b.get("line", 0) or 0),
             str(b.get("direction", "OVER")),
             b.get("tier", ""), "Lock",
+            b.get("player_team", b.get("team", "")),
         )
 
     # Source 2: analysis_results from Neural Analysis
@@ -402,6 +404,7 @@ def _get_active_bets() -> list[dict]:
             float(r.get("line", 0) or 0),
             str(r.get("direction", "OVER")),
             r.get("tier", ""), "Analysis",
+            r.get("player_team", r.get("team", "")),
         )
 
     # Source 3: database (today's pending bets)
@@ -420,6 +423,7 @@ def _get_active_bets() -> list[dict]:
                 float(b.get("prop_line", 0) or 0),
                 str(b.get("direction", "OVER")),
                 b.get("tier", ""), "Tracker",
+                b.get("player_team", b.get("team", "")),
             )
     except Exception:
         pass
@@ -442,8 +446,6 @@ if not all_available_bets:
     st.stop()
 
 # ── Bet Selector ──────────────────────────────────────────────
-# Build human-readable labels for multiselect
-
 def _bet_label(b: dict) -> str:
     name = b.get("player_name", "Unknown")
     stat = str(b.get("stat_type", "")).replace("_", " ").title()
@@ -454,16 +456,87 @@ def _bet_label(b: dict) -> str:
     return f"{name} — {stat} {direction} {line}{source_tag}"
 
 
+# Build team → "AWAY @ HOME" matchup label from todays_games session state
+def _build_team_game_map() -> dict[str, str]:
+    result: dict[str, str] = {}
+    for g in st.session_state.get("todays_games", []):
+        away = str(g.get("away_team", g.get("away", g.get("visitor_team", "")))).upper().strip()
+        home = str(g.get("home_team", g.get("home", ""))).upper().strip()
+        if home and away:
+            label = f"{away} @ {home}"
+            result[home] = label
+            result[away] = label
+    return result
+
+_team_game_map = _build_team_game_map()
+
+def _bet_game_label(b: dict) -> str:
+    team = str(b.get("team", "")).upper().strip()
+    if not team:
+        return ""
+    return _team_game_map.get(team, team)
+
 _bet_labels = [_bet_label(b) for b in all_available_bets]
 _label_to_bet = dict(zip(_bet_labels, all_available_bets))
+_all_game_labels = sorted({_bet_game_label(b) for b in all_available_bets if _bet_game_label(b)})
 
-st.markdown("### 🎯 Select Bets to Sweat")
-selected_labels = st.multiselect(
-    "Choose which bets to track live (all selected by default)",
-    options=_bet_labels,
-    default=_bet_labels,
-    key="sweat_bet_selector",
+_ss_full = "sweat_full_selection"   # full selection across all games
+_ss_view  = "sweat_bet_selector"    # multiselect view (game-scoped)
+
+# Initialise full selection once (all bets active by default)
+if _ss_full not in st.session_state:
+    st.session_state[_ss_full] = set(_bet_labels)
+
+# ── Compact filter row ────────────────────────────────────────
+_gf_col, _cnt_col = st.columns([3, 2])
+with _gf_col:
+    _sel_game = st.selectbox(
+        "Filter by game",
+        options=["🏀 All Games"] + _all_game_labels,
+        label_visibility="collapsed",
+        key="sweat_game_filter",
+    )
+with _cnt_col:
+    st.caption(f"🎯 **{len(st.session_state[_ss_full])} bets** active")
+
+# Determine which labels are visible in the current game view
+if _sel_game == "🏀 All Games" or not _all_game_labels:
+    _visible_labels = _bet_labels
+else:
+    _visible_labels = [_bet_label(b) for b in all_available_bets if _bet_game_label(b) == _sel_game]
+
+# ── Customise expander (collapsed by default) ─────────────────
+_exp_title = (
+    f"⚙️ Customize · {len(_visible_labels)} bets · {_sel_game}"
+    if _sel_game != "🏀 All Games"
+    else f"⚙️ Customize · {len(_bet_labels)} bets · all games"
 )
+with st.expander(_exp_title, expanded=False):
+    _sa_col, _ca_col = st.columns(2)
+    if _sa_col.button("✅ Select All", key="sweat_sel_all", use_container_width=True):
+        st.session_state[_ss_full] |= set(_visible_labels)
+        st.rerun()
+    if _ca_col.button("❌ Clear All", key="sweat_clr_all", use_container_width=True):
+        st.session_state[_ss_full] -= set(_visible_labels)
+        st.rerun()
+
+    # Set the multiselect value to current game's selection before rendering
+    _default_view = [l for l in _visible_labels if l in st.session_state[_ss_full]]
+    st.session_state[_ss_view] = _default_view
+
+    _sel_view = st.multiselect(
+        f"Showing {len(_visible_labels)} bets — type to search:",
+        options=_visible_labels,
+        key=_ss_view,
+        placeholder="Type a player name to search...",
+    )
+    # Sync view selection back into the full selection set
+    st.session_state[_ss_full] = (
+        st.session_state[_ss_full] - set(_visible_labels)
+    ) | set(_sel_view)
+
+# Active labels = full selection (preserves choices across game filter switches)
+selected_labels = [l for l in _bet_labels if l in st.session_state[_ss_full]]
 
 active_bets = [_label_to_bet[lbl] for lbl in selected_labels if lbl in _label_to_bet]
 

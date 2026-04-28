@@ -1389,12 +1389,15 @@ def auto_log_analysis_bets(analysis_results, minimum_edge=5.0, max_bets=15, *, s
     # Build today-scoped deduplication set.  Use _db_read so it works on
     # PostgreSQL (Railway) as well as local SQLite -- raw sqlite3.connect
     # would always read zero rows on Railway and create duplicates.
+    # Dedup is source-scoped: only skip picks already logged with the SAME
+    # source so that platform_ai and quantum can each log their own rows for
+    # the same pick without blocking each other.
     existing_keys: set = set()
     try:
         from tracking.database import _db_read as _tdb_read
         _rows = _tdb_read(
-            "SELECT player_name, stat_type, prop_line, direction FROM bets WHERE bet_date = ?",
-            (today_str,),
+            "SELECT player_name, stat_type, prop_line, direction FROM bets WHERE bet_date = ? AND source = ?",
+            (today_str, source),
         )
         existing_keys = {
             (row["player_name"].lower(), row["stat_type"], float(row["prop_line"] or 0), row["direction"])

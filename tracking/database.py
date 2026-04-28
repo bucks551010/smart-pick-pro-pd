@@ -4058,6 +4058,35 @@ def load_latest_analysis_session():
             row_dict["selected_picks"] = json.loads(row_dict.get("selected_picks_json") or "[]")
         except Exception:
             row_dict["selected_picks"] = []
+
+        # Content date guard: strip any picks whose pick_date or game_date is
+        # from a prior sports day.  A stale UI session saved at 6 PM today could
+        # contain analysis_results generated from yesterday's player pool when
+        # the user had leftover session state.  Comparing content dates (not just
+        # the session timestamp) is the only reliable protection.
+        _today = _nba_today_iso()
+        _raw_results = row_dict["analysis_results"]
+        if _raw_results:
+            row_dict["analysis_results"] = [
+                r for r in _raw_results
+                if r.get("pick_date", _today) >= _today
+                or r.get("game_date", _today) >= _today
+            ]
+            _filtered_out = len(_raw_results) - len(row_dict["analysis_results"])
+            if _filtered_out:
+                _logger.info(
+                    "load_latest_analysis_session: dropped %d prior-day picks from session %s",
+                    _filtered_out,
+                    row_dict.get("session_id"),
+                )
+        _raw_sel = row_dict["selected_picks"]
+        if _raw_sel:
+            row_dict["selected_picks"] = [
+                r for r in _raw_sel
+                if r.get("pick_date", _today) >= _today
+                or r.get("game_date", _today) >= _today
+            ]
+
         return row_dict
     except Exception as _err:
         _logger.warning(f"load_latest_analysis_session error (non-fatal): {_err}")
@@ -4115,6 +4144,22 @@ def load_analysis_session_by_id(session_id: int):
             row_dict["selected_picks"] = json.loads(row_dict.get("selected_picks_json") or "[]")
         except Exception:
             row_dict["selected_picks"] = []
+        # Content date guard — same as load_latest_analysis_session
+        _today = _nba_today_iso()
+        _raw_results = row_dict["analysis_results"]
+        if _raw_results:
+            row_dict["analysis_results"] = [
+                r for r in _raw_results
+                if r.get("pick_date", _today) >= _today
+                or r.get("game_date", _today) >= _today
+            ]
+        _raw_sel = row_dict["selected_picks"]
+        if _raw_sel:
+            row_dict["selected_picks"] = [
+                r for r in _raw_sel
+                if r.get("pick_date", _today) >= _today
+                or r.get("game_date", _today) >= _today
+            ]
         return row_dict
     except Exception as _err:
         _logger.warning(f"load_analysis_session_by_id({session_id}) error (non-fatal): {_err}")
@@ -4536,6 +4581,16 @@ def save_page_state(session_dict):
             if isinstance(v, (list, dict)) and not v:
                 continue
             filtered[k] = v
+        # Don't persist analysis_results whose picks lack pick_date (manual QAM
+        # analysis) or carry a prior-day pick_date — both would be re-loaded as
+        # "today's picks" by _auto_restore_page_state() on the next render.
+        # Manual-analysis results are recovered via analysis_sessions (date-guarded);
+        # slate-worker results always stamp pick_date.
+        _ar_to_save = filtered.get("analysis_results")
+        if _ar_to_save and isinstance(_ar_to_save, list) and _ar_to_save:
+            _first_pd = str(_ar_to_save[0].get("pick_date") or "")[:10]
+            if not _first_pd or _first_pd < _nba_today_iso():
+                filtered.pop("analysis_results", None)
         if not filtered:
             return True  # Nothing to save
         # Merge with existing saved state so keys from other pages
@@ -4591,6 +4646,22 @@ def load_page_state():
                 _nba_today_iso(),
             )
             return {}
+        # Secondary guard: validate the actual pick_date inside analysis_results.
+        # save_page_state() stamps _page_state_date = today on every write, so a
+        # session that had prior-day picks and got saved today (e.g. after a page
+        # reload that hit the boundary guard while analysis_results was still set)
+        # would pass the date guard above even though the picks are from a prior day.
+        _saved_picks = raw.get("analysis_results")
+        if _saved_picks and isinstance(_saved_picks, list) and len(_saved_picks) > 0:
+            _pick_date = str(_saved_picks[0].get("pick_date") or "")[:10]
+            if not _pick_date or _pick_date < _nba_today_iso():
+                _logger.info(
+                    "load_page_state: discarding analysis_results with "
+                    "pick_date=%r (today=%s) — also clearing todays_games",
+                    _pick_date or "<missing>", _nba_today_iso(),
+                )
+                raw.pop("analysis_results", None)
+                raw.pop("todays_games", None)   # games belong to the same prior-day slate
         # Only return recognised keys to avoid injecting stale/unknown state
         return {
             k: v for k, v in raw.items()
@@ -4721,25 +4792,40 @@ def update_worker_state(
     """
     now_iso = datetime.datetime.utcnow().isoformat() + "Z"
     if _DATABASE_URL:
-        sql = (
-            "INSERT INTO worker_state (job_name, last_run_at, last_status, last_error, run_count) "
-            "VALUES (?, ?, ?, ?, 1) "
-            "ON CONFLICT (job_name) DO UPDATE "
-            "SET last_run_at = EXCLUDED.last_run_at, "
-            "    last_status = EXCLUDED.last_status, "
-            "    last_error = EXCLUDED.last_error, "
-            "    run_count = worker_state.run_count + 1"
-        )
-    else:
-        sql = (
-            "INSERT INTO worker_state (job_name, last_run_at, last_status, last_error, run_count) "
-            "VALUES (?, ?, ?, ?, 1) "
-            "ON CONFLICT(job_name) DO UPDATE SET "
-            "    last_run_at = excluded.last_run_at, "
-            "    last_status = excluded.last_status, "
-            "    last_error = excluded.last_error, "
-            "    run_count = worker_state.run_count + 1"
-        )
+        # Use a direct PG connection to bypass _to_pg_sql so the UPSERT
+        # syntax is guaranteed correct and errors are visible (not silently
+        # swallowed by the _db_write retry loop).
+        try:
+            conn = _pg_conn()
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO worker_state (job_name, last_run_at, last_status, last_error, run_count) "
+                "VALUES (%s, %s, %s, %s, 1) "
+                "ON CONFLICT (job_name) DO UPDATE "
+                "SET last_run_at = EXCLUDED.last_run_at, "
+                "    last_status = EXCLUDED.last_status, "
+                "    last_error = EXCLUDED.last_error, "
+                "    run_count = worker_state.run_count + 1",
+                (job_name, now_iso, status, error),
+            )
+            conn.commit()
+            _pg_putconn(conn)
+        except Exception as _ws_err:
+            _logger.warning("update_worker_state PG failed for %s: %s", job_name, _ws_err)
+            try:
+                _pg_pool().putconn(conn)
+            except Exception:
+                pass
+        return
+    sql = (
+        "INSERT INTO worker_state (job_name, last_run_at, last_status, last_error, run_count) "
+        "VALUES (?, ?, ?, ?, 1) "
+        "ON CONFLICT(job_name) DO UPDATE SET "
+        "    last_run_at = excluded.last_run_at, "
+        "    last_status = excluded.last_status, "
+        "    last_error = excluded.last_error, "
+        "    run_count = worker_state.run_count + 1"
+    )
     _db_write(sql, (job_name, now_iso, status, error), caller="update_worker_state")
 
 

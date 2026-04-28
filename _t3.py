@@ -1,4 +1,4 @@
-﻿import sqlite3
+import sqlite3
 conn = sqlite3.connect('db/smartpicks.db')
 
 # Check for prop_results / bet_results / picks / analysis tables

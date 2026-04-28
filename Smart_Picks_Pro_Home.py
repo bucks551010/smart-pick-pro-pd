@@ -266,6 +266,7 @@ def _load_cached_slate() -> tuple[list, list]:
 _today_iso = _nba_today_iso_fn()
 if st.session_state.get("_auto_init_date") != _today_iso:
     # New sports day — clear everything so the seeding gate re-runs fresh.
+    _was_prior_day_session = st.session_state.get("_auto_init_date") is not None
     for _k in (
         "_picks_seeded", "analysis_results", "current_props",
         "platform_props", "todays_games", "session_props",
@@ -273,6 +274,12 @@ if st.session_state.get("_auto_init_date") != _today_iso:
     ):
         st.session_state.pop(_k, None)
     st.session_state["_auto_init_date"] = _today_iso
+    if _was_prior_day_session:
+        # inject_joseph_floating() (called later at line ~501) runs
+        # _auto_restore_page_state(), which would re-load stale page_state
+        # into analysis_results — undoing the clear above.  Setting this flag
+        # makes that call a no-op so the boundary clear actually sticks.
+        st.session_state["_page_state_restored"] = True
     try:
         _load_cached_slate.clear()
     except Exception:
@@ -287,6 +294,33 @@ if not st.session_state.get("_picks_seeded"):
             st.session_state.setdefault("platform_props", _cached_props)
         if _cached_picks and not st.session_state.get("analysis_results"):
             st.session_state["analysis_results"] = _cached_picks
+    except Exception:
+        pass
+    # ── Load todays_games from the latest analysis session saved by the
+    # worker.  The worker and web containers have separate filesystems so
+    # slate_cache.json is never found by the web container; reading from
+    # the shared DB is the only cross-container-safe path.
+    if not st.session_state.get("todays_games"):
+        try:
+            from tracking.database import load_latest_analysis_session as _llas
+            _latest_sess = _llas()
+            if _latest_sess and _latest_sess.get("todays_games"):
+                st.session_state["todays_games"] = _latest_sess["todays_games"]
+            # Also seed analysis_results from the rich session blob if the
+            # flat-pick fallback left it empty.
+            if (
+                not st.session_state.get("analysis_results")
+                and _latest_sess
+                and _latest_sess.get("analysis_results")
+            ):
+                st.session_state["analysis_results"] = _latest_sess["analysis_results"]
+        except Exception:
+            pass
+    # Stamp _data_version_seen now so the poller's first registration fire
+    # does NOT clear freshly-loaded picks and trigger an unnecessary rerun.
+    try:
+        from tracking.database import get_data_version as _gv_seed
+        st.session_state.setdefault("_data_version_seen", _gv_seed())
     except Exception:
         pass
 
@@ -315,13 +349,13 @@ def _data_version_poller() -> None:  # noqa: ANN201
     except Exception:
         pass  # never block the UI
 
-_data_version_poller()
-
 # ─── No picks yet — slate_worker hasn't run today ─────────────────────────
 # Show a non-blocking info banner with a manual refresh button so users can
 # force-check the DB instead of waiting for the next auto-refresh cycle.
 if not st.session_state.get("analysis_results"):
-    # Try one more DB hit in case the startup slate just finished writing.
+    # Cache-bust read: clears the ttl=300 cache to catch picks written
+    # between the seeding-gate call and now.  The render continues on THIS
+    # pass with the freshly-populated state — no st.rerun() needed.
     try:
         _load_cached_slate.clear()
         _retry_picks, _retry_props = _load_cached_slate()
@@ -330,19 +364,18 @@ if not st.session_state.get("analysis_results"):
             if _retry_props:
                 st.session_state.setdefault("current_props", _retry_props)
                 st.session_state.setdefault("platform_props", _retry_props)
-            st.rerun()
     except Exception:
         pass
 
 if not st.session_state.get("analysis_results"):
     _no_picks_col1, _no_picks_col2 = st.columns([4, 1])
     with _no_picks_col1:
-        with st.spinner("Loading tonight's picks..."):
-            st.info(
-                "📡 Fetching tonight's slate — picks load automatically within 60 seconds. "
-                "Click **Refresh** to check now.",
-                icon="⏳",
-            )
+        st.info(
+            "📡 No picks available yet for today's slate — "
+            "the worker runs every 30 minutes. "
+            "Click **Refresh** to check now.",
+            icon="📡",
+        )
     with _no_picks_col2:
         if st.button("🔄 Refresh", key="_home_refresh_no_picks"):
             _load_cached_slate.clear()
@@ -488,12 +521,11 @@ st.session_state.setdefault("joseph_last_commentary", "")
 st.session_state.setdefault("joseph_entry_just_built", False)
 
 # ── Global Settings Popover (accessible from sidebar) ─────────
-from utils.components import render_global_settings, inject_joseph_floating, render_joseph_hero_banner, inject_sidebar_nav_tooltips, render_notification_center, inject_mobile_responsive_css, inject_aria_enhancements
+from utils.components import render_global_settings, inject_joseph_floating, render_joseph_hero_banner, render_notification_center, inject_mobile_responsive_css, inject_aria_enhancements
 with st.sidebar:
     render_global_settings()
 st.session_state["joseph_page_context"] = "page_home"
-inject_joseph_floating()
-inject_sidebar_nav_tooltips()
+inject_joseph_floating()  # also calls inject_sidebar_nav_tooltips()
 render_notification_center()
 inject_mobile_responsive_css()
 inject_aria_enhancements()
@@ -501,12 +533,6 @@ inject_aria_enhancements()
 # ============================================================
 # END SECTION: Initialize App on Startup
 # ============================================================
-
-# ─── Theme re-injection guard ─────────────────────────────────────────────
-# Executing a second inject_theme_css() here guarantees the full CSS suite
-# is in the DOM even if an exception fired in the setup block above and
-# Streamlit skipped the first injection's render pass.
-inject_theme_css()
 
 # ============================================================
 # SECTION 1: Cinematic Hero — Joseph Banner + Hero HUD + CTA
@@ -540,50 +566,21 @@ st.markdown(f"""
   <span class="live-dot"></span>
   <span class="lab-accent">LIVE</span>
   <span class="lab-dim">&nbsp;&mdash;&nbsp;</span>
-  <span>Neural Engine V6.0 &nbsp;&bull;&nbsp; {game_count_text} &nbsp;&bull;&nbsp; <span class="lab-accent">6 AI models active</span></span>
+  <span>NBA prop engine active &nbsp;&bull;&nbsp; {game_count_text} &nbsp;&bull;&nbsp; <span class="lab-accent">Quantum online</span></span>
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown(f"""
-<div class="hero-cinema lp-anim">
-  <div class="hero-cinema-bg"></div>
-  <div class="hero-cinema-scan"></div>
-  <div class="hero-cinema-inner">
+<div class="hero-hud lp-anim">
+  <div class="hero-hud-inner-glow"></div>
+  <div class="hero-hud-text">
     <div class="hero-badge-row">
       <span class="hero-badge hero-badge-ai">🤖 Quantum AI</span>
       <span class="hero-badge hero-badge-free">✅ Free Picks Daily</span>
       <span class="hero-badge hero-badge-dfs">🏀 PrizePicks + Underdog</span>
     </div>
-    <div class="hero-headline">
-      <div class="hero-hl-line1">THE HOUSE</div>
-      <div class="hero-hl-line2">HAS A PROBLEM.</div>
-      <div class="hero-hl-line3">IT'S US.</div>
-    </div>
-    <div class="hero-sub">
-      <strong>5,000+ Live Props &nbsp;·&nbsp; 1,000 Simulations Each &nbsp;·&nbsp; Zero Black Boxes.</strong><br>
-      AI edge detection built for serious players. Know the edge before you enter.
-    </div>
-    <div class="hero-stats-strip">
-      <div class="hero-stat">
-        <span class="hero-stat-num green">63.4%</span>
-        <span class="hero-stat-label">Career Win Rate</span>
-      </div>
-      <div class="hero-stat-div"></div>
-      <div class="hero-stat">
-        <span class="hero-stat-num blue">5,000+</span>
-        <span class="hero-stat-label">Live Props Nightly</span>
-      </div>
-      <div class="hero-stat-div"></div>
-      <div class="hero-stat">
-        <span class="hero-stat-num gold">1,000×</span>
-        <span class="hero-stat-label">Sims Per Prop</span>
-      </div>
-      <div class="hero-stat-div"></div>
-      <div class="hero-stat">
-        <span class="hero-stat-num" style="color:#e879f9">6</span>
-        <span class="hero-stat-label">AI Models Blended</span>
-      </div>
-    </div>
+    <div class="hero-tagline">THE NBA PROP ENGINE THAT SHOWS ITS WORK</div>
+    <div class="hero-subtext"><strong>5,000+ Live Props. 1,000 Simulations Each. Zero Black Boxes.</strong> Know the edge before you enter.</div>
     <div class="hero-date">📅 {today_str} &nbsp;&bull;&nbsp; <span class="game-count-live">{game_count_text}</span></div>
   </div>
 </div>
@@ -881,6 +878,11 @@ if not _has_analysis and not _onboard_dismissed:
 # SECTION 1A: Top 3 Tonight — Hero Cards
 # ============================================================
 
+# QCM CSS — injected once here, shared by Section 1A (hero cards) and
+# Section 1B (edge-gap cards).  Duplicate calls inside each conditional
+# block were stamping redundant <style> nodes on every render pass.
+st.markdown(_get_qcm_css(), unsafe_allow_html=True)
+
 _home_analysis = st.session_state.get("analysis_results", [])
 
 if _user_tier == TIER_FREE:
@@ -900,13 +902,15 @@ if _user_tier == TIER_FREE:
     )
     st.markdown(_cta_html, unsafe_allow_html=True)
 
-# Build Top 3 hero pool: Platinum/Gold, conf >= 65, not avoided/out
+# Build Top 3 hero pool: Platinum/Gold/Silver, conf >= 57, not avoided/out
+# Also exclude synthetic game-total props (opponent must be non-empty).
 _hero_pool = [
     r for r in _home_analysis
     if not r.get("should_avoid", False)
     and not r.get("player_is_out", False)
-    and r.get("tier", "Bronze") in {"Platinum", "Gold"}
-    and float(r.get("confidence_score", 0) or 0) >= 65
+    and r.get("tier", "Bronze") in {"Platinum", "Gold", "Silver"}
+    and float(r.get("confidence_score", 0) or 0) >= 57
+    and r.get("opponent", "")  # exclude no-opponent/synthetic props
 ]
 _hero_pool = sorted(
     _hero_pool,
@@ -975,7 +979,6 @@ if _user_tier != TIER_FREE and _hero_pool:
         except Exception:
             pass
 
-    st.markdown(_get_qcm_css(), unsafe_allow_html=True)
     st.markdown(
         _render_hero_section_html(_hero_pool),
         unsafe_allow_html=True,
@@ -991,7 +994,13 @@ if _user_tier != TIER_FREE and _hero_pool:
 #             (|edge| ≥ 20%, odds_type="standard" only, no goblins/demons)
 # ============================================================
 
-_home_edge_gap_picks = _filter_qeg_picks(_home_analysis)
+_qeg_tonight_teams = {
+    t
+    for g in st.session_state.get("todays_games", [])
+    for t in (g.get("home_team", ""), g.get("away_team", ""))
+    if t
+}
+_home_edge_gap_picks = _filter_qeg_picks(_home_analysis, todays_teams=_qeg_tonight_teams or None)
 _home_edge_gap_picks = _deduplicate_qeg_picks(_home_edge_gap_picks)
 _home_edge_gap_picks = sorted(
     _home_edge_gap_picks,
@@ -1000,7 +1009,6 @@ _home_edge_gap_picks = sorted(
 )
 
 if _user_tier != TIER_FREE and _home_edge_gap_picks:
-    st.markdown(_get_qcm_css(), unsafe_allow_html=True)
     st.markdown(
         _render_edge_gap_banner_html(_home_edge_gap_picks),
         unsafe_allow_html=True,
@@ -1787,6 +1795,13 @@ with st.expander("⚠️ Important Legal Disclaimer — Please Read", expanded=F
 # ── Full JMS attribution footer (replaces static lp-footer) ─
 from utils.components import render_attribution_footer as _render_home_footer
 _render_home_footer()
+
+# ─── Real-Time Polling fragment — placed LAST in the render tree ──────────
+# The fragment emits no visible content; it only polls data_version and
+# calls st.rerun() when new picks arrive.  Placing it at the END of the
+# render tree means its 60-second interval fires never interrupt or
+# interleave with content rendering above it.
+_data_version_poller()
 
 # ============================================================
 # END SECTION 10: Footer

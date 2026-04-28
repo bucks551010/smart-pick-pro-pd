@@ -2114,32 +2114,92 @@ html, body, .stApp, .stApp * {
     box-shadow: 0 0 12px rgba(59,158,255,0.6);
 }
 
-/* ── Hero (Nike-scale) ─────────────────────────────────────── */
+/* ── Hero (Cinematic / Elite) ──────────────────────────────── */
+@keyframes agHeroL1In {
+    0%   { opacity: 0; transform: translateY(-60px) scale(1.05); filter: blur(16px); }
+    100% { opacity: 1; transform: translateY(0)     scale(1);    filter: blur(0); }
+}
+@keyframes agHeroL2In {
+    0%   { opacity: 0; transform: translateX(-50px); filter: blur(10px); }
+    100% { opacity: 1; transform: translateX(0);     filter: blur(0); }
+}
+@keyframes agHeroItsUsIn {
+    0%   { opacity: 0; transform: translateY(80px) scale(0.82); filter: blur(28px); }
+    65%  { filter: blur(2px); }
+    100% { opacity: 1; transform: translateY(0)    scale(1);    filter: blur(0); }
+}
+@keyframes agHeroDividerIn {
+    0%   { transform: scaleX(0); opacity: 0; }
+    100% { transform: scaleX(1); opacity: 1; }
+}
+@keyframes agHeroCinemaGlow {
+    0%,100% { box-shadow: 0 0 0 1px rgba(0,232,122,0.15), 0 0 160px rgba(0,232,122,0.13), 0 80px 160px rgba(0,0,0,0.90), inset 0 1px 0 rgba(255,255,255,0.07); }
+    50%      { box-shadow: 0 0 0 1px rgba(0,232,122,0.28), 0 0 240px rgba(0,232,122,0.22), 0 80px 160px rgba(0,0,0,0.90), inset 0 1px 0 rgba(255,255,255,0.10); }
+}
+@keyframes agHeroScan {
+    0%   { top: 0%; opacity: 0; }
+    5%   { opacity: 1; }
+    95%  { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+}
 .ag-hero {
     text-align: center;
-    padding: 32px 28px 0;
-    max-width: 860px; margin: 0 auto;
+    padding: 104px 56px 88px;
+    max-width: 1280px; margin: 0 auto;
     position: relative;
+    background:
+        linear-gradient(180deg, rgba(0,18,12,0.98) 0%, rgba(3,10,20,0.99) 50%, rgba(4,8,16,1) 100%);
+    border: 1px solid rgba(0,232,122,0.25);
+    border-radius: 28px;
+    overflow: hidden;
+    animation: agHeroCinemaGlow 5s ease-in-out infinite;
 }
+/* Top accent bar */
+.ag-hero::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, transparent 0%, var(--c-green) 25%, var(--c-plasma) 50%, var(--c-blue) 75%, transparent 100%);
+    background-size: 300% 100%;
+    animation: agPlasmaFlow 4s ease infinite;
+}
+/* Animated scan line */
+.ag-hero::after {
+    content: '';
+    position: absolute; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(0,232,122,0.22) 50%, transparent 100%);
+    animation: agHeroScan 8s linear infinite;
+    pointer-events: none;
+}
+/* Ambient radial glows */
+.ag-hero-bg {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background:
+        radial-gradient(ellipse 80% 70% at 10% 30%, rgba(0,232,122,0.13) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 80% at 90% 20%, rgba(59,158,255,0.10) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 50% at 50% 95%, rgba(0,232,122,0.08) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(59,158,255,0.04) 0%, transparent 70%);
+    pointer-events: none;
+}
+.ag-hero-inner { position: relative; z-index: 1; }
+
 .ag-hero-ai-badge {
-    display: inline-flex; align-items: center; gap: 8px;
+    display: inline-flex; align-items: center; gap: 10px;
     font-family: var(--font-mono);
-    font-size: 0.54rem; font-weight: 700;
-    color: var(--c-plasma); background: rgba(163,247,224,0.04);
-    border: 1px solid rgba(163,247,224,0.18);
-    padding: 7px 22px; border-radius: 6px;
+    font-size: 0.72rem; font-weight: 700;
+    color: var(--c-plasma); background: rgba(163,247,224,0.06);
+    border: 1px solid rgba(163,247,224,0.28);
+    padding: 10px 28px; border-radius: 8px;
     text-transform: uppercase; letter-spacing: 0.18em;
-    margin-bottom: 20px;
+    margin-bottom: 28px;
     animation: agHeroTextReveal 0.8s 0.05s var(--ease-out) both;
-    box-shadow: 0 0 24px rgba(163,247,224,0.06), inset 0 0 0 1px rgba(163,247,224,0.04);
+    box-shadow: 0 0 32px rgba(163,247,224,0.10), inset 0 0 0 1px rgba(163,247,224,0.05);
     position: relative; overflow: hidden;
 }
 .ag-hero-ai-badge::after {
     content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(163,247,224,0.06), transparent);
+    background: linear-gradient(90deg, transparent, rgba(163,247,224,0.08), transparent);
     animation: agShimmer 4s ease-in-out infinite;
 }
-/* Blinking cursor */
 .ag-hero-ai-badge .ai-cursor {
     display: inline-block; width: 1px; height: 0.65em;
     background: var(--c-plasma); margin-left: 2px;
@@ -2147,91 +2207,107 @@ html, body, .stApp, .stApp * {
     vertical-align: middle;
 }
 .ag-hero-ai-badge .ai-dot {
-    width: 5px; height: 5px; border-radius: 50%;
+    width: 7px; height: 7px; border-radius: 50%;
     background: var(--c-green);
-    box-shadow: 0 0 8px rgba(0,232,122,0.55);
+    box-shadow: 0 0 12px rgba(0,232,122,0.70);
     animation: agLivePulse 2s ease-in-out infinite;
 }
 .ag-hero h1 {
     font-family: var(--font-head);
-    font-size: 6.2rem; font-weight: 900;
-    line-height: 0.9; letter-spacing: -0.055em;
+    font-weight: 900;
+    line-height: 0.88;
     color: #fff; margin: 0;
     text-transform: uppercase;
-    text-shadow:
-        0 0 120px rgba(0,232,122,0.08),
-        0 0 240px rgba(59,158,255,0.05),
-        0 2px 0 rgba(0,0,0,0.4);
-    animation: agHeroTextReveal 0.9s 0.1s var(--ease-out) both;
     will-change: transform;
 }
-.ag-hero h1 .line2 {
-    animation: agHeroTextReveal 0.9s 0.28s var(--ease-out) both;
+.ag-hero h1 .hero-l1 {
     display: block;
+    font-size: clamp(5.5rem, 14vw, 12.5rem);
+    letter-spacing: -0.06em;
+    text-shadow:
+        0 0 220px rgba(0,232,122,0.16),
+        0 0 480px rgba(59,158,255,0.08),
+        0 8px 0 rgba(0,0,0,0.65);
+    animation: agHeroL1In 1.0s 0.10s var(--ease-out) both;
+    color: #fff;
 }
-.ag-hero .em {
+.ag-hero h1 .hero-l2 {
     display: block;
-    background: linear-gradient(135deg, var(--c-green) 0%, var(--c-plasma) 28%, var(--c-blue) 55%, var(--c-purple) 80%, var(--c-gold) 100%);
+    font-size: clamp(3.4rem, 8.5vw, 7.5rem);
+    letter-spacing: -0.04em;
+    color: rgba(195,215,240,0.60);
+    text-shadow: 0 4px 0 rgba(0,0,0,0.5);
+    animation: agHeroL2In 0.9s 0.40s var(--ease-out) both;
+    margin-top: 4px;
+}
+.ag-hero-divider {
+    width: 80px; height: 2px; margin: 30px auto 26px;
+    background: linear-gradient(90deg, transparent, rgba(0,232,122,0.6), rgba(59,158,255,0.5), transparent);
+    border-radius: 2px;
+    animation: agHeroDividerIn 0.8s 0.58s cubic-bezier(0.22,1,0.36,1) both;
+    box-shadow: 0 0 20px rgba(0,232,122,0.4);
+    transform-origin: center;
+}
+.ag-hero-its-us {
+    font-family: var(--font-head);
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: clamp(5.2rem, 13.5vw, 12rem);
+    letter-spacing: 0.20em;
+    line-height: 1.0;
+    background: linear-gradient(135deg, var(--c-green) 0%, var(--c-plasma) 30%, var(--c-blue) 55%, var(--c-purple) 78%, var(--c-gold) 100%);
     background-size: 300% 200%;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
-    animation: agPlasmaFlow 6s ease infinite, agHeroTextReveal 0.9s 0.45s var(--ease-out) both;
-    filter: drop-shadow(0 0 40px rgba(0,232,122,0.15));
-    position: relative;
-}
-/* Precision underline beam */
-.ag-hero h1::after {
-    content: ''; display: block;
-    width: 80px; height: 2px; margin: 22px auto 0;
-    background: linear-gradient(90deg, transparent, var(--c-green), var(--c-plasma), var(--c-blue), transparent);
-    border-radius: 2px;
-    animation: agHeroTextReveal 0.9s 0.6s var(--ease-out) both;
-    box-shadow: 0 0 20px rgba(0,232,122,0.4);
+    animation: agPlasmaFlow 5s ease infinite, agHeroItsUsIn 1.1s 0.70s var(--ease-out) both;
+    filter: drop-shadow(0 0 100px rgba(0,232,122,0.32)) drop-shadow(0 0 200px rgba(59,158,255,0.14));
+    margin: 0; padding-bottom: 0.08em;
 }
 .ag-hero-sub {
     font-family: var(--font-body);
-    font-size: 1.1rem; font-weight: 400;
-    color: rgba(255,255,255,0.5);
-    line-height: 1.8; margin-top: 28px;
-    max-width: 560px; margin-left: auto; margin-right: auto;
+    font-size: clamp(1.0rem, 1.8vw, 1.30rem); font-weight: 400;
+    color: rgba(200,215,235,0.80);
+    line-height: 1.85; margin-top: 48px;
+    max-width: 660px; margin-left: auto; margin-right: auto;
     animation: agHeroTextReveal 0.9s 0.65s var(--ease-out) both;
     letter-spacing: 0.01em;
 }
 .ag-hero-sub strong {
-    color: rgba(255,255,255,0.9); font-weight: 600;
+    color: #ffffff; font-weight: 700;
     background: linear-gradient(90deg, #fff, var(--c-plasma));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 .ag-hero-badges {
-    display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
-    margin-top: 26px;
+    display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;
+    margin-top: 32px;
     animation: agHeroTextReveal 0.9s 0.75s var(--ease-out) both;
 }
 .ag-hero-badge {
-    display: inline-flex; align-items: center; gap: 6px;
+    display: inline-flex; align-items: center; gap: 8px;
     font-family: var(--font-mono);
-    font-size: 0.58rem; font-weight: 600;
-    color: rgba(255,255,255,0.38);
-    background: rgba(255,255,255,0.025);
-    border: 1px solid rgba(255,255,255,0.07);
-    padding: 7px 16px; border-radius: 6px;
+    font-size: 0.72rem; font-weight: 600;
+    color: rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 10px 20px; border-radius: 8px;
     text-transform: uppercase; letter-spacing: 0.08em;
     transition: all 0.2s var(--ease-spring);
     backdrop-filter: blur(8px);
 }
 .ag-hero-badge:hover {
-    border-color: rgba(0,232,122,0.28);
-    background: rgba(0,232,122,0.04);
-    color: rgba(255,255,255,0.65);
-    box-shadow: 0 0 18px rgba(0,232,122,0.07);
+    border-color: rgba(0,232,122,0.38);
+    background: rgba(0,232,122,0.06);
+    color: rgba(255,255,255,0.85);
+    box-shadow: 0 0 24px rgba(0,232,122,0.10);
+    transform: translateY(-2px);
 }
-.ag-hero-badge .badge-ico { font-size: 0.78rem; }
+.ag-hero-badge .badge-ico { font-size: 1.0rem; }
 .ag-hero-badge.primary {
     color: var(--c-green);
-    background: rgba(0,232,122,0.06);
-    border-color: rgba(0,232,122,0.22);
-    box-shadow: 0 0 24px rgba(0,232,122,0.08);
+    background: rgba(0,232,122,0.08);
+    border-color: rgba(0,232,122,0.32);
+    box-shadow: 0 0 28px rgba(0,232,122,0.12);
 }
 
 /* ── Hero dual CTA row ──────────────────────────────────────── */
@@ -2293,15 +2369,21 @@ html, body, .stApp, .stApp * {
 }
 .ag-hero-cta-trust {
     width: 100%; text-align: center;
-    font-family: var(--font-mono); font-size: 0.5rem; font-weight: 500;
-    color: rgba(255,255,255,0.16); letter-spacing: 0.08em; margin-top: 8px;
+    font-family: var(--font-mono); font-size: 0.68rem; font-weight: 500;
+    color: rgba(255,255,255,0.32); letter-spacing: 0.08em; margin-top: 10px;
 }
 @media (max-width: 520px) {
+    .ag-hero { padding: 56px 24px 48px; border-radius: 20px; }
     .ag-hero-cta { gap: 10px; margin-top: 28px; }
     .ag-hero-cta-primary { padding: 15px 32px; font-size: 0.9rem; }
     .ag-hero-cta-secondary { padding: 14px 22px; font-size: 0.8rem; }
+    .ag-hero-ai-badge { font-size: 0.60rem; padding: 8px 18px; }
+    .ag-hero-badge { font-size: 0.62rem; padding: 8px 14px; }
+    .ag-hero-sub { font-size: 1.0rem; }
+    .ag-hero-divider { margin: 18px auto 16px; width: 56px; }
 }
 @media (max-width: 380px) {
+    .ag-hero { padding: 44px 16px 36px; }
     .ag-hero-cta { flex-direction: column; gap: 8px; }
     .ag-hero-cta-primary, .ag-hero-cta-secondary { width: 100%; justify-content: center; }
 }
@@ -3816,7 +3898,9 @@ html, body, .stApp, .stApp * {
     .ag-section { padding-left: 18px; padding-right: 18px; }
     .ag-full-bleed .ag-section { padding-left: 18px; padding-right: 18px; }
     .ag-full-bleed { padding: 36px 0; }
-    .ag-hero h1 { font-size: 3.6rem; }
+    .ag-hero h1 .hero-l1 { font-size: 4.5rem; }
+    .ag-hero h1 .hero-l2 { font-size: 2.7rem; }
+    .ag-hero-its-us { font-size: 4.0rem; letter-spacing: 0.15em; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 2rem; }
     .ag-cta2-head { font-size: 1.9rem; }
     .ag-proof-big { font-size: 2.4rem; }
@@ -3853,7 +3937,9 @@ html, body, .stApp, .stApp * {
     .ag-section { padding-left: 14px; padding-right: 14px; }
     .ag-full-bleed .ag-section { padding-left: 14px; padding-right: 14px; }
     .ag-full-bleed { padding: 28px 0; }
-    .ag-hero h1 { font-size: 2.4rem; line-height: 1.02; }
+    .ag-hero h1 .hero-l1 { font-size: 3.0rem; line-height: 0.88; }
+    .ag-hero h1 .hero-l2 { font-size: 1.85rem; }
+    .ag-hero-its-us { font-size: 2.6rem; letter-spacing: 0.12em; }
     .ag-hero p { font-size: 0.82rem; padding: 0 8px; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 1.5rem; }
     .ag-section-head p { font-size: 0.78rem; padding: 0 4px; }
@@ -3861,8 +3947,8 @@ html, body, .stApp, .stApp * {
     .ag-logo-ring { width: 190px; height: 190px; }
     .ag-logo-section { padding-top: 40px; }
     .ag-hero-badges { gap: 6px; flex-wrap: wrap; justify-content: center; }
-    .ag-hero-badge { padding: 6px 12px; font-size: 0.58rem; }
-    .ag-hero-ai-badge { font-size: 0.5rem; padding: 5px 14px; letter-spacing: 0.1em; }
+    .ag-hero-badge { padding: 8px 14px; font-size: 0.64rem; }
+    .ag-hero-ai-badge { font-size: 0.60rem; padding: 8px 16px; letter-spacing: 0.12em; }
     .ag-proof-inner { grid-template-columns: repeat(2, 1fr); gap: 8px; }
     .ag-proof-big { font-size: 1.8rem; }
     .ag-proof-stat { padding: 16px 10px 14px; border-radius: 14px; }
@@ -3912,7 +3998,9 @@ html, body, .stApp, .stApp * {
     }
     .ag-section { padding-left: 10px; padding-right: 10px; }
     .ag-full-bleed .ag-section { padding-left: 10px; padding-right: 10px; }
-    .ag-hero h1 { font-size: 2rem; }
+    .ag-hero h1 .hero-l1 { font-size: 2.4rem; }
+    .ag-hero h1 .hero-l2 { font-size: 1.5rem; }
+    .ag-hero-its-us { font-size: 2.1rem; letter-spacing: 0.08em; }
     .ag-hero p { font-size: 0.78rem; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 1.2rem; }
     .ag-cta2-head { font-size: 1.1rem; }
@@ -3937,8 +4025,8 @@ html, body, .stApp, .stApp * {
     .ag-comp { grid-template-columns: auto 1fr; gap: 8px; }
     .ag-comp-price { display: none; }
     .ag-hero-badges { gap: 4px; }
-    .ag-hero-badge { padding: 5px 10px; font-size: 0.52rem; }
-    .ag-hero-ai-badge { font-size: 0.46rem; padding: 4px 10px; }
+    .ag-hero-badge { padding: 6px 12px; font-size: 0.60rem; }
+    .ag-hero-ai-badge { font-size: 0.56rem; padding: 6px 12px; }
     .ag-ticker { height: 30px; }
     .ag-ticker-item { padding: 0 10px; font-size: 0.5rem; }
 }
@@ -5648,6 +5736,11 @@ def require_login() -> bool:
         _cookie_user = _load_session_by_token(_cookie_tok)
         if _cookie_user:
             _set_logged_in(_cookie_user, _write_storage=False)
+            # Cookie restore is a silent re-auth — do NOT redirect to Home.
+            # _set_logged_in() always sets _redirect_to_home=True (for fresh
+            # logins), so we clear it here so sub-page users are not kicked
+            # back to the homepage on their first widget interaction.
+            st.session_state["_redirect_to_home"] = False
             # Store the active token in session_state so logout_user()
             # can delete it from the DB and expire the cookie properly.
             st.session_state["_auth_session_token"] = _cookie_tok
@@ -5678,6 +5771,8 @@ def require_login() -> bool:
             _user = _load_session_by_token(_tok)
             if _user:
                 _set_logged_in(_user, _write_storage=False)
+                # localStorage bridge restore — do NOT redirect to Home.
+                st.session_state["_redirect_to_home"] = False
                 # Store the active token so logout_user() can delete it from DB.
                 st.session_state["_auth_session_token"] = _tok
                 try:
@@ -5772,8 +5867,12 @@ def require_login() -> bool:
     <div class="ag-logo-section">{_logo_html}<div class="ag-logo-ring"></div></div>
 
     <div class="ag-hero">
+      <div class="ag-hero-bg"></div>
+      <div class="ag-hero-inner">
       <div class="ag-hero-ai-badge"><span class="ai-dot"></span> NEURAL ENGINE v6.0 &mdash; 6 AI MODELS ACTIVE</div>
-      <h1>The House<br><span class="line2">Has a Problem.</span><br><span class="em">It&rsquo;s Us.</span></h1>
+      <h1><span class="hero-l1">The House</span><span class="hero-l2">Has a Problem.</span></h1>
+      <div class="ag-hero-divider"></div>
+      <div class="ag-hero-its-us">It&rsquo;s Us.</div>
       <div class="ag-hero-sub">
         <strong>The NBA prop machine the Twitter gurus don&rsquo;t want you to know about.</strong><br>
         Every night, 6 AI models scan 300+ props across PrizePicks, DraftKings &amp; Underdog
@@ -5791,6 +5890,7 @@ def require_login() -> bool:
         <a class="ag-hero-cta-primary" href="?auth=signup">&#x26A1; Create Free Account &mdash; It&rsquo;s Free</a>
         <a class="ag-hero-cta-secondary" href="?auth=login">Already a member? Log In &#x2192;</a>
         <div class="ag-hero-cta-trust">&#x1F512; No credit card &nbsp;&middot;&nbsp; 10-second signup &nbsp;&middot;&nbsp; 2,400+ sharps already winning</div>
+      </div>
       </div>
     </div>
 

@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # FILE: pages/login.py
 # PURPOSE: Premium login/signup portal — smartpickpro.ai/login
 #          Split-panel immersive auth experience.

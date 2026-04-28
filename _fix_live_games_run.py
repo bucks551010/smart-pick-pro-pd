@@ -1,4 +1,4 @@
-﻿import re, ast
+import re, ast
 
 path = u'pages/1_\U0001f4e1_Live_Games.py'
 

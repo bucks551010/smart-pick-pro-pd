@@ -164,6 +164,11 @@ def run_slate(dry_run: bool = False) -> int:
         # ── Step 2: Active rosters + injury map ──────────────────────────
         _logger.info("[2] Loading rosters + injury map…")
         players_today = get_todays_players(games)
+        # get_todays_players should return a list; guard against bool in case
+        # the live fetcher path returns True/False instead of a player list.
+        if isinstance(players_today, bool):
+            _logger.warning("[2] get_todays_players returned bool (%s) — treating as empty list.", players_today)
+            players_today = []
         players_data = load_players_data()
         # Merge game-day players so the engine finds all roster context.
         if players_today:
@@ -216,6 +221,32 @@ def run_slate(dry_run: bool = False) -> int:
             return 0
         _logger.info("[3] %d props fetched.", len(props))
 
+        # ── Step 3b: Filter props to tonight's playing teams only ────────
+        # The prop platforms (PrizePicks, Underdog) list props for ALL
+        # upcoming games this week, not just tonight's.  Without this filter,
+        # the analysis engine processes props for teams not playing tonight
+        # (e.g. POR, TOR, HOU), producing picks with empty opponents that
+        # contaminate the QAM display and the DB.
+        if games:
+            _tonight_teams: set[str] = set()
+            for _g in games:
+                _t1 = str(_g.get("home_team", "") or "").upper().strip()
+                _t2 = str(_g.get("away_team", "") or "").upper().strip()
+                if _t1:
+                    _tonight_teams.add(_t1)
+                if _t2:
+                    _tonight_teams.add(_t2)
+            if _tonight_teams:
+                _props_before = len(props)
+                props = [
+                    p for p in props
+                    if str(p.get("team", "") or "").upper().strip() in _tonight_teams
+                ]
+                _logger.info(
+                    "[3b] Filtered to tonight's teams %s: %d → %d props.",
+                    sorted(_tonight_teams), _props_before, len(props),
+                )
+
         # Write props CSV fresh so Prop Scanner page stays current.
         if not dry_run:
             try:
@@ -249,6 +280,19 @@ def run_slate(dry_run: bool = False) -> int:
         _logger.exception("[!] Pipeline error: %s", exc)
 
     # ── Step 6: Persist picks ─────────────────────────────────────────────
+    # Extra guard: only persist results for players with a known game opponent.
+    # This catches any non-playing-team props or synthetic game-total entries
+    # that slipped through the step-3b team filter (e.g. props with no team
+    # field set in the platform data).
+    if results and games:
+        _results_before = len(results)
+        results = [r for r in results if r.get("opponent", "")]
+        if len(results) < _results_before:
+            _logger.info(
+                "[6] Dropped %d no-opponent results (non-playing-team / synthetic). Keeping %d.",
+                _results_before - len(results), len(results),
+            )
+
     inserted = 0
     if results and not dry_run:
         try:
@@ -287,6 +331,35 @@ def run_slate(dry_run: bool = False) -> int:
                 _logger.info("[6c] data_version bumped — running sessions will refresh.")
             except Exception as exc:
                 _logger.debug("[6c] _bump_data_version failed (non-fatal): %s", exc)
+        # Step 6d: Persist the full analysis session to DB so the web
+        # container (separate filesystem) can load todays_games and
+        # top picks without needing the local slate_cache.json file.
+        # Runs whenever results exist — NOT gated on inserted > 0 — so that
+        # runs where all picks are UPDATEs (already in DB) still push a fresh
+        # session, preventing stale session 42-style hangovers.
+        try:
+            from tracking.database import save_analysis_session as _save_session
+            # Include Platinum, Gold, and Silver picks in selected_picks so the
+            # QAM and home page have a meaningful set of top picks to display.
+            # Also require a non-empty opponent to exclude synthetic game-total
+            # props (e.g. "DET @ ORL Total") and players from non-playing teams
+            # that may have slipped through the props filter.
+            _top_picks = [
+                r for r in results
+                if r.get("tier", "").lower() in ("platinum", "gold", "silver")
+                and not r.get("player_is_out", False)
+                and not r.get("should_avoid", False)
+                and r.get("opponent", "")  # must have a valid game opponent
+            ][:50]
+            _session_id = _save_session(
+                results, todays_games=games, selected_picks=_top_picks
+            )
+            _logger.info(
+                "[6d] Analysis session saved (id=%s) — %d games, %d top picks.",
+                _session_id, len(games), len(_top_picks),
+            )
+        except Exception as exc:
+            _logger.debug("[6d] save_analysis_session failed (non-fatal): %s", exc)
     elif dry_run:
         inserted = len(results)
         _logger.info("[6] DRY RUN — would persist %d picks (no write).", inserted)
@@ -529,13 +602,17 @@ def _job_bet_logging() -> None:
         _logger.warning("[bet_logging] no picks in all_analysis_picks for %s", today)
         return
     picks = [dict(r) for r in rows]
+    # platform_ai MUST run first — it logs PrizePicks Gold/Platinum picks with
+    # source='platform_ai'.  auto_log_analysis_bets builds existing_keys from
+    # ALL today's bets, so if quantum runs first it locks those picks out and
+    # auto_log_platform_ai_bets logs 0 rows every time.
+    n_pa = auto_log_platform_ai_bets(picks)
     n_qam = auto_log_analysis_bets(picks, source="quantum")
     n_qeg = auto_log_qeg_bets(picks)
     n_sm = auto_log_smart_money_bets(picks)
-    n_pa = auto_log_platform_ai_bets(picks)
     _logger.info(
-        "[bet_logging] quantum=%d qeg=%d smart_money=%d platform_ai=%d",
-        n_qam, n_qeg, n_sm, n_pa,
+        "[bet_logging] platform_ai=%d quantum=%d qeg=%d smart_money=%d",
+        n_pa, n_qam, n_qeg, n_sm,
     )
 
 

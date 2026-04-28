@@ -4239,6 +4239,15 @@ def load_latest_analysis_session():
             row_dict["bets_locked"] = False
             row_dict["bets_locked_at"] = None
 
+        # Derive analysis_date from analysis_timestamp so the QAM can compare
+        # it to today's ISO date without it always being None.
+        _raw_ts = row_dict.get("analysis_timestamp", "")
+        if _raw_ts and not row_dict.get("analysis_date"):
+            try:
+                row_dict["analysis_date"] = str(_raw_ts)[:10]
+            except Exception:
+                pass
+
         return row_dict
     except Exception as _err:
         _logger.warning(f"load_latest_analysis_session error (non-fatal): {_err}")
@@ -4312,6 +4321,13 @@ def load_analysis_session_by_id(session_id: int):
                 if r.get("pick_date", _today) >= _today
                 or r.get("game_date", _today) >= _today
             ]
+        # Derive analysis_date from analysis_timestamp
+        _raw_ts = row_dict.get("analysis_timestamp", "")
+        if _raw_ts and not row_dict.get("analysis_date"):
+            try:
+                row_dict["analysis_date"] = str(_raw_ts)[:10]
+            except Exception:
+                pass
         return row_dict
     except Exception as _err:
         _logger.warning(f"load_analysis_session_by_id({session_id}) error (non-fatal): {_err}")

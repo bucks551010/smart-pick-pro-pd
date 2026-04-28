@@ -442,10 +442,14 @@ if not st.session_state.get("analysis_results"):
                 _slate_today = _get_slate_today() or []
             except Exception:
                 _slate_today = []
-            # Only use the slate when it actually corresponds to "today" — if a
-            # saved session is from an older date, keep its raw AR.
+            # Only merge the saved session with today's slate when the session
+            # date is KNOWN and matches today.  An unknown date (None/"") means
+            # the session is from a stale/un-dated run — merging it would let
+            # old opponent data bleed into today's picks and trigger the opponent
+            # filter below, wiping all DB-sourced slate picks (which have no
+            # opponent column).
             _saved_date = (_saved_session.get("analysis_date") or "")[:10]
-            if _slate_today and (not _saved_date or _saved_date == _today_iso):
+            if _slate_today and _saved_date and _saved_date == _today_iso:
                 # Build a slate index so we can carry over the rich analysis
                 # fields from AR (confidence_score, std_devs, opponent, etc.)
                 # but constrained to the deduped/capped set.
@@ -471,9 +475,16 @@ if not st.session_state.get("analysis_results"):
                     else:
                         _merged.append(sp)
                 _raw_ar = _merged
-            # Filter synthetic game-total props ONLY when at least one pick
-            # carries opponent metadata.
-            _any_has_opponent_ar = any(r.get("opponent") for r in _raw_ar)
+            elif _slate_today:
+                # Session date unknown or stale — use today's slate directly
+                # without merging so stale opponent/game data doesn't bleed in.
+                _raw_ar = list(_slate_today)
+            # Filter synthetic game-total props ONLY when the MAJORITY of picks
+            # carry opponent metadata (≥50%).  Requiring a majority prevents a
+            # handful of stale-session picks with opponent from accidentally
+            # wiping hundreds of DB-sourced slate picks that have no opponent.
+            _picks_with_opp = sum(1 for r in _raw_ar if r.get("opponent"))
+            _any_has_opponent_ar = _picks_with_opp > 0 and _picks_with_opp >= len(_raw_ar) * 0.5
             if _games_loaded and _any_has_opponent_ar:
                 _raw_ar = [r for r in _raw_ar if r.get("opponent", "")]
             # Always filter out game-total rows (empty team) — these are

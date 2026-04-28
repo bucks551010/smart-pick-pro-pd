@@ -3925,18 +3925,6 @@ def get_slate_picks_for_today() -> list:
             )
             cols = [d[0] for d in cur.description]
             rows = [dict(zip(cols, row)) for row in cur.fetchall()]
-            if not rows:
-                # No picks for today — fall back to most recent available date
-                cur.execute(
-                    "SELECT pick_id, pick_date, player_name, team, stat_type, prop_line, "
-                    "direction, platform, confidence_score, probability_over, edge_percentage, "
-                    "tier, result, actual_value, notes, bet_type, std_devs_from_line, is_risky, odds_type "
-                    "FROM all_analysis_picks "
-                    "WHERE pick_date = (SELECT MAX(pick_date) FROM all_analysis_picks) "
-                    "ORDER BY confidence_score DESC",
-                )
-                cols = [d[0] for d in cur.description]
-                rows = [dict(zip(cols, row)) for row in cur.fetchall()]
             conn.close()
         else:
             with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False, timeout=10) as conn:
@@ -3947,13 +3935,7 @@ def get_slate_picks_for_today() -> list:
                     "ORDER BY confidence_score DESC",
                     (today_str,),
                 ).fetchall()]
-                if not rows:
-                    # Fall back to most recent date
-                    rows = [dict(r) for r in conn.execute(
-                        "SELECT * FROM all_analysis_picks "
-                        "WHERE pick_date = (SELECT MAX(pick_date) FROM all_analysis_picks) "
-                        "ORDER BY confidence_score DESC",
-                    ).fetchall()]
+                # No fallback to previous date — return empty list if today has no picks.
 
         # Enforce per-player cap: results are already sorted by confidence_score DESC
         # so we keep the best picks for each player.
@@ -4132,8 +4114,20 @@ def load_latest_analysis_session():
 
         import datetime as _dt_guard
         _now_utc = _dt_guard.datetime.now(_dt_guard.timezone.utc)
-        _best_row = None
-        _best_count = -1
+
+        # Calculate the current sports-day boundary (4 AM ET expressed in UTC).
+        # Any session created BEFORE this boundary belongs to the previous day.
+        _et_tz = _get_eastern_tz()
+        _now_et = _now_utc.astimezone(_et_tz)
+        _today_4am_et = _now_et.replace(hour=4, minute=0, second=0, microsecond=0)
+        if _now_et < _today_4am_et:
+            _today_4am_et -= _dt_guard.timedelta(days=1)
+        _today_boundary_utc = _today_4am_et.astimezone(_dt_guard.timezone.utc)
+
+        _best_today = None
+        _best_today_count = -1
+        _best_fallback = None
+        _best_fallback_count = -1
 
         for _candidate in rows:
             _session_ts = _candidate.get("analysis_timestamp", "")
@@ -4147,11 +4141,22 @@ def load_latest_analysis_session():
                 if _age_hours > 36:
                     continue  # too old
                 _cnt = _candidate.get("prop_count") or 0
-                if _cnt > _best_count:
-                    _best_count = _cnt
-                    _best_row = _candidate
+                if _saved_at >= _today_boundary_utc:
+                    # Session belongs to today's sports day — prefer these
+                    if _cnt > _best_today_count:
+                        _best_today_count = _cnt
+                        _best_today = _candidate
+                else:
+                    # Session belongs to a prior sports day — use as fallback only
+                    if _cnt > _best_fallback_count:
+                        _best_fallback_count = _cnt
+                        _best_fallback = _candidate
             except Exception:
                 continue
+
+        # Today's sessions always win over prior-day sessions regardless of prop_count.
+        # This prevents a high-prop yesterday session from blocking today's picks.
+        _best_row = _best_today if _best_today is not None else _best_fallback
 
         if _best_row is None:
             return None

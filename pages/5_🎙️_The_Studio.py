@@ -1683,25 +1683,25 @@ if joseph_results:
             _best_candidates = [r for r in joseph_results if r.get("verdict") == "LEAN"]
         if _best_candidates:
             _best = max(_best_candidates, key=lambda r: r.get("dawg_factor", 0))
-            _b_player = _best.get("player", _best.get("player_name", ""))
-            _b_verdict = _best.get("verdict", "")
-            _b_emoji = _best.get("verdict_emoji", "🔒")
-            _b_line = _best.get("line", "")
-            _b_prop = _best.get("prop", _best.get("stat_type", ""))
-            _b_dir = _best.get("direction", "")
-            _b_edge = _best.get("edge", 0)
-            _b_take = _best.get("top_pick_take") or _best.get("one_liner", "")
+            _b_player  = _html.escape(str(_best.get("player", _best.get("player_name", ""))))
+            _b_verdict = _html.escape(str(_best.get("verdict", "")))
+            _b_emoji   = _html.escape(str(_best.get("verdict_emoji", "🔒")))
+            _b_line    = _html.escape(str(_best.get("line", "")))
+            _b_prop    = _html.escape(str(_best.get("prop", _best.get("stat_type", ""))))
+            _b_dir     = _html.escape(str(_best.get("direction", "")))
+            _b_edge    = float(_best.get("edge", 0) or 0)
+            _b_take    = _html.escape(str(_best.get("top_pick_take") or _best.get("one_liner", "")))
             st.markdown(
                 f"""<div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);
                 border:2px solid #e2b96a;border-radius:12px;padding:18px 22px;margin-bottom:18px">
                 <div style="color:#e2b96a;font-size:13px;font-weight:700;letter-spacing:2px;
-                text-transform:uppercase;margin-bottom:6px">🔒 Joseph's Best Bet Tonight</div>
+                text-transform:uppercase;margin-bottom:6px">🔒 Joseph&#39;s Best Bet Tonight</div>
                 <div style="color:#fff;font-size:20px;font-weight:800">{_b_emoji} {_b_player}
-                — {_b_dir} {_b_line} {_b_prop}</div>
+                &#8212; {_b_dir} {_b_line} {_b_prop}</div>
                 <div style="color:#aaa;font-size:13px;margin-top:6px">{_b_verdict} &bull;
                 {_b_edge:.1f}% edge</div>
                 <div style="color:#ccc;font-size:13px;margin-top:8px;font-style:italic">
-                "{_b_take}"</div></div>""",
+                &ldquo;{_b_take}&rdquo;</div></div>""",
                 unsafe_allow_html=True,
             )
     except Exception:
@@ -1744,13 +1744,13 @@ if joseph_results:
             _dh_cols = st.columns(len(_dark_horses))
             for _dhc, _dh in zip(_dh_cols, _dark_horses):
                 with _dhc:
-                    _dh_player = _dh.get("player", _dh.get("player_name", ""))
-                    _dh_verdict = _dh.get("verdict", "LEAN")
-                    _dh_emoji = _dh.get("verdict_emoji", "")
-                    _dh_prop = _dh.get("prop", _dh.get("stat_type", ""))
-                    _dh_line = _dh.get("line", "")
-                    _dh_dir = _dh.get("direction", "")
-                    _dh_edge = _dh.get("edge", 0)
+                    _dh_player  = _html.escape(str(_dh.get("player", _dh.get("player_name", ""))))
+                    _dh_verdict = _html.escape(str(_dh.get("verdict", "LEAN")))
+                    _dh_emoji   = _html.escape(str(_dh.get("verdict_emoji", "")))
+                    _dh_prop    = _html.escape(str(_dh.get("prop", _dh.get("stat_type", ""))))
+                    _dh_line    = _html.escape(str(_dh.get("line", "")))
+                    _dh_dir     = _html.escape(str(_dh.get("direction", "")))
+                    _dh_edge    = float(_dh.get("edge", 0) or 0)
                     _dh_tags = _dh.get("narrative_tags") or []
                     _dh_odds = str(_dh.get("odds_type", "standard")).lower()
                     _dh_tag_label = ""
@@ -1764,7 +1764,7 @@ if joseph_results:
                         _dh_tag_label = "🚀 USAGE SURGE"
                     elif "trending_up" in _dh_tags:
                         _dh_tag_label = "📈 HOT STREAK"
-                    _dh_take = _dh.get("one_liner") or _dh.get("condensed_summary", "")
+                    _dh_take = _html.escape(str(_dh.get("one_liner") or _dh.get("condensed_summary", "")))
                     st.markdown(
                         f"""<div style="background:#1a1a2e;border:1px solid #4a3f7a;border-radius:10px;
                         padding:14px 16px;height:100%">
@@ -1775,7 +1775,7 @@ if joseph_results:
                         <div style="color:#b98ee4;font-size:12px;margin-top:4px">{_dh_verdict} &bull;
                         {_dh_edge:.1f}% edge</div>
                         <div style="color:#888;font-size:11px;margin-top:6px;font-style:italic">
-                        "{_dh_take}"</div></div>""",
+                        &ldquo;{_dh_take}&rdquo;</div></div>""",
                         unsafe_allow_html=True,
                     )
     except Exception:
@@ -1834,7 +1834,7 @@ if joseph_results:
             _jb_name    = _html.escape(str(_jb.get("player", _jb.get("name", "Unknown"))))
             _jb_prop    = _html.escape(str(_jb.get("prop", _jb.get("stat_type", ""))))
             _jb_dir     = _html.escape(str(_jb.get("direction", "")))
-            _jb_line    = _jb.get("line", "")
+            _jb_line    = _html.escape(str(_jb.get("line", "")))
             _jb_verdict = _jb.get("verdict", "")
             _jb_emoji   = _html.escape(str(_jb.get("verdict_emoji", "")))
             _jb_edge    = float(_jb.get("edge", 0) or 0)

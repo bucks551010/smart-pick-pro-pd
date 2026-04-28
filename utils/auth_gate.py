@@ -2222,7 +2222,7 @@ html, body, .stApp, .stApp * {
 }
 .ag-hero h1 .hero-l1 {
     display: block;
-    font-size: clamp(5.5rem, 14vw, 12.5rem);
+    font-size: clamp(4.35rem, 10.9vw, 9.75rem);
     letter-spacing: -0.06em;
     text-shadow:
         0 0 220px rgba(0,232,122,0.16),
@@ -2233,7 +2233,7 @@ html, body, .stApp, .stApp * {
 }
 .ag-hero h1 .hero-l2 {
     display: block;
-    font-size: clamp(4.8rem, 12vw, 11rem);
+    font-size: clamp(2.9rem, 7.25vw, 6.5rem);
     letter-spacing: -0.05em;
     color: rgba(195,215,240,0.72);
     text-shadow: 0 4px 0 rgba(0,0,0,0.5);
@@ -3898,8 +3898,8 @@ html, body, .stApp, .stApp * {
     .ag-section { padding-left: 18px; padding-right: 18px; }
     .ag-full-bleed .ag-section { padding-left: 18px; padding-right: 18px; }
     .ag-full-bleed { padding: 36px 0; }
-    .ag-hero h1 .hero-l1 { font-size: 4.5rem; }
-    .ag-hero h1 .hero-l2 { font-size: 3.8rem; }
+    .ag-hero h1 .hero-l1 { font-size: 3.375rem; }
+    .ag-hero h1 .hero-l2 { font-size: 2.25rem; }
     .ag-hero-its-us { font-size: 4.5rem; letter-spacing: -0.02em; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 2rem; }
     .ag-cta2-head { font-size: 1.9rem; }
@@ -3937,8 +3937,8 @@ html, body, .stApp, .stApp * {
     .ag-section { padding-left: 14px; padding-right: 14px; }
     .ag-full-bleed .ag-section { padding-left: 14px; padding-right: 14px; }
     .ag-full-bleed { padding: 28px 0; }
-    .ag-hero h1 .hero-l1 { font-size: 3.0rem; line-height: 0.88; }
-    .ag-hero h1 .hero-l2 { font-size: 2.6rem; }
+    .ag-hero h1 .hero-l1 { font-size: 2.25rem; line-height: 0.88; }
+    .ag-hero h1 .hero-l2 { font-size: 1.5rem; }
     .ag-hero-its-us { font-size: 3.0rem; letter-spacing: -0.02em; }
     .ag-hero p { font-size: 0.82rem; padding: 0 8px; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 1.5rem; }
@@ -3998,8 +3998,8 @@ html, body, .stApp, .stApp * {
     }
     .ag-section { padding-left: 10px; padding-right: 10px; }
     .ag-full-bleed .ag-section { padding-left: 10px; padding-right: 10px; }
-    .ag-hero h1 .hero-l1 { font-size: 2.4rem; }
-    .ag-hero h1 .hero-l2 { font-size: 2.1rem; }
+    .ag-hero h1 .hero-l1 { font-size: 1.8rem; }
+    .ag-hero h1 .hero-l2 { font-size: 1.2rem; }
     .ag-hero-its-us { font-size: 2.4rem; letter-spacing: -0.02em; }
     .ag-hero p { font-size: 0.78rem; }
     .ag-section-head h3, .ag-gy-head h3 { font-size: 1.2rem; }

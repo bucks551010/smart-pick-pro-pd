@@ -604,53 +604,40 @@ def _display_stat_label(raw: str) -> str:
     return _MAP.get(raw.lower().strip(), raw.upper()[:6])
 
 
+@st.cache_data(ttl=300, show_spinner=False)
 def _load_top_preview_picks(limit: int = 5) -> tuple[list[dict], str]:
     """Load today's top platform picks for the landing page preview.
+
+    Cached for 5 minutes via @st.cache_data so concurrent users and reruns
+    share a single DB query instead of hitting PostgreSQL on every render.
 
     Priority (first non-empty wins):
       1. Today's platform picks from the DB (platform IS NOT NULL).
       2. Today's any picks from the DB (no platform filter — catches runs
          where platform wasn't set on every prop).
       3. Today's picks from the JSON cache file (written by scheduler).
-      4. Most recent platform picks within the last 7 days from the DB
-         (Railway restart / fresh-deploy fallback — shows real picks until
-         tonight's analysis replaces them).
+      4. Most recent platform picks (any date) from the DB — Railway fallback.
       5. Any JSON cache data regardless of date.
 
     Returns:
         (picks, pick_date) — list of pick dicts and the ISO date they belong to.
         Returns ([], today) when no data exists at all.
     """
-    initialize_database()
     today = _nba_today_str()
-    _PLATFORM_PICK_SQL = """
-        SELECT player_name, team, stat_type, prop_line, direction,
-               platform, confidence_score, probability_over,
-               edge_percentage, tier
-        FROM all_analysis_picks
-        WHERE pick_date = ?
-          AND platform IS NOT NULL
-          AND TRIM(platform) != ''
-        ORDER BY confidence_score DESC
-        LIMIT ?"""
-    _ANY_PICK_SQL = """
-        SELECT player_name, team, stat_type, prop_line, direction,
-               platform, confidence_score, probability_over,
-               edge_percentage, tier
-        FROM all_analysis_picks
-        WHERE pick_date = ?
-        ORDER BY confidence_score DESC
-        LIMIT ?"""
-    _RECENT_PLATFORM_SQL = """
+    # Use a single query with COALESCE-style ordering: today's picks first,
+    # then most recent. Avoids up to 4 sequential round-trips to PostgreSQL.
+    _BEST_PICKS_SQL = """
         SELECT player_name, team, stat_type, prop_line, direction,
                platform, confidence_score, probability_over,
                edge_percentage, tier, pick_date
         FROM all_analysis_picks
-        WHERE platform IS NOT NULL
-          AND TRIM(platform) != ''
-        ORDER BY pick_date DESC, confidence_score DESC
+        WHERE platform IS NOT NULL AND platform != ''
+        ORDER BY
+            CASE WHEN pick_date = ? THEN 0 ELSE 1 END,
+            pick_date DESC,
+            confidence_score DESC
         LIMIT ?"""
-    _RECENT_ANY_SQL = """
+    _FALLBACK_SQL = """
         SELECT player_name, team, stat_type, prop_line, direction,
                platform, confidence_score, probability_over,
                edge_percentage, tier, pick_date
@@ -659,34 +646,19 @@ def _load_top_preview_picks(limit: int = 5) -> tuple[list[dict], str]:
         LIMIT ?"""
     try:
         from tracking.database import _db_read
-        # ── 1. Today's platform picks ──────────────────────────────────
-        rows = _db_read(_PLATFORM_PICK_SQL, (today, limit))
+        # ── Single query: today's platform picks, fallback to most recent ──
+        rows = _db_read(_BEST_PICKS_SQL, (today, limit))
         if rows:
-            return rows, today
+            row_date = rows[0].get("pick_date", today)
+            return rows, row_date
 
-        # ── 2. Today's any picks (analysis ran but platform not set) ──
-        rows = _db_read(_ANY_PICK_SQL, (today, limit))
+        # ── Any picks regardless of platform ──────────────────────────
+        rows = _db_read(_FALLBACK_SQL, (limit,))
         if rows:
-            return rows, today
+            return rows, rows[0].get("pick_date", today)
 
-        # ── 3. Today's picks from JSON cache ──────────────────────────
+        # ── JSON cache (written by slate_worker) ──────────────────────
         cache_result = _load_picks_from_cache(limit)
-        if cache_result[0] and cache_result[1] == today:
-            return cache_result
-
-        # ── 4. Most recent platform picks (up to any date) ────────────
-        rows = _db_read(_RECENT_PLATFORM_SQL, (limit,))
-        if rows:
-            recent_date = rows[0].get("pick_date", today)
-            return rows, recent_date
-
-        # ── 5. Most recent any picks (no platform filter) ─────────────
-        rows = _db_read(_RECENT_ANY_SQL, (limit,))
-        if rows:
-            recent_date = rows[0].get("pick_date", today)
-            return rows, recent_date
-
-        # ── 6. JSON cache regardless of date ──────────────────────────
         if cache_result[0]:
             return cache_result
 
@@ -694,7 +666,7 @@ def _load_top_preview_picks(limit: int = 5) -> tuple[list[dict], str]:
     except Exception as exc:
         _logger.debug("_load_top_preview_picks DB: %s", exc)
 
-    # ── Final fallback: JSON cache regardless of date ───────────────────────
+    # ── Final fallback: JSON cache ──────────────────────────────────────────
     return _load_picks_from_cache(limit)
 
 

@@ -3680,7 +3680,7 @@ def _pg_insert_analysis_picks(analysis_results: list, today_str: str) -> int:
                 cur.execute(_UPSERT_SQL, _build_params(r))
                 inserted += 1
             conn.commit()
-            conn.close()
+            _pg_putconn(conn)
             return inserted
         except Exception as upsert_err:
             # ON CONFLICT clause requires idx_aap_unique_pick.
@@ -3711,14 +3711,14 @@ def _pg_insert_analysis_picks(analysis_results: list, today_str: str) -> int:
                 _logger.debug("_pg_insert_analysis_picks row error: %s", row_err)
                 conn.rollback()
                 cur = conn.cursor()
-        conn.close()
+        _pg_putconn(conn)
         return inserted
     except Exception as err:
         _logger.warning(f"_pg_insert_analysis_picks error: {err}")
         try:
             if conn:
                 conn.rollback()
-                conn.close()
+                _pg_putconn(conn)
         except Exception:
             pass
     return inserted
@@ -3815,7 +3815,7 @@ def _bump_data_version(date_str: str) -> None:
                 (str(_ver),),
             )
             conn.commit()
-            conn.close()
+            _pg_putconn(conn)
         else:
             with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False) as conn:
                 conn.execute(
@@ -3925,7 +3925,7 @@ def get_slate_picks_for_today() -> list:
             )
             cols = [d[0] for d in cur.description]
             rows = [dict(zip(cols, row)) for row in cur.fetchall()]
-            conn.close()
+            _pg_putconn(conn)
         else:
             with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False, timeout=10) as conn:
                 conn.row_factory = sqlite3.Row
@@ -3997,7 +3997,7 @@ def save_analysis_session(analysis_results, todays_games=None, selected_picks=No
                 )
                 row = cur.fetchone()
                 conn.commit()
-                conn.close()
+                _pg_putconn(conn)
                 if row:
                     return int(row["session_id"] if isinstance(row, dict) else row[0])
                 return -1
@@ -4006,7 +4006,7 @@ def save_analysis_session(analysis_results, todays_games=None, selected_picks=No
                 try:
                     if conn:
                         conn.rollback()
-                        conn.close()
+                        _pg_putconn(conn)
                 except Exception:
                     pass
                 return -1

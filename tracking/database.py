@@ -3898,6 +3898,7 @@ def get_slate_picks_for_today() -> list:
         if _DATABASE_URL:
             conn = _pg_conn()
             cur = conn.cursor()
+            # Try today first; fall back to most recent date if today has no picks yet.
             cur.execute(
                 "SELECT pick_id, pick_date, player_name, team, stat_type, prop_line, "
                 "direction, platform, confidence_score, probability_over, edge_percentage, "
@@ -3909,6 +3910,18 @@ def get_slate_picks_for_today() -> list:
             )
             cols = [d[0] for d in cur.description]
             rows = [dict(zip(cols, row)) for row in cur.fetchall()]
+            if not rows:
+                # No picks for today — fall back to most recent available date
+                cur.execute(
+                    "SELECT pick_id, pick_date, player_name, team, stat_type, prop_line, "
+                    "direction, platform, confidence_score, probability_over, edge_percentage, "
+                    "tier, result, actual_value, notes, bet_type, std_devs_from_line, is_risky, odds_type "
+                    "FROM all_analysis_picks "
+                    "WHERE pick_date = (SELECT MAX(pick_date) FROM all_analysis_picks) "
+                    "ORDER BY confidence_score DESC",
+                )
+                cols = [d[0] for d in cur.description]
+                rows = [dict(zip(cols, row)) for row in cur.fetchall()]
             conn.close()
         else:
             with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False, timeout=10) as conn:
@@ -3919,6 +3932,13 @@ def get_slate_picks_for_today() -> list:
                     "ORDER BY confidence_score DESC",
                     (today_str,),
                 ).fetchall()]
+                if not rows:
+                    # Fall back to most recent date
+                    rows = [dict(r) for r in conn.execute(
+                        "SELECT * FROM all_analysis_picks "
+                        "WHERE pick_date = (SELECT MAX(pick_date) FROM all_analysis_picks) "
+                        "ORDER BY confidence_score DESC",
+                    ).fetchall()]
 
         # Enforce per-player cap: results are already sorted by confidence_score DESC
         # so we keep the best picks for each player.
@@ -4034,13 +4054,19 @@ def load_latest_analysis_session():
         _session_ts = row_dict.get("analysis_timestamp", "")
         if _session_ts:
             try:
-                _session_date = _session_ts[:10]  # "YYYY-MM-DD"
-                if _session_date < _nba_today_iso():
+                # Keep picks until a new slate is generated (36-hour window).
+                # This lets picks persist across midnight and into the next morning
+                # until the slate worker writes a new session for the next game day.
+                import datetime as _dt_guard
+                _saved_at = _dt_guard.datetime.fromisoformat(_session_ts.rstrip("Z"))
+                if _saved_at.tzinfo is None:
+                    _saved_at = _saved_at.replace(tzinfo=_dt_guard.timezone.utc)
+                _age_hours = (_dt_guard.datetime.now(_dt_guard.timezone.utc) - _saved_at).total_seconds() / 3600
+                if _age_hours > 36:
                     _logger.debug(
-                        "load_latest_analysis_session: session %s is prior-day (%s < %s) â€” skipping",
+                        "load_latest_analysis_session: session %s is %.1f h old (>36h) \u2014 skipping",
                         row_dict.get("session_id"),
-                        _session_date,
-                        _nba_today_iso(),
+                        _age_hours,
                     )
                     return None
             except Exception:
@@ -4059,33 +4085,10 @@ def load_latest_analysis_session():
         except Exception:
             row_dict["selected_picks"] = []
 
-        # Content date guard: strip any picks whose pick_date or game_date is
-        # from a prior sports day.  A stale UI session saved at 6 PM today could
-        # contain analysis_results generated from yesterday's player pool when
-        # the user had leftover session state.  Comparing content dates (not just
-        # the session timestamp) is the only reliable protection.
-        _today = _nba_today_iso()
-        _raw_results = row_dict["analysis_results"]
-        if _raw_results:
-            row_dict["analysis_results"] = [
-                r for r in _raw_results
-                if r.get("pick_date", _today) >= _today
-                or r.get("game_date", _today) >= _today
-            ]
-            _filtered_out = len(_raw_results) - len(row_dict["analysis_results"])
-            if _filtered_out:
-                _logger.info(
-                    "load_latest_analysis_session: dropped %d prior-day picks from session %s",
-                    _filtered_out,
-                    row_dict.get("session_id"),
-                )
-        _raw_sel = row_dict["selected_picks"]
-        if _raw_sel:
-            row_dict["selected_picks"] = [
-                r for r in _raw_sel
-                if r.get("pick_date", _today) >= _today
-                or r.get("game_date", _today) >= _today
-            ]
+        # No content-date filter: picks persist until a new slate replaces them.
+        # The session is the source of truth — if the slate worker stored these
+        # picks, show them until either (a) the 36-hour age guard above fires, or
+        # (b) the slate worker writes a new session_id for the next game day.
 
         return row_dict
     except Exception as _err:

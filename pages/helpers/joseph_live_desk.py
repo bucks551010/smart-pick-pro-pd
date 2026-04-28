@@ -1278,10 +1278,28 @@ def render_joseph_live_desk(
         )
 
         # ─────────────────────────────────────────────────────
-        # Run Joseph full analysis on top 20 by edge
+        # Run Joseph full analysis on ALL picks by edge
         # (computed BEFORE the monologue so counts & picks match)
         # ─────────────────────────────────────────────────────
         joseph_results = st.session_state.get("joseph_results", [])
+
+        # Invalidate cached joseph_results if analysis_results has changed
+        # (e.g. new day, stale session, or post-run cache).  Compare player
+        # sets: if no overlap exists, the cached results are from a different
+        # slate and must be regenerated to avoid showing yesterday's players.
+        if joseph_results and analysis_results:
+            _jr_players = {
+                str(r.get("player", r.get("player_name", ""))).lower().strip()
+                for r in joseph_results
+            }
+            _ar_players = {
+                str(r.get("player_name", r.get("name", ""))).lower().strip()
+                for r in analysis_results
+            }
+            if not _jr_players.intersection(_ar_players):
+                joseph_results = []
+                st.session_state.pop("joseph_results", None)
+
         if not joseph_results and analysis_results:
             # Filter out unbettable lines (period props, dunks, etc.)
             _filtered_results = [r for r in analysis_results if not is_unbettable_line(r)]
@@ -1292,6 +1310,7 @@ def render_joseph_live_desk(
             )
 
             # Deduplicate: keep only the highest-edge pick per player
+            # Process ALL picks — no arbitrary cap so Joseph analyzes the full slate
             _seen_players: set = set()
             _deduped: list = []
             for r in sorted_results:
@@ -1300,7 +1319,7 @@ def render_joseph_live_desk(
                     continue
                 _seen_players.add(_pname)
                 _deduped.append(r)
-            sorted_results = _deduped[:20]
+            sorted_results = _deduped  # all picks, sorted by edge descending
 
             progress_placeholder = st.empty()
             progress_placeholder.markdown(

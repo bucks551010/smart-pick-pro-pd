@@ -433,19 +433,23 @@ if not st.session_state.get("analysis_results"):
                 or st.session_state.get("todays_games")
                 or []
             )
-            if _games_loaded:
+            # Filter synthetic game-total props ONLY when at least one pick
+            # in the slate carries opponent metadata. Older slate-worker
+            # outputs (and backfilled sessions) don't populate `opponent`,
+            # and applying this filter blindly strips every pick.
+            _any_has_opponent_ar = any(r.get("opponent") for r in _raw_ar)
+            if _games_loaded and _any_has_opponent_ar:
                 _raw_ar = [r for r in _raw_ar if r.get("opponent", "")]
             st.session_state["analysis_results"] = _raw_ar
             if _saved_session.get("todays_games") and not st.session_state.get("todays_games"):
                 st.session_state["todays_games"] = _saved_session["todays_games"]
             if _saved_session.get("selected_picks") and not st.session_state.get("selected_picks"):
-                # Filter out any stored selected_picks that have no opponent
-                # (synthetic game-total props or non-playing-team picks).
                 _raw_sel = _saved_session["selected_picks"] or []
-                _filtered_sel = [
-                    p for p in _raw_sel
-                    if p.get("opponent", "")
-                ]
+                _any_has_opponent_sel = any(p.get("opponent") for p in _raw_sel)
+                if _any_has_opponent_sel:
+                    _filtered_sel = [p for p in _raw_sel if p.get("opponent", "")]
+                else:
+                    _filtered_sel = list(_raw_sel)
                 st.session_state["selected_picks"] = _filtered_sel
             # Record the timestamp so the UI can show when the session was saved
             st.session_state["_analysis_session_reloaded_at"] = _saved_session.get("analysis_timestamp", "")
@@ -461,12 +465,13 @@ if not st.session_state.get("analysis_results"):
 # the case where the worker saved an empty selected_picks list.
 if not st.session_state.get("selected_picks") and st.session_state.get("analysis_results"):
     _qam_ar = st.session_state["analysis_results"]
+    _any_has_opp_qa = any(r.get("opponent") for r in _qam_ar)
     _qam_auto = [
         r for r in _qam_ar
         if r.get("tier", "").lower() in ("platinum", "gold", "silver")
         and not r.get("player_is_out", False)
         and not r.get("should_avoid", False)
-        and r.get("opponent", "")  # exclude synthetic/no-game props
+        and (not _any_has_opp_qa or r.get("opponent", ""))
     ][:20]
     if _qam_auto:
         st.session_state["selected_picks"] = _qam_auto

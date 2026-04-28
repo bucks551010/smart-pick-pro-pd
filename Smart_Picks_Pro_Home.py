@@ -903,14 +903,16 @@ if _user_tier == TIER_FREE:
     st.markdown(_cta_html, unsafe_allow_html=True)
 
 # Build Top 3 hero pool: Platinum/Gold/Silver, conf >= 57, not avoided/out
-# Also exclude synthetic game-total props (opponent must be non-empty).
+# Synthetic game-total props are filtered out only when at least some picks
+# carry opponent metadata; older slate-worker outputs don't include it.
+_any_has_opponent = any(r.get("opponent") for r in _home_analysis)
 _hero_pool = [
     r for r in _home_analysis
     if not r.get("should_avoid", False)
     and not r.get("player_is_out", False)
     and r.get("tier", "Bronze") in {"Platinum", "Gold", "Silver"}
     and float(r.get("confidence_score", 0) or 0) >= 57
-    and r.get("opponent", "")  # exclude no-opponent/synthetic props
+    and (not _any_has_opponent or r.get("opponent", ""))
 ]
 _hero_pool = sorted(
     _hero_pool,

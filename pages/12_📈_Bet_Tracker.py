@@ -482,8 +482,17 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ── Prominent "Check Results Now" button ──────────────────────
-st.markdown("""
+@st.fragment
+def _bt_interactive_body():
+    # ===================================================================
+    # ALL interactive content lives inside this fragment so that any
+    # widget change (date scope, filters, resolve buttons, tab clicks)
+    # only reruns this fragment — the outer page (hero, auth, CSS) stays
+    # frozen and the active tab is NEVER reset by a filter or date change.
+    # ===================================================================
+
+    # ── Prominent "Check Results Now" button ──────────────────────────
+    st.markdown("""
 <div class="bt-resolve-wrap">
   <div class="bt-resolve-ico">&#x26A1;</div>
   <div class="bt-resolve-text">
@@ -492,223 +501,216 @@ st.markdown("""
   </div>
 </div>
 """, unsafe_allow_html=True)
-_check_col, _check_info_col = st.columns([1, 4])
-with _check_col:
-    _check_now_btn = st.button(
-        "⚡ Check Results Now",
-        type="primary",
-        help="Immediately check live NBA scoreboard for Final games and resolve today's pending bets.",
-        key="top_check_results_btn",
-    )
-with _check_info_col:
-    st.caption("Fetches live NBA scores and instantly resolves today's pending bets. No need to wait until tomorrow.")
+    _check_col, _check_info_col = st.columns([1, 4])
+    with _check_col:
+        _check_now_btn = st.button(
+            "⚡ Check Results Now",
+            type="primary",
+            help="Immediately check live NBA scoreboard for Final games and resolve today's pending bets.",
+            key="top_check_results_btn",
+        )
+    with _check_info_col:
+        st.caption("Fetches live NBA scores and instantly resolves today's pending bets. No need to wait until tomorrow.")
 
-if _check_now_btn:
-    _resolve_status = st.empty()
-    _resolve_progress = st.progress(0, text="⏳ Connecting to NBA scoreboard…")
-    try:
-        from tracking.bet_tracker import resolve_todays_bets as _rtr_top
-        from tracking.database import load_all_bets as _load_bets_top
-        import datetime as _dt_top
-
-        # Count pending bets so the bar reflects real work
+    if _check_now_btn:
+        _resolve_status = st.empty()
+        _resolve_progress = st.progress(0, text="⏳ Connecting to NBA scoreboard…")
         try:
-            _today_top = _dt_top.date.today().isoformat()
-            _pending_top = [
-                b for b in _load_bets_top(
-                    exclude_linked=False,
-                    user_email=st.session_state.get("_bet_tracker_user_email") or None,
+            from tracking.bet_tracker import resolve_todays_bets as _rtr_top
+            from tracking.database import load_all_bets as _load_bets_top
+            import datetime as _dt_top
+
+            try:
+                _today_top = _dt_top.date.today().isoformat()
+                _pending_top = [
+                    b for b in _load_bets_top(
+                        exclude_linked=False,
+                        user_email=st.session_state.get("_bet_tracker_user_email") or None,
+                    )
+                    if b.get("bet_date") == _today_top and not b.get("result")
+                ]
+                _total_top = max(len(_pending_top), 1)
+            except Exception:
+                _pending_top = []
+                _total_top = 1
+
+            _resolve_progress.progress(10, text=f"🔍 Found {len(_pending_top)} pending bet(s) — fetching live scores…")
+            _top_result = _rtr_top()
+            _resolve_progress.progress(95, text="💾 Saving results…")
+            _resolve_status.empty()
+
+            if _top_result.get("resolved", 0) > 0:
+                _resolve_progress.progress(100, text="✅ Done!")
+                st.success(
+                    f"✅ Resolved **{_top_result['resolved']}** bet(s): "
+                    f"**{_top_result['wins']}** WIN · **{_top_result['losses']}** LOSS · **{_top_result['evens']}** EVEN"
                 )
-                if b.get("bet_date") == _today_top and not b.get("result")
-            ]
-            _total_top = max(len(_pending_top), 1)
-        except Exception:
-            _pending_top = []
-            _total_top = 1
+                reload_bets()
+                _resolve_progress.empty()
+                st.rerun()
+            else:
+                _resolve_progress.progress(100, text="ℹ️ Done — no new results yet.")
+                st.info(
+                    f"ℹ️ No bets resolved. Games may still be in progress or not started. "
+                    f"Pending: {_top_result.get('pending', 0)}"
+                )
+                _resolve_progress.empty()
 
-        _resolve_progress.progress(10, text=f"🔍 Found {len(_pending_top)} pending bet(s) — fetching live scores…")
-
-        # Run resolve (synchronous — fills the 10→90 range while it runs)
-        _top_result = _rtr_top()
-
-        _resolve_progress.progress(95, text="💾 Saving results…")
-        _resolve_status.empty()
-
-        if _top_result.get("resolved", 0) > 0:
-            _resolve_progress.progress(100, text="✅ Done!")
-            st.success(
-                f"✅ Resolved **{_top_result['resolved']}** bet(s): "
-                f"**{_top_result['wins']}** WIN · **{_top_result['losses']}** LOSS · **{_top_result['evens']}** EVEN"
-            )
-            reload_bets()
+            if _top_result.get("errors"):
+                st.warning("⚠️ " + " | ".join(_top_result["errors"][:3]))
+                if len(_top_result["errors"]) > 3:
+                    with st.expander(f"See all {len(_top_result['errors'])} detail(s)"):
+                        for _e in _top_result["errors"]:
+                            st.markdown(f"- {_e}")
+        except Exception as _top_err:
             _resolve_progress.empty()
-            st.rerun()
+            _resolve_status.empty()
+            st.error(f"❌ Could not check results: {_top_err}")
+
+    # ============================================================
+    # Global Filter Bar
+    # ============================================================
+
+    st.markdown('<div class="bt-cmd-bar"><span class="bt-cmd-label">&#x1F3AF;&nbsp; Command Filters &mdash; Applied Across All Tabs</span>', unsafe_allow_html=True)
+    _filter_col1, _filter_col2, _filter_col3, _filter_col4, _filter_col5 = st.columns([2, 2, 2, 1, 1])
+
+    with _filter_col1:
+        platform_filter_selections = st.multiselect(
+            "Filter by Platform",
+            ["🟢 PrizePicks", "🟣 Underdog Fantasy", "🔵 DraftKings Pick6", "🤖 Smart Pick Pro Platform Picks"],
+            default=[],
+            key="platform_multi_filter",
+            help="Select platforms to filter. Leave empty for all platforms.",
+        )
+
+    with _filter_col2:
+        _player_search = st.text_input(
+            "🔍 Search Player",
+            placeholder="e.g., LeBron James",
+            key="player_search_input",
+            help="Search bets by player name across all tabs.",
+        )
+
+    with _filter_col3:
+        _today_dt = tracker_today_date()
+        import datetime as _dt_mod
+        _bt_pick_dates = _bt_get_pick_dates(days=60)
+        _bt_today_iso = tracker_today_iso()
+        if _bt_today_iso not in _bt_pick_dates:
+            _bt_pick_dates = [_bt_today_iso] + _bt_pick_dates
+        _bt_scope_options = _bt_pick_dates + ["Last 7 Days", "Last 30 Days", "All Time"]
+        import datetime as _dt_mod2
+        _bt_yesterday = (_dt_mod2.date.today() - _dt_mod2.timedelta(days=1)).isoformat()
+        _bt_today_has_data = _bt_today_iso in (_bt_get_pick_dates(days=1) or [])
+        _bt_default_idx = (
+            _bt_scope_options.index(_bt_yesterday)
+            if not _bt_today_has_data and _bt_yesterday in _bt_scope_options
+            else 0
+        )
+        _bt_global_scope = st.selectbox(
+            "📅 Date / Scope",
+            _bt_scope_options,
+            index=_bt_default_idx,
+            key="bt_global_scope",
+            help="Controls the date window for ALL tabs. Pick a specific date or a rolling range.",
+        )
+        _bt_is_specific = _bt_global_scope not in ("Last 7 Days", "Last 30 Days", "All Time")
+        _bt_global_filter_date = _bt_global_scope if _bt_is_specific else None
+        _bt_scope_label = (
+            "Today" if _bt_is_specific and _bt_global_scope == _bt_today_iso
+            else _bt_global_scope if not _bt_is_specific
+            else "Last 30 Days"
+        )
+        if _bt_is_specific:
+            _sel_date = _dt_mod.date.fromisoformat(_bt_global_scope)
+            _date_range = [_sel_date, _sel_date]
         else:
-            _resolve_progress.progress(100, text="ℹ️ Done — no new results yet.")
-            st.info(
-                f"ℹ️ No bets resolved. Games may still be in progress or not started. "
-                f"Pending: {_top_result.get('pending', 0)}"
-            )
-            _resolve_progress.empty()
+            _two_weeks_ago_dt = _today_dt - _dt_mod.timedelta(days=13)
+            _date_range = [_two_weeks_ago_dt, _today_dt]
+        # Share derived values with all tabs (widget owns bt_global_scope — do NOT write it)
+        st.session_state["bt_global_filter_date"] = _bt_global_filter_date
+        st.session_state["bt_scope_label"] = _bt_scope_label
 
-        if _top_result.get("errors"):
-            st.warning("⚠️ " + " | ".join(_top_result["errors"][:3]))
-            if len(_top_result["errors"]) > 3:
-                with st.expander(f"See all {len(_top_result['errors'])} detail(s)"):
-                    for _e in _top_result["errors"]:
-                        st.markdown(f"- {_e}")
-    except Exception as _top_err:
-        _resolve_progress.empty()
-        _resolve_status.empty()
-        st.error(f"❌ Could not check results: {_top_err}")
+    with _filter_col4:
+        _direction_filter = st.selectbox(
+            "Direction",
+            ["All", "OVER", "UNDER"],
+            key="direction_filter",
+            help="Filter by bet direction.",
+        )
 
-# ============================================================
-# Global Filter Bar
-# ============================================================
+    with _filter_col5:
+        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+        if st.button(
+            "🔄 Sync DB",
+            key="sync_db_btn",
+            help="Force-reload all bet data from the live database. Use this immediately after editing bets directly in the database.",
+            use_container_width=True,
+        ):
+            reload_bets()
+            st.success("✅ Synced!", icon="🔄")
 
-st.markdown('<div class="bt-cmd-bar"><span class="bt-cmd-label">&#x1F3AF;&nbsp; Command Filters &mdash; Applied Across All Tabs</span>', unsafe_allow_html=True)
-_filter_col1, _filter_col2, _filter_col3, _filter_col4, _filter_col5 = st.columns([2, 2, 2, 1, 1])
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div style="margin-bottom:8px"></div>', unsafe_allow_html=True)
 
-with _filter_col1:
-    platform_filter_selections = st.multiselect(
-        "Filter by Platform",
-        ["🟢 PrizePicks", "🟣 Underdog Fantasy", "🔵 DraftKings Pick6", "🤖 Smart Pick Pro Platform Picks"],
-        default=[],
-        key="platform_multi_filter",
-        help="Select platforms to filter. Leave empty for all platforms.",
+    # ============================================================
+    # Tabs — each body delegates to its tab module
+    # ============================================================
+
+    (
+        tab_model_health,
+        tab_ai_picks,
+        tab_all_picks,
+        tab_joseph_bets,
+        tab_auto_resolve,
+        tab_bets,
+        tab_log,
+        tab_parlays,
+        tab_predict,
+        tab_history,
+        tab_achievements,
+    ) = st.tabs(
+        [
+            "📊 Health",
+            "⚡ Platform AI Picks",
+            "📋 All Picks",
+            "🎙️ Joseph",
+            "⚡ Resolve",
+            "📋 My Bets",
+            "➕ Log Bet",
+            "🎰 Parlays",
+            "🔮 Predict",
+            "📅 History",
+            "🏆 Awards",
+        ]
     )
 
-with _filter_col2:
-    _player_search = st.text_input(
-        "🔍 Search Player",
-        placeholder="e.g., LeBron James",
-        key="player_search_input",
-        help="Search bets by player name across all tabs.",
-    )
+    def _safe_render(tab_ctx, module, label, pf, ps, dr, df):
+        """Render a tab module with error boundary — surfaces exceptions instead of blank tabs."""
+        import traceback as _tb
+        with tab_ctx:
+            try:
+                module.render(pf, ps, dr, df)
+            except Exception as _tab_err:
+                st.error(f"❌ **{label} tab error** — {type(_tab_err).__name__}: {_tab_err}")
+                with st.expander("Show traceback"):
+                    st.code(_tb.format_exc())
 
-with _filter_col3:
-    _today_dt = tracker_today_date()
-    import datetime as _dt_mod
-    _bt_pick_dates = _bt_get_pick_dates(days=60)
-    _bt_today_iso = tracker_today_iso()
-    if _bt_today_iso not in _bt_pick_dates:
-        _bt_pick_dates = [_bt_today_iso] + _bt_pick_dates
-    _bt_scope_options = _bt_pick_dates + ["Last 7 Days", "Last 30 Days", "All Time"]
-    # Default: yesterday if today has no data yet, otherwise most recent date
-    import datetime as _dt_mod2
-    _bt_yesterday = (_dt_mod2.date.today() - _dt_mod2.timedelta(days=1)).isoformat()
-    _bt_today_has_data = _bt_today_iso in (_bt_get_pick_dates(days=1) or [])
-    _bt_default_idx = (
-        _bt_scope_options.index(_bt_yesterday)
-        if not _bt_today_has_data and _bt_yesterday in _bt_scope_options
-        else 0
-    )
-    _bt_global_scope = st.selectbox(
-        "📅 Date / Scope",
-        _bt_scope_options,
-        index=_bt_default_idx,
-        key="bt_global_scope",
-        help="Controls the date window for ALL tabs. Pick a specific date or a rolling range.",
-    )
-    _bt_is_specific = _bt_global_scope not in ("Last 7 Days", "Last 30 Days", "All Time")
-    _bt_global_filter_date = _bt_global_scope if _bt_is_specific else None
-    _bt_scope_label = (
-        "Today" if _bt_is_specific and _bt_global_scope == _bt_today_iso
-        else _bt_global_scope if not _bt_is_specific
-        else "Last 30 Days"
-    )
-    # Backward-compat date_range tuple for tabs that use apply_global_filters
-    if _bt_is_specific:
-        _sel_date = _dt_mod.date.fromisoformat(_bt_global_scope)
-        _date_range = [_sel_date, _sel_date]
-    else:
-        _two_weeks_ago_dt = _today_dt - _dt_mod.timedelta(days=13)
-        _date_range = [_two_weeks_ago_dt, _today_dt]
-    # Share derived values with all tabs (do NOT write bt_global_scope —
-    # the widget owns that key and Streamlit will raise if we touch it)
-    st.session_state["bt_global_filter_date"] = _bt_global_filter_date
-    st.session_state["bt_scope_label"] = _bt_scope_label
-
-with _filter_col4:
-    _direction_filter = st.selectbox(
-        "Direction",
-        ["All", "OVER", "UNDER"],
-        key="direction_filter",
-        help="Filter by bet direction.",
-    )
-
-with _filter_col5:
-    st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
-    if st.button(
-        "🔄 Sync DB",
-        key="sync_db_btn",
-        help="Force-reload all bet data from the live database. Use this immediately after editing bets directly in the database.",
-        use_container_width=True,
-    ):
-        reload_bets()
-        st.success("✅ Synced!", icon="🔄")
-
-st.markdown('</div>', unsafe_allow_html=True)
-st.markdown('<div style="margin-bottom:8px"></div>', unsafe_allow_html=True)
-
-# ============================================================
-# Tabs — each body delegates to its tab module
-# ============================================================
-
-(
-
-    tab_model_health,
-    tab_ai_picks,
-    tab_all_picks,
-    tab_joseph_bets,
-    tab_auto_resolve,
-    tab_bets,
-    tab_log,
-    tab_parlays,
-    tab_predict,
-    tab_history,
-    tab_achievements,
-) = st.tabs(
-    [
-        "📊 Health",
-        "⚡ Platform AI Picks",
-        "📋 All Picks",
-        "🎙️ Joseph",
-        "⚡ Resolve",
-        "📋 My Bets",
-        "➕ Log Bet",
-        "🎰 Parlays",
-        "🔮 Predict",
-        "📅 History",
-        "🏆 Awards",
-    ]
-)
+    _safe_render(tab_model_health,  health,         "Health",         platform_filter_selections, _player_search, _date_range, _direction_filter)
+    _safe_render(tab_ai_picks,      platform_picks, "Platform Picks", platform_filter_selections, _player_search, _date_range, _direction_filter)
+    _safe_render(tab_all_picks,     all_picks,      "All Picks",      platform_filter_selections, _player_search, _date_range, _direction_filter)
+    _safe_render(tab_joseph_bets,   joseph,         "Joseph",         platform_filter_selections, _player_search, _date_range, _direction_filter)
+    _safe_render(tab_auto_resolve,  resolve,        "Resolve",        platform_filter_selections, _player_search, _date_range, _direction_filter)
+    _safe_render(tab_bets,          my_bets,        "My Bets",        platform_filter_selections, _player_search, _date_range, _direction_filter)
+    _safe_render(tab_log,           log_bet,        "Log Bet",        platform_filter_selections, _player_search, _date_range, _direction_filter)
+    _safe_render(tab_parlays,       parlays,        "Parlays",        platform_filter_selections, _player_search, _date_range, _direction_filter)
+    _safe_render(tab_predict,       predict,        "Predict",        platform_filter_selections, _player_search, _date_range, _direction_filter)
+    _safe_render(tab_history,       history,        "History",        platform_filter_selections, _player_search, _date_range, _direction_filter)
+    _safe_render(tab_achievements,  achievements,   "Awards",         platform_filter_selections, _player_search, _date_range, _direction_filter)
 
 
-def _safe_render(tab_ctx, module, label, pf, ps, dr, df):
-    """Render a tab module with error boundary — surfaces exceptions instead of blank tabs."""
-    import traceback as _tb
-    with tab_ctx:
-        try:
-            module.render(pf, ps, dr, df)
-        except Exception as _tab_err:
-            st.error(f"❌ **{label} tab error** — {type(_tab_err).__name__}: {_tab_err}")
-            with st.expander("Show traceback"):
-                st.code(_tb.format_exc())
+_bt_interactive_body()
 
-
-_safe_render(tab_model_health,  health,          "Health",          platform_filter_selections, _player_search, _date_range, _direction_filter)
-_safe_render(tab_ai_picks,      platform_picks,  "Platform Picks",  platform_filter_selections, _player_search, _date_range, _direction_filter)
-_safe_render(tab_all_picks,     all_picks,        "All Picks",       platform_filter_selections, _player_search, _date_range, _direction_filter)
-_safe_render(tab_joseph_bets,   joseph,           "Joseph",          platform_filter_selections, _player_search, _date_range, _direction_filter)
-_safe_render(tab_auto_resolve,  resolve,          "Resolve",         platform_filter_selections, _player_search, _date_range, _direction_filter)
-_safe_render(tab_bets,          my_bets,          "My Bets",         platform_filter_selections, _player_search, _date_range, _direction_filter)
-_safe_render(tab_log,           log_bet,          "Log Bet",         platform_filter_selections, _player_search, _date_range, _direction_filter)
-_safe_render(tab_parlays,       parlays,          "Parlays",         platform_filter_selections, _player_search, _date_range, _direction_filter)
-_safe_render(tab_predict,       predict,          "Predict",         platform_filter_selections, _player_search, _date_range, _direction_filter)
-_safe_render(tab_history,       history,          "History",         platform_filter_selections, _player_search, _date_range, _direction_filter)
-_safe_render(tab_achievements,  achievements,     "Awards",          platform_filter_selections, _player_search, _date_range, _direction_filter)
-
-
-# -- Attribution footer � Joseph M. Smith ----------------------
+# ── Attribution footer — Joseph M. Smith ──────────────────────
 render_attribution_footer()
+

@@ -41,22 +41,11 @@ def render(platform_selections, player_search, date_range, direction_filter):
         """
     ), unsafe_allow_html=True)
 
-    _col1, _col2 = st.columns([2, 5])
-    st.session_state.setdefault("health_scope_filter", "Last 30 Days")
-    with _col1:
-        _health_scope = st.selectbox(
-            "Health Scope",
-            ["Today", "Last 7 Days", "Last 30 Days", "All Time"],
-            key="health_scope_filter",
-            help="Choose which date window feeds Model Health stats.",
-        )
-    with _col2:
-        st.caption("Health now uses the same merged pick universe as All Picks for matching totals under the same scope.")
+    # ── Scope — reads from global selector in filter bar ──────────────────────
+    _health_scope = st.session_state.get("bt_scope_label", "Last 30 Days")
+    st.caption(f"📅 Showing: **{st.session_state.get('bt_global_scope', 'Last 30 Days')}** — change the Date / Scope selector above to update all tabs.")
 
     _health_universe = build_merged_pick_universe(_health_scope)
-    # Do NOT apply the global date_range here — the Health Scope selectbox above
-    # is the date control for this tab.  Passing date_range would override the
-    # scope and restrict results to whatever day the global picker is set to.
     filtered_health = apply_global_filters(
         [p for p in _health_universe["combined"] if platform_filter_fn(p, platform_selections)],
         player_search, None, direction_filter,

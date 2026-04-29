@@ -43,29 +43,11 @@ def render(platform_selections, player_search, date_range, direction_filter):
         "This tab uses the same merged source as Health so totals align."
     )
 
-    # ── Date / scope selector ─────────────────────────────────
-    _col1, _col2 = st.columns([2, 5])
-    with _col1:
-        _dates = get_analysis_pick_dates(days=30)
-        _today = tracker_today_iso()
-        _today_has_picks = _today in _dates  # track before any prepend
-        if not _today_has_picks:
-            _dates = [_today] + _dates
-        _options = _dates + ["Last 7 Days", "Last 30 Days", "All Time"]
-        # Default to yesterday if today has no picks yet but yesterday does
-        import datetime as _dt_mod2
-        _yesterday = (_dt_mod2.date.today() - _dt_mod2.timedelta(days=1)).isoformat()
-        _default_idx = _options.index(_yesterday) if not _today_has_picks and _yesterday in _options else 0
-        _selected = st.selectbox("📅 Select Date / Scope", _options, index=_default_idx, key="all_picks_date_scope")
-        _is_specific = _selected not in ("Last 7 Days", "Last 30 Days", "All Time")
-        _scope = (
-            "Today" if _is_specific and _selected == _today
-            else _selected if not _is_specific
-            else "Last 30 Days"
-        )
-        _filter_date = _selected if _is_specific else None
-    with _col2:
-        st.caption("Select a specific date to view its metrics, or choose a range for aggregate performance.")
+    # ── Date / scope — reads from global selector in filter bar ──────────────
+    _today = tracker_today_iso()
+    _selected = st.session_state.get("bt_global_scope", "Last 30 Days")
+    _filter_date = st.session_state.get("bt_global_filter_date", None)
+    _scope = st.session_state.get("bt_scope_label", "Last 30 Days")
 
     # ── Resolve All Picks button ──────────────────────────────
     _rc1, _rc2 = st.columns([1, 3])

@@ -28,6 +28,7 @@ from pages.helpers.bet_tracker_data import (
     tracker_today_date,
     reload_bets,
 )
+from tracking.database import get_analysis_pick_dates as _bt_get_pick_dates
 
 from pages.helpers.bet_tracker_tabs import (
     health,
@@ -74,7 +75,49 @@ st.markdown(get_global_css(), unsafe_allow_html=True)
 st.markdown(get_qds_css(), unsafe_allow_html=True)
 st.markdown(get_bet_card_css(), unsafe_allow_html=True)
 
-# ── Per-user scoping ──────────────────────────────────────────
+# ── Tab scroll indicator CSS ──────────────────────────────────
+st.markdown("""
+<style>
+/* Make the tab bar horizontally scrollable with a fade hint on the right */
+[data-testid="stTabs"] > div:first-child {
+    overflow-x: auto !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,213,89,0.35) transparent;
+    -webkit-mask-image: linear-gradient(
+        to right,
+        black 0%,
+        black calc(100% - 64px),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to right,
+        black 0%,
+        black calc(100% - 64px),
+        transparent 100%
+    );
+    padding-bottom: 4px;
+}
+[data-testid="stTabs"] > div:first-child::-webkit-scrollbar {
+    height: 3px;
+}
+[data-testid="stTabs"] > div:first-child::-webkit-scrollbar-thumb {
+    background: rgba(0,213,89,0.4);
+    border-radius: 4px;
+}
+/* Scroll-right pulse arrow on the tab bar */
+[data-testid="stTabs"] > div:first-child::after {
+    content: '';
+    position: sticky;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 32px;
+    flex-shrink: 0;
+    background: linear-gradient(to right, transparent, rgba(5,8,15,0.85) 80%);
+    pointer-events: none;
+}
+</style>
+""", unsafe_allow_html=True)
 # Stamp the active user email so cached_load_all_bets / load_bets_page /
 # get_bets_summary all auto-filter to this user's bets (legacy rows
 # without a user_email are still included so historical data remains
@@ -546,13 +589,45 @@ with _filter_col2:
 with _filter_col3:
     _today_dt = tracker_today_date()
     import datetime as _dt_mod
-    _two_weeks_ago_dt = _today_dt - _dt_mod.timedelta(days=13)
-    _date_range = st.date_input(
-        "📅 Date Range",
-        value=[_two_weeks_ago_dt, _today_dt],
-        key="date_range_filter",
-        help="Filter bets by date range. Defaults to the last 14 days (includes 4/21 and earlier).",
+    _bt_pick_dates = _bt_get_pick_dates(days=60)
+    _bt_today_iso = tracker_today_iso()
+    if _bt_today_iso not in _bt_pick_dates:
+        _bt_pick_dates = [_bt_today_iso] + _bt_pick_dates
+    _bt_scope_options = _bt_pick_dates + ["Last 7 Days", "Last 30 Days", "All Time"]
+    # Default: yesterday if today has no data yet, otherwise most recent date
+    import datetime as _dt_mod2
+    _bt_yesterday = (_dt_mod2.date.today() - _dt_mod2.timedelta(days=1)).isoformat()
+    _bt_today_has_data = _bt_today_iso in (_bt_get_pick_dates(days=1) or [])
+    _bt_default_idx = (
+        _bt_scope_options.index(_bt_yesterday)
+        if not _bt_today_has_data and _bt_yesterday in _bt_scope_options
+        else 0
     )
+    _bt_global_scope = st.selectbox(
+        "📅 Date / Scope",
+        _bt_scope_options,
+        index=_bt_default_idx,
+        key="bt_global_scope",
+        help="Controls the date window for ALL tabs. Pick a specific date or a rolling range.",
+    )
+    _bt_is_specific = _bt_global_scope not in ("Last 7 Days", "Last 30 Days", "All Time")
+    _bt_global_filter_date = _bt_global_scope if _bt_is_specific else None
+    _bt_scope_label = (
+        "Today" if _bt_is_specific and _bt_global_scope == _bt_today_iso
+        else _bt_global_scope if not _bt_is_specific
+        else "Last 30 Days"
+    )
+    # Backward-compat date_range tuple for tabs that use apply_global_filters
+    if _bt_is_specific:
+        _sel_date = _dt_mod.date.fromisoformat(_bt_global_scope)
+        _date_range = [_sel_date, _sel_date]
+    else:
+        _two_weeks_ago_dt = _today_dt - _dt_mod.timedelta(days=13)
+        _date_range = [_two_weeks_ago_dt, _today_dt]
+    # Share with all tabs via session_state
+    st.session_state["bt_global_scope"] = _bt_global_scope
+    st.session_state["bt_global_filter_date"] = _bt_global_filter_date
+    st.session_state["bt_scope_label"] = _bt_scope_label
 
 with _filter_col4:
     _direction_filter = st.selectbox(

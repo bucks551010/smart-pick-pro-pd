@@ -18,17 +18,9 @@ def render(platform_selections, player_search, date_range, direction_filter):
         "(formerly shown as SmartAI Auto)."
     )
 
-    _col1, _col2 = st.columns([2, 5])
-    st.session_state.setdefault("ai_picks_scope", "Last 30 Days")
-    with _col1:
-        _ai_scope = st.selectbox(
-            "Platform Picks Scope",
-            ["Today", "Last 7 Days", "Last 30 Days", "All Time"],
-            key="ai_picks_scope",
-            help="Date window for Smart Pick Pro auto-logged picks.",
-        )
-    with _col2:
-        st.caption("All picks automatically logged by the Smart Pick Pro platform pipeline.")
+    # ── Scope — reads from global selector in filter bar ──────────────────────
+    _ai_scope = st.session_state.get("bt_scope_label", "Last 30 Days")
+    st.caption(f"📅 Showing: **{st.session_state.get('bt_global_scope', 'Last 30 Days')}** — change the Date / Scope selector above to update all tabs.")
 
     all_bets = cached_load_all_bets()
     ai_bets_raw = [b for b in all_bets if is_ai_auto_bet(b)]

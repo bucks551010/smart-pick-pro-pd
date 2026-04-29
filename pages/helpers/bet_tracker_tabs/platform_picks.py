@@ -3,7 +3,6 @@ import streamlit as st
 from styles.theme import get_summary_cards_html, get_bet_card_html
 from pages.helpers.bet_tracker_data import (
     cached_load_all_bets,
-    is_ai_auto_bet,
     in_bet_date_window,
     platform_filter_fn,
     apply_global_filters,
@@ -12,10 +11,12 @@ from pages.helpers.bet_tracker_data import (
 
 
 def render(platform_selections, player_search, date_range, direction_filter):
-    st.subheader("📊 Platform Picks — Smart Pick Pro Platform Picks")
+    st.subheader("⚡ Platform AI Picks — Bet Tracker")
     st.markdown(
-        "These bets were automatically logged by the Smart Pick Pro platform pipeline "
-        "(formerly shown as SmartAI Auto)."
+        "These are the **Platform AI Picks** auto-logged from the QAM — the top picks "
+        "(confidence ≥ 60, not avoided, max 8 per day) that the platform itself would bet. "
+        "Every row here corresponds directly to what was shown in the "
+        "**⚡ Platform AI Picks** section at the top of Quantum Analysis Matrix."
     )
 
     # ── Scope — reads from global selector in filter bar ──────────────────────
@@ -23,7 +24,10 @@ def render(platform_selections, player_search, date_range, direction_filter):
     st.caption(f"📅 Showing: **{st.session_state.get('bt_global_scope', 'Last 30 Days')}** — change the Date / Scope selector above to update all tabs.")
 
     all_bets = cached_load_all_bets()
-    ai_bets_raw = [b for b in all_bets if is_ai_auto_bet(b)]
+    # Platform AI Picks are ONLY bets logged by auto_log_platform_ai_bets()
+    # with source='platform_ai'. Do NOT use is_ai_auto_bet() here — that
+    # catches every auto-logged source (qeg_auto, quantum, smart_pick_pro, etc.)
+    ai_bets_raw = [b for b in all_bets if (b.get("source") or "").strip() == "platform_ai"]
     ai_bets_raw = [b for b in ai_bets_raw if in_bet_date_window(b, _ai_scope, "bet_date")]
 
     ai_bets = apply_global_filters(
@@ -75,10 +79,10 @@ def render(platform_selections, player_search, date_range, direction_filter):
         ),
         unsafe_allow_html=True,
     )
-    st.caption("Platform Picks counts only Smart Pick Pro platform auto-logged tracker bets. It is a subset of Health.")
+    st.caption("Platform AI Picks = top-8 high-confidence picks auto-logged from QAM (source: platform_ai). These are the bets the platform itself would place.")
 
     if ai_decided > 0:
-        st.success(f"🎯 **Model accuracy:** **{ai_wins}/{ai_decided}** correct (**{ai_rate:.1f}%**) — {ai_evens} even(s)")
+        st.success(f"🎯 **Platform AI accuracy:** **{ai_wins}/{ai_decided}** correct (**{ai_rate:.1f}%**) — {ai_evens} even(s)")
 
     st.divider()
 

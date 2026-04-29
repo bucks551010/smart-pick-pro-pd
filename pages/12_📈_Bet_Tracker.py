@@ -671,7 +671,7 @@ st.markdown('<div style="margin-bottom:8px"></div>', unsafe_allow_html=True)
 ) = st.tabs(
     [
         "📊 Health",
-        "🤖 Platform Picks",
+        "⚡ Platform AI Picks",
         "📋 All Picks",
         "🎙️ Joseph",
         "⚡ Resolve",

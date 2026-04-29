@@ -421,72 +421,52 @@ def render(platform_selections, player_search, date_range, direction_filter):
 
     st.divider()
 
-    # ── Source toggle ─────────────────────────────────────────
-    _radio = st.radio(
-        "Show detailed picks:",
-        ["30-Day History (database)", "Today's Analysis (live session)"],
-        horizontal=True, key="ap_source_radio",
-    )
-
-    if _radio == "30-Day History (database)":
-        _detail = list(_combined)
-        if _filter_date:
-            _detail = [p for p in _detail if canonical_pick_date(p) == _filter_date]
-        else:
-            _detail = [p for p in _detail if in_bet_date_window(p, _scope, "pick_date")]
-        if _tier_filter:
-            _tier_names = [t.split(" ")[0] for t in _tier_filter]
-            _detail = [p for p in _detail if p.get("tier") in _tier_names]
-        if _bt_filter:
-            _detail = [p for p in _detail if normalized_bet_type(p) in _bt_values]
-        if _detail:
-            _by_date: dict = {}
-            for _p in _detail:
-                _by_date.setdefault(_p.get("pick_date", "Unknown"), []).append(_p)
-            _sorted_dates = sorted(_by_date.keys(), reverse=True)
-            _MAX_CARD_DATES = 5
-            for _idx, _d in enumerate(_sorted_dates):
-                _dd = _by_date[_d]
-                _dw = sum(1 for p in _dd if p.get("result") == "WIN")
-                _dl = sum(1 for p in _dd if p.get("result") == "LOSS")
-                _dr = _dw + _dl
-                _dwr = f" — {_dw / max(_dr, 1) * 100:.0f}% win rate" if _dr > 0 else ""
-                with st.expander(f"📅 {_d} · {len(_dd)} picks · ✅{_dw} ❌{_dl}{_dwr}",
-                                  expanded=(_idx == 0)):
-                    if _idx < _MAX_CARD_DATES:
-                        _cards = []
-                        for _pick in _dd:
-                            _pc = dict(_pick)
-                            if "bet_date" not in _pc:
-                                _pc["bet_date"] = _pc.get("pick_date", "")
-                            _cards.append(_pc)
-                        render_bet_cards_chunked(_cards)
-                    else:
-                        # Older dates: lightweight dataframe instead of HTML cards
-                        _rows = []
-                        for _pick in _dd:
-                            _actual = _pick.get("actual_value")
-                            _rows.append({
-                                "Player": _pick.get("player_name", "—"),
-                                "Stat": str(_pick.get("stat_type", "—")).replace("_", " ").title(),
-                                "Line": _pick.get("prop_line", _pick.get("line", "—")),
-                                "Dir": _pick.get("direction", "—"),
-                                "Actual": f"{_actual:.1f}" if _actual is not None else "—",
-                                "Result": {"WIN": "✅", "LOSS": "❌", "EVEN": "🔄"}.get(
-                                    _pick.get("result") or "", "⏳"),
-                                "Tier": _pick.get("tier", "—"),
-                            })
-                        st.dataframe(_rows, use_container_width=True, hide_index=True)
-        else:
-            st.info("📭 No database picks found for this time range.")
+    # ── Picks Table — full table per day, no card cap ─────────
+    st.markdown("#### 📋 Picks by Date")
+    _detail = list(_combined)
+    if _filter_date:
+        _detail = [p for p in _detail if canonical_pick_date(p) == _filter_date]
     else:
-        _sd = list(session_picks)
-        if _tier_filter:
-            _tier_names = [t.split(" ")[0] for t in _tier_filter]
-            _sd = [p for p in _sd if p.get("tier") in _tier_names]
-        if _bt_filter:
-            _sd = [p for p in _sd if normalized_bet_type(p) in _bt_values]
-        if _sd:
-            render_bet_cards_chunked(_sd)
-        else:
-            st.info("📭 No live session picks. Run **Neural Analysis** to generate picks.")
+        _detail = [p for p in _detail if in_bet_date_window(p, _scope, "pick_date")]
+    if _tier_filter:
+        _tier_names = [t.split(" ")[0] for t in _tier_filter]
+        _detail = [p for p in _detail if p.get("tier") in _tier_names]
+    if _bt_filter:
+        _detail = [p for p in _detail if normalized_bet_type(p) in _bt_values]
+
+    if _detail:
+        _by_date: dict = {}
+        for _p in _detail:
+            _by_date.setdefault(_p.get("pick_date", "Unknown"), []).append(_p)
+        _sorted_dates = sorted(_by_date.keys(), reverse=True)
+        for _idx, _d in enumerate(_sorted_dates):
+            _dd = _by_date[_d]
+            _dw = sum(1 for p in _dd if p.get("result") == "WIN")
+            _dl = sum(1 for p in _dd if p.get("result") == "LOSS")
+            _de = sum(1 for p in _dd if p.get("result") == "EVEN")
+            _dv = sum(1 for p in _dd if p.get("result") == "VOID")
+            _dp = sum(1 for p in _dd if p.get("result") not in ("WIN", "LOSS", "EVEN", "VOID"))
+            _dr = _dw + _dl
+            _dwr = f" · {_dw / max(_dr, 1) * 100:.0f}% win rate" if _dr > 0 else ""
+            _label = f"📅 {_d} — {len(_dd)} picks · ✅{_dw} ❌{_dl} 🔄{_de} 🚫{_dv} ⏳{_dp}{_dwr}"
+            with st.expander(_label, expanded=(_idx == 0)):
+                _rows = []
+                for _pick in _dd:
+                    _actual = _pick.get("actual_value")
+                    _res_raw = _pick.get("result") or ""
+                    _rows.append({
+                        "Player": _pick.get("player_name", "—"),
+                        "Team": _pick.get("team", "—"),
+                        "Stat": str(_pick.get("stat_type", "—")).replace("_", " ").title(),
+                        "Line": _pick.get("prop_line", _pick.get("line", "—")),
+                        "Dir": _pick.get("direction", "—"),
+                        "Conf": f"{float(_pick.get('confidence_score') or 0):.0f}",
+                        "Edge": f"{float(_pick.get('edge_percentage') or 0):.1f}%",
+                        "Tier": _pick.get("tier", "—"),
+                        "Platform": platform_display_name(_pick.get("platform") or "—"),
+                        "Actual": f"{_actual:.1f}" if _actual is not None else "—",
+                        "Result": {"WIN": "✅ WIN", "LOSS": "❌ LOSS", "EVEN": "🔄 EVEN", "VOID": "🚫 VOID"}.get(_res_raw, "⏳ Pending"),
+                    })
+                st.dataframe(_rows, use_container_width=True, hide_index=True)
+    else:
+        st.info("📭 No picks found for this time range.")

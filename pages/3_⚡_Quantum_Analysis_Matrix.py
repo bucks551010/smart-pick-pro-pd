@@ -22,6 +22,14 @@ except ImportError:
     import logging
     _logger = logging.getLogger(__name__)
 
+# ── Auth gate ─────────────────────────────────────────────────
+try:
+    from utils.auth_gate import require_login as _require_login
+    if not _require_login():
+        st.stop()
+except ImportError:
+    pass
+
 # Import our engine modules
 from engine.simulation import (
     run_quantum_matrix_simulation,

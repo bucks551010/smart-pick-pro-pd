@@ -18,6 +18,12 @@ try:
 except ImportError:
     _logger = logging.getLogger(__name__)
 
+# ── Auth gate ─────────────────────────────────────────────────
+try:
+    from utils.auth_gate import require_login as _require_login
+except ImportError:
+    _require_login = None
+
 # ── Page Configuration (MUST be first Streamlit call) ─────────
 
 st.set_page_config(
@@ -25,6 +31,9 @@ st.set_page_config(
     page_icon="💦",
     layout="wide",
 )
+
+if _require_login is not None and not _require_login():
+    st.stop()
 
 # ── Global CSS ────────────────────────────────────────────────
 

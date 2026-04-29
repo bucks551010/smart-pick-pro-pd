@@ -33,12 +33,14 @@ try:
 except ImportError:
     print('psycopg2 not installed — trying pg8000')
     import pg8000.native
+    import urllib.parse as _urlparse
+    _parsed = _urlparse.urlparse(PG_URL)
     conn = pg8000.native.Connection(
-        user='postgres',
-        password='PFGBNTCQyoVyUegKuTeuPPJujxuJAXGL',
-        host='crossover.proxy.rlwy.net',
-        port=29694,
-        database='railway',
+        user=_parsed.username,
+        password=_parsed.password,
+        host=_parsed.hostname,
+        port=_parsed.port or 5432,
+        database=_parsed.path.lstrip('/'),
     )
     tables = [r[0] for r in conn.run("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename")]
     print('Tables:', tables)

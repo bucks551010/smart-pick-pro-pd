@@ -1,5 +1,6 @@
 """api/main.py – FastAPI application entry point for Smart Pick Pro."""
 import datetime
+import os
 from contextlib import asynccontextmanager
 from utils.logger import get_logger
 
@@ -36,12 +37,17 @@ if _FASTAPI_AVAILABLE:
 
     # Middleware
     app.add_middleware(GZipMiddleware, minimum_size=1000)
+    _allowed_origins = [
+        o.strip()
+        for o in os.environ.get("CORS_ALLOWED_ORIGINS", os.environ.get("APP_URL", "http://localhost:8501")).split(",")
+        if o.strip()
+    ]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=_allowed_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_headers=["Authorization", "Content-Type"],
     )
 
     try:

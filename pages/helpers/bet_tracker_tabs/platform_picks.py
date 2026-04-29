@@ -20,49 +20,20 @@ def render(platform_selections, player_search, date_range, direction_filter):
     )
 
     _col1, _col2 = st.columns([2, 5])
-    st.session_state.setdefault("ai_picks_scope", "Today")
+    st.session_state.setdefault("ai_picks_scope", "Last 30 Days")
     with _col1:
         _ai_scope = st.selectbox(
             "Platform Picks Scope",
             ["Today", "Last 7 Days", "Last 30 Days", "All Time"],
             key="ai_picks_scope",
-            help="Date window for Smart Pick Pro auto-logged picks. Defaults to today's Platform AI Picks from QAM.",
+            help="Date window for Smart Pick Pro auto-logged picks.",
         )
     with _col2:
-        st.caption("Platform Picks mirrors the **⚡ Platform AI Picks** section on the QAM page (top 8 by confidence, conf ≥ 60).")
+        st.caption("All picks automatically logged by the Smart Pick Pro platform pipeline.")
 
     all_bets = cached_load_all_bets()
     ai_bets_raw = [b for b in all_bets if is_ai_auto_bet(b)]
     ai_bets_raw = [b for b in ai_bets_raw if in_bet_date_window(b, _ai_scope, "bet_date")]
-
-    # ── Mirror QAM "⚡ Platform AI Picks" section: conf >= 60,
-    #    not avoid/out, top 8 per day by confidence_score ────────────
-    def _conf(b):
-        try:
-            return float(b.get("confidence_score") or 0)
-        except (TypeError, ValueError):
-            return 0.0
-    _filtered: list = []
-    for b in ai_bets_raw:
-        if b.get("should_avoid"):
-            continue
-        if b.get("player_is_out"):
-            continue
-        if not str(b.get("platform") or "").strip():
-            continue
-        if _conf(b) < 60:
-            continue
-        _filtered.append(b)
-    # Group by bet_date, keep top 8 per day
-    from collections import defaultdict as _dd
-    _by_day: dict = _dd(list)
-    for b in _filtered:
-        _by_day[b.get("bet_date") or ""].append(b)
-    _top: list = []
-    for _d, _bs in _by_day.items():
-        _bs.sort(key=_conf, reverse=True)
-        _top.extend(_bs[:8])
-    ai_bets_raw = _top
 
     ai_bets = apply_global_filters(
         [b for b in ai_bets_raw if platform_filter_fn(b, platform_selections)],

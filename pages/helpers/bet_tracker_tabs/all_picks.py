@@ -127,58 +127,54 @@ def render(platform_selections, player_search, date_range, direction_filter):
         else:
             _rbd_sel = st.selectbox("📅 Select date", _rbd_dates, index=0, key="rbd_date_selectbox")
 
-            # Only show bets from the Railway bets table for this date
-            from tracking.database import load_bets_page as _load_bets_page
-            _rbd_ue = st.session_state.get("_bet_tracker_user_email") or None
-            _rbd_bets = _load_bets_page(
-                start_date=_rbd_sel, end_date=_rbd_sel,
-                exclude_linked=False, limit=500,
-                user_email=_rbd_ue,
-            )
+            # Load all analysis picks for this date (all_analysis_picks table)
+            _rbd_picks = load_analysis_picks_for_date(_rbd_sel)
 
-            if not _rbd_bets:
-                st.info(f"No bets logged for {_rbd_sel}.")
+            if not _rbd_picks:
+                st.info(f"No picks logged for {_rbd_sel}.")
             else:
-                _bw = sum(1 for b in _rbd_bets if b.get("result") == "WIN")
-                _bl = sum(1 for b in _rbd_bets if b.get("result") == "LOSS")
-                _bp = sum(1 for b in _rbd_bets if not b.get("result"))
-                _br_count = _bw + _bl
+                _rw = sum(1 for p in _rbd_picks if p.get("result") == "WIN")
+                _rl = sum(1 for p in _rbd_picks if p.get("result") == "LOSS")
+                _re = sum(1 for p in _rbd_picks if p.get("result") == "EVEN")
+                _rp = sum(1 for p in _rbd_picks if not p.get("result"))
+                _rr = _rw + _rl
                 st.markdown(
-                    f"**{len(_rbd_bets)} bet(s)** for {_rbd_sel}"
-                    + (f" · **{_bw / max(_br_count, 1) * 100:.0f}% win rate**" if _br_count > 0 else "")
-                    + f"  \n✅ {_bw} WIN · ❌ {_bl} LOSS · ⏳ {_bp} Pending"
+                    f"**{len(_rbd_picks)} picks** for {_rbd_sel}"
+                    + (f" · **{_rw / max(_rr, 1) * 100:.0f}% win rate**" if _rr > 0 else "")
+                    + f"  \n✅ {_rw} WIN · ❌ {_rl} LOSS · 🔄 {_re} EVEN · ⏳ {_rp} Pending"
                 )
-                _bet_rows = []
-                for _b in _rbd_bets:
-                    _actual = _b.get("actual_value")
-                    _bet_rows.append({
-                        "Player": _b.get("player_name", "—"),
-                        "Stat": _b.get("stat_type", "—"),
-                        "Line": _b.get("prop_line", "—"),
-                        "Dir": _b.get("direction", "—"),
+                _pick_rows = []
+                for _p in _rbd_picks:
+                    _actual = _p.get("actual_value")
+                    _pick_rows.append({
+                        "Player": _p.get("player_name", "—"),
+                        "Stat": str(_p.get("stat_type", "—")).replace("_", " ").title(),
+                        "Line": _p.get("prop_line", "—"),
+                        "Dir": _p.get("direction", "—"),
                         "Actual": f"{_actual:.1f}" if _actual is not None else "—",
-                        "Result": {"WIN": "✅ WIN", "LOSS": "❌ LOSS", "EVEN": "🔄 EVEN"}.get(
-                            _b.get("result") or "", "⏳ Pending"),
-                        "Tier": _b.get("tier", "—"),
-                        "Platform": _b.get("platform", "—"),
+                        "Result": {"WIN": "✅ WIN", "LOSS": "❌ LOSS", "EVEN": "🔄 EVEN", "VOID": "🚫 VOID"}.get(
+                            _p.get("result") or "", "⏳ Pending"),
+                        "Tier": _p.get("tier", "—"),
+                        "Platform": _p.get("platform", "—"),
+                        "Conf": f"{float(_p.get('confidence_score') or 0):.0f}",
                     })
-                st.dataframe(_bet_rows, use_container_width=True, hide_index=True)
+                st.dataframe(_pick_rows, use_container_width=True, hide_index=True)
 
                 if st.button(f"🔄 Resolve / Re-check {_rbd_sel}", key="rbd_resolve_btn", type="primary"):
-                    _loader = joseph_loading_placeholder(f"Resolving bets for {_rbd_sel}") if JOSEPH_LOADING_AVAILABLE else None
+                    _loader = joseph_loading_placeholder(f"Resolving picks for {_rbd_sel}") if JOSEPH_LOADING_AVAILABLE else None
                     try:
-                        _bc, _be = auto_resolve_bet_results(date_str=_rbd_sel)
+                        _pr2 = resolve_all_analysis_picks(date_str=_rbd_sel, include_today=True)
                         if _loader:
                             _loader.empty()
-                        if _bc > 0:
-                            st.success(f"✅ Resolved **{_bc}** bet(s) for {_rbd_sel}.")
+                        if _pr2.get("resolved", 0) > 0:
+                            st.success(f"✅ Resolved **{_pr2['resolved']}** pick(s) for {_rbd_sel}.")
                             reload_bets()
                             st.rerun()
                         else:
-                            st.warning(f"⚠️ No bets resolved for {_rbd_sel}.")
-                        if _be:
-                            with st.expander(f"⚠️ {len(_be)} error(s)"):
-                                for _e in _be:
+                            st.warning(f"⚠️ No picks resolved for {_rbd_sel}.")
+                        if _pr2.get("errors"):
+                            with st.expander(f"⚠️ {len(_pr2['errors'])} error(s)"):
+                                for _e in _pr2["errors"]:
                                     st.caption(_e)
                     except Exception as _exc:
                         if _loader:

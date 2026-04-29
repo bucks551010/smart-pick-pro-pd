@@ -5720,8 +5720,11 @@ def _render_free_picks_fragment() -> None:
     new picks, visitors on the landing page see them within 3 minutes without
     needing to reload the page.
     """
-    _picks, _date = _load_top_preview_picks(5)
-    st.html(_build_preview_section_html(_picks, _date))
+    try:
+        _picks, _date = _load_top_preview_picks(5)
+        st.html(_build_preview_section_html(_picks, _date))
+    except Exception as _exc:
+        _logger.warning("Free picks fragment error: %s", _exc)
 
 
 def require_login() -> bool:

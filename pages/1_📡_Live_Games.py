@@ -399,27 +399,26 @@ with st.expander("⚙️ Advanced Options — Individual Data Pipelines", expand
 
     # ── Platform Preference ──────────────────────────────────────
     st.markdown("**⚙️ Platform Settings**")
-    if True:
-        _PLATFORM_OPTIONS = [
-            "PrizePicks", "Underdog Fantasy", "DraftKings Pick6",
-        ]
-        if "joseph_preferred_platform" not in st.session_state:
-            st.session_state["joseph_preferred_platform"] = "PrizePicks"
+    _PLATFORM_OPTIONS = [
+        "PrizePicks", "Underdog Fantasy", "DraftKings Pick6",
+    ]
+    if "joseph_preferred_platform" not in st.session_state:
+        st.session_state["joseph_preferred_platform"] = "PrizePicks"
 
-        st.markdown(
-            '<span style="color:#e2e8f0;font-size:0.88rem;font-family:Inter,sans-serif">'
-            'What betting app are you using tonight?</span>',
-            unsafe_allow_html=True,
-        )
-        _lg_platform = st.radio(
-            "Preferred betting platform",
-            _PLATFORM_OPTIONS,
-            index=_PLATFORM_OPTIONS.index(st.session_state["joseph_preferred_platform"]),
-            horizontal=True,
-            label_visibility="collapsed",
-            key="lg_platform_radio",
-        )
-        st.session_state["joseph_preferred_platform"] = _lg_platform
+    st.markdown(
+        '<span style="color:#e2e8f0;font-size:0.88rem;font-family:Inter,sans-serif">'
+        'What betting app are you using tonight?</span>',
+        unsafe_allow_html=True,
+    )
+    _lg_platform = st.radio(
+        "Preferred betting platform",
+        _PLATFORM_OPTIONS,
+        index=_PLATFORM_OPTIONS.index(st.session_state["joseph_preferred_platform"]),
+        horizontal=True,
+        label_visibility="collapsed",
+        key="lg_platform_radio",
+    )
+    st.session_state["joseph_preferred_platform"] = _lg_platform
 
     with _load_btn_col:
         _any_platform_selected = _include_pp or _include_ud or _include_dk

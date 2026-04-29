@@ -2026,9 +2026,8 @@ else:
 
 # ── Joseph's Track Record ───────────────────────────────────
 
-@st.fragment
 def _render_track_record_section():
-    """Track Record fragment — only this section re-renders on filter change."""
+    """Render the Track Record section (plain function — no fragment isolation)."""
     st.markdown(
         '<div id="joseph-s-track-record" class="studio-section-title">📊 JOSEPH\'S TRACK RECORD</div>',
         unsafe_allow_html=True,

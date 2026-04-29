@@ -7,9 +7,22 @@ from utils.logger import get_logger
 _logger = get_logger(__name__)
 
 try:
-    from fastapi import APIRouter, HTTPException
+    from fastapi import APIRouter, Depends, HTTPException
+    from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+    from utils.jwt_utils import verify_access_token
     router = APIRouter(prefix="/predictions", tags=["predictions"])
     _FASTAPI_AVAILABLE = True
+    _bearer = HTTPBearer(auto_error=False)
+
+    async def _optional_jwt(credentials: HTTPAuthorizationCredentials = Depends(_bearer)):
+        """Verify Bearer JWT if provided; raises 401 on invalid token."""
+        if credentials is None:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        payload = verify_access_token(credentials.credentials)
+        if payload is None:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+        return payload
+
 except ImportError:
     _FASTAPI_AVAILABLE = False
     router = None
@@ -40,7 +53,7 @@ def _load_predictions_for_date(date_str: str) -> list:
 
 if _FASTAPI_AVAILABLE:
     @router.get("/today")
-    async def get_today_predictions():
+    async def get_today_predictions(_user=Depends(_optional_jwt)):
         """Return today's predictions from the latest pipeline run.
 
         Returns:
@@ -51,7 +64,7 @@ if _FASTAPI_AVAILABLE:
         return {"date": date_str, "predictions": predictions, "count": len(predictions)}
 
     @router.get("/{date}")
-    async def get_predictions_by_date(date: str):
+    async def get_predictions_by_date(date: str, _user=Depends(_optional_jwt)):
         """Return predictions for a specific date.
 
         Args:

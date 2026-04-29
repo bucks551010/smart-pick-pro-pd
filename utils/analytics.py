@@ -53,7 +53,8 @@ def inject_ga4() -> None:
         return
     st.session_state["_ga4_injected"] = True
 
-    st.html(f"""<script>
+    try:
+        st.html(f"""<script>
 (function() {{
   var pdoc = window.parent.document;
   if (pdoc.getElementById('spp-ga4')) return;
@@ -84,6 +85,8 @@ def inject_ga4() -> None:
   }};
 }})();
 </script>""")
+    except Exception as _ga4_exc:
+        _logger.debug("GA4 inject_ga4 failed (non-fatal): %s", _ga4_exc)
 
 
 def ga4_event(event_name: str, params: dict[str, Any] | None = None) -> None:
@@ -93,12 +96,15 @@ def ga4_event(event_name: str, params: dict[str, Any] | None = None) -> None:
     """
     ga_id = GA_MEASUREMENT_ID
     if not ga_id:
-        return
-    params_json = json.dumps(params or {})
-    st.html(f"""<script>
+    try:
+        st.html(f"""<script>
 (function() {{
   var fn = window.parent.__spp_gtag || window.parent.gtag;
   if (fn) fn('event', '{event_name}', {params_json});
+}})();
+</script>""")
+    except Exception as _ga4_evt_exc:
+        _logger.debug("GA4 ga4_event '%s' failed (non-fatal): %s", event_name, _ga4_evt_exc('event', '{event_name}', {params_json});
 }})();
 </script>""")
 

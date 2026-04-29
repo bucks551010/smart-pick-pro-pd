@@ -234,13 +234,19 @@ class FileCache:
             cache_key = self._get_cache_key(key)
             cache_path = self._get_cache_path(cache_key)
             if cache_path.exists():
-                cache_path.unlink()
-                _logger.debug("Cleared cache for %s...", key[:50])
+                try:
+                    cache_path.unlink()
+                    _logger.debug("Cleared cache for %s...", key[:50])
+                except Exception as exc:
+                    _logger.warning("Failed to clear cache key %s: %s", key[:50], exc)
         else:
             count = 0
             for file in self.cache_dir.glob("*.json"):
-                file.unlink()
-                count += 1
+                try:
+                    file.unlink()
+                    count += 1
+                except Exception as exc:
+                    _logger.warning("Failed to delete cache file %s: %s", file.name, exc)
             _logger.info("Cleared entire cache (%d files)", count)
 
     def get_stats(self) -> Dict[str, Any]:

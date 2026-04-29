@@ -75,9 +75,10 @@ check("Test 2d: lockout_until column exists", "lockout_until" in cols)
 conn.close()
 
 # ── Test 3: Create a test user ─────────────────────────────
+import os as _os
 TEST_EMAIL = "resetuser@test.com"
-TEST_PASSWORD = "OldPass123"
-NEW_PASSWORD = "NewSecure456"
+TEST_PASSWORD = _os.environ.get("TEST_OLD_PASSWORD", "OldPass!23x")
+NEW_PASSWORD = _os.environ.get("TEST_NEW_PASSWORD", "NewSecure!56y")
 
 result = _create_user(TEST_EMAIL, TEST_PASSWORD, "ResetTester")
 check("Test 3: Create user succeeded", result is True)

@@ -360,6 +360,18 @@ def _run_auto_analysis(today_str: str, force: bool = False) -> int:
 
     et_hour = _et_now().hour
     _qam_cutoff = _get_games_cutoff_hour()
+    # Forced runs (first loop after deploy/restart) still respect the games cutoff.
+    # We bypass the LOWER bound (QAM_HOUR_START) so deploys at 6 AM still get picks,
+    # but we always respect the UPPER bound so a midnight redeploy during live games
+    # doesn't generate a post-game analysis session full of stale/UNDER-only picks.
+    if et_hour >= _qam_cutoff and not (_QAM_HOUR_START <= et_hour < _qam_cutoff):
+        # Past the cutoff — skip regardless of force flag
+        _logger.info(
+            "[ETL Scheduler] QAM auto-analysis skipped — ET hour %d is past games cutoff %d "
+            "(force=%s). Will resume tomorrow.",
+            et_hour, _qam_cutoff, force,
+        )
+        return 0
     if not force and not (_QAM_HOUR_START <= et_hour < _qam_cutoff):
         _logger.debug(
             "[ETL Scheduler] QAM auto-analysis skipped — ET hour %d outside window %d–%d.",
@@ -368,7 +380,8 @@ def _run_auto_analysis(today_str: str, force: bool = False) -> int:
         return 0
     if force:
         _logger.info(
-            "[ETL Scheduler] QAM auto-analysis FORCED (startup/new-day) — bypassing hour window."
+            "[ETL Scheduler] QAM auto-analysis FORCED (startup/new-day) — ET hour %d in window.",
+            et_hour,
         )
 
     _logger.info("[ETL Scheduler] Starting QAM auto-analysis for %s …", today_str)

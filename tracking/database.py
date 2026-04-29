@@ -4200,14 +4200,29 @@ def load_latest_analysis_session():
                     pass
             row_dict["bets_locked"] = True
         elif _first_game_utc:
-            # Not yet locked — check if we're within the 2-hour window
+            # Not yet locked — check if we're within the 2-hour pre-game window.
+            # IMPORTANT: Only lock picks from sessions created BEFORE game start.
+            # A session created after games already began (e.g. after a mid-game
+            # redeploy) will have stale/post-game analysis and must NOT be locked.
             try:
                 _fgt = _dt_lock.datetime.fromisoformat(_first_game_utc.rstrip("Z"))
                 if _fgt.tzinfo is None:
                     _fgt = _fgt.replace(tzinfo=_dt_lock.timezone.utc)
                 _lock_trigger = _fgt - _dt_lock.timedelta(hours=2)
-                if _now_lock >= _lock_trigger:
-                    # Lock time reached — freeze current selected_picks now
+                # Check when this session was created
+                _session_ts_raw = row_dict.get("analysis_timestamp", "")
+                _session_created = None
+                if _session_ts_raw:
+                    try:
+                        _session_created = _dt_lock.datetime.fromisoformat(_session_ts_raw.rstrip("Z"))
+                        if _session_created.tzinfo is None:
+                            _session_created = _session_created.replace(tzinfo=_dt_lock.timezone.utc)
+                    except Exception:
+                        pass
+                # Don't lock sessions created after the first game started
+                _session_is_post_game = (_session_created is not None and _session_created > _fgt)
+                if _now_lock >= _lock_trigger and not _session_is_post_game:
+                    # Lock time reached and session is from before game start — freeze picks now
                     _lock_ts = _now_lock.strftime("%Y-%m-%dT%H:%M:%S+00:00")
                     _picks_to_lock = row_dict.get("selected_picks", [])
                     _picks_json_for_lock = json.dumps(_picks_to_lock, default=str)

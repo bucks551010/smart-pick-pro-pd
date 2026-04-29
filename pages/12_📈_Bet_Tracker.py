@@ -624,8 +624,8 @@ with _filter_col3:
     else:
         _two_weeks_ago_dt = _today_dt - _dt_mod.timedelta(days=13)
         _date_range = [_two_weeks_ago_dt, _today_dt]
-    # Share with all tabs via session_state
-    st.session_state["bt_global_scope"] = _bt_global_scope
+    # Share derived values with all tabs (do NOT write bt_global_scope —
+    # the widget owns that key and Streamlit will raise if we touch it)
     st.session_state["bt_global_filter_date"] = _bt_global_filter_date
     st.session_state["bt_scope_label"] = _bt_scope_label
 

@@ -34,6 +34,21 @@
         reverse_proxy api:8000
     }
 
+    # ── OG preview: serve meta-tag page to social media link crawlers ──
+    # Intercepts known bots (iMessage/Applebot, Slack, Discord, Twitter/X,
+    # WhatsApp/Facebook, LinkedIn, Telegram, Pinterest) and returns the static
+    # og.html so link unfurls show the correct title, description, and logo.
+    # Real browsers pass straight through to Streamlit.
+    @bots {
+        path /
+        expression `{header.User-Agent} =~ "(?i)(facebookexternalhit|Slackbot|Twitterbot|LinkedInBot|Discordbot|TelegramBot|Applebot|WhatsApp|Pinterest|Embedly|Iframely|OGProxy|preview\\.js|MetaInspector|OpenLinkProfiler|Screaming Frog)"`
+    }
+    handle @bots {
+        root * /app/static
+        rewrite * /og.html
+        file_server
+    }
+
     # ── App proxy ──
     handle {
         reverse_proxy app:8501

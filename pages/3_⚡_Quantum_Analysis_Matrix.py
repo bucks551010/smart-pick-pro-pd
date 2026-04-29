@@ -586,8 +586,8 @@ if not st.session_state.get("analysis_results"):
         if _qam_seed:
             st.session_state["analysis_results"] = _qam_seed
             st.session_state["_qam_db_restored"] = True
-    except Exception:
-        pass
+    except Exception as _qam_db_err:  # best-effort — log but don't crash
+        _logger.debug("QAM DB session restore failed: %s", _qam_db_err)
 
 # ── Seed todays_games if still missing after rehydrate ───────────────────────
 if not st.session_state.get("todays_games") and st.session_state.get("analysis_results"):
@@ -609,8 +609,8 @@ if not st.session_state.get("todays_games") and st.session_state.get("analysis_r
                         _gm_teams.add(_t)
             if _gm_teams & _ar_teams:
                 st.session_state["todays_games"] = _qam_games
-    except Exception:
-        pass
+    except Exception as _qam_seed_err:  # best-effort — log but don't crash
+        _logger.debug("QAM todays_games seed failed: %s", _qam_seed_err)
 
 # ── Auto-populate selected_picks with top-tier picks if empty.
 # Covers the case where the analysis session was saved without picks

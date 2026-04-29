@@ -331,24 +331,27 @@ if _scenario_mode and selected_names:
         # ── Enhancement 9: Scenario presets ──────────────────────────
         st.markdown("**Quick Presets:**")
         _preset_cols = st.columns(4)
+        _sce_preset_changed = False
         with _preset_cols[0]:
             if st.button("🏠 Blowout Win", use_container_width=True, key="preset_blowout"):
                 st.session_state["sce_spread"] = -10.0
                 st.session_state["sce_total"] = 230.0
-                st.rerun()
+                _sce_preset_changed = True
         with _preset_cols[1]:
             if st.button("⚔️ Close Game", use_container_width=True, key="preset_close"):
                 st.session_state["sce_spread"] = -1.0
                 st.session_state["sce_total"] = 215.0
-                st.rerun()
+                _sce_preset_changed = True
         with _preset_cols[2]:
             if st.button("😴 Back-to-Back", use_container_width=True, key="preset_b2b"):
                 st.session_state["sce_rest"] = 0
-                st.rerun()
+                _sce_preset_changed = True
         with _preset_cols[3]:
             if st.button("🔥 Pace-Up", use_container_width=True, key="preset_pace"):
                 st.session_state["sce_total"] = 240.0
-                st.rerun()
+                _sce_preset_changed = True
+        if _sce_preset_changed:
+            st.rerun()
         _sc1, _sc2, _sc3, _sc4 = st.columns(4)
         with _sc1:
             _sce_total = st.slider("Game O/U Total", 195.0, 260.0, 220.0, 0.5, key="sce_total")

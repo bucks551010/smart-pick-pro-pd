@@ -585,7 +585,7 @@ def _bt_interactive_body():
         _player_search = st.text_input(
             "🔍 Search Player",
             placeholder="e.g., LeBron James",
-            key="player_search_input",
+            key="player_search_input_tracker",
             help="Search bets by player name across all tabs.",
         )
 

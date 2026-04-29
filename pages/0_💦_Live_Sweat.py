@@ -127,8 +127,8 @@ def _ls_background_auto_resolve():
                 try:
                     _cnt, _ = _ls_auto_resolve(date_str=_d)
                     _total += _cnt
-                except Exception:
-                    pass
+                except Exception as _exc:
+                    _logger.warning("Auto-resolve error for date %s: %s", _d, _exc)
             if _total > 0:
                 _msgs.append(f"🤖 Auto-resolved {_total} past bet(s).")
 
@@ -140,10 +140,10 @@ def _ls_background_auto_resolve():
                     f"⚡ Auto-resolved {_today_result['resolved']} of today's bet(s) "
                     f"({_today_result['wins']}W / {_today_result['losses']}L)."
                 )
-        except Exception:
-            pass
-    except Exception:
-        pass
+        except Exception as _exc:
+            _logger.warning("Auto-resolve today failed: %s", _exc)
+    except Exception as _exc:
+        _logger.warning("Auto-resolve background init failed: %s", _exc)
 
     st.session_state["_ls_auto_resolve_messages"] = _msgs
     st.session_state["_ls_auto_resolve_done"] = True
@@ -425,8 +425,8 @@ def _get_active_bets() -> list[dict]:
                 b.get("tier", ""), "Tracker",
                 b.get("player_team", b.get("team", "")),
             )
-    except Exception:
-        pass
+    except Exception as _exc:
+        _logger.warning("Failed to load active bets from tracker DB: %s", _exc)
 
     return bets
 
@@ -637,8 +637,8 @@ def _get_all_todays_games() -> list[dict]:
                     "home_players": [],
                     "away_players": [],
                 })
-    except Exception:
-        pass
+    except Exception as _exc:
+        _logger.warning("ScoreboardV3 supplement failed: %s", _exc)
 
     # Fallback: session state todays_games
     if not games:

@@ -72,6 +72,7 @@ def _update_subscription(subscription_id: str, status: str, email: str = "",
     """
     # ── PostgreSQL path (Railway production) ──────────────────────────
     if DATABASE_URL:
+        conn = None
         try:
             import psycopg2  # type: ignore
             conn = psycopg2.connect(DATABASE_URL, connect_timeout=10)
@@ -95,14 +96,20 @@ def _update_subscription(subscription_id: str, status: str, email: str = "",
                     (subscription_id, email, status, period_end),
                 )
             conn.commit()
-            conn.close()
             _logger.info("DB (PG) updated: %s → %s", subscription_id, status)
             return True
         except Exception as exc:
             _logger.error("PG update failed for %s: %s", subscription_id, exc)
             return False
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     # ── SQLite path (local development fallback) ───────────────────────
+    conn = None
     try:
         Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(DB_PATH, timeout=30)
@@ -126,12 +133,17 @@ def _update_subscription(subscription_id: str, status: str, email: str = "",
             (subscription_id, email, status, period_end),
         )
         conn.commit()
-        conn.close()
         _logger.info("DB (SQLite) updated: %s → %s", subscription_id, status)
         return True
     except Exception as exc:
         _logger.error("SQLite update failed for %s: %s", subscription_id, exc)
         return False
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 # ── Webhook endpoint ──────────────────────────────────────────

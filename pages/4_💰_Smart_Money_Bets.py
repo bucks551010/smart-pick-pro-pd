@@ -108,7 +108,7 @@ _SM_MIN_STAT_AVG = {
 
 _ASSETS = pathlib.Path(__file__).resolve().parent.parent / "assets"
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)
 def _load_logo_b64(filename: str) -> str:
     path = _ASSETS / filename
     if path.exists():

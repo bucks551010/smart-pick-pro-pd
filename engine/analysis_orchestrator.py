@@ -576,6 +576,48 @@ def analyze_single_prop(
     player_team = player_data.get("team", prop.get("team", ""))
     game_context = find_game_context_for_player(player_team, todays_games)
 
+    # ── Line-vs-Season-Average deviation (for QEG Criterion A) ───────────
+    # Compute how far the sportsbook line deviates from the player's season
+    # average.  Props fetched from platform APIs never carry this field, so
+    # we calculate it here from the already-resolved player_data rather than
+    # relying on a pre-enrichment pass that callers don't always perform.
+    _pts  = float(player_data.get("points_avg", 0) or 0)
+    _reb  = float(player_data.get("rebounds_avg", 0) or 0)
+    _ast  = float(player_data.get("assists_avg", 0) or 0)
+    _stl  = float(player_data.get("steals_avg", 0) or 0)
+    _blk  = float(player_data.get("blocks_avg", 0) or 0)
+    _tov  = float(player_data.get("turnovers_avg", 0) or 0)
+    _mins = float(player_data.get("minutes_avg", 0) or 0)
+    _ftm  = float(player_data.get("ftm_avg", 0) or 0)
+    _fg3  = float(player_data.get("threes_avg", 0) or 0)
+    _fga  = float(player_data.get("fga_avg", 0) or 0)
+    _fgm  = float(player_data.get("fgm_avg", 0) or 0)
+    _fta  = float(player_data.get("fta_avg", 0) or 0)
+    _oreb = float(player_data.get("offensive_rebounds_avg", 0) or 0)
+    _dreb = float(player_data.get("defensive_rebounds_avg", 0) or 0)
+    _pf   = float(player_data.get("personal_fouls_avg", 0) or 0)
+    _stat_avg_map = {
+        "points": _pts, "rebounds": _reb, "assists": _ast, "threes": _fg3,
+        "steals": _stl, "blocks": _blk, "turnovers": _tov, "minutes": _mins,
+        "ftm": _ftm, "fga": _fga, "fgm": _fgm, "fta": _fta,
+        "offensive_rebounds": _oreb, "defensive_rebounds": _dreb,
+        "personal_fouls": _pf,
+        "points_rebounds": _pts + _reb,
+        "points_assists": _pts + _ast,
+        "rebounds_assists": _reb + _ast,
+        "points_rebounds_assists": _pts + _reb + _ast,
+        "blocks_steals": _blk + _stl,
+    }
+    _season_avg = float(_stat_avg_map.get(stat_type, 0) or 0)
+    if _season_avg > 0 and prop_line > 0:
+        _line_vs_avg_pct: float = round(
+            (prop_line - _season_avg) / _season_avg * 100, 1
+        )
+    else:
+        # Fall back to any pre-enriched value on the prop (e.g. from
+        # enrich_props_batch()), or 0 if neither is available.
+        _line_vs_avg_pct = float(prop.get("line_vs_avg_pct", 0) or 0)
+
     recent_form_games = prop.get("recent_form_results", [])
 
     # DB fallback for game logs
@@ -1018,7 +1060,7 @@ def analyze_single_prop(
         "avoid_reasons": avoid_reasons,
         "histogram": histogram_data,
         "score_breakdown": confidence_output.get("score_breakdown", {}),
-        "line_vs_avg_pct": prop.get("line_vs_avg_pct", 0),
+        "line_vs_avg_pct": _line_vs_avg_pct,
         "recent_form_results": prop.get("recent_form_results", []),
         "player_matched": player_matched,
         "explanation": explanation,

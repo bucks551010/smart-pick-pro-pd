@@ -44,6 +44,11 @@ STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 DB_PATH = os.environ.get("DB_PATH", str(Path(os.environ.get("DB_DIR", str(Path(__file__).parent / "db"))) / "smartai_nba.db"))
 
+if not STRIPE_SECRET_KEY:
+    raise SystemExit("FATAL: STRIPE_SECRET_KEY is not set. Webhook server cannot start.")
+if not STRIPE_WEBHOOK_SECRET:
+    raise SystemExit("FATAL: STRIPE_WEBHOOK_SECRET is not set. Webhook server cannot start.")
+
 stripe.api_key = STRIPE_SECRET_KEY
 
 logging.basicConfig(

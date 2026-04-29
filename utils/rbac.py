@@ -200,7 +200,7 @@ def permission_gate(
     st.info(message or default_msg)
     if show_upgrade_button:
         if st.button(f"Upgrade to {required_plan}", key=f"_rbac_upgrade_{permission}"):
-            st.switch_page("pages/pricing.py")  # adjust target page as needed
+            st.switch_page("pages/15_💎_Subscription_Level.py")
 
 
 # ---------------------------------------------------------------------------

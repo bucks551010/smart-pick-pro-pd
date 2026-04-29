@@ -109,20 +109,27 @@ def date_window_start(scope_label: str):
         return _today - datetime.timedelta(days=6)
     if scope_label == "Last 30 Days":
         return _today - datetime.timedelta(days=29)
-    return None
+    # Specific date string (e.g. "2026-04-27") — window starts on that date
+    try:
+        return datetime.date.fromisoformat(str(scope_label)[:10])
+    except (ValueError, TypeError):
+        return None
 
 
 def in_bet_date_window(row: dict, scope_label: str, date_key: str = "bet_date") -> bool:
     _start = date_window_start(scope_label)
     _today = tracker_today_date()
     if _start is None:
-        return True
+        return True  # "All Time" or unrecognised — include everything
+    # For a specific date scope, the window is exactly that one day
+    _is_specific = scope_label not in ("Today", "Last 7 Days", "Last 30 Days") and _start is not None
+    _end = _start if _is_specific else _today
     _raw = str(row.get(date_key) or "")[:10]
     try:
         _d = datetime.date.fromisoformat(_raw)
     except ValueError:
         return False
-    return _start <= _d <= _today
+    return _start <= _d <= _end
 
 
 # ── Classification helpers ────────────────────────────────────
@@ -272,8 +279,15 @@ def scope_history_days(scope_label: str) -> int:
         return 7
     if scope_label == "Last 30 Days":
         return 30
-    # "All Time" legacy value — treat as 30 days max to avoid loading all history
-    return 30
+    # Specific date string — calculate exact days back from today
+    try:
+        _target = datetime.date.fromisoformat(str(scope_label)[:10])
+        _delta = (tracker_today_date() - _target).days + 1
+        return max(1, _delta)
+    except (ValueError, TypeError):
+        pass
+    # "All Time" or other legacy values — treat as 90 days
+    return 90
 
 
 @st.cache_data(ttl=10, show_spinner=False)

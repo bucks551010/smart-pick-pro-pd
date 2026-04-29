@@ -482,13 +482,11 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-@st.fragment
 def _bt_interactive_body():
     # ===================================================================
-    # ALL interactive content lives inside this fragment so that any
-    # widget change (date scope, filters, resolve buttons, tab clicks)
-    # only reruns this fragment — the outer page (hero, auth, CSS) stays
-    # frozen and the active tab is NEVER reset by a filter or date change.
+    # Interactive body — filter bar + tabs.
+    # In Streamlit 1.55 the tab component preserves active-tab state
+    # across normal widget-triggered reruns automatically.
     # ===================================================================
 
     # ── Prominent "Check Results Now" button ──────────────────────────
@@ -618,8 +616,7 @@ def _bt_interactive_body():
         _bt_global_filter_date = _bt_global_scope if _bt_is_specific else None
         _bt_scope_label = (
             "Today" if _bt_is_specific and _bt_global_scope == _bt_today_iso
-            else _bt_global_scope if not _bt_is_specific
-            else "Last 30 Days"
+            else _bt_global_scope  # rolling range label OR specific date string
         )
         if _bt_is_specific:
             _sel_date = _dt_mod.date.fromisoformat(_bt_global_scope)

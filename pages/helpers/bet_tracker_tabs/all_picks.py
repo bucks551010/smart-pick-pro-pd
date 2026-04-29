@@ -452,7 +452,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
         elif _res == "LOSS":
             _bd[_bt]["losses"] += 1; _bd[_bt]["total"] += 1
     if _bd:
-        with st.expander("📂 Win Rate by Bet Classification", expanded=True):
+        with st.expander("📂 Win Rate by Bet Classification", expanded=False):
             _btr = [{"Bet Type": bet_type_display_name(bt), "Total": d["total"], "Wins": d["wins"],
                       "Losses": d["losses"],
                       "Win Rate": f"{d['wins'] / max(d['wins'] + d['losses'], 1) * 100:.1f}%" if d["wins"] + d["losses"] > 0 else "—"}

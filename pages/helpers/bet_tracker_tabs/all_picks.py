@@ -243,27 +243,18 @@ def render(platform_selections, player_search, date_range, direction_filter):
         return
 
     # ── Summary stats ─────────────────────────────────────────
-    # Exclude avoided/risky picks from totals/win-rate — consistent with
-    # Health tab so the numbers match when both use the same scope.
     _main_picks = [p for p in all_picks_data if normalized_bet_type(p) != "risky" and int(p.get("is_risky", 0) or 0) != 1]
-    _total = len(_main_picks)  # consistent with Health (excl. Avoided)
+    _total = len(_main_picks)
     _wins = sum(1 for p in _main_picks if p.get("result") == "WIN")
     _losses = sum(1 for p in _main_picks if p.get("result") == "LOSS")
     _evens = sum(1 for p in _main_picks if p.get("result") == "EVEN")
-    _pending = sum(1 for p in _main_picks if p.get("result") not in ("WIN", "LOSS", "EVEN"))  # excl. avoided so wins+losses+evens+pending=total
+    _pending = sum(1 for p in _main_picks if p.get("result") not in ("WIN", "LOSS", "EVEN", "VOID"))
     _resolved = _wins + _losses
     _wr = round(_wins / max(_resolved, 1) * 100, 1) if _resolved > 0 else 0.0
     _avg_edge = sum(abs(float(p.get("edge_percentage", 0) or 0)) for p in _main_picks) / _total if _total else 0.0
     _avg_conf = sum(float(p.get("confidence_score", 0) or 0) for p in _main_picks) / _total if _total else 0.0
 
-    with st.expander("🔎 Count Reconciliation", expanded=False):
-        _c1, _c2, _c3, _c4 = st.columns(4)
-        _c1.metric("Health-side Bets", len(_pipeline_bets))
-        _c2.metric("Analysis Rows", len(db_picks))
-        _c3.metric("Pipeline Added", len(_pipeline))
-        _c4.metric("Final All Picks", _total)
-
-    # Streak (main bets only, avoids excluded)
+    # Streak
     _streak = 0
     _sorted_res = sorted(
         [p for p in _main_picks if p.get("result") in ("WIN", "LOSS")],
@@ -278,7 +269,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
             else:
                 break
 
-    # Best platform
+    # Best platform (scoped)
     _plat_perf: dict = {}
     for _p in all_picks_data:
         _plat = str(_p.get("platform") or "Unknown")
@@ -303,9 +294,8 @@ def render(platform_selections, player_search, date_range, direction_filter):
         unsafe_allow_html=True,
     )
     st.caption(
-        f"Scope source = {len(db_picks)} analysis rows + {len(_pipeline)} pipeline "
-        f"(-{_skip_overlap} overlaps) = {len(_combined)} merged; "
-        f"{_total} shown (excl. avoided picks — wins+losses+evens+pending = total)."
+        f"Scope: {_selected} — {len(db_picks)} analysis rows + {len(_pipeline)} pipeline "
+        f"(-{_skip_overlap} overlaps) = {len(_combined)} merged; {_total} shown."
     )
 
     if _resolved > 0:
@@ -330,98 +320,7 @@ def render(platform_selections, player_search, date_range, direction_filter):
 
     st.divider()
 
-    # Performance breakdowns always use ALL resolved bets (not scoped to current
-    # date selection) so stats are meaningful even when viewing a single day.
-    _stats_bets = [b for b in cached_load_all_bets() if b.get("result") in ("WIN", "LOSS", "EVEN")]
-    if _stats_bets:
-        st.caption(f"📊 Win rate stats below use all {len(_stats_bets)} resolved bets (all time).")
-    else:
-        st.caption("📊 Win rate breakdowns will appear once bets are resolved.")
-
-    # Win rate by tier
-    with st.expander("🏆 Win Rate by Tier", expanded=True):
-        _tr = []
-        _icons = {"Platinum": "💎", "Gold": "🥇", "Silver": "🥈", "Bronze": "🥉"}
-        for _tn in ["Platinum", "Gold", "Silver", "Bronze"]:
-            _tp = [p for p in _stats_bets if p.get("tier") == _tn]
-            if not _tp:
-                continue
-            _tw = sum(1 for p in _tp if p.get("result") == "WIN")
-            _tl = sum(1 for p in _tp if p.get("result") == "LOSS")
-            _tres = _tw + _tl
-            _tr.append({"Tier": _tn, "Total": _tres, "Wins": _tw, "Losses": _tl,
-                        "Win Rate": f"{_tw / max(_tres, 1) * 100:.1f}%" if _tres > 0 else "—"})
-        if _tr:
-            st.markdown(get_styled_stats_table_html(_tr, ["Tier", "Total", "Wins", "Losses", "Win Rate"]), unsafe_allow_html=True)
-            _cols = st.columns(4)
-            for _i, _tn in enumerate(["Platinum", "Gold", "Silver", "Bronze"]):
-                _row = next((r for r in _tr if r["Tier"] == _tn), None)
-                if _row:
-                    _cols[_i].metric(f"{_icons.get(_tn, '')} {_tn}", _row["Win Rate"],
-                                     help=f"{_tn}: {_row['Wins']}W / {_row['Losses']}L ({_row['Total']} total)")
-        else:
-            st.caption("No tier data yet.")
-
-    # Win rate by platform
-    _pd: dict = {}
-    for _p in _stats_bets:
-        _plat = "Smart Pick Pro Platform Picks" if is_ai_auto_bet(_p) else platform_display_name(_p.get("platform") or "Unknown")
-        _res = _p.get("result")
-        if _plat not in _pd:
-            _pd[_plat] = {"wins": 0, "losses": 0, "total": 0}
-        if _res == "WIN":
-            _pd[_plat]["wins"] += 1; _pd[_plat]["total"] += 1
-        elif _res == "LOSS":
-            _pd[_plat]["losses"] += 1; _pd[_plat]["total"] += 1
-    with st.expander("🎰 Win Rate by Platform", expanded=True):
-        if _pd:
-            _pr = [{"Platform": p, "Total": d["total"], "Wins": d["wins"],
-                     "Win Rate": f"{d['wins'] / max(d['wins'] + d['losses'], 1) * 100:.1f}%" if d["wins"] + d["losses"] > 0 else "—"}
-                    for p, d in sorted(_pd.items())]
-            st.markdown(get_styled_stats_table_html(_pr, ["Platform", "Total", "Wins", "Win Rate"]), unsafe_allow_html=True)
-        else:
-            st.caption("No platform data yet.")
-
-    # Win rate by stat type
-    with st.expander("📐 Win Rate by Stat Type", expanded=False):
-        _sr = []
-        for _st in sorted({p.get("stat_type", "unknown") for p in _stats_bets}):
-            _sp2 = [p for p in _stats_bets if p.get("stat_type") == _st]
-            _sw = sum(1 for p in _sp2 if p.get("result") == "WIN")
-            _sl = sum(1 for p in _sp2 if p.get("result") == "LOSS")
-            _sres = _sw + _sl
-            _sr.append({"Stat Type": _st.replace("_", " ").title(), "Total": _sres, "Wins": _sw,
-                         "Win Rate": f"{_sw / max(_sres, 1) * 100:.1f}%" if _sres > 0 else "—"})
-        if _sr:
-            st.markdown(get_styled_stats_table_html(_sr, ["Stat Type", "Total", "Wins", "Win Rate"]), unsafe_allow_html=True)
-        else:
-            st.caption("No stat type data yet.")
-
-    # Win rate by bet classification
-    _bd: dict = {}
-    for _p in _stats_bets:
-        _bt = normalized_bet_type(_p)
-        _res = _p.get("result")
-        if _bt not in _bd:
-            _bd[_bt] = {"wins": 0, "losses": 0, "total": 0}
-        if _res == "WIN":
-            _bd[_bt]["wins"] += 1; _bd[_bt]["total"] += 1
-        elif _res == "LOSS":
-            _bd[_bt]["losses"] += 1; _bd[_bt]["total"] += 1
-    if _bd:
-        with st.expander("Win Rate by Bet Classification", expanded=True):
-            _btr = [{"Bet Type": bet_type_display_name(bt), "Total": d["total"], "Wins": d["wins"],
-                      "Losses": d["losses"],
-                      "Win Rate": f"{d['wins'] / max(d['wins'] + d['losses'], 1) * 100:.1f}%" if d["wins"] + d["losses"] > 0 else "—"}
-                     for bt, d in sorted(_bd.items(), key=lambda x: bet_type_sort_key(x[0]))]
-            st.markdown(get_styled_stats_table_html(_btr, ["Bet Type", "Total", "Wins", "Losses", "Win Rate"]), unsafe_allow_html=True)
-
-    with st.expander("📊 Model Tier Accuracy", expanded=False):
-        st.info("Coming soon — this section will compare predicted tier accuracy vs actual results over time.")
-
-    st.divider()
-
-    # ── Picks Table — full table per day, no card cap ─────────
+    # ── Picks Table — full table per day, directly under resolve ──
     st.markdown("#### 📋 Picks by Date")
     _detail = list(_combined)
     if _filter_date:
@@ -470,3 +369,92 @@ def render(platform_selections, player_search, date_range, direction_filter):
                 st.dataframe(_rows, use_container_width=True, hide_index=True)
     else:
         st.info("📭 No picks found for this time range.")
+
+    st.divider()
+
+    # ── Performance breakdowns — scoped to selected date/range ──
+    # Use all_picks_data (already filtered to the chosen date/scope)
+    _stats_picks = [p for p in all_picks_data if p.get("result") in ("WIN", "LOSS", "EVEN")]
+    _scope_label = _selected if _filter_date else _selected
+    if _stats_picks:
+        st.caption(f"📊 Win rate stats below reflect **{_scope_label}** — {len(_stats_picks)} resolved picks.")
+    else:
+        st.caption(f"📊 Win rate breakdowns will appear once picks are resolved for **{_scope_label}**.")
+
+    # Win rate by tier
+    with st.expander("🏆 Win Rate by Tier", expanded=True):
+        _tr = []
+        _icons = {"Platinum": "💎", "Gold": "🥇", "Silver": "🥈", "Bronze": "🥉"}
+        for _tn in ["Platinum", "Gold", "Silver", "Bronze"]:
+            _tp = [p for p in _stats_picks if p.get("tier") == _tn]
+            if not _tp:
+                continue
+            _tw = sum(1 for p in _tp if p.get("result") == "WIN")
+            _tl = sum(1 for p in _tp if p.get("result") == "LOSS")
+            _tres = _tw + _tl
+            _tr.append({"Tier": _tn, "Total": _tres, "Wins": _tw, "Losses": _tl,
+                        "Win Rate": f"{_tw / max(_tres, 1) * 100:.1f}%" if _tres > 0 else "—"})
+        if _tr:
+            st.markdown(get_styled_stats_table_html(_tr, ["Tier", "Total", "Wins", "Losses", "Win Rate"]), unsafe_allow_html=True)
+            _cols = st.columns(4)
+            for _i, _tn in enumerate(["Platinum", "Gold", "Silver", "Bronze"]):
+                _row = next((r for r in _tr if r["Tier"] == _tn), None)
+                if _row:
+                    _cols[_i].metric(f"{_icons.get(_tn, '')} {_tn}", _row["Win Rate"],
+                                     help=f"{_tn}: {_row['Wins']}W / {_row['Losses']}L ({_row['Total']} total)")
+        else:
+            st.caption("No tier data for this scope.")
+
+    # Win rate by platform
+    _pd: dict = {}
+    for _p in _stats_picks:
+        _plat = "Smart Pick Pro Platform Picks" if is_ai_auto_bet(_p) else platform_display_name(_p.get("platform") or "Unknown")
+        _res = _p.get("result")
+        if _plat not in _pd:
+            _pd[_plat] = {"wins": 0, "losses": 0, "total": 0}
+        if _res == "WIN":
+            _pd[_plat]["wins"] += 1; _pd[_plat]["total"] += 1
+        elif _res == "LOSS":
+            _pd[_plat]["losses"] += 1; _pd[_plat]["total"] += 1
+    with st.expander("🎰 Win Rate by Platform", expanded=True):
+        if _pd:
+            _pr = [{"Platform": p, "Total": d["total"], "Wins": d["wins"],
+                     "Win Rate": f"{d['wins'] / max(d['wins'] + d['losses'], 1) * 100:.1f}%" if d["wins"] + d["losses"] > 0 else "—"}
+                    for p, d in sorted(_pd.items())]
+            st.markdown(get_styled_stats_table_html(_pr, ["Platform", "Total", "Wins", "Win Rate"]), unsafe_allow_html=True)
+        else:
+            st.caption("No platform data for this scope.")
+
+    # Win rate by stat type
+    with st.expander("📐 Win Rate by Stat Type", expanded=False):
+        _sr = []
+        for _st in sorted({p.get("stat_type", "unknown") for p in _stats_picks}):
+            _sp2 = [p for p in _stats_picks if p.get("stat_type") == _st]
+            _sw = sum(1 for p in _sp2 if p.get("result") == "WIN")
+            _sl = sum(1 for p in _sp2 if p.get("result") == "LOSS")
+            _sres = _sw + _sl
+            _sr.append({"Stat Type": _st.replace("_", " ").title(), "Total": _sres, "Wins": _sw,
+                         "Win Rate": f"{_sw / max(_sres, 1) * 100:.1f}%" if _sres > 0 else "—"})
+        if _sr:
+            st.markdown(get_styled_stats_table_html(_sr, ["Stat Type", "Total", "Wins", "Win Rate"]), unsafe_allow_html=True)
+        else:
+            st.caption("No stat type data for this scope.")
+
+    # Win rate by bet classification
+    _bd: dict = {}
+    for _p in _stats_picks:
+        _bt = normalized_bet_type(_p)
+        _res = _p.get("result")
+        if _bt not in _bd:
+            _bd[_bt] = {"wins": 0, "losses": 0, "total": 0}
+        if _res == "WIN":
+            _bd[_bt]["wins"] += 1; _bd[_bt]["total"] += 1
+        elif _res == "LOSS":
+            _bd[_bt]["losses"] += 1; _bd[_bt]["total"] += 1
+    if _bd:
+        with st.expander("📂 Win Rate by Bet Classification", expanded=True):
+            _btr = [{"Bet Type": bet_type_display_name(bt), "Total": d["total"], "Wins": d["wins"],
+                      "Losses": d["losses"],
+                      "Win Rate": f"{d['wins'] / max(d['wins'] + d['losses'], 1) * 100:.1f}%" if d["wins"] + d["losses"] > 0 else "—"}
+                     for bt, d in sorted(_bd.items(), key=lambda x: bet_type_sort_key(x[0]))]
+            st.markdown(get_styled_stats_table_html(_btr, ["Bet Type", "Total", "Wins", "Losses", "Win Rate"]), unsafe_allow_html=True)

@@ -385,9 +385,62 @@ def render_sidebar_auth() -> None:
                      help="Sign out of your Smart Pick Pro account"):
             logout_user()
             st.rerun()
+        # ── Bucket counter widget — visible on every page ──────────
+        render_bucket_sidebar_widget()
         # ── Attribution block — always visible at sidebar bottom ───
         render_sidebar_attribution()
         st.divider()
+    except Exception:
+        pass
+
+
+def render_bucket_sidebar_widget() -> None:
+    """Render the per-user Live Entry Bucket counter + nav button in the sidebar.
+
+    Displays the current count of staged picks (today's bucket only) and a
+    button that navigates to ``pages/17_🪣_Live_Entry_Bucket.py``.  Safe to
+    call on every page; failures are silenced so layout never breaks.
+    """
+    try:
+        from utils.user_session import get_current_user_email, is_anonymous_user
+        from tracking.live_bucket import bucket_count
+        _email = get_current_user_email()
+        if not _email:
+            return
+        _count = bucket_count(_email)
+        _anon_note = " (guest)" if is_anonymous_user() else ""
+        st.markdown(
+            f"""
+<div style="margin:6px 0 4px;padding:10px 12px;border-radius:10px;
+            background:linear-gradient(135deg,rgba(0,240,255,0.08),rgba(200,0,255,0.08));
+            border:1px solid rgba(0,240,255,0.20);">
+  <div style="display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <div style="font-size:0.72rem;color:#94a3b8;text-transform:uppercase;
+                  letter-spacing:0.06em;">Live Bucket{_anon_note}</div>
+      <div style="font-size:1.35rem;font-weight:800;
+                  background:linear-gradient(135deg,#00f0ff,#c800ff);
+                  -webkit-background-clip:text;color:transparent;
+                  font-family:'JetBrains Mono',monospace;">🪣 {_count}</div>
+    </div>
+    <div style="font-size:0.62rem;color:#64748b;text-align:right;">
+      pick{'' if _count == 1 else 's'}<br/>today
+    </div>
+  </div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+        if st.button(
+            "📂 View Bucket",
+            key="_global_sidebar_view_bucket",
+            use_container_width=True,
+            help="Open the Live Entry Bucket page to review your staged picks.",
+        ):
+            try:
+                st.switch_page("pages/17_🪣_Live_Entry_Bucket.py")
+            except Exception:
+                st.info("Open the 🪣 Live Entry Bucket page from the sidebar.")
     except Exception:
         pass
 

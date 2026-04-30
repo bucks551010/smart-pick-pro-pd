@@ -471,6 +471,52 @@ if not st.session_state.get("analysis_results"):
         _logger.debug("QAM file fast-path failed (non-fatal): %s", _qam_fp_err)
 # ── END FAST PATH ─────────────────────────────────────────────────────────────
 
+# ── Bucket integration: pre-fetch user's staged-pick keys ─────────────────────
+# Used by the per-pick Add/Remove toggle row beneath the card matrix and by
+# the bulk "Add All Visible to Bucket" button.  Mirrors the live_bucket
+# pick_key format so dedup matches what tracking.live_bucket._build_pick_key
+# produces (player|stat|line|dir|platform, all lowercase).
+def _qam_bucket_key(pick: dict) -> str:
+    """Build the canonical live_bucket pick_key for a QAM analysis result."""
+    return "|".join([
+        str(pick.get("player_name", "")).strip().lower(),
+        str(pick.get("stat_type", "")).strip().lower(),
+        str(pick.get("prop_line", pick.get("line", ""))).strip(),
+        str(pick.get("direction", "")).strip().upper(),
+        str(pick.get("platform", "")).strip().lower(),
+    ])
+
+def _qam_pick_to_bucket_dict(pick: dict) -> dict:
+    """Reshape an analysis result into the dict shape expected by add_to_bucket()."""
+    return {
+        "player_name":      pick.get("player_name", ""),
+        "team":             pick.get("team", "") or pick.get("player_team", ""),
+        "stat_type":        pick.get("stat_type", ""),
+        "prop_line":        pick.get("prop_line", pick.get("line", 0)),
+        "direction":        pick.get("direction", "OVER"),
+        "platform":         pick.get("platform", "") or "",
+        "tier":             pick.get("tier", "Bronze"),
+        "tier_emoji":       pick.get("tier_emoji", ""),
+        "confidence_score": pick.get("confidence_score", 0),
+        "probability_over": pick.get("probability_over", 0.5),
+        "edge_percentage":  pick.get("edge_percentage", 0),
+        "bet_type":         pick.get("bet_type", "normal"),
+        "odds_type":        pick.get("odds_type", "standard"),
+    }
+
+try:
+    from utils.user_session import get_current_user_email as _qam_get_user_email
+    from tracking.live_bucket import get_bucket as _qam_get_bucket
+    _qam_user_email = _qam_get_user_email()
+    _qam_bucket_rows = _qam_get_bucket(_qam_user_email) if _qam_user_email else []
+    _qam_bucket_key_set: set[str] = {
+        str(r.get("pick_key", "")).strip() for r in _qam_bucket_rows
+    }
+except Exception as _qam_bucket_err:
+    _logger.debug("QAM bucket pre-fetch failed (non-fatal): %s", _qam_bucket_err)
+    _qam_user_email = ""
+    _qam_bucket_key_set = set()
+
 # ── Analysis Session Persistence — Rehydrate from DB if session empty ──────
 # Session Bridge: checks st.query_params["sid"] first so that a page refresh
 # or tab-switch recovers the EXACT run the user was viewing, not just the
@@ -1588,7 +1634,7 @@ def _render_results_fragment():
         )
 
     # ── Quick-select buttons ───────────────────────────────────
-    _qb_col1, _qb_col2, _qb_col3 = st.columns([1, 1, 2])
+    _qb_col1, _qb_col2, _qb_col3 = st.columns([1, 1, 1])
     with _qb_col1:
         if st.button("💎 Select All Platinum", help="Add all Platinum tier picks to Entry Builder"):
             _plat_picks = [
@@ -1656,6 +1702,37 @@ def _render_results_fragment():
                 st.toast(f"✅ Added {_added} Gold+ pick(s).")
             else:
                 st.info("All Gold+ picks already added.")
+    with _qb_col3:
+        if st.button(
+            "🪣 Add All Visible to Bucket",
+            help="Stage every visible (active, non-avoid) pick into your Live Entry Bucket.",
+        ):
+            if not _qam_user_email:
+                st.warning("Please log in to add picks to your bucket.")
+            else:
+                try:
+                    from tracking.live_bucket import add_to_bucket as _qam_add_bucket
+                    _eligible = [
+                        r for r in displayed_results
+                        if not r.get("player_is_out", False)
+                        and not r.get("should_avoid", False)
+                    ]
+                    _added_b = 0
+                    for _r in _eligible:
+                        _bk = _qam_bucket_key(_r)
+                        if _bk in _qam_bucket_key_set:
+                            continue
+                        _bd = _qam_pick_to_bucket_dict(_r)
+                        if _qam_add_bucket(_qam_user_email, _bd):
+                            _qam_bucket_key_set.add(_bk)
+                            _added_b += 1
+                    if _added_b:
+                        st.toast(f"🪣 Added {_added_b} pick(s) to your bucket.")
+                        st.rerun()
+                    else:
+                        st.info("All visible picks are already in your bucket.")
+                except Exception as _b_exc:
+                    st.error(f"Bucket add failed: {_b_exc}")
 
     if unmatched_count > 0:
         # Deduplicate: same player may have multiple stat types, each flagged separately.
@@ -2055,6 +2132,103 @@ def _render_results_fragment():
                 unsafe_allow_html=True,
             )
             _render_card_native(_compile_player_cards(_out_grouped))
+
+    # ── Bucket Actions Strip ──────────────────────────────────────
+    # One Add/Remove toggle button per displayed pick.  Lets users stage
+    # individual picks into their Live Entry Bucket without leaving QAM.
+    _bucket_eligible = [
+        r for r in displayed_results
+        if not r.get("player_is_out", False)
+    ]
+    if _bucket_eligible:
+        st.divider()
+        with st.expander(
+            f"🪣 Bucket Actions ({len(_bucket_eligible)} picks) — stage individual picks for the Entry Builder",
+            expanded=False,
+        ):
+            if not _qam_user_email:
+                st.info("Please log in to stage picks in your Live Entry Bucket.")
+            else:
+                try:
+                    from tracking.live_bucket import (
+                        add_to_bucket as _bs_add,
+                        remove_from_bucket as _bs_remove,
+                    )
+                    st.caption(
+                        f"💡 Bucket de-duplicates by player + stat + line + direction + platform. "
+                        f"Currently in bucket: **{len(_qam_bucket_key_set)}** pick(s)."
+                    )
+                    # Render rows in a 2-column grid for compactness
+                    _bs_rows = list(_bucket_eligible)
+                    for _i in range(0, len(_bs_rows), 2):
+                        _row_pair = _bs_rows[_i:_i + 2]
+                        _cols = st.columns(2)
+                        for _col, _bp in zip(_cols, _row_pair):
+                            with _col:
+                                _bk = _qam_bucket_key(_bp)
+                                _in_bucket = _bk in _qam_bucket_key_set
+                                _player = _bp.get("player_name", "?")
+                                _stat = (_bp.get("stat_type", "") or "").title()
+                                _line = _bp.get("prop_line", _bp.get("line", 0))
+                                _dir = _bp.get("direction", "OVER")
+                                _tier = _bp.get("tier", "Bronze")
+                                _tier_emoji = _bp.get("tier_emoji", "")
+                                _arrow = "⬆️" if _dir == "OVER" else "⬇️"
+                                _label = (
+                                    f"✅ In Bucket — Remove" if _in_bucket
+                                    else f"🪣 Add to Bucket"
+                                )
+                                _btn_type = "secondary" if _in_bucket else "primary"
+                                _btn_key = f"_bs_btn_{_i}_{_bk}"
+                                st.markdown(
+                                    f"<div style='font-size:0.78rem;color:#c0d0e8;'>"
+                                    f"<b>{_tier_emoji} {_player}</b> &middot; "
+                                    f"{_stat} {_arrow} <b>{_dir}</b> @ {_line} &middot; "
+                                    f"<span style='color:#64748b;'>{_tier}</span></div>",
+                                    unsafe_allow_html=True,
+                                )
+                                if st.button(_label, key=_btn_key, type=_btn_type, use_container_width=True):
+                                    if _in_bucket:
+                                        if _bs_remove(_qam_user_email, _bk):
+                                            _qam_bucket_key_set.discard(_bk)
+                                            st.toast(f"🗑️ Removed {_player} ({_stat} {_dir}) from bucket.")
+                                            st.rerun()
+                                        else:
+                                            st.error("Remove failed — please retry.")
+                                    else:
+                                        _bd = _qam_pick_to_bucket_dict(_bp)
+                                        _new_id = _bs_add(_qam_user_email, _bd)
+                                        if _new_id:
+                                            _qam_bucket_key_set.add(_bk)
+                                            st.toast(f"🪣 Added {_player} ({_stat} {_dir}) to bucket.")
+                                            st.rerun()
+                                        else:
+                                            st.warning("Already in bucket or insert failed.")
+                    st.divider()
+                    _bv_col1, _bv_col2 = st.columns([1, 1])
+                    with _bv_col1:
+                        if st.button(
+                            "📂 View Live Entry Bucket",
+                            key="_bs_nav_bucket",
+                            use_container_width=True,
+                            type="primary",
+                        ):
+                            try:
+                                st.switch_page("pages/17_🪣_Live_Entry_Bucket.py")
+                            except Exception:
+                                st.info("Open the 🪣 Live Entry Bucket page from the sidebar.")
+                    with _bv_col2:
+                        if _qam_bucket_key_set and st.button(
+                            "🧬 Open Entry Builder",
+                            key="_bs_nav_eb",
+                            use_container_width=True,
+                        ):
+                            try:
+                                st.switch_page("pages/8_🧬_Entry_Builder.py")
+                            except Exception:
+                                st.info("Open the 🧬 Entry Builder page from the sidebar.")
+                except Exception as _bs_exc:
+                    st.error(f"Bucket panel failed to render: {_bs_exc}")
 
     # ── Final Verdict ─────────────────────────────────────────────
     st.divider()

@@ -474,6 +474,37 @@ def render_global_settings():
 
         st.caption("Changes apply on next analysis run.")
 
+        st.divider()
+
+        # ── Reset to Today ─────────────────────────────────────────
+        if st.button("🔄 Reset to Today", help="Clear all cached picks and session state — loads fresh data for today's slate.", use_container_width=True):
+            try:
+                from pathlib import Path as _rtt_Path
+                import json as _rtt_json
+                try:
+                    from tracking.database import _nba_today_iso as _rtt_today_fn
+                    _rtt_today = _rtt_today_fn()
+                except Exception:
+                    import datetime as _rtt_dt
+                    _rtt_today = _rtt_dt.date.today().isoformat()
+                _cache_dir = _rtt_Path(__file__).resolve().parent.parent / "cache"
+                for _cf in ("slate_cache.json", "analyzed_picks.json", "latest_picks.json"):
+                    try:
+                        (_cache_dir / _cf).unlink(missing_ok=True)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+            for _k in (
+                "selected_picks", "bucket_picks", "analysis_results",
+                "current_props", "platform_props", "todays_games",
+                "session_props", "filtered_props", "_picks_seeded",
+                "_qam_db_restored", "_analysis_session_reloaded_at",
+                "joseph_bets_logged", "_page_state_restored", "_auto_init_date",
+            ):
+                st.session_state.pop(_k, None)
+            st.rerun()
+
     # ── Responsible Gambling Disclaimer ───────────────────────────
     render_sidebar_disclaimer()
 

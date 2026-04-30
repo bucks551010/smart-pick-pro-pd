@@ -32,6 +32,8 @@ from tracking.database import (
     _db_read,
     _db_write,
     _DATABASE_URL,
+    _nba_today_iso,
+    purge_stale_bucket_rows,
 )
 
 _logger = logging.getLogger(__name__)
@@ -83,12 +85,14 @@ def add_to_bucket(user_email: str, pick: dict) -> int | None:
     line_val = _coerce_float(pick.get("prop_line", pick.get("line", 0.0)))
     direction = str(pick.get("direction", "OVER")).strip().upper()
 
+    game_date = _nba_today_iso()
+
     insert_sql = """
         INSERT INTO live_entry_bucket
             (user_email, pick_key, player_name, team, stat_type, prop_line,
              direction, platform, tier, tier_emoji, confidence_score,
-             probability_over, edge_percentage, bet_type, odds_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             probability_over, edge_percentage, bet_type, odds_type, game_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
     values = (
         email,
@@ -106,6 +110,7 @@ def add_to_bucket(user_email: str, pick: dict) -> int | None:
         _coerce_float(pick.get("edge_percentage", 0.0)),
         str(pick.get("bet_type", "normal") or "normal"),
         str(pick.get("odds_type", "standard") or "standard"),
+        game_date,
     )
 
     try:
@@ -177,26 +182,28 @@ def clear_bucket(user_email: str) -> int:
 # ────────────────────────────────────────────────────────────────────
 
 def get_bucket(user_email: str) -> list[dict]:
-    """Return all picks in this user's bucket, newest first."""
+    """Return today's picks in this user's bucket, newest first."""
     initialize_database()
     email = _norm_email(user_email)
     if not email:
         return []
+    today = _nba_today_iso()
     return _db_read(
-        "SELECT * FROM live_entry_bucket WHERE user_email = ? "
+        "SELECT * FROM live_entry_bucket WHERE user_email = ? AND game_date = ? "
         "ORDER BY added_at DESC, bucket_id DESC",
-        (email,),
+        (email, today),
     )
 
 
 def bucket_count(user_email: str) -> int:
-    """Quick count of picks in this user's bucket."""
+    """Quick count of today's picks in this user's bucket."""
     email = _norm_email(user_email)
     if not email:
         return 0
+    today = _nba_today_iso()
     rows = _db_read(
-        "SELECT COUNT(*) AS n FROM live_entry_bucket WHERE user_email = ?",
-        (email,),
+        "SELECT COUNT(*) AS n FROM live_entry_bucket WHERE user_email = ? AND game_date = ?",
+        (email, today),
     )
     if not rows:
         return 0

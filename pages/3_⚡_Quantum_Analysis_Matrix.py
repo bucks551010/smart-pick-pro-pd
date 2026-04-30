@@ -398,6 +398,26 @@ if _qam_restored_ar and isinstance(_qam_restored_ar, list) and _qam_restored_ar:
     except Exception:
         pass
 
+# ── Date-boundary session reset (QAM-scoped) ────────────────────────────────
+# Mirrors the same guard on the Home page.  If the stored QAM init-date is
+# before today's ET sports date, wipe all QAM-related state so stale picks
+# from the previous day can never appear in the analysis grid or bucket view.
+try:
+    from tracking.database import _nba_today_iso as _qam_today_fn2
+    _qam_date_today = _qam_today_fn2()
+    if st.session_state.get("_qam_init_date") != _qam_date_today:
+        _was_prior = st.session_state.get("_qam_init_date") is not None
+        if _was_prior:
+            for _k in (
+                "analysis_results", "todays_games", "selected_picks",
+                "bucket_picks", "filtered_props", "_qam_db_restored",
+                "_analysis_session_reloaded_at",
+            ):
+                st.session_state.pop(_k, None)
+        st.session_state["_qam_init_date"] = _qam_date_today
+except Exception:
+    pass
+
 # ── Premium Status (partial gate — free users capped at 3 props) ──
 from utils.auth import is_premium_user as _is_premium_user
 try:

@@ -271,6 +271,8 @@ if st.session_state.get("_auto_init_date") != _today_iso:
         "_picks_seeded", "analysis_results", "current_props",
         "platform_props", "todays_games", "session_props",
         "_page_state_restored",
+        "selected_picks", "bucket_picks", "filtered_props",
+        "_qam_db_restored", "_analysis_session_reloaded_at", "joseph_bets_logged",
     ):
         st.session_state.pop(_k, None)
     st.session_state["_auto_init_date"] = _today_iso

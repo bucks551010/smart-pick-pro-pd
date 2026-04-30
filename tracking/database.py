@@ -813,6 +813,7 @@ def _pg_initialize_database() -> bool:
             edge_percentage REAL,
             bet_type TEXT DEFAULT 'normal',
             odds_type TEXT DEFAULT 'standard',
+            game_date TEXT DEFAULT to_char(now(), 'YYYY-MM-DD'),
             added_at TEXT DEFAULT to_char(now(), 'YYYY-MM-DD HH24:MI:SS'),
             UNIQUE(user_email, pick_key)
         )""",
@@ -948,6 +949,9 @@ def _pg_initialize_database() -> bool:
             "ALTER TABLE analysis_sessions ADD COLUMN IF NOT EXISTS first_game_time_utc TEXT",
             "ALTER TABLE analysis_sessions ADD COLUMN IF NOT EXISTS locked_picks_json TEXT",
             "ALTER TABLE analysis_sessions ADD COLUMN IF NOT EXISTS bets_locked_at TEXT",
+            # game_date on live_entry_bucket: enables purging prior-day staged picks
+            "ALTER TABLE live_entry_bucket ADD COLUMN IF NOT EXISTS game_date TEXT DEFAULT to_char(now(), 'YYYY-MM-DD')",
+            "CREATE INDEX IF NOT EXISTS idx_leb_game_date ON live_entry_bucket (user_email, game_date)",
         ]
         for _alter in _PG_ALTERS:
             try:
@@ -1435,6 +1439,7 @@ def initialize_database():
                 "edge_percentage REAL, "
                 "bet_type TEXT DEFAULT 'normal', "
                 "odds_type TEXT DEFAULT 'standard', "
+                "game_date TEXT DEFAULT (date('now')), "
                 "added_at TEXT DEFAULT (datetime('now')), "
                 "UNIQUE(user_email, pick_key))"
             )
@@ -1460,11 +1465,20 @@ def initialize_database():
                 except sqlite3.OperationalError:
                     pass  # Column already exists
 
+            # Migration: add game_date to live_entry_bucket if missing
+            try:
+                cursor.execute(
+                    "ALTER TABLE live_entry_bucket ADD COLUMN game_date TEXT DEFAULT (date('now'))"
+                )
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+
             # Indexes for fast per-user filtering
             for _idx_sql in (
                 "CREATE INDEX IF NOT EXISTS idx_bets_user_email ON bets (user_email)",
                 "CREATE INDEX IF NOT EXISTS idx_entries_user_email ON entries (user_email)",
                 "CREATE INDEX IF NOT EXISTS idx_leb_user ON live_entry_bucket (user_email)",
+                "CREATE INDEX IF NOT EXISTS idx_leb_game_date ON live_entry_bucket (user_email, game_date)",
             ):
                 try:
                     cursor.execute(_idx_sql)
@@ -3019,6 +3033,38 @@ def purge_stale_game_logs(days=30):
         return deleted
     except Exception as exc:
         _logger.error("[database] purge_stale_game_logs error: %s", exc)
+        return 0
+
+
+def purge_stale_bucket_rows(today_str: str | None = None) -> int:
+    """Delete live_entry_bucket rows whose game_date is before today.
+
+    Called by the slate_worker at the start of each run so yesterday's
+    staged picks never appear in a user's bucket on a new sports day.
+
+    Args:
+        today_str: ET date string ``'YYYY-MM-DD'``.  Defaults to
+            ``_nba_today_iso()`` if not supplied.
+
+    Returns:
+        int: Number of rows deleted.
+    """
+    _date = today_str or _nba_today_iso()
+    try:
+        cur = _db_write(
+            "DELETE FROM live_entry_bucket WHERE game_date < ?",
+            (_date,),
+            caller="purge_stale_bucket_rows",
+        )
+        deleted = cur.rowcount if cur is not None else 0
+        if deleted:
+            _logger.info(
+                "[database] purge_stale_bucket_rows: removed %d rows older than %s",
+                deleted, _date,
+            )
+        return deleted
+    except Exception as exc:
+        _logger.error("[database] purge_stale_bucket_rows error: %s", exc)
         return 0
 
 

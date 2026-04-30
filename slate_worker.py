@@ -113,6 +113,37 @@ def run_slate(dry_run: bool = False) -> int:
         _logger.error("[0] DB init failed: %s", exc)
         return 0
 
+    # ── Step 0c: Purge stale data from previous sports day ────────────────
+    # Delete live_entry_bucket rows from prior days so yesterday's staged
+    # picks never appear in any user's bucket on the new sports day.
+    if not dry_run:
+        try:
+            from tracking.database import purge_stale_bucket_rows as _purge_bucket
+            _purged = _purge_bucket(today_str)
+            if _purged:
+                _logger.info("[0c] Purged %d stale live_entry_bucket rows.", _purged)
+        except Exception as exc:
+            _logger.debug("[0c] purge_stale_bucket_rows skipped (non-fatal): %s", exc)
+
+        # Delete stale cache files whose stored date != today so reads on
+        # other pages never serve yesterday's picks.
+        try:
+            import json as _json_check
+            _cache_dir_check = Path(__file__).resolve().parent / "cache"
+            for _cf in ("slate_cache.json", "analyzed_picks.json", "latest_picks.json"):
+                _cf_path = _cache_dir_check / _cf
+                if _cf_path.exists():
+                    try:
+                        _cf_data = _json_check.loads(_cf_path.read_text(encoding="utf-8"))
+                        if _cf_data.get("date") != today_str:
+                            _cf_path.unlink()
+                            _logger.info("[0c] Deleted stale cache file %s (was date=%s).", _cf, _cf_data.get("date"))
+                    except Exception:
+                        _cf_path.unlink(missing_ok=True)
+                        _logger.debug("[0c] Deleted unreadable cache file %s.", _cf)
+        except Exception as exc:
+            _logger.debug("[0c] Cache staleness check skipped (non-fatal): %s", exc)
+
     # ── Step 0b: Pre-warm cache from existing DB picks ────────────────────
     # Write whatever picks already exist in the DB to slate_cache.json right
     # away — before the full analysis runs.  This means users who visit the

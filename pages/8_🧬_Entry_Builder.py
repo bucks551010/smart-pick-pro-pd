@@ -563,7 +563,22 @@ with st.expander("🔒 Lock / Unlock Legs (force picks into every entry)", expan
 # SECTION: Selected Picks from Analysis
 # ============================================================
 
-selected_picks = st.session_state.get("selected_picks", [])
+# Filter selected_picks and bucket_picks to today only so prior-day
+# picks never persist into a new sports day.
+try:
+    from tracking.database import _nba_today_iso as _eb_today_fn
+    _eb_today = _eb_today_fn()
+except Exception:
+    import datetime as _eb_dt
+    _eb_today = _eb_dt.date.today().isoformat()
+
+_raw_picks = st.session_state.get("selected_picks", [])
+selected_picks = [
+    p for p in _raw_picks
+    if p.get("pick_date", _eb_today) == _eb_today
+]
+if len(selected_picks) != len(_raw_picks):
+    st.session_state["selected_picks"] = selected_picks
 
 # ── 🪣 Live Entry Bucket integration ─────────────────────────────
 # Show the user's per-account staged picks at the top so they can

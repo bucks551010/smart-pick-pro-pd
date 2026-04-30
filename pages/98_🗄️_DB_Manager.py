@@ -441,6 +441,91 @@ with _TAB_QA:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+    # ── Resolve Picks ─────────────────────────────────────────────────────
+    st.markdown("<div class='qa-card'><div class='qa-card-title'>✅ Resolve Analysis Picks</div>", unsafe_allow_html=True)
+    st.caption(
+        "Fetch actual NBA box-score stats and grade every pick for a date as WIN / LOSS / EVEN. "
+        "Run this the morning after games finish."
+    )
+
+    _rp_cols = st.columns([2, 2, 2, 2])
+    _rp_date = _rp_cols[0].date_input(
+        "Date to resolve",
+        value=datetime.date.today() - datetime.timedelta(days=1),
+        key="qa_resolve_picks_date",
+    )
+    _rp_date_str = str(_rp_date)
+
+    # Show current pick counts for selected date
+    try:
+        _rp_total_q = _db_read("SELECT COUNT(*) AS n FROM all_analysis_picks WHERE pick_date = ?", (_rp_date_str,))
+        _rp_total = _rp_total_q[0]["n"] if _rp_total_q else 0
+        _rp_pending_q = _db_read(
+            "SELECT COUNT(*) AS n FROM all_analysis_picks WHERE pick_date = ? AND (result IS NULL OR result = '')",
+            (_rp_date_str,),
+        )
+        _rp_pending = _rp_pending_q[0]["n"] if _rp_pending_q else 0
+        _rp_graded = _rp_total - _rp_pending
+    except Exception:
+        _rp_total, _rp_pending, _rp_graded = 0, 0, 0
+
+    _rp_cols[1].metric("Total picks", _rp_total)
+    _rp_cols[2].metric("⏳ Pending", _rp_pending)
+    _rp_cols[3].metric("✅ Graded", _rp_graded)
+
+    _rp_btn_cols = st.columns([1, 3])
+    with _rp_btn_cols[0]:
+        _rp_run = st.button(
+            "⚡ Resolve Picks",
+            key="qa_resolve_picks_run",
+            type="primary",
+            use_container_width=True,
+            disabled=(_rp_pending == 0),
+        )
+    with _rp_btn_cols[1]:
+        if _rp_pending == 0 and _rp_total > 0:
+            st.caption(f"All {_rp_total} picks for {_rp_date_str} are already graded.")
+        elif _rp_pending == 0:
+            st.caption(f"No picks found for {_rp_date_str}.")
+        else:
+            st.caption(f"Will fetch actual NBA stats and grade {_rp_pending} pending pick(s).")
+
+    if _rp_run:
+        with st.spinner(f"Fetching NBA box scores for {_rp_date_str} and grading {_rp_pending} picks…"):
+            try:
+                from tracking.bet_tracker import resolve_all_analysis_picks as _resolve_ap
+                _rp_result = _resolve_ap(date_str=_rp_date_str)
+            except Exception as _rp_err:
+                st.error(f"Resolution failed: {_rp_err}")
+                _rp_result = None
+
+        if _rp_result:
+            _rp_res = _rp_result.get("resolved", 0)
+            _rp_w = _rp_result.get("wins", 0)
+            _rp_l = _rp_result.get("losses", 0)
+            _rp_e = _rp_result.get("evens", 0)
+            _rp_still = _rp_result.get("pending", 0)
+            _rp_errs = _rp_result.get("errors", [])
+
+            if _rp_res > 0:
+                st.cache_data.clear()
+                st.success(
+                    f"✅ Graded **{_rp_res}** pick(s) for {_rp_date_str}: "
+                    f"**{_rp_w} WIN** · **{_rp_l} LOSS** · **{_rp_e} EVEN** · {_rp_still} still pending"
+                )
+                st.rerun()
+            else:
+                st.warning(
+                    f"0 picks resolved for {_rp_date_str}. "
+                    "Games may not be final yet, or stats aren't available. Try again after 11 PM ET."
+                )
+            if _rp_errs:
+                with st.expander(f"⚠️ {len(_rp_errs)} resolution error(s)"):
+                    for _e in _rp_errs[:20]:
+                        st.caption(_e)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
     # ── Surgical Pick Delete ───────────────────────────────────────────────
     st.markdown(
         "<div class='qa-card'><div class='qa-card-title'>🔬 Surgical Pick Delete</div>",

@@ -495,12 +495,26 @@ def _run_auto_analysis(today_str: str, force: bool = False) -> int:
             return 0
 
         # ── 6. Persist picks ──
-        # Purge any prior-day picks first so the DB never shows stale game data.
+        # Step 6a: Purge any prior-day picks (pick_date < today).
         try:
             from tracking.database import purge_stale_analysis_picks as _purge
             _purge(today_str)
         except Exception as _purge_err:
             _logger.debug("[ETL Scheduler] purge_stale_analysis_picks failed (non-fatal): %s", _purge_err)
+
+        # Step 6b: Delete today's PENDING picks before re-inserting.
+        # This is the critical fix: the prior purge only removes pick_date < today.
+        # Stale picks stored earlier today (e.g. for yesterday's completed-game players)
+        # have pick_date = today and are never touched by purge_stale_analysis_picks.
+        # Deleting pending picks here ensures a clean slate so the fresh prop run
+        # completely replaces today's data without any prior-run leftovers.
+        # Picks that already have a result (correct/incorrect/push) are preserved.
+        try:
+            from tracking.database import purge_todays_pending_picks as _purge_today
+            _purge_today(today_str)
+        except Exception as _clean_err:
+            _logger.warning("[ETL Scheduler] Failed to clear today's pending picks (non-fatal): %s", _clean_err)
+
         from tracking.database import insert_analysis_picks
         inserted = insert_analysis_picks(results)
         _logger.info(
@@ -512,6 +526,7 @@ def _run_auto_analysis(today_str: str, force: bool = False) -> int:
     except Exception:
         _logger.exception("[ETL Scheduler] QAM auto-analysis failed (non-fatal)")
         return 0
+
 
 
 def _loop() -> None:

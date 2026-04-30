@@ -167,6 +167,12 @@ def _count(table: str) -> int:
 def _load_today_picks() -> int:
     """Trigger the scheduler's full analysis pipeline for today and return picks inserted."""
     try:
+        # Wipe today's pending picks first so stale players don't survive the reload
+        from tracking.database import purge_todays_pending_picks as _ptp
+        _ptp(_TODAY)
+    except Exception:
+        pass
+    try:
         from etl.scheduler import _run_auto_analysis
         return _run_auto_analysis(_TODAY, force=True)
     except Exception as _ltp_err:

@@ -4123,6 +4123,50 @@ def purge_stale_analysis_picks(today_str: str | None = None) -> int:
         return 0
 
 
+def purge_todays_pending_picks(today_str: str | None = None) -> int:
+    """Delete today's ungraded (pending) picks so a fresh analysis run can replace them.
+
+    This is the companion to purge_stale_analysis_picks().  The prior function
+    removes rows from previous days; this one removes TODAY's pending rows so a
+    fresh scheduler run produces a clean slate instead of accumulating stale
+    players from already-completed games.
+
+    Picks that already have a result (correct / incorrect / push) are preserved
+    so graded bets are never lost.
+
+    Returns: number of rows deleted.
+    """
+    if today_str is None:
+        today_str = _nba_today_iso()
+    try:
+        if _DATABASE_URL:
+            conn = _pg_conn()
+            cur = conn.cursor()
+            cur.execute(
+                "DELETE FROM all_analysis_picks "
+                "WHERE pick_date = %s AND (result IS NULL OR result = '')",
+                (today_str,),
+            )
+            deleted = cur.rowcount if cur.rowcount and cur.rowcount >= 0 else 0
+            conn.commit()
+            _pg_putconn(conn)
+        else:
+            with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False, timeout=10) as conn:
+                cur = conn.execute(
+                    "DELETE FROM all_analysis_picks "
+                    "WHERE pick_date = ? AND (result IS NULL OR result = '')",
+                    (today_str,),
+                )
+                deleted = cur.rowcount if cur.rowcount and cur.rowcount >= 0 else 0
+        _logger.info(
+            "purge_todays_pending_picks: deleted %d pending picks for %s", deleted, today_str
+        )
+        return deleted
+    except Exception as exc:
+        _logger.warning("purge_todays_pending_picks failed (non-fatal): %s", exc)
+        return 0
+
+
 def refresh_todays_picks_materialized(results: list, date_str: str) -> bool:
     """Atomically replace the materialized-view row with a fresh full-JSON snapshot.
 

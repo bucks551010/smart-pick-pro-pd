@@ -4049,7 +4049,6 @@ def get_slate_picks_for_today() -> list:
         if _DATABASE_URL:
             conn = _pg_conn()
             cur = conn.cursor()
-            # Try today first; fall back to most recent date if today has no picks yet.
             cur.execute(
                 "SELECT pick_id, pick_date, player_name, team, stat_type, prop_line, "
                 "direction, platform, confidence_score, probability_over, edge_percentage, "
@@ -4071,7 +4070,6 @@ def get_slate_picks_for_today() -> list:
                     "ORDER BY confidence_score DESC",
                     (today_str,),
                 ).fetchall()]
-                # No fallback to previous date — return empty list if today has no picks.
 
         # Enforce per-player cap: results are already sorted by confidence_score DESC
         # so we keep the best picks for each player.
@@ -4086,6 +4084,43 @@ def get_slate_picks_for_today() -> list:
     except Exception as exc:
         _logger.debug("get_slate_picks_for_today failed: %s", exc)
         return []
+
+
+def purge_stale_analysis_picks(today_str: str | None = None) -> int:
+    """Delete all_analysis_picks rows whose pick_date is before today's ET sports day.
+
+    Called by the scheduler before each analysis run to ensure the DB never
+    accumulates stale-game picks that would bleed into the next day's UI.
+    Also called by the EON cleanup to enforce clean day boundaries.
+
+    Returns: number of rows deleted.
+    """
+    if today_str is None:
+        today_str = _nba_today_iso()
+    try:
+        if _DATABASE_URL:
+            conn = _pg_conn()
+            cur = conn.cursor()
+            cur.execute(
+                "DELETE FROM all_analysis_picks WHERE pick_date < %s",
+                (today_str,),
+            )
+            deleted = cur.rowcount if cur.rowcount and cur.rowcount >= 0 else 0
+            conn.commit()
+            _pg_putconn(conn)
+        else:
+            with sqlite3.connect(str(DB_FILE_PATH), check_same_thread=False, timeout=10) as conn:
+                cur = conn.execute(
+                    "DELETE FROM all_analysis_picks WHERE pick_date < ?",
+                    (today_str,),
+                )
+                deleted = cur.rowcount if cur.rowcount and cur.rowcount >= 0 else 0
+        if deleted:
+            _logger.info("purge_stale_analysis_picks: deleted %d prior-day rows (< %s)", deleted, today_str)
+        return deleted
+    except Exception as exc:
+        _logger.warning("purge_stale_analysis_picks failed (non-fatal): %s", exc)
+        return 0
 
 
 def refresh_todays_picks_materialized(results: list, date_str: str) -> bool:

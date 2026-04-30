@@ -178,6 +178,17 @@ def _run_end_of_night_cleanup(sports_date: str) -> dict:
         summary["errors"].append("resolve_all_analysis_picks raised an exception")
 
     # 3. Clear slate cache files so app shows a clean "awaiting next day" state
+    # Also purge prior-day analysis picks from DB (belt-and-suspenders alongside
+    # the scheduler's per-run purge).
+    try:
+        from tracking.database import purge_stale_analysis_picks as _eon_purge
+        _sports_day_today = _et_sports_day()  # 4 AM boundary → today's sports day
+        _eon_purge_deleted = _eon_purge(_sports_day_today)
+        if _eon_purge_deleted:
+            _logger.info("[EON] Purged %d prior-day analysis picks (< %s)", _eon_purge_deleted, _sports_day_today)
+    except Exception as _eon_purge_err:
+        summary["errors"].append(f"purge_stale_analysis_picks: {_eon_purge_err}")
+        _logger.warning("[EON] purge_stale_analysis_picks failed (non-fatal): %s", _eon_purge_err)
     try:
         import json as _json
         from pathlib import Path as _Path
@@ -214,15 +225,23 @@ def _run_end_of_night_cleanup(sports_date: str) -> dict:
 
     # 5. Prune prior-day analysis_sessions from DB so load_latest_analysis_session
     #    never returns a stale session after EON cleanup runs.
+    # The analysis_timestamp column is stored as an ISO 8601 TEXT string
+    # (e.g. "2026-04-29T02:30:00+00:00").  Comparing to a plain date string
+    # "2026-04-29" via < is unreliable on PostgreSQL because "2026-04-29T..."
+    # sorts AFTER "2026-04-29" in text order.  We append "T00:00" so that ALL
+    # timestamps from the given date onward are preserved and only prior-day
+    # sessions (timestamp starting with a smaller date prefix) are deleted.
     try:
         from tracking.database import _db_write, _nba_today_iso as _eon_today
         _today_iso = _eon_today()
+        # "2026-04-29T00:00" means: keep anything from 2026-04-29 00:00 UTC onward
+        _prune_threshold = _today_iso + "T00:00"
         _db_write(
             "DELETE FROM analysis_sessions WHERE analysis_timestamp < ?",
-            (_today_iso,),
+            (_prune_threshold,),
             caller="eon_prune_analysis_sessions",
         )
-        _logger.info("[EON] Pruned prior-day analysis_sessions (before %s)", _today_iso)
+        _logger.info("[EON] Pruned prior-day analysis_sessions (before %s)", _prune_threshold)
     except Exception as exc:
         summary["errors"].append(f"prune_analysis_sessions: {exc}")
         _logger.warning("[EON] analysis_sessions prune failed (non-fatal): %s", exc)
@@ -420,6 +439,32 @@ def _run_auto_analysis(today_str: str, force: bool = False) -> int:
         if not props:
             _logger.info("[ETL Scheduler] QAM auto-analysis: no props fetched, skipping.")
             return 0
+
+        # ── Game-date guard: skip props for already-played (prior-day) games ──
+        # PrizePicks/Underdog sometimes keep yesterday's completed games active
+        # on their API for hours after they finish.  Analysing those props and
+        # storing them as today's picks fills the app with players from games
+        # that are over — the exact symptom the user sees as "yesterday's players".
+        # Allow props with game_date == today OR props with no game_date (they'll
+        # be accepted and date-stamped by insert_analysis_picks).
+        _props_all_count = len(props)
+        props = [
+            p for p in props
+            if not p.get("game_date") or p.get("game_date", "") >= today_str
+        ]
+        if len(props) < _props_all_count:
+            _logger.info(
+                "[ETL Scheduler] Filtered %d prior-day props (game_date < %s); %d remaining.",
+                _props_all_count - len(props), today_str, len(props),
+            )
+        if not props:
+            _logger.info(
+                "[ETL Scheduler] QAM auto-analysis: all %d props have game_date < %s — "
+                "no games scheduled today, skipping analysis.",
+                _props_all_count, today_str,
+            )
+            return 0
+
         save_platform_props_to_csv(props)  # keep CSV fresh too
         _logger.info("[ETL Scheduler] QAM auto-analysis: %d props loaded.", len(props))
 
@@ -450,6 +495,12 @@ def _run_auto_analysis(today_str: str, force: bool = False) -> int:
             return 0
 
         # ── 6. Persist picks ──
+        # Purge any prior-day picks first so the DB never shows stale game data.
+        try:
+            from tracking.database import purge_stale_analysis_picks as _purge
+            _purge(today_str)
+        except Exception as _purge_err:
+            _logger.debug("[ETL Scheduler] purge_stale_analysis_picks failed (non-fatal): %s", _purge_err)
         from tracking.database import insert_analysis_picks
         inserted = insert_analysis_picks(results)
         _logger.info(

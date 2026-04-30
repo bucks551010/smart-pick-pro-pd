@@ -406,6 +406,145 @@ with _TAB_QA:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+    # ── Surgical Pick Delete ───────────────────────────────────────────────
+    st.markdown(
+        "<div class='qa-card'><div class='qa-card-title'>🔬 Surgical Pick Delete</div>",
+        unsafe_allow_html=True,
+    )
+    st.caption(
+        "Filter by any combination of team, player, stat type, platform, or date range — "
+        "then preview and delete exactly what you want."
+    )
+
+    # Load distinct values for filter dropdowns
+    try:
+        _sd_teams_raw = _db_read(
+            "SELECT DISTINCT team FROM all_analysis_picks WHERE team IS NOT NULL AND team != '' "
+            "ORDER BY team"
+        )
+        _sd_teams = ["(all)"] + [r["team"] for r in _sd_teams_raw if r.get("team")]
+    except Exception:
+        _sd_teams = ["(all)"]
+    try:
+        _sd_stats_raw = _db_read(
+            "SELECT DISTINCT stat_type FROM all_analysis_picks WHERE stat_type IS NOT NULL AND stat_type != '' "
+            "ORDER BY stat_type"
+        )
+        _sd_stats = ["(all)"] + [r["stat_type"] for r in _sd_stats_raw if r.get("stat_type")]
+    except Exception:
+        _sd_stats = ["(all)"]
+    try:
+        _sd_plats_raw = _db_read(
+            "SELECT DISTINCT platform FROM all_analysis_picks WHERE platform IS NOT NULL AND platform != '' "
+            "ORDER BY platform"
+        )
+        _sd_plats = ["(all)"] + [r["platform"] for r in _sd_plats_raw if r.get("platform")]
+    except Exception:
+        _sd_plats = ["(all)"]
+    try:
+        _sd_dates_raw = _db_read(
+            "SELECT DISTINCT pick_date FROM all_analysis_picks WHERE pick_date IS NOT NULL "
+            "ORDER BY pick_date DESC LIMIT 30"
+        )
+        _sd_dates = ["(all)"] + [r["pick_date"] for r in _sd_dates_raw if r.get("pick_date")]
+    except Exception:
+        _sd_dates = ["(all)"]
+
+    _sdf1, _sdf2, _sdf3, _sdf4, _sdf5 = st.columns(5)
+    with _sdf1:
+        _sd_team = st.selectbox("🏀 Team", _sd_teams, key="sd_team")
+    with _sdf2:
+        _sd_player = st.text_input("👤 Player name (partial OK)", key="sd_player").strip()
+    with _sdf3:
+        _sd_stat = st.selectbox("📊 Stat type", _sd_stats, key="sd_stat")
+    with _sdf4:
+        _sd_plat = st.selectbox("📱 Platform", _sd_plats, key="sd_plat")
+    with _sdf5:
+        _sd_date = st.selectbox("📅 Pick date", _sd_dates, key="sd_date")
+
+    # Build WHERE clause from non-default selections
+    _sd_where_parts: list[str] = []
+    _sd_params: list = []
+    if _sd_team and _sd_team != "(all)":
+        _sd_where_parts.append("LOWER(team) = LOWER(?)")
+        _sd_params.append(_sd_team)
+    if _sd_player:
+        _sd_where_parts.append("LOWER(player_name) LIKE ?")
+        _sd_params.append(f"%{_sd_player.lower()}%")
+    if _sd_stat and _sd_stat != "(all)":
+        _sd_where_parts.append("LOWER(stat_type) = LOWER(?)")
+        _sd_params.append(_sd_stat)
+    if _sd_plat and _sd_plat != "(all)":
+        _sd_where_parts.append("LOWER(platform) = LOWER(?)")
+        _sd_params.append(_sd_plat)
+    if _sd_date and _sd_date != "(all)":
+        _sd_where_parts.append("pick_date = ?")
+        _sd_params.append(_sd_date)
+
+    _sd_where_sql = ("WHERE " + " AND ".join(_sd_where_parts)) if _sd_where_parts else ""
+
+    # Preview matching rows
+    _sd_preview_rows: list = []
+    if _sd_where_sql:
+        try:
+            _sd_preview_rows = _db_read(
+                f"SELECT pick_id, pick_date, player_name, team, stat_type, prop_line, "
+                f"direction, platform, tier, confidence_score "
+                f"FROM all_analysis_picks {_sd_where_sql} "
+                f"ORDER BY pick_date DESC, confidence_score DESC LIMIT 200",
+                tuple(_sd_params),
+            )
+        except Exception as _sd_err:
+            st.error(f"Preview query failed: {_sd_err}")
+
+    _sd_cols = st.columns([2, 1])
+    with _sd_cols[0]:
+        if not _sd_where_sql:
+            st.info("Set at least one filter above to preview matching picks.")
+        elif _sd_preview_rows:
+            import pandas as _sd_pd
+            _sd_df = _sd_pd.DataFrame(_sd_preview_rows)
+            st.dataframe(_sd_df, use_container_width=True, height=220)
+            st.caption(f"**{len(_sd_preview_rows)}** matching picks shown (capped at 200)")
+        else:
+            st.info("No picks match the current filters.")
+
+    with _sd_cols[1]:
+        if _sd_where_sql and _sd_preview_rows:
+            _sd_count_q = _db_read(
+                f"SELECT COUNT(*) AS n FROM all_analysis_picks {_sd_where_sql}",
+                tuple(_sd_params),
+            )
+            _sd_total = _sd_count_q[0]["n"] if _sd_count_q else len(_sd_preview_rows)
+            st.metric("Rows to delete", f"{_sd_total:,}")
+            # Build a human-readable label
+            _sd_label_parts = []
+            if _sd_team and _sd_team != "(all)":
+                _sd_label_parts.append(f"team={_sd_team}")
+            if _sd_player:
+                _sd_label_parts.append(f"player~{_sd_player}")
+            if _sd_stat and _sd_stat != "(all)":
+                _sd_label_parts.append(f"stat={_sd_stat}")
+            if _sd_plat and _sd_plat != "(all)":
+                _sd_label_parts.append(f"platform={_sd_plat}")
+            if _sd_date and _sd_date != "(all)":
+                _sd_label_parts.append(f"date={_sd_date}")
+            _sd_label = "Delete: " + ", ".join(_sd_label_parts) if _sd_label_parts else "Delete filtered"
+            if _confirm_button(f"🗑️ {_sd_label}", "sd_delete_filtered", danger=True):
+                if _run_write(
+                    f"DELETE FROM all_analysis_picks {_sd_where_sql}",
+                    tuple(_sd_params),
+                    "sd_delete_filtered",
+                ):
+                    st.toast(f"🗑️ Deleted {_sd_total} picks ({', '.join(_sd_label_parts)})", icon="✅")
+                    st.rerun()
+        elif _sd_where_sql:
+            st.info("Nothing to delete.")
+        else:
+            st.caption("Set a filter to enable deletion.")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
     # ── Sessions / State ──────────────────────────────────────────────────
     st.markdown("<div class='qa-card'><div class='qa-card-title'>🧠 Sessions &amp; App State</div>", unsafe_allow_html=True)
     _qc = st.columns(4)

@@ -382,6 +382,103 @@ with _TAB_QA:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+    # ── Resolve Bets ──────────────────────────────────────────────────────
+    st.markdown("<div class='qa-card'><div class='qa-card-title'>⚡ Resolve Bets</div>", unsafe_allow_html=True)
+    st.caption(
+        "Fetch actual NBA box-score stats and grade every pending bet for a date as WIN / LOSS / EVEN. "
+        "Run this the morning after games finish (usually after 9 AM ET when stats are posted)."
+    )
+
+    _rb_cols = st.columns([2, 2, 2, 2])
+    _rb_date = _rb_cols[0].date_input(
+        "Date to resolve",
+        value=datetime.date.today() - datetime.timedelta(days=1),
+        key="qa_resolve_bets_date",
+    )
+    _rb_date_str = str(_rb_date)
+
+    # Show current bet counts for selected date
+    try:
+        _rb_total_q = _db_read("SELECT COUNT(*) AS n FROM bets WHERE bet_date = ?", (_rb_date_str,))
+        _rb_total = _rb_total_q[0]["n"] if _rb_total_q else 0
+        _rb_pending_q = _db_read(
+            "SELECT COUNT(*) AS n FROM bets WHERE bet_date = ? AND (result IS NULL OR result = '')",
+            (_rb_date_str,),
+        )
+        _rb_pending = _rb_pending_q[0]["n"] if _rb_pending_q else 0
+        _rb_graded = _rb_total - _rb_pending
+    except Exception:
+        _rb_total, _rb_pending, _rb_graded = 0, 0, 0
+
+    _rb_cols[1].metric("Total bets", _rb_total)
+    _rb_cols[2].metric("⏳ Pending", _rb_pending)
+    _rb_cols[3].metric("✅ Graded", _rb_graded)
+
+    _rb_btn_cols = st.columns([1, 3])
+    with _rb_btn_cols[0]:
+        _rb_run = st.button(
+            "⚡ Resolve Bets",
+            key="qa_resolve_bets_run",
+            type="primary",
+            use_container_width=True,
+            disabled=(_rb_pending == 0),
+        )
+    with _rb_btn_cols[1]:
+        if _rb_pending == 0 and _rb_total > 0:
+            st.caption(f"All {_rb_total} bets for {_rb_date_str} are already graded.")
+        elif _rb_pending == 0:
+            st.caption(f"No bets found for {_rb_date_str}.")
+        else:
+            st.caption(f"Will fetch actual NBA stats and grade {_rb_pending} pending bet(s).")
+
+    if _rb_run:
+        with st.spinner(f"Fetching NBA box scores for {_rb_date_str} and grading {_rb_pending} bet(s)…"):
+            try:
+                from tracking.bet_tracker import auto_resolve_bet_results as _resolve_bets
+                _rb_resolved, _rb_errors = _resolve_bets(date_str=_rb_date_str)
+            except Exception as _rb_err:
+                st.error(f"Resolution failed: {_rb_err}")
+                _rb_resolved, _rb_errors = -1, []
+
+        if _rb_resolved >= 0:
+            if _rb_resolved > 0:
+                st.cache_data.clear()
+                # Count wins/losses from DB now that results are written
+                try:
+                    _rb_win_q = _db_read(
+                        "SELECT COUNT(*) AS n FROM bets WHERE bet_date = ? AND LOWER(result) IN ('win','correct')",
+                        (_rb_date_str,),
+                    )
+                    _rb_loss_q = _db_read(
+                        "SELECT COUNT(*) AS n FROM bets WHERE bet_date = ? AND LOWER(result) IN ('loss','incorrect')",
+                        (_rb_date_str,),
+                    )
+                    _rb_even_q = _db_read(
+                        "SELECT COUNT(*) AS n FROM bets WHERE bet_date = ? AND LOWER(result) = 'even'",
+                        (_rb_date_str,),
+                    )
+                    _rb_w = _rb_win_q[0]["n"] if _rb_win_q else 0
+                    _rb_l = _rb_loss_q[0]["n"] if _rb_loss_q else 0
+                    _rb_e = _rb_even_q[0]["n"] if _rb_even_q else 0
+                except Exception:
+                    _rb_w = _rb_l = _rb_e = 0
+                st.success(
+                    f"✅ Graded **{_rb_resolved}** bet(s) for {_rb_date_str}: "
+                    f"**{_rb_w} WIN** · **{_rb_l} LOSS** · **{_rb_e} EVEN**"
+                )
+                st.rerun()
+            else:
+                st.warning(
+                    f"0 bets resolved for {_rb_date_str}. "
+                    "Games may not be final yet, or stats aren't posted. Try again after 9 AM ET."
+                )
+        if _rb_errors:
+            with st.expander(f"⚠️ {len(_rb_errors)} resolution error(s)"):
+                for _rbe in _rb_errors[:20]:
+                    st.caption(_rbe)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
     # ── Picks ─────────────────────────────────────────────────────────────
     st.markdown("<div class='qa-card'><div class='qa-card-title'>⚡ Analysis Picks</div>", unsafe_allow_html=True)
     _qb = st.columns(4)

@@ -504,6 +504,21 @@ CREATE TABLE IF NOT EXISTS page_state (
 );
 """
 
+# Materialized-view table for today's picks.
+# A single row (mat_id = 1) stores the full JSON output of the latest
+# scheduler run — all 40+ fields per pick.  Refreshed atomically by
+# slate_worker after every successful analysis cycle.  QAM reads this
+# in one indexed query with no aggregation.
+CREATE_TODAYS_PICKS_MAT_SQL = """
+CREATE TABLE IF NOT EXISTS todays_picks_materialized (
+    mat_id INTEGER PRIMARY KEY CHECK (mat_id = 1),
+    for_date TEXT NOT NULL,
+    refreshed_at TEXT NOT NULL,
+    pick_count INTEGER NOT NULL DEFAULT 0,
+    picks_json TEXT NOT NULL
+);
+"""
+
 # ============================================================
 # END SECTION: Database Configuration
 # ============================================================
@@ -851,6 +866,14 @@ def _pg_initialize_database() -> bool:
             page TEXT,
             metadata TEXT
         )""",
+        # ── Materialized view: today's picks (full JSON, single row) ─────────
+        """CREATE TABLE IF NOT EXISTS todays_picks_materialized (
+            mat_id INTEGER PRIMARY KEY CHECK (mat_id = 1),
+            for_date TEXT NOT NULL,
+            refreshed_at TEXT NOT NULL,
+            pick_count INTEGER NOT NULL DEFAULT 0,
+            picks_json TEXT NOT NULL
+        )""",
         # â”€â”€ Indexes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         "CREATE INDEX IF NOT EXISTS idx_ae_timestamp ON analytics_events (timestamp)",
         "CREATE INDEX IF NOT EXISTS idx_ae_event_name ON analytics_events (event_name)",
@@ -1146,6 +1169,7 @@ def initialize_database():
             cursor.execute(CREATE_BET_AUDIT_LOG_TABLE_SQL)         # Bet edit/delete audit log
             cursor.execute(CREATE_USER_SETTINGS_TABLE_SQL)        # User settings persistence
             cursor.execute(CREATE_PAGE_STATE_TABLE_SQL)             # Page state persistence
+            cursor.execute(CREATE_TODAYS_PICKS_MAT_SQL)             # Materialized view: today's picks
             # Slate worker + cross-container data-version signaling
             cursor.execute(
                 "CREATE TABLE IF NOT EXISTS slate_cache "
@@ -3953,6 +3977,84 @@ def get_slate_picks_for_today() -> list:
     except Exception as exc:
         _logger.debug("get_slate_picks_for_today failed: %s", exc)
         return []
+
+
+def refresh_todays_picks_materialized(results: list, date_str: str) -> bool:
+    """Atomically replace the materialized-view row with a fresh full-JSON snapshot.
+
+    Called by slate_worker after every successful analysis run.  Stores the
+    complete 40+ field output of analyze_props_batch() in a single row so QAM
+    can read today's picks with a single primary-key lookup — no JOIN, no
+    aggregation, no per-player cap logic on the hot path.
+
+    Args:
+        results: Full list of analysis result dicts from analyze_props_batch().
+        date_str: ISO date string (YYYY-MM-DD) for the slate being stored.
+
+    Returns:
+        True on success, False on error.
+    """
+    if not results or not date_str:
+        return False
+    try:
+        import json as _mat_json
+        _picks_json = _mat_json.dumps(results, default=str)
+        _now = datetime.datetime.utcnow().isoformat() + "Z"
+        _count = len(results)
+        if _DATABASE_URL:
+            _pg_execute_write(
+                """INSERT INTO todays_picks_materialized
+                       (mat_id, for_date, refreshed_at, pick_count, picks_json)
+                   VALUES (1, %s, %s, %s, %s)
+                   ON CONFLICT (mat_id)
+                   DO UPDATE SET for_date    = EXCLUDED.for_date,
+                                 refreshed_at= EXCLUDED.refreshed_at,
+                                 pick_count  = EXCLUDED.pick_count,
+                                 picks_json  = EXCLUDED.picks_json""",
+                (date_str, _now, _count, _picks_json),
+                caller="refresh_todays_picks_materialized",
+            )
+        else:
+            _execute_write(
+                """INSERT OR REPLACE INTO todays_picks_materialized
+                       (mat_id, for_date, refreshed_at, pick_count, picks_json)
+                   VALUES (1, ?, ?, ?, ?)""",
+                (date_str, _now, _count, _picks_json),
+                caller="refresh_todays_picks_materialized",
+            )
+        _logger.info(
+            "refresh_todays_picks_materialized: %d picks stored for %s.",
+            _count, date_str,
+        )
+        return True
+    except Exception as exc:
+        _logger.warning("refresh_todays_picks_materialized failed (non-fatal): %s", exc)
+        return False
+
+
+def get_todays_picks_materialized() -> list:
+    """Return today's full-JSON picks from the materialized view (single PK read).
+
+    This is the fastest DB read path for QAM: one primary-key lookup on a
+    single-row table returns the full 40+ field output with no aggregation.
+    Falls back to get_slate_picks_for_today() if the row is absent or stale.
+
+    Returns:
+        list[dict]: Full analysis result dicts, or [] if not available for today.
+    """
+    today_str = _nba_today_iso()
+    try:
+        rows = _db_read(
+            "SELECT for_date, picks_json FROM todays_picks_materialized WHERE mat_id = 1",
+        )
+        if rows and rows[0].get("for_date") == today_str:
+            import json as _mat_json
+            picks = _mat_json.loads(rows[0]["picks_json"] or "[]")
+            return [r for r in picks if str(r.get("team", "")).strip()]
+    except Exception as exc:
+        _logger.debug("get_todays_picks_materialized failed: %s", exc)
+    return []
+
 
 # ============================================================
 # END SECTION: Slate Worker Integration

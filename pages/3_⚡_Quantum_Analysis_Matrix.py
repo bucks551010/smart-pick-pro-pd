@@ -418,6 +418,39 @@ st.session_state.setdefault("joseph_enabled", True)
 st.session_state.setdefault("joseph_used_fragments", set())
 st.session_state.setdefault("joseph_bets_logged", False)
 
+# ── FAST PATH: load from analyzed_picks.json (<100 ms) ───────────────────────
+# The scheduler writes cache/analyzed_picks.json after every successful run.
+# Reading a local file is orders of magnitude faster than a DB round-trip, so
+# we try this path first and skip the entire DB session-bridge below if the
+# file exists and is dated today.  The DB bridge still runs as a fallback when
+# the file is absent or stale (e.g. first deploy, cache cleared, different day).
+if not st.session_state.get("analysis_results"):
+    try:
+        import json as _qam_json
+        from pathlib import Path as _qam_Path
+        _qam_cache_file = (
+            _qam_Path(__file__).resolve().parent.parent / "cache" / "analyzed_picks.json"
+        )
+        if _qam_cache_file.exists():
+            _qam_cache = _qam_json.loads(_qam_cache_file.read_text(encoding="utf-8"))
+            from tracking.database import _nba_today_iso as _qam_today_fn
+            if _qam_cache.get("date") == _qam_today_fn():
+                _qam_file_picks = [
+                    r for r in (_qam_cache.get("picks") or [])
+                    if str(r.get("team", "")).strip()
+                ]
+                if _qam_file_picks:
+                    st.session_state["analysis_results"] = _qam_file_picks
+                    st.session_state["_qam_db_restored"] = True
+                    st.session_state["_qam_cache_source"] = "file"
+                    _logger.info(
+                        "QAM fast-path: %d picks loaded from analyzed_picks.json in <100 ms.",
+                        len(_qam_file_picks),
+                    )
+    except Exception as _qam_fp_err:
+        _logger.debug("QAM file fast-path failed (non-fatal): %s", _qam_fp_err)
+# ── END FAST PATH ─────────────────────────────────────────────────────────────
+
 # ── Analysis Session Persistence — Rehydrate from DB if session empty ──────
 # Session Bridge: checks st.query_params["sid"] first so that a page refresh
 # or tab-switch recovers the EXACT run the user was viewing, not just the
@@ -948,18 +981,36 @@ st.session_state.setdefault("qam_show_mode", "All picks")
 if run_analysis:
     # ── Read-only refresh: reload precomputed picks from the scheduler DB ──
     # All simulation runs in slate_worker.py (background scheduler).
-    # This path performs a single DB query — no analysis, no simulation.
+    # Try the local cache file first (< 100ms); fall back to a DB query.
     _prev_results = st.session_state.get("analysis_results") or []
     _refresh_picks: list = []
+    # 1️⃣ Try cache file (fastest path — local file read, no DB round-trip)
     try:
-        from tracking.database import get_slate_picks_for_today as _qam_refresh_today
-        _raw_refresh = _qam_refresh_today() or []
-        _refresh_picks = [r for r in _raw_refresh if str(r.get("team", "")).strip()]
-    except Exception as _refresh_err:
-        st.error(f"⚠️ Could not load picks from scheduler: {_refresh_err}")
+        import json as _ref_json
+        from pathlib import Path as _ref_Path
+        _ref_cache = _ref_Path(__file__).resolve().parent.parent / "cache" / "analyzed_picks.json"
+        if _ref_cache.exists():
+            _ref_data = _ref_json.loads(_ref_cache.read_text(encoding="utf-8"))
+            from tracking.database import _nba_today_iso as _ref_today_fn
+            if _ref_data.get("date") == _ref_today_fn():
+                _refresh_picks = [
+                    r for r in (_ref_data.get("picks") or [])
+                    if str(r.get("team", "")).strip()
+                ]
+    except Exception as _ref_file_err:
+        _logger.debug("Refresh file read failed (non-fatal): %s", _ref_file_err)
+    # 2️⃣ Fall back to DB query when file path unavailable or stale
+    if not _refresh_picks:
+        try:
+            from tracking.database import get_slate_picks_for_today as _qam_refresh_today
+            _raw_refresh = _qam_refresh_today() or []
+            _refresh_picks = [r for r in _raw_refresh if str(r.get("team", "")).strip()]
+        except Exception as _refresh_err:
+            st.error(f"⚠️ Could not load picks from scheduler: {_refresh_err}")
     if _refresh_picks:
         st.session_state["analysis_results"] = _refresh_picks
         st.session_state["_qam_db_restored"] = True
+        st.session_state["_qam_cache_source"] = "refresh"
         st.session_state.pop("_qam_analysis_requested", None)
         st.session_state.pop("_analysis_session_reloaded_at", None)
         _logger.info("QAM refresh: loaded %d precomputed picks from scheduler.", len(_refresh_picks))

@@ -431,6 +431,14 @@ def run_slate(dry_run: bool = False) -> int:
                 _logger.info("[6b] analyzed_picks.json written (%d picks).", len(results))
             except Exception as exc:
                 _logger.debug("[6b] analyzed_picks.json write failed (non-fatal): %s", exc)
+            # Step 6c: Refresh the DB materialized view so the QAM DB fallback
+            # path also returns full 40+ field data in a single PK lookup.
+            try:
+                from tracking.database import refresh_todays_picks_materialized as _refresh_mat
+                _refresh_mat(results, today_str)
+                _logger.info("[6c] todays_picks_materialized refreshed (%d picks).", len(results))
+            except Exception as exc:
+                _logger.debug("[6c] refresh_todays_picks_materialized failed (non-fatal): %s", exc)
             # Bump data_version so all running Streamlit sessions (home page
             # 60-second poller) detect the fresh slate and auto-refresh.
             try:

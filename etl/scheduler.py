@@ -527,11 +527,20 @@ def _loop() -> None:
             # detect the fresh props and re-seed their session state from disk.
             if count > 0:
                 try:
-                    from tracking.database import _bump_data_version as _bv
-                    import datetime as _dt_bv
-                    _bv(_dt_bv.date.today().isoformat())
+                    from tracking.database import (
+                        _bump_data_version as _bv,
+                        _nba_today_iso as _bv_today,
+                    )
+                    # ET-anchored stamp so Railway UTC server doesn't bump
+                    # to tomorrow's date during 8 PM-midnight ET.
+                    _bv(_bv_today())
                 except Exception:
-                    pass
+                    try:
+                        from tracking.database import _bump_data_version as _bv
+                        import datetime as _dt_bv
+                        _bv(_dt_bv.date.today().isoformat())
+                    except Exception:
+                        pass
 
         # ── QAM auto-analysis (once per new day, then every 2 h while in window) ──
         # Runs after props are fresh to analyze the live slate.

@@ -1280,7 +1280,7 @@ def display_prop_analysis_card_qds(result):
     selected_picks = st.session_state.get("selected_picks", [])
     already_added  = any(p.get("key") == pick_key for p in selected_picks)
 
-    _btn_col, _detail_col = st.columns([1, 2])
+    _btn_col, _bucket_col, _detail_col = st.columns([1, 1, 2])
     with _btn_col:
         btn_label    = "✅ Added" if already_added else "➕ Add to Entry"
         btn_disabled = already_added
@@ -1298,6 +1298,34 @@ def display_prop_analysis_card_qds(result):
                 "edge_percentage": result.get("edge_percentage", 0),
             })
             st.rerun()
+
+    with _bucket_col:
+        # 🪣 Persistent Live Bucket (survives page nav / reruns)
+        if st.button("🪣 Bucket", key=f"bucket_pick_{pick_key}",
+                     help="Save to your Live Entry Bucket"):
+            try:
+                from tracking.live_bucket import add_to_bucket as _add_to_bucket
+                from utils.user_session import get_current_user_email as _ue
+                _bid = _add_to_bucket(_ue(), {
+                    "player_name":      player,
+                    "stat_type":        stat,
+                    "prop_line":        line,
+                    "direction":        direction,
+                    "confidence_score": confidence,
+                    "tier":             tier,
+                    "tier_emoji":       tier_icon,
+                    "platform":         platform,
+                    "probability_over": result.get("probability_over", 0.0),
+                    "edge_percentage":  result.get("edge_percentage", 0),
+                    "bet_type":         result.get("bet_type", "normal"),
+                    "odds_type":        result.get("odds_type", "standard"),
+                })
+                if _bid:
+                    st.toast(f"🪣 Added {player} {stat} to bucket", icon="✅")
+                else:
+                    st.toast("Already in bucket (or save failed)", icon="ℹ️")
+            except Exception as _e:
+                st.toast(f"Bucket save failed: {_e}", icon="⚠️")
 
     with _detail_col:
         # Quick stats pill row

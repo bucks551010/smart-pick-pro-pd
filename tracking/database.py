@@ -69,18 +69,81 @@ def _pg_pool():
 
 
 def _pg_conn():
-    """Return a connection from the module-level pool (falls back to fresh connect)."""
+    """Return a healthy connection from the module-level pool.
+
+    Validates each pooled connection with a cheap SELECT 1 round-trip
+    so that stale sockets (Railway/Postgres restarts, idle timeouts) are
+    transparently recycled instead of poisoning callers with
+    ``OperationalError: connection already closed``. (Audit issue A-011)
+    """
+    import psycopg2
+    for _try in range(2):
+        conn = None
+        try:
+            pool = _pg_pool()
+            conn = pool.getconn()
+            # Cheap liveness probe. Anything other than success → discard.
+            try:
+                cur = conn.cursor()
+                cur.execute("SELECT 1")
+                cur.fetchone()
+                cur.close()
+                return conn
+            except Exception as probe_err:
+                _logger.warning(
+                    "[DB] discarding stale pooled connection (%s); rebuilding pool",
+                    probe_err,
+                )
+                # Drop this bad conn from the pool and reset the pool entirely.
+                try:
+                    pool.putconn(conn, close=True)
+                except Exception:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+                _reset_pg_pool()
+                continue  # retry once with fresh pool
+        except Exception as pool_err:
+            _logger.warning("[DB] pool unavailable, falling back to direct connect: %s", pool_err)
+            break
+    # Last-resort: direct connection (no pool).
     try:
-        return _pg_pool().getconn()
-    except Exception:
-        import psycopg2
         return psycopg2.connect(_normalize_pg_url(_DATABASE_URL), connect_timeout=10)
+    except Exception:
+        raise
+
+
+def _reset_pg_pool():
+    """Tear down the cached connection pool so the next _pg_pool() call
+    rebuilds it. Used when a stale-socket failure indicates the pool is
+    no longer usable (Postgres server restart)."""
+    try:
+        _pg_pool.cache_clear()  # type: ignore[attr-defined]
+    except Exception:
+        pass
 
 
 def _pg_putconn(conn):
-    """Return a connection to the pool (or close it if the pool is unavailable)."""
+    """Return a connection to the pool (or close it if the pool is unavailable).
+
+    If the connection is already closed or in a broken transaction state,
+    discard it via ``putconn(close=True)`` so the pool doesn't hand it
+    back out to the next caller. (Audit issue A-011)
+    """
+    if conn is None:
+        return
+    # Detect broken / closed connections and tell the pool to drop them.
     try:
-        _pg_pool().putconn(conn)
+        is_dead = bool(getattr(conn, "closed", 0))
+    except Exception:
+        is_dead = True
+    try:
+        pool = _pg_pool()
+        if is_dead:
+            pool.putconn(conn, close=True)
+        else:
+            pool.putconn(conn)
     except Exception:
         try:
             conn.close()

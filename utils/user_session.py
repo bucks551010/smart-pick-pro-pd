@@ -52,18 +52,37 @@ def get_current_user_email() -> str:
     except Exception:
         pass
 
-    # 3) anonymous default — keeps the app usable in dev / no-auth mode
+    # 3) anonymous default — keeps the app usable in dev / no-auth mode.
+    # SECURITY: scope per-session so two simultaneous guests on Railway
+    # don't share the same bucket / bet history. We tag the anonymous
+    # email with the Streamlit script-run session id so each browser tab
+    # gets its own isolated bucket namespace.
+    try:
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+        ctx = get_script_run_ctx()
+        sid = getattr(ctx, "session_id", "") if ctx is not None else ""
+        if sid:
+            # Cache so repeated calls within the same session are stable.
+            cached = st.session_state.get("_anon_email_cached")
+            if cached:
+                return cached
+            tagged = f"anon-{sid[:12]}@local"
+            st.session_state["_anon_email_cached"] = tagged
+            return tagged
+    except Exception:
+        pass
     return _ANON_USER
 
 
 def is_anonymous_user() -> bool:
     """True when the active user has no real authenticated email."""
-    return get_current_user_email() == _ANON_USER
+    email = get_current_user_email()
+    return email == _ANON_USER or email.startswith("anon-")
 
 
 def get_user_display_label() -> str:
     """Short label for UI captions ('You · email' or 'Guest session')."""
     email = get_current_user_email()
-    if email == _ANON_USER:
+    if email == _ANON_USER or email.startswith("anon-"):
         return "👤 Guest session (sign in to sync across devices)"
     return f"👤 {email}"

@@ -1440,6 +1440,7 @@ if _stored_entries:
 
             if _entry_id and _picks:
                 _leg_ids = []
+                _leg_failed = False
                 for _pick in _picks:
                     _bet_id = _eb_insert_bet({
                         "bet_date": _today_str,
@@ -1458,10 +1459,30 @@ if _stored_entries:
                     })
                     if _bet_id:
                         _leg_ids.append(_bet_id)
+                    else:
+                        _leg_failed = True
+                        break
 
-                if _leg_ids:
+                if _leg_ids and not _leg_failed:
                     _eb_link(_leg_ids, _entry_id)
                     _logged_count += 1
+                else:
+                    # Compensating cleanup: any partial failure → remove the
+                    # orphan entry row + any successfully-inserted legs so we
+                    # don't leave inconsistent rows behind. (No transactional
+                    # API on the data layer yet — see audit issue A-006.)
+                    try:
+                        from tracking.database import _db_write as _eb_db_write
+                        for _bid in _leg_ids:
+                            _eb_db_write("DELETE FROM bets WHERE id = ?", (_bid,),
+                                         caller="eb_compensate_bet")
+                        _eb_db_write("DELETE FROM entries WHERE id = ?", (_entry_id,),
+                                     caller="eb_compensate_entry")
+                    except Exception as _comp_exc:
+                        logging.getLogger(__name__).warning(
+                            "[EntryBuilder] Auto-log compensating cleanup failed: %s",
+                            _comp_exc,
+                        )
 
         if _logged_count > 0:
             st.markdown(

@@ -1241,6 +1241,7 @@ def analyze_props_batch(
     line_snapshots: dict | None = None,
     progress_callback: Callable[[int, int, str], None] | None = None,
     inactive_player_names: set[str] | None = None,
+    skip_simulation: bool = False,
 ) -> list[dict]:
     """Analyze a batch of props and return a list of result dicts.
 

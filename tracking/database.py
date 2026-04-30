@@ -866,6 +866,8 @@ def _pg_initialize_database() -> bool:
         "CREATE INDEX IF NOT EXISTS idx_aap_player ON all_analysis_picks (player_name)",
         "CREATE INDEX IF NOT EXISTS idx_aap_stat_type ON all_analysis_picks (stat_type)",
         "CREATE INDEX IF NOT EXISTS idx_aap_date_result ON all_analysis_picks (pick_date, result)",
+        # Composite covering index: primary QAM query (today's picks sorted by confidence)
+        "CREATE INDEX IF NOT EXISTS idx_aap_date_confidence ON all_analysis_picks (pick_date, confidence_score DESC)",
         "CREATE INDEX IF NOT EXISTS idx_pgl_player_id ON player_game_logs (player_id)",
         "CREATE INDEX IF NOT EXISTS idx_pgl_game_date ON player_game_logs (game_date)",
         "CREATE INDEX IF NOT EXISTS idx_pgl_player_date ON player_game_logs (player_id, game_date)",
@@ -1195,6 +1197,7 @@ def initialize_database():
                 ("idx_aap_player", "all_analysis_picks", "(player_name)"),
                 ("idx_aap_stat_type", "all_analysis_picks", "(stat_type)"),
                 ("idx_aap_date_result", "all_analysis_picks", "(pick_date, result)"),
+                ("idx_aap_date_confidence", "all_analysis_picks", "(pick_date, confidence_score DESC)"),
             )
             for idx_name, table, columns in _TRACKING_INDEXES:
                 cursor.execute(

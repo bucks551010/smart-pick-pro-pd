@@ -32,3 +32,8 @@ serverAddress = "localhost"
 # button, main menu) at the server level — before any CSS even loads.
 # The sidebar hamburger on mobile is managed entirely by our own CSS/JS.
 hideTopBar = true
+
+[runner]
+# Disable legacy caching (st.cache) — use only st.cache_data / st.cache_resource.
+# This prevents cache misses from re-running expensive data loads on every rerun.
+legacy_caching = false

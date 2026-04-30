@@ -921,30 +921,15 @@ if _dedup_removed > 0:
 # SECTION: Analysis Runner
 # ============================================================
 
-# ── Auto-trigger: run analysis immediately if props exist but no results ──
-_qam_auto_triggered = False
-if (final_props
-        and not st.session_state.get("analysis_results")
-        and not st.session_state.get("_qam_analysis_requested")
-        and not st.session_state.get("_qam_db_restored")):
-    try:
-        from zoneinfo import ZoneInfo as _ZI_qam
-        import datetime as _dt_qam
-        _qam_today = _dt_qam.datetime.now(_ZI_qam("America/New_York")).date().isoformat()
-    except Exception:
-        import datetime as _dt_qam
-        _qam_today = _dt_qam.date.today().isoformat()
-    if st.session_state.get("_qam_auto_run_date") != _qam_today:
-        st.session_state["_qam_auto_run_date"] = _qam_today
-        st.session_state["_qam_analysis_requested"] = True
-        _qam_auto_triggered = True
+# ── QAM is scheduler-driven: all simulation runs in slate_worker (background). ──
+# No auto-trigger here — the Refresh Picks button reads precomputed results only.
+_qam_auto_triggered = False  # kept for downstream compat; never set True
 
 run_analysis = st.button(
-    "🚀 Run Analysis",
+    "🔄 Refresh Picks",
     type="primary",
-    disabled=(len(final_props) == 0),
-    help=f"Analyze {len(final_props)} props with Quantum Matrix Engine 5.6",
-) or _qam_auto_triggered
+    help="Reload the latest precomputed picks from the scheduler (< 1 s)",
+)
 
 # ── Feature 14: Quick Filter Chips ──────────────────────────────
 # Initialise session-state keys for filter chips (persist across reruns).
@@ -961,404 +946,35 @@ if "qam_sort_key" not in st.session_state:
 st.session_state.setdefault("qam_show_mode", "All picks")
 
 if run_analysis:
-    # Set a flag so that if the user navigates away during analysis
-    # and comes back, the page knows to offer a re-run.
-    st.session_state["_qam_analysis_requested"] = True
-    _analysis_start_time = time.time()
-    # ── Joseph Loading Screen — NBA fun facts while analysis runs ──
+    # ── Read-only refresh: reload precomputed picks from the scheduler DB ──
+    # All simulation runs in slate_worker.py (background scheduler).
+    # This path performs a single DB query — no analysis, no simulation.
+    _prev_results = st.session_state.get("analysis_results") or []
+    _refresh_picks: list = []
     try:
-        from utils.joseph_loading import joseph_loading_placeholder
-        _joseph_loader = joseph_loading_placeholder("Running Quantum Matrix Analysis")
-    except Exception:
-        _joseph_loader = None
-    progress_bar         = st.progress(0, text="Starting analysis...")
-
-    # ── Show Joseph's animated loading screen with NBA fun facts ──
-    try:
-        from utils.joseph_loading import joseph_loading_placeholder
-        _joseph_loading = joseph_loading_placeholder("🔬 Analyzing props — hang tight…")
-    except Exception:
-        _joseph_loading = None
-
-    analysis_results_list = []
-
-    # Clear stale Joseph results so fresh ones are generated after this run.
-    st.session_state.pop("joseph_results", None)
-    st.session_state["joseph_bets_logged"] = False
-
-    try:
-        # ── Filter props to only tonight's teams (with abbreviation aliases) ──
-        # Build expanded playing-teams set that covers all known alias variants
-        # (e.g. "GS" ↔ "GSW", "NY" ↔ "NYK") so team-abbreviation mismatches
-        # don't silently drop valid props.
-        ABBREV_ALIASES = {
-            "GS": "GSW", "GSW": "GS",
-            "NY": "NYK", "NYK": "NY",
-            "NO": "NOP", "NOP": "NO",
-            "SA": "SAS", "SAS": "SA",
-            "UTAH": "UTA", "UTA": "UTAH",
-            "WSH": "WAS", "WAS": "WSH",
-            "BKN": "BRK", "BRK": "BKN",
-            "PHX": "PHO", "PHO": "PHX",
-            "CHA": "CHO", "CHO": "CHA",
-            "NJ": "BKN",
-        }
-
-        # Full team name → abbreviation mapping for platform props that use
-        # full names or nicknames instead of standard 3-letter codes.
-        try:
-            from data.nba_data_service import TEAM_NAME_TO_ABBREVIATION as _TEAM_FULL_MAP
-        except ImportError:
-            _TEAM_FULL_MAP = {}
-
-        # Build reverse lookups: nickname → abbrev
-        _TEAM_NICKNAME_MAP: dict = {}   # e.g. "LAKERS" → "LAL"
-        for _full_name, _abbr in _TEAM_FULL_MAP.items():
-            parts = _full_name.rsplit(" ", 1)
-            if len(parts) == 2:
-                _TEAM_NICKNAME_MAP[parts[1].upper()] = _abbr
-            _TEAM_NICKNAME_MAP[_full_name.upper()] = _abbr
-
-        def _normalize_team_to_abbrev(raw_team: str) -> str:
-            """Convert any team representation to a standard abbreviation.
-
-            Handles: 3-letter codes, full names, nicknames, common aliases.
-            Returns the uppercased team string unchanged if no mapping found.
-            """
-            team_upper = raw_team.upper().strip()
-            if not team_upper:
-                return ""
-            # Already a known abbreviation or alias?
-            if len(team_upper) <= 4:
-                return ABBREV_ALIASES.get(team_upper, team_upper)
-            # Full name or nickname match? (e.g. "Los Angeles Lakers", "Lakers")
-            mapped = _TEAM_NICKNAME_MAP.get(team_upper)
-            if mapped:
-                return mapped
-            # Last word might be nickname (e.g. "LA Lakers" → "Lakers")
-            last_word = team_upper.rsplit(" ", 1)[-1] if " " in team_upper else ""
-            if last_word:
-                mapped = _TEAM_NICKNAME_MAP.get(last_word)
-                if mapped:
-                    return mapped
-            return team_upper
-
-        playing_teams_expanded: set = set()
-        for _g in todays_games:
-            for _abbrev in (
-                _g.get("home_team", "").upper().strip(),
-                _g.get("away_team", "").upper().strip(),
-            ):
-                if not _abbrev:
-                    continue
-                playing_teams_expanded.add(_abbrev)
-                # Add known alias for this abbreviation (if any)
-                _alias = ABBREV_ALIASES.get(_abbrev)
-                if _alias:
-                    playing_teams_expanded.add(_alias)
-        playing_teams_expanded.discard("")
-
-        if playing_teams_expanded:
-            props_to_analyze = [
-                p for p in final_props
-                if (
-                    _normalize_team_to_abbrev(p.get("team", "")) in playing_teams_expanded
-                    or not p.get("team", "").strip()  # include props with no team set
-                )
-            ]
-            skipped_count = len(final_props) - len(props_to_analyze)
-            if skipped_count > 0:
-                st.info(
-                    f"ℹ️ Skipping **{skipped_count}** prop(s) for teams not playing tonight. "
-                    f"Analyzing **{len(props_to_analyze)}** prop(s) for tonight's {len(todays_games)} game(s)."
-                )
-
-            # ── Fallback: if ALL props were filtered out, analyze them all ──
-            # This prevents a dead-end where a team-name format mismatch
-            # between platforms and the games list silently drops every prop.
-            if len(props_to_analyze) == 0 and len(final_props) > 0:
-                st.warning(
-                    f"⚠️ All **{len(final_props)}** props were filtered out by tonight's team list. "
-                    f"This usually means the team names in your props don't match the loaded games. "
-                    f"**Proceeding with all {len(final_props)} props** so your analysis isn't blocked."
-                )
-                props_to_analyze = list(final_props)
-        else:
-            props_to_analyze = list(final_props)  # Fallback: no games loaded
-
-        # ── Also skip confirmed Out/IR players via injury map ────────────
-        # If injury_map_pre is empty (failed to load), do NOT filter — just proceed.
-        # NOTE: "Doubtful" and "Questionable" players are NOT filtered here —
-        # they pass through to full analysis with an injury_status_penalty
-        # applied to the confidence score.  This matches the in-analysis
-        # injury gate which only skips clearly inactive statuses.
-        injury_map_pre = st.session_state.get("injury_status_map", {})
-        _INACTIVE_STATUSES = frozenset({
-            "Out", "Injured Reserve", "Out (No Recent Games)",
-            "Suspended", "Not With Team",
-            "G League - Two-Way", "G League - On Assignment", "G League",
-        })
-        if injury_map_pre:
-            before_inj = len(props_to_analyze)
-            props_to_analyze = [
-                p for p in props_to_analyze
-                if injury_map_pre.get(
-                    p.get("player_name", "").lower().strip(), {}
-                ).get("status", "Active") not in _INACTIVE_STATUSES
-            ]
-            inj_skipped = before_inj - len(props_to_analyze)
-            if inj_skipped > 0:
-                st.info(f"ℹ️ Skipping **{inj_skipped}** prop(s) for confirmed Out/IR players.")
-
-        # ── Filter to selected platforms (from ⚙️ Settings) ──────────────
-        _selected_platforms = st.session_state.get(
-            "selected_platforms", ["PrizePicks", "Underdog Fantasy", "DraftKings Pick6"]
-        )
-        if _selected_platforms:
-            before_plat = len(props_to_analyze)
-            props_to_analyze = [
-                p for p in props_to_analyze
-                if not p.get("platform", "").strip()          # include props with no platform
-                or p.get("platform", "") in _selected_platforms
-            ]
-            plat_skipped = before_plat - len(props_to_analyze)
-            if plat_skipped > 0:
-                st.info(
-                    f"ℹ️ Skipping **{plat_skipped}** prop(s) for platforms not in your "
-                    f"selection ({', '.join(_selected_platforms)}). "
-                    "Change platforms on the ⚙️ Settings page."
-                )
-
-        # ── Show per-platform prop count summary ─────────────────────────
-        if props_to_analyze:
-            _plat_counts = {}
-            for _p in props_to_analyze:
-                _plat = _p.get("platform", "Unknown")
-                _plat_counts[_plat] = _plat_counts.get(_plat, 0) + 1
-            _plat_summary = " · ".join(
-                f"**{_plat}**: {_n}" for _plat, _n in sorted(_plat_counts.items())
-            )
-            st.caption(f"📊 Analyzing: {_plat_summary}")
-
-        total_props_count    = len(props_to_analyze)
-        if total_props_count == 0:
-            st.warning("⚠️ No props remain after filtering to tonight's teams / injury status. Check your games and props.")
-            progress_bar.empty()
-            st.stop()
-
-        # ── Analysis proceeds with all available props (no cap) ────
-
-        # ── Change 7: Parallel data pre-fetching ────────────────────
-        # Pre-fetch player bios in parallel so the main loop doesn't
-        # block on I/O for each unmatched player.  Each prop's
-        # simulation is independent, but the loop body accesses
-        # Streamlit session state (not thread-safe), so we parallelise
-        # the pure-I/O pre-fetch step instead of the whole loop.
-        _prefetched_bios: dict = {}
-        _names_to_prefetch = list({
-            p.get("player_name", "") for p in props_to_analyze
-            if p.get("player_name") and not find_player_by_name(players_data, p.get("player_name", ""))
-        })
-        if _names_to_prefetch:
-            try:
-                from data.player_profile_service import get_player_bio as _get_bio
-                _max_workers = min(_MAX_BIO_PREFETCH_WORKERS, len(_names_to_prefetch))
-                with concurrent.futures.ThreadPoolExecutor(max_workers=_max_workers) as _pool:
-                    _bio_futures = {
-                        _pool.submit(_get_bio, name): name
-                        for name in _names_to_prefetch
-                    }
-                    for _fut in concurrent.futures.as_completed(_bio_futures):
-                        _fname = _bio_futures[_fut]
-                        try:
-                            _prefetched_bios[_fname] = _fut.result()
-                        except Exception:
-                            pass
-            except ImportError:
-                pass  # player_profile_service not available
-
-        # ── Delegate to analysis orchestrator ──────────────────────────
-        # The entire per-prop analysis loop has been extracted to
-        # engine.analysis_orchestrator.analyze_props_batch() — a pure
-        # engine function with no Streamlit dependency.
-        from engine.analysis_orchestrator import analyze_props_batch as _analyze_batch
-
-        _line_snapshots = st.session_state.setdefault("line_snapshots", {})
-
-        def _progress_cb(idx: int, total: int, name: str):
-            progress_bar.progress(
-                (idx + 1) / total,
-                text=f"Analyzing {name}… ({idx + 1}/{total})",
-            )
-
-        analysis_results_list = _analyze_batch(
-            props_to_analyze,
-            players_data=players_data,
-            todays_games=todays_games,
-            injury_map=st.session_state.get("injury_status_map", {}),
-            defensive_ratings_data=defensive_ratings_data,
-            teams_data=teams_data,
-            simulation_depth=simulation_depth,
-            prefetched_bios=_prefetched_bios,
-            advanced_enrichment=st.session_state.get("advanced_enrichment", {}),
-            line_snapshots=_line_snapshots,
-            progress_callback=_progress_cb,
-        )
-
-        # Free working memory used during analysis before rendering results
-        import gc as _gc
-        del players_data, defensive_ratings_data, teams_data, _prefetched_bios
-        _gc.collect()
-        # ── Auto-trigger Smart Update if >20% of players are unmatched ─
-        # Unmatched players use skeleton stats which reduces accuracy.
-        # Loading fresh rosters resolves most mismatches without user action.
-        _unmatched_players = list(dict.fromkeys(
-            r.get("player_name", "")
-            for r in analysis_results_list
-            if not r.get("player_matched", True) and not r.get("player_is_out", False)
-        ))
-        _total_non_out = sum(
-            1 for r in analysis_results_list if not r.get("player_is_out", False)
-        )
-        _unmatched_ratio = len(_unmatched_players) / max(_total_non_out, 1)
-        if (
-            _unmatched_ratio > 0.20
-            and todays_games
-            and not st.session_state.get("_smart_update_attempted")
-        ):
-            # Guard: only attempt the auto-update once per session to
-            # prevent an infinite rerun loop when the fetch always fails
-            # or the mismatch persists after updating.
-            st.session_state["_smart_update_attempted"] = True
-            st.info(
-                f"🔄 **{len(_unmatched_players)} player(s) not found** in local database "
-                f"({_unmatched_ratio*100:.0f}% of props). Triggering Smart Roster Update…"
-            )
-            try:
-                from data.nba_data_service import get_todays_players as _get_today
-                _roster_result = _get_today(todays_games, progress_callback=None)
-                if _roster_result:
-                    try:
-                        load_players_data.clear()  # bust Streamlit's CSV cache
-                    except Exception:
-                        pass
-                    st.success(
-                        f"✅ Smart Roster Update complete — fresh player data loaded "
-                        f"for {len(_unmatched_players)} player(s). Results below use "
-                        f"the best available data."
-                    )
-                    # NOTE: st.rerun() was intentionally REMOVED here.
-                    # The rerun forced the entire ~3000-line page to re-execute,
-                    # which on mobile cascaded into an infinite rerun loop
-                    # (scroll → widget touch → rerun → re-render → scroll → …).
-                    # The current analysis results are already computed and will
-                    # be stored in session_state below.  The updated roster will
-                    # be used automatically on the NEXT analysis run.
-            except Exception as _su_err:
-                # Non-fatal — proceed with existing results
-                _logger.warning(f"Smart Update error (non-fatal): {_su_err}")
-
-        # Sorting and correlation detection handled by analyze_props_batch()
-        _total_analyzed = len(analysis_results_list)
-        _out_results = [r for r in analysis_results_list if r.get("player_is_out", False)]
-        _selected_active = [r for r in analysis_results_list if not r.get("player_is_out", False)]
-
-        # NOTE: analysis_results_list is already sorted (active by composite_win_score
-        # desc, Out at end) via analyze_props_batch(). The sort block that was here
-        # has been removed — it was duplicate work.
-        _logger.info(
-            "QME 5.6 Output: %d analyzed → %d active + %d Out = %d total",
-            _total_analyzed, len(_selected_active), len(_out_results), len(analysis_results_list),
-        )
-
-        st.session_state["analysis_results"] = analysis_results_list
-        st.session_state["analysis_timestamp"] = datetime.datetime.now()
-        # Clear the requested flag — analysis completed successfully.
+        from tracking.database import get_slate_picks_for_today as _qam_refresh_today
+        _raw_refresh = _qam_refresh_today() or []
+        _refresh_picks = [r for r in _raw_refresh if str(r.get("team", "")).strip()]
+    except Exception as _refresh_err:
+        st.error(f"⚠️ Could not load picks from scheduler: {_refresh_err}")
+    if _refresh_picks:
+        st.session_state["analysis_results"] = _refresh_picks
+        st.session_state["_qam_db_restored"] = True
         st.session_state.pop("_qam_analysis_requested", None)
-
-        # ── Persist analysis session to SQLite (survives page refresh/inactivity) ──
-        try:
-            from tracking.database import save_analysis_session as _save_session
-            _qam_new_sid = _save_session(
-                analysis_results=analysis_results_list,
-                todays_games=st.session_state.get("todays_games", []),
-                selected_picks=st.session_state.get("selected_picks", []),
-            )
-            # Session Bridge: write the new session_id into the URL so that
-            # a page refresh or tab-switch recovers exactly this run from DB
-            # instead of defaulting to a fresh analysis.
-            if _qam_new_sid and _qam_new_sid > 0:
-                st.query_params["sid"] = str(_qam_new_sid)
-                # Clear the DB-restored flag — this is now a brand-new run.
-                st.session_state.pop("_qam_db_restored", None)
-        except Exception as _persist_err:
-            pass  # Non-fatal — session state still has results
-        progress_bar.empty()
-        # Dismiss the Joseph loading screen
-        if _joseph_loader is not None:
-            try:
-                _joseph_loader.empty()
-            except Exception:
-                pass
-        _analysis_elapsed = time.time() - _analysis_start_time
-        st.success(
-            f"✅ Analysis complete! Analyzed and displaying **{len(_selected_active)}** picks "
-            f"(+ {len(_out_results)} out) in **{_analysis_elapsed:.1f}s**."
+        st.session_state.pop("_analysis_session_reloaded_at", None)
+        _logger.info("QAM refresh: loaded %d precomputed picks from scheduler.", len(_refresh_picks))
+    else:
+        # No picks yet — restore previous results if any so the page stays populated
+        if _prev_results:
+            st.session_state["analysis_results"] = _prev_results
+        st.info(
+            "⏳ **No picks available yet for today.** "
+            "The scheduler runs a full Quantum analysis automatically every 30 minutes. "
+            "Check back shortly."
         )
 
-        # ── Store ALL picks to all_analysis_picks table ──────────────
-        try:
-            from tracking.database import insert_analysis_picks as _insert_picks
-            _stored = _insert_picks(analysis_results_list)
-            if _stored > 0:
-                _logger.info(f"Stored {_stored} analysis picks to all_analysis_picks table.")
-        except Exception as _store_err:
-            _logger.warning(f"Store analysis picks error (non-fatal): {_store_err}")
-
-        # ── Auto-log all qualifying picks to the Bet Tracker ────────
-        # platform_ai runs FIRST so its source tag isn't blocked by quantum's
-        # dedup (auto_log_analysis_bets loads all today's bets into existing_keys
-        # before logging, so whichever source runs first wins the slot).
-        try:
-            from tracking.bet_tracker import auto_log_platform_ai_bets as _auto_log_pa
-            _pa_logged = _auto_log_pa(analysis_results_list)
-            if _pa_logged > 0:
-                st.info(
-                    f"🤖 Auto-logged **{_pa_logged}** Platform AI pick(s) to the Bet Tracker."
-                )
-        except Exception as _pa_log_err:
-            _logger.warning(f"Platform AI auto-log error (non-fatal): {_pa_log_err}")
-        try:
-            from tracking.bet_tracker import auto_log_analysis_bets as _auto_log
-            _auto_logged = _auto_log(analysis_results_list, minimum_edge=minimum_edge, max_bets=len(analysis_results_list))
-            if _auto_logged > 0:
-                st.info(
-                    f"📊 Auto-logged **{_auto_logged}** qualifying pick(s) to the Bet Tracker."
-                )
-        except Exception as _auto_log_err:
-            # Auto-logging is best-effort — never block the main analysis flow
-            _logger.warning(f"Auto-log error (non-fatal): {_auto_log_err}")
-
-        # NOTE: st.rerun() was removed here.  The results are already
-        # stored in st.session_state["analysis_results"] and will render
-        # naturally when the script continues past the ``if run_analysis:``
-        # block.  The rerun was forcing a double-render which, on mobile,
-        # cascaded into an infinite rerun loop (scroll → widget touch →
-        # rerun → re-render → scroll → …).
-    except Exception as _analysis_err:
-        _err_str = str(_analysis_err)
-        if "WebSocketClosedError" not in _err_str and "StreamClosedError" not in _err_str:
-            st.error(f"❌ Analysis failed: {_analysis_err}")
-    finally:
-        try:
-            progress_bar.empty()
-        except Exception:
-            pass
-        if _joseph_loader is not None:
-            try:
-                _joseph_loader.empty()
-            except Exception:
-                pass
+    # Placeholder list — used by display code below that checks len()
+    analysis_results_list = st.session_state.get("analysis_results", [])
 
 # ============================================================
 # END SECTION: Analysis Runner
@@ -1370,9 +986,9 @@ if (
     and not st.session_state.get("analysis_results")
     and not run_analysis
 ):
-    st.warning(
-        "⚠️ **Analysis was interrupted** (you may have navigated away before it finished). "
-        "Click **🚀 Run Analysis** above to restart."
+    st.info(
+        "⏳ No picks loaded. Click **🔄 Refresh Picks** above to load the latest "
+        "precomputed results from the scheduler."
     )
     st.session_state.pop("_qam_analysis_requested", None)
 

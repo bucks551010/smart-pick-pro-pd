@@ -148,20 +148,50 @@ def run_slate(dry_run: bool = False) -> int:
     error_msg: str | None = None
 
     try:
-        # ── Step 1: Today's games ─────────────────────────────────────────
-        _logger.info("[1] Fetching today's games…")
+        # ── Import all data functions up-front ───────────────────────────
         from data.nba_data_service import get_todays_games, get_todays_players
-        from data.data_manager import load_players_data, load_injury_status
+        from data.data_manager import (
+            load_players_data, load_injury_status,
+            save_platform_props_to_csv, load_defensive_ratings_data, load_teams_data,
+        )
+        from data.platform_fetcher import fetch_all_platform_props
 
-        games = get_todays_games() or []
+        # ── Steps 1 + 3 + 4 in parallel ─────────────────────────────────
+        # games fetch, props API, defensive ratings, and teams data are all
+        # independent I/O.  Running them concurrently cuts ~3-5 s off each
+        # scheduler cycle compared to the old sequential approach.
+        # get_todays_players(games) still runs sequentially after games arrive.
+        import concurrent.futures as _cf_worker
+        _logger.info(
+            "[1+3+4] Parallel fetch: today's games + platform props + ratings + teams…"
+        )
+        with _cf_worker.ThreadPoolExecutor(max_workers=4) as _sw_exe:
+            _fut_games    = _sw_exe.submit(get_todays_games)
+            _fut_props    = _sw_exe.submit(
+                lambda: fetch_all_platform_props(
+                    include_prizepicks=True,
+                    include_underdog=True,
+                    include_draftkings=False,
+                ) or []
+            )
+            _fut_def_rtgs = _sw_exe.submit(load_defensive_ratings_data)
+            _fut_teams    = _sw_exe.submit(load_teams_data)
+            # Collect — each .result() blocks until that future completes
+            games                  = _fut_games.result() or []
+            props                  = _fut_props.result()
+            defensive_ratings_data = _fut_def_rtgs.result()
+            teams_data             = _fut_teams.result()
+
         if not games:
             _logger.warning(
                 "[1] get_todays_games() returned empty for %s — continuing without game "
                 "context (props will still be fetched and analysed).", today_str
             )
         _logger.info("[1] %d games today.", len(games))
+        _logger.info("[3] %d props fetched (parallel).", len(props))
 
         # ── Step 2: Active rosters + injury map ──────────────────────────
+        # These depend on games (for player lookup) so run sequentially after.
         _logger.info("[2] Loading rosters + injury map…")
         players_today = get_todays_players(games)
         # get_todays_players should return a list; guard against bool in case
@@ -200,16 +230,9 @@ def run_slate(dry_run: bool = False) -> int:
             len(_inactive_player_names),
         )
 
-        # ── Step 3: Fetch live props ──────────────────────────────────────
-        _logger.info("[3] Fetching live props (PrizePicks + Underdog)…")
-        from data.platform_fetcher import fetch_all_platform_props
-        from data.data_manager import save_platform_props_to_csv, load_defensive_ratings_data, load_teams_data
-
-        props = fetch_all_platform_props(
-            include_prizepicks=True,
-            include_underdog=True,
-            include_draftkings=False,  # preserve API budget
-        ) or []
+        # ── Step 3: Props fallback + validation (props already fetched in parallel) ──
+        # The parallel group above fetched props. Apply CSV fallback if API returned empty.
+        from data.data_manager import save_platform_props_to_csv
 
         if not props:
             # Fall back to the cached CSV if the live API returned nothing.
@@ -296,10 +319,8 @@ def run_slate(dry_run: bool = False) -> int:
             except Exception as exc:
                 _logger.warning("[3] Props CSV write failed (non-fatal): %s", exc)
 
-        # ── Step 4: Supporting data ───────────────────────────────────────
-        _logger.info("[4] Loading defensive ratings + teams…")
-        defensive_ratings_data = load_defensive_ratings_data()
-        teams_data = load_teams_data()
+        # ── Step 4: Defensive ratings + teams already loaded in parallel ──
+        _logger.info("[4] Defensive ratings + teams ready (loaded in parallel with Step 3).")
 
         # ── Step 5: Run analysis ──────────────────────────────────────────
         _logger.info("[5] Running analyze_props_batch (sim_depth=%d)…", _SIM_DEPTH)
@@ -391,6 +412,25 @@ def run_slate(dry_run: bool = False) -> int:
                 _logger.info("[6b] slate_cache.json warmed (%d picks).", inserted)
             except Exception as exc:
                 _logger.debug("[6b] Cache file warm failed (non-fatal): %s", exc)
+            # Also write analyzed_picks.json — a QAM-friendly cache that carries the
+            # full 40+ field output of analyze_props_batch() so any read path
+            # (DB or file) surfaces rich simulation data without a re-run.
+            try:
+                (_cache_dir / "analyzed_picks.json").write_text(
+                    _json.dumps(
+                        {
+                            "date": today_str,
+                            "written_at": datetime.datetime.utcnow().isoformat() + "Z",
+                            "pick_count": len(results),
+                            "picks": results,
+                        },
+                        default=str,
+                    ),
+                    encoding="utf-8",
+                )
+                _logger.info("[6b] analyzed_picks.json written (%d picks).", len(results))
+            except Exception as exc:
+                _logger.debug("[6b] analyzed_picks.json write failed (non-fatal): %s", exc)
             # Bump data_version so all running Streamlit sessions (home page
             # 60-second poller) detect the fresh slate and auto-refresh.
             try:

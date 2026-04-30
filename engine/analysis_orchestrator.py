@@ -1387,4 +1387,19 @@ def analyze_props_batch(
     MAX_OUTPUT_PICKS = 1000
     active_results = active_results[:MAX_OUTPUT_PICKS]
 
+    # Stamp pick_date on every result so all downstream date guards work
+    # correctly regardless of source (manual run, scheduler, live analysis).
+    # Without this, guards that check pick_date silently skip unverifiable
+    # picks, allowing yesterday's results to persist across the sports-day
+    # boundary when session state is restored. (Audit stale-picks fix)
+    try:
+        from tracking.database import _nba_today_iso as _apb_today
+        _pick_date_stamp = _apb_today()
+        for _r in active_results:
+            _r.setdefault("pick_date", _pick_date_stamp)
+        for _r in out_results:
+            _r.setdefault("pick_date", _pick_date_stamp)
+    except Exception:
+        pass  # Non-fatal — date guards fall back gracefully
+
     return active_results + out_results

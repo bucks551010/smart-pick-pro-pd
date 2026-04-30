@@ -386,13 +386,28 @@ render_joseph_hero_banner()
 # load slate-worker picks with an explicit prior-day pick_date when the SQLite
 # page_state was saved across the midnight boundary.  Clear them here before the
 # session-bridge block at line ~399 so QAM never silently renders yesterday's slate.
+#
+# IMPORTANT: picks without pick_date are also treated as unverifiable-stale
+# UNLESS they were generated during the current QAM init session (_qam_init_date
+# already matches today).  This prevents manual-run results from being cleared
+# mid-session, while still catching stale page-state restores from prior days.
 _qam_restored_ar = st.session_state.get("analysis_results")
 if _qam_restored_ar and isinstance(_qam_restored_ar, list) and _qam_restored_ar:
     try:
         from tracking.database import _nba_today_iso as _qam_today_fn
         _qam_today = _qam_today_fn()
         _qam_first_pd = str(_qam_restored_ar[0].get("pick_date") or "")[:10]
-        if _qam_first_pd and _qam_first_pd < _qam_today:
+        # Clear if:
+        #  a) pick_date is present and from a prior day, OR
+        #  b) pick_date is absent AND this is not a within-session restore
+        #     (i.e. _qam_init_date hasn't been set to today yet, meaning the
+        #      picks came from page_state, not from a current-session analysis run)
+        _qam_already_init_today = st.session_state.get("_qam_init_date") == _qam_today
+        _qam_stale = (
+            (_qam_first_pd and _qam_first_pd < _qam_today)          # explicit prior-day date
+            or (not _qam_first_pd and not _qam_already_init_today)  # no date + not in active session
+        )
+        if _qam_stale:
             for _k in ("analysis_results", "todays_games", "selected_picks"):
                 st.session_state.pop(_k, None)
     except Exception:

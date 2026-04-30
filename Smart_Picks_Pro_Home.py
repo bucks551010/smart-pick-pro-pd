@@ -342,6 +342,29 @@ if not st.session_state.get("_picks_seeded"):
                 st.session_state["analysis_results"] = _home_seed
         except Exception:
             pass
+    # ── Content-based stale guard (Home) ──────────────────────────────────────
+    # Belt-and-suspenders: even if a seeding path above loaded picks, verify
+    # the first pick's pick_date matches today.  Picks without pick_date are
+    # treated as unverifiable when _auto_init_date hasn't been set yet
+    # (i.e. page_state was just restored and this is a brand-new session).
+    # Once _auto_init_date = today is set below, current-session manual-run
+    # results (also lacking pick_date until orchestrator stamps them) are safe.
+    try:
+        from tracking.database import _nba_today_iso as _home_guard_today
+        _home_today = _home_guard_today()
+        _home_ar = st.session_state.get("analysis_results")
+        if _home_ar and isinstance(_home_ar, list) and _home_ar:
+            _home_first_pd = str(_home_ar[0].get("pick_date") or "")[:10]
+            _home_already_init = st.session_state.get("_auto_init_date") == _home_today
+            _home_stale = (
+                (_home_first_pd and _home_first_pd < _home_today)
+                or (not _home_first_pd and not _home_already_init)
+            )
+            if _home_stale:
+                for _hk in ("analysis_results", "todays_games", "selected_picks"):
+                    st.session_state.pop(_hk, None)
+    except Exception:
+        pass
     # Stamp _data_version_seen now so the poller's first registration fire
     # does NOT clear freshly-loaded picks and trigger an unnecessary rerun.
     try:

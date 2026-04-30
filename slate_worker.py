@@ -444,10 +444,10 @@ def run_slate(dry_run: bool = False) -> int:
             try:
                 from tracking.database import _bump_data_version as _slw_bump
                 _slw_bump(today_str)
-                _logger.info("[6c] data_version bumped — running sessions will refresh.")
+                _logger.info("[6d] data_version bumped — running sessions will refresh.")
             except Exception as exc:
-                _logger.debug("[6c] _bump_data_version failed (non-fatal): %s", exc)
-        # Step 6d: Persist the full analysis session to DB so the web
+                _logger.debug("[6d] _bump_data_version failed (non-fatal): %s", exc)
+        # Step 6e: Persist the full analysis session to DB so the web
         # container (separate filesystem) can load todays_games and
         # top picks without needing the local slate_cache.json file.
         # Runs whenever results exist — NOT gated on inserted > 0 — so that
@@ -471,13 +471,13 @@ def run_slate(dry_run: bool = False) -> int:
                 results, todays_games=games, selected_picks=_top_picks
             )
             _logger.info(
-                "[6d] Analysis session saved (id=%s) — %d games, %d top picks.",
+                "[6e] Analysis session saved (id=%s) — %d games, %d top picks.",
                 _session_id, len(games), len(_top_picks),
             )
         except Exception as exc:
-            _logger.debug("[6d] save_analysis_session failed (non-fatal): %s", exc)
+            _logger.debug("[6e] save_analysis_session failed (non-fatal): %s", exc)
 
-        # ── Step 6e: Purge live_entry_bucket rows for inactive players ────
+        # ── Step 6f: Purge live_entry_bucket rows for inactive players ────
         # Now that we know who IS playing today, sweep the bucket and remove
         # any staged picks for players who are not in the active set.  This
         # handles late scratches that happened after a user staged a pick but
@@ -488,11 +488,11 @@ def run_slate(dry_run: bool = False) -> int:
                 _purged = _purge_bucket(_inactive_player_names)
                 if _purged:
                     _logger.info(
-                        "[6e] Purged %d live_entry_bucket rows for inactive players.",
+                        "[6f] Purged %d live_entry_bucket rows for inactive players.",
                         _purged,
                     )
             except Exception as exc:
-                _logger.debug("[6e] live_bucket purge failed (non-fatal): %s", exc)
+                _logger.debug("[6f] live_bucket purge failed (non-fatal): %s", exc)
 
     elif dry_run:
         inserted = len(results)

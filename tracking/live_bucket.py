@@ -181,17 +181,24 @@ def clear_bucket(user_email: str) -> int:
 # Reads
 # ────────────────────────────────────────────────────────────────────
 
-def get_bucket(user_email: str) -> list[dict]:
-    """Return today's picks in this user's bucket, newest first."""
+def get_bucket(user_email: str, game_date: str | None = None) -> list[dict]:
+    """Return the user's staged picks for the given date, newest first.
+
+    Args:
+        user_email: The authenticated user's e-mail address.
+        game_date:  ISO-8601 date string (``"YYYY-MM-DD"``).  Defaults to
+                    today's NBA ET date (see ``_nba_today_iso()``) so that
+                    stale prior-day picks are never surfaced by default.
+    """
     initialize_database()
     email = _norm_email(user_email)
     if not email:
         return []
-    today = _nba_today_iso()
+    target_date = str(game_date).strip() if game_date else _nba_today_iso()
     return _db_read(
         "SELECT * FROM live_entry_bucket WHERE user_email = ? AND game_date = ? "
         "ORDER BY added_at DESC, bucket_id DESC",
-        (email, today),
+        (email, target_date),
     )
 
 
@@ -217,7 +224,11 @@ def bucket_count(user_email: str) -> int:
 
 def pick_to_selected_format(bucket_row: dict) -> dict:
     """Convert a bucket DB row into the dict shape used by
-    `st.session_state["selected_picks"]` and the Entry Builder."""
+    `st.session_state["selected_picks"]` and the Entry Builder.
+
+    ``pick_date`` is explicitly set to today's ET date so the Entry
+    Builder's date-boundary filter never accidentally drops these picks.
+    """
     if not bucket_row:
         return {}
     return {
@@ -236,6 +247,9 @@ def pick_to_selected_format(bucket_row: dict) -> dict:
         "edge_percentage": _coerce_float(bucket_row.get("edge_percentage", 0.0)),
         "bet_type": bucket_row.get("bet_type", "normal"),
         "odds_type": bucket_row.get("odds_type", "standard"),
+        # pick_date must match today's ET date so Entry Builder date filter
+        # never discards bucket-promoted picks (see pages/8_🧬_Entry_Builder.py).
+        "pick_date": bucket_row.get("game_date") or _nba_today_iso(),
         "_from_bucket": True,
         "_bucket_id": bucket_row.get("bucket_id"),
     }

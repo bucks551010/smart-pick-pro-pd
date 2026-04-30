@@ -1703,36 +1703,37 @@ def _render_results_fragment():
             else:
                 st.info("All Gold+ picks already added.")
     with _qb_col3:
-        if st.button(
+        _bucket_btn_clicked = st.button(
             "🪣 Add All Visible to Bucket",
             help="Stage every visible (active, non-avoid) pick into your Live Entry Bucket.",
-        ):
-            if not _qam_user_email:
-                st.warning("Please log in to add picks to your bucket.")
-            else:
-                try:
-                    from tracking.live_bucket import add_to_bucket as _qam_add_bucket
-                    _eligible = [
-                        r for r in displayed_results
-                        if not r.get("player_is_out", False)
-                        and not r.get("should_avoid", False)
-                    ]
-                    _added_b = 0
-                    for _r in _eligible:
-                        _bk = _qam_bucket_key(_r)
-                        if _bk in _qam_bucket_key_set:
-                            continue
-                        _bd = _qam_pick_to_bucket_dict(_r)
-                        if _qam_add_bucket(_qam_user_email, _bd):
-                            _qam_bucket_key_set.add(_bk)
-                            _added_b += 1
-                    if _added_b:
-                        st.toast(f"🪣 Added {_added_b} pick(s) to your bucket.")
-                        st.rerun()
-                    else:
-                        st.info("All visible picks are already in your bucket.")
-                except Exception as _b_exc:
-                    st.error(f"Bucket add failed: {_b_exc}")
+        )
+        if not _qam_user_email:
+            if _bucket_btn_clicked:
+                st.warning("🔐 Please log in to add picks to your bucket.")
+        elif _bucket_btn_clicked:
+            try:
+                from tracking.live_bucket import add_to_bucket as _qam_add_bucket
+                _eligible = [
+                    r for r in displayed_results
+                    if not r.get("player_is_out", False)
+                    and not r.get("should_avoid", False)
+                ]
+                _added_b = 0
+                for _r in _eligible:
+                    _bk = _qam_bucket_key(_r)
+                    if _bk in _qam_bucket_key_set:
+                        continue
+                    _bd = _qam_pick_to_bucket_dict(_r)
+                    if _qam_add_bucket(_qam_user_email, _bd):
+                        _qam_bucket_key_set.add(_bk)
+                        _added_b += 1
+                if _added_b:
+                    st.toast(f"🪣 Added {_added_b} pick(s) to your bucket.")
+                    st.rerun()
+                else:
+                    st.info("All visible picks are already in your bucket.")
+            except Exception as _b_exc:
+                st.error(f"Bucket add failed: {_b_exc}")  # noqa: BLE001
 
     if unmatched_count > 0:
         # Deduplicate: same player may have multiple stat types, each flagged separately.
@@ -2142,9 +2143,14 @@ def _render_results_fragment():
     ]
     if _bucket_eligible:
         st.divider()
+        # Auto-expand when there are few picks so the toggle buttons are
+        # immediately visible (satisfies "no hover required" UX requirement).
+        # Collapse by default for large slates to keep page height manageable.
+        _ba_auto_expand = len(_bucket_eligible) <= 20
         with st.expander(
-            f"🪣 Bucket Actions ({len(_bucket_eligible)} picks) — stage individual picks for the Entry Builder",
-            expanded=False,
+            f"🪣 Bucket Actions ({len(_bucket_eligible)} picks) "
+            f"— add / remove individual picks {'▲' if _ba_auto_expand else '▼'}",
+            expanded=_ba_auto_expand,
         ):
             if not _qam_user_email:
                 st.info("Please log in to stage picks in your Live Entry Bucket.")

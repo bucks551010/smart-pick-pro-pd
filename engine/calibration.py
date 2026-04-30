@@ -43,8 +43,10 @@ STAT_TYPE_CALIBRATION_CAPS = {
     "points":    10.0,   # Well-calibrated — tighter cap
     "rebounds":  12.0,
     "assists":   12.0,
-    "threes":    15.0,   # Highly variable — allow larger correction
-    "steals":    15.0,
+    "threes":    15.0,   # Highly variable — allow larger correction (binary penalty also applied)
+    "fg3m":      15.0,   # alias for threes
+    "steals":    15.0,   # Low-frequency, high-CV — allow larger correction
+    "stl":       15.0,   # alias for steals
     "blocks":    15.0,
     "turnovers": 12.0,
 }

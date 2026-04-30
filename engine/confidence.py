@@ -55,13 +55,13 @@ assert abs(_ALL_WEIGHTS - 1.0) < 1e-9, (
 # so thresholds are set to produce the correct tier distribution for real NBA prop scenarios.
 # Target distribution: Platinum ~top 3%, Gold ~top 12%, Silver ~top 30%, rest Bronze/Avoid.
 PLATINUM_TIER_MINIMUM_SCORE = 84  # Near-perfect conditions (raised from 80 pre-PR)
-GOLD_TIER_MINIMUM_SCORE = 65      # Very strong clear edge (lowered from 69 to increase Gold-tier picks)
-SILVER_TIER_MINIMUM_SCORE = 57    # Solid evidence above average (raised from 50 pre-PR)
-# Anything below 57 = Bronze (lower confidence)
+GOLD_TIER_MINIMUM_SCORE = 68      # Very strong clear edge (restored from 65; 65 let in too many marginal picks)
+SILVER_TIER_MINIMUM_SCORE = 60    # Solid evidence above average (raised from 57; tightened based on audit)
+# Anything below 60 = Bronze (lower confidence)
 
 # Minimum edge gate (W2): picks below these thresholds get auto-demoted
 PLATINUM_MIN_EDGE_PCT = 8.0    # Platinum requires ≥8% edge (lowered from 10%; 12% originally)
-GOLD_MIN_EDGE_PCT = 5.0        # Gold requires ≥5% edge (lowered from 7%; 10% originally)
+GOLD_MIN_EDGE_PCT = 6.0        # Gold requires ≥6% edge (restored from 5%; was 7% originally)
 SILVER_MIN_EDGE_PCT = 3.0      # Silver requires ≥3% edge (lowered from 5%)
 LOW_EDGE_THRESHOLD = 3.0       # Below 3% → add "Low edge" to avoid reasons (lowered from 5%)
 
@@ -100,19 +100,23 @@ BINARY_STAT_CONFIDENCE_MULTIPLIER = 0.75
 
 # Stats treated as binary/near-binary for confidence penalty purposes.
 # These are 0-or-1-per-game stats or derived stats with doubled variance.
+# Also includes threes (3PM/3PA) and steals — both are low-frequency,
+# high-CV events (~28% and 0% win rate in audit; model consistently over-picks them).
 BINARY_STAT_TYPES = {
     "dunks",
     "blocked_shots", "blocked shots",
     "two_pointers_made", "two_pointers_attempted",
     "two pointers made", "two pointers attempted",
     "2pm", "2pa",
+    "threes", "fg3m", "three_pointers_made", "three pointers made",
+    "steals", "stl",
 }
 # Unrealistic Edge Penalty: edges above this threshold are almost certainly
 # projection errors, not real market inefficiencies.  NBA prop edges rarely
-# exceed 20%; anything beyond 25% is overwhelmingly a bad projection that
+# exceed 20%; anything beyond 20% is overwhelmingly a bad projection that
 # would otherwise inflate tier assignments (root cause of Gold/Silver
 # underperforming Bronze in historical backtests).
-UNREALISTIC_EDGE_THRESHOLD     = 25.0  # Edge % above which penalty kicks in
+UNREALISTIC_EDGE_THRESHOLD     = 20.0  # Edge % above which penalty kicks in (lowered from 25% based on audit)
 UNREALISTIC_EDGE_PENALTY_SCALE = 1.5   # Confidence pts deducted per 1% above threshold
 UNREALISTIC_EDGE_PENALTY_MAX   = 15.0  # Maximum penalty for absurdly high edges
 

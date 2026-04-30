@@ -179,6 +179,27 @@ def run_slate(dry_run: bool = False) -> int:
         injury_map = load_injury_status() or {}
         _logger.info("[2] %d players loaded, %d injury entries.", len(players_data), len(injury_map))
 
+        # ── Step 2b: Build inactive-player set ───────────────────────────
+        # Canonical set of player names (lowercase) who must NOT appear in
+        # analysis results, the DB, or the live bucket for today's slate.
+        # Includes any player confirmed out, IR, suspended, G-League, or
+        # Doubtful (≥75% chance of sitting — not worth betting on).
+        _HARD_SKIP_STATUSES_SW = frozenset({
+            "Out", "Injured Reserve", "Out (No Recent Games)",
+            "Suspended", "Not With Team",
+            "G League - Two-Way", "G League - On Assignment", "G League",
+            "Doubtful",
+        })
+        _inactive_player_names: set[str] = {
+            name.lower().strip()
+            for name, info in injury_map.items()
+            if isinstance(info, dict) and info.get("status", "") in _HARD_SKIP_STATUSES_SW
+        }
+        _logger.info(
+            "[2b] %d players marked inactive (will be excluded from props, analysis, and DB).",
+            len(_inactive_player_names),
+        )
+
         # ── Step 3: Fetch live props ──────────────────────────────────────
         _logger.info("[3] Fetching live props (PrizePicks + Underdog)…")
         from data.platform_fetcher import fetch_all_platform_props
@@ -247,6 +268,26 @@ def run_slate(dry_run: bool = False) -> int:
                     sorted(_tonight_teams), _props_before, len(props),
                 )
 
+        # ── Step 3c: Drop props for confirmed-inactive players ───────────
+        # The team filter above catches wrong-team props but NOT wrong-player
+        # props (a player on a playing team who is personally not active).
+        # Cross-check every remaining prop against the inactive set built in
+        # Step 2b so that Out/IR/Suspended/Doubtful/G-League players are
+        # silently dropped here and never reach the analysis engine.
+        if _inactive_player_names:
+            _props_before_3c = len(props)
+            props = [
+                p for p in props
+                if str(p.get("player_name", "") or "").lower().strip()
+                not in _inactive_player_names
+            ]
+            _dropped_3c = _props_before_3c - len(props)
+            if _dropped_3c:
+                _logger.info(
+                    "[3c] Dropped %d props for inactive/out players. Remaining: %d.",
+                    _dropped_3c, len(props),
+                )
+
         # Write props CSV fresh so Prop Scanner page stays current.
         if not dry_run:
             try:
@@ -272,6 +313,7 @@ def run_slate(dry_run: bool = False) -> int:
             defensive_ratings_data=defensive_ratings_data,
             teams_data=teams_data,
             simulation_depth=_SIM_DEPTH,
+            inactive_player_names=_inactive_player_names,
         ) or []
         _logger.info("[5] Analysis complete — %d picks generated.", len(results))
 
@@ -280,16 +322,42 @@ def run_slate(dry_run: bool = False) -> int:
         _logger.exception("[!] Pipeline error: %s", exc)
 
     # ── Step 6: Persist picks ─────────────────────────────────────────────
-    # Extra guard: only persist results for players with a known game opponent.
-    # This catches any non-playing-team props or synthetic game-total entries
-    # that slipped through the step-3b team filter (e.g. props with no team
-    # field set in the platform data).
+    # Golden rule: players not physically playing today must NEVER reach the DB.
+    # We apply three successive filters before any write:
+    #   (a) Drop results where player_is_out=True — these are Out/IR/Doubtful
+    #       players who slipped past Step 3c (e.g. name-normalisation mismatch).
+    #   (b) Drop results with no opponent — non-playing-team / synthetic entries.
+    #   (c) Drop results whose player name is still in the inactive set.
+    if results:
+        _results_before = len(results)
+        # (a) Out players
+        results = [r for r in results if not r.get("player_is_out", False)]
+        _dropped_out = _results_before - len(results)
+        if _dropped_out:
+            _logger.info(
+                "[6] Dropped %d player_is_out=True results before DB write.",
+                _dropped_out,
+            )
     if results and games:
         _results_before = len(results)
+        # (b) No-opponent / synthetic
         results = [r for r in results if r.get("opponent", "")]
         if len(results) < _results_before:
             _logger.info(
                 "[6] Dropped %d no-opponent results (non-playing-team / synthetic). Keeping %d.",
+                _results_before - len(results), len(results),
+            )
+    if results and _inactive_player_names:
+        _results_before = len(results)
+        # (c) Inactive name cross-check (catches normalisation mismatches)
+        results = [
+            r for r in results
+            if str(r.get("player_name", "") or "").lower().strip()
+            not in _inactive_player_names
+        ]
+        if len(results) < _results_before:
+            _logger.info(
+                "[6] Dropped %d results whose player matched the inactive set. Keeping %d.",
                 _results_before - len(results), len(results),
             )
 
@@ -360,6 +428,24 @@ def run_slate(dry_run: bool = False) -> int:
             )
         except Exception as exc:
             _logger.debug("[6d] save_analysis_session failed (non-fatal): %s", exc)
+
+        # ── Step 6e: Purge live_entry_bucket rows for inactive players ────
+        # Now that we know who IS playing today, sweep the bucket and remove
+        # any staged picks for players who are not in the active set.  This
+        # handles late scratches that happened after a user staged a pick but
+        # before the analysis re-ran.
+        if _inactive_player_names:
+            try:
+                from tracking.live_bucket import purge_non_playing_players as _purge_bucket
+                _purged = _purge_bucket(_inactive_player_names)
+                if _purged:
+                    _logger.info(
+                        "[6e] Purged %d live_entry_bucket rows for inactive players.",
+                        _purged,
+                    )
+            except Exception as exc:
+                _logger.debug("[6e] live_bucket purge failed (non-fatal): %s", exc)
+
     elif dry_run:
         inserted = len(results)
         _logger.info("[6] DRY RUN — would persist %d picks (no write).", inserted)

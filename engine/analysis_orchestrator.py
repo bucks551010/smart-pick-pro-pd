@@ -136,10 +136,13 @@ def _get_detect_line_movement():
 
 
 # ── Inactive statuses that skip full analysis ────────────────────────────
+# "Doubtful" is now a hard skip: ~75% chance the player sits — not worth
+# running analysis or persisting a pick that is likely to be voided.
 _INACTIVE_STATUSES = frozenset({
     "Out", "Injured Reserve", "Out (No Recent Games)",
     "Suspended", "Not With Team",
     "G League - Two-Way", "G League - On Assignment", "G League",
+    "Doubtful",
 })
 
 # Injury penalty constants
@@ -1237,6 +1240,7 @@ def analyze_props_batch(
     advanced_enrichment: dict | None = None,
     line_snapshots: dict | None = None,
     progress_callback: Callable[[int, int, str], None] | None = None,
+    inactive_player_names: set[str] | None = None,
 ) -> list[dict]:
     """Analyze a batch of props and return a list of result dicts.
 
@@ -1281,13 +1285,33 @@ def analyze_props_batch(
     results: list[dict] = []
     total = len(props)
 
-    # ── Pre-filter: drop non-standard odds types (demon/goblin) ──
+    # ── Pre-filter 1: drop non-standard odds types (demon/goblin) ──
     # These are PrizePicks alternate lines with different payouts
     # that should not be analyzed as standard bettable picks.
     props = [
         p for p in props
         if str(p.get("odds_type", "standard")).lower() in ("standard", "")
     ]
+
+    # ── Pre-filter 2: drop props for known-inactive players ────────────
+    # Mirrors the same gate in slate_worker Step 3c.  When the caller
+    # passes inactive_player_names (a lowercase set of confirmed-out
+    # player names), we silently drop their props before analysis so
+    # no result dict — not even player_is_out=True — is ever created
+    # for them.  This prevents them from surfacing in any cached output.
+    if inactive_player_names:
+        _before_inactive = len(props)
+        props = [
+            p for p in props
+            if str(p.get("player_name", "") or "").lower().strip()
+            not in inactive_player_names
+        ]
+        if len(props) < _before_inactive:
+            _logger.debug(
+                "analyze_props_batch: dropped %d props for inactive players.",
+                _before_inactive - len(props),
+            )
+
     total = len(props)
 
     for idx, prop in enumerate(props):
@@ -1324,7 +1348,11 @@ def analyze_props_batch(
         if idx < len(results):
             results[idx]["_correlation_warning"] = warning
 
-    # Sort: active by composite_win_score desc, Out players at end
+    # ── Post-filter: remove any residual player_is_out=True results ─────
+    # The injury gate in analyze_single_prop flags Out/IR/Doubtful/etc.
+    # with player_is_out=True.  We collect them in out_results for QAM
+    # UI display ("this player is out") but they must NEVER be returned
+    # in the active sorted list that callers persist to the DB or cache.
     out_results = [r for r in results if r.get("player_is_out", False)]
     active_results = [r for r in results if not r.get("player_is_out", False)]
     active_results.sort(key=lambda r: r.get("composite_win_score", 0), reverse=True)

@@ -1231,45 +1231,70 @@ if _stored_entries:
             if st.button(f"📋 Log Entry #{entry_rank}", key=f"log_entry_{entry_rank}"):
                 try:
                     from tracking.database import insert_bet as _insert_bet_eb
+                    # ── Pre-lock validation: block picks for players not playing today ──
+                    _eb_blocked: list[str] = []
                     try:
-                        from utils.user_session import get_current_user_email as _get_ue
-                        _ue = _get_ue()
+                        from data.data_manager import get_player_status as _gps_eb, load_injury_status as _lis_eb
+                        _eb_inj_map = _lis_eb()
+                        _EB_HARD_SKIP = frozenset({
+                            "Out", "Injured Reserve", "Out (No Recent Games)",
+                            "Suspended", "Not With Team",
+                            "G League - Two-Way", "G League - On Assignment", "G League",
+                            "Doubtful",
+                        })
+                        _eb_blocked = [
+                            _lp.get("player_name", "?")
+                            for _lp in picks
+                            if _gps_eb(_lp.get("player_name", ""), _eb_inj_map).get("status", "Active")
+                            in _EB_HARD_SKIP
+                        ]
                     except Exception:
-                        _ue = ""
-                    _today_str = _dt.date.today().isoformat()
-                    _logged_count = 0
-                    for _lp in picks:
-                        _bet_data = {
-                            "bet_date": _today_str,
-                            "player_name": _lp.get("player_name", ""),
-                            "team": _lp.get("player_team", _lp.get("team", "")),
-                            "stat_type": _lp.get("stat_type", ""),
-                            "prop_line": float(_lp.get("line", 0)),
-                            "direction": _lp.get("direction", "OVER"),
-                            "platform": selected_platform,
-                            "confidence_score": float(_lp.get("confidence_score", 0)),
-                            "probability_over": float(_lp.get("probability_over", 0.5)),
-                            "edge_percentage": float(_lp.get("edge_percentage", 0)),
-                            "tier": _lp.get("tier", "Bronze"),
-                            "entry_type": "parlay",
-                            "entry_fee": float(entry_fee),
-                            "notes": f"Entry #{entry_rank} ({entry_size}-pick, EV: {ev_label})",
-                            "auto_logged": 1,
-                            "user_email": _ue,
-                        }
-                        _row_id = _insert_bet_eb(_bet_data)
-                        if _row_id:
-                            _logged_count += 1
-                    if _logged_count:
-                        st.markdown(
-                            f'<div class="eb-success-banner">'
-                            f'<div class="eb-success-icon">✅</div>'
-                            f'<div class="eb-success-text">Logged <strong>{_logged_count} leg(s)</strong> from Entry #{entry_rank} to Bet Tracker!</div>'
-                            f'</div>',
-                            unsafe_allow_html=True,
+                        pass
+                    if _eb_blocked:
+                        st.error(
+                            f"🚨 Cannot lock — the following player(s) are not playing today: "
+                            f"{', '.join(_eb_blocked)}. Remove them from your entry first."
                         )
                     else:
-                        st.error("Failed to log entry. Check database connection.")
+                        try:
+                            from utils.user_session import get_current_user_email as _get_ue
+                            _ue = _get_ue()
+                        except Exception:
+                            _ue = ""
+                        _today_str = _dt.date.today().isoformat()
+                        _logged_count = 0
+                        for _lp in picks:
+                            _bet_data = {
+                                "bet_date": _today_str,
+                                "player_name": _lp.get("player_name", ""),
+                                "team": _lp.get("player_team", _lp.get("team", "")),
+                                "stat_type": _lp.get("stat_type", ""),
+                                "prop_line": float(_lp.get("line", 0)),
+                                "direction": _lp.get("direction", "OVER"),
+                                "platform": selected_platform,
+                                "confidence_score": float(_lp.get("confidence_score", 0)),
+                                "probability_over": float(_lp.get("probability_over", 0.5)),
+                                "edge_percentage": float(_lp.get("edge_percentage", 0)),
+                                "tier": _lp.get("tier", "Bronze"),
+                                "entry_type": "parlay",
+                                "entry_fee": float(entry_fee),
+                                "notes": f"Entry #{entry_rank} ({entry_size}-pick, EV: {ev_label})",
+                                "auto_logged": 1,
+                                "user_email": _ue,
+                            }
+                            _row_id = _insert_bet_eb(_bet_data)
+                            if _row_id:
+                                _logged_count += 1
+                        if _logged_count:
+                            st.markdown(
+                                f'<div class="eb-success-banner">'
+                                f'<div class="eb-success-icon">✅</div>'
+                                f'<div class="eb-success-text">Logged <strong>{_logged_count} leg(s)</strong> from Entry #{entry_rank} to Bet Tracker!</div>'
+                                f'</div>',
+                                unsafe_allow_html=True,
+                            )
+                        else:
+                            st.error("Failed to log entry. Check database connection.")
                 except Exception as _log_exc:
                     st.error(f"Error logging entry: {_log_exc}")
         with _action_col2:
@@ -1350,6 +1375,30 @@ if _stored_entries:
             _ev_result = _entry.get("ev_result", {})
             _ev_net = _ev_result.get("net_expected_value", 0.0)
             _picks = _entry.get("picks", [])
+
+            # ── Golden-rule guard: skip any entry whose players aren't playing today ──
+            try:
+                from data.data_manager import get_player_status as _gps_autolog, load_injury_status as _lis_autolog
+                _autolog_injury_map = _lis_autolog()
+                _AUTOLOG_SKIP = frozenset({
+                    "Out", "Injured Reserve", "Out (No Recent Games)",
+                    "Suspended", "Not With Team",
+                    "G League - Two-Way", "G League - On Assignment", "G League",
+                    "Doubtful",
+                })
+                _has_inactive = any(
+                    _gps_autolog(_p.get("player_name", ""), _autolog_injury_map).get("status", "Active")
+                    in _AUTOLOG_SKIP
+                    for _p in _picks
+                )
+            except Exception:
+                _has_inactive = False
+
+            if _has_inactive:
+                logging.getLogger(__name__).warning(
+                    "[EntryBuilder] Auto-log skipped: entry contains inactive player."
+                )
+                continue
 
             _entry_id = _eb_insert_entry({
                 "entry_date": _today_str,

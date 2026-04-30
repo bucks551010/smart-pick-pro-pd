@@ -164,6 +164,16 @@ def _count(table: str) -> int:
         return -1
 
 
+def _load_today_picks() -> int:
+    """Trigger the scheduler's full analysis pipeline for today and return picks inserted."""
+    try:
+        from etl.scheduler import _run_auto_analysis
+        return _run_auto_analysis(_TODAY, force=True)
+    except Exception as _ltp_err:
+        st.error(f"Analysis pipeline error: {_ltp_err}")
+        return -1
+
+
 def _run_write(sql: str, params=(), caller: str = "dbm", bump: bool = True) -> bool:
     """Execute a write, clear Streamlit cache, bump data_version, show toast."""
     try:
@@ -404,6 +414,25 @@ with _TAB_QA:
             if _run_write("DELETE FROM all_analysis_picks", caller="qa_nuke_picks"):
                 st.toast("⛔ All analysis picks deleted", icon="✅")
 
+    # ── Load Today's Picks (full row) ──────────────────────────────────────
+    _qlb = st.columns([3, 1])
+    with _qlb[0]:
+        st.caption(
+            "Fetch live props → run full Quantum analysis → store results for today. "
+            "Use this after clearing picks or any time you want a fresh run outside the scheduler window."
+        )
+    with _qlb[1]:
+        if st.button("🔄 Load Today's Picks", key="qa_load_today_picks", type="primary", use_container_width=True):
+            with st.spinner("Running full analysis pipeline — fetching props, simulating, storing picks…"):
+                _ltp_n = _load_today_picks()
+            if _ltp_n > 0:
+                st.cache_data.clear()
+                st.toast(f"✅ {_ltp_n} picks loaded for {_TODAY} — open QAM to view", icon="✅")
+                st.rerun()
+            elif _ltp_n == 0:
+                st.warning("Analysis ran but returned 0 picks — no props available or outside game window.")
+            # -1 means error already shown by _load_today_picks()
+
     st.markdown("</div>", unsafe_allow_html=True)
 
     # ── Surgical Pick Delete ───────────────────────────────────────────────
@@ -542,6 +571,22 @@ with _TAB_QA:
             st.info("Nothing to delete.")
         else:
             st.caption("Set a filter to enable deletion.")
+
+    # ── Reload after delete ───────────────────────────────────────────────
+    st.divider()
+    _sd_reload_cols = st.columns([3, 1])
+    with _sd_reload_cols[0]:
+        st.caption("After deleting picks, click here to immediately re-run the full analysis pipeline and reload today's picks.")
+    with _sd_reload_cols[1]:
+        if st.button("🔄 Load Today's Picks", key="sd_reload_picks", type="primary", use_container_width=True):
+            with st.spinner("Re-running full analysis…"):
+                _sd_reload_n = _load_today_picks()
+            if _sd_reload_n > 0:
+                st.cache_data.clear()
+                st.toast(f"✅ {_sd_reload_n} picks loaded for {_TODAY}", icon="✅")
+                st.rerun()
+            elif _sd_reload_n == 0:
+                st.warning("0 picks returned — no props available or outside game window.")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -788,6 +833,21 @@ with _TAB_BETS:
 with _TAB_PICKS:
     st.markdown("<div class='sec-hdr'>🎯 Analysis Picks Editor</div>", unsafe_allow_html=True)
     st.caption("Edit QAM analysis picks inline. Mark results, fix lines, or remove rows. All saves bump data_version.")
+
+    # ── Load Today's Picks trigger ────────────────────────────────────────
+    _pet_cols = st.columns([4, 1])
+    with _pet_cols[1]:
+        if st.button("🔄 Load Today's Picks", key="picks_tab_load", type="primary", use_container_width=True):
+            with st.spinner("Fetching props & running full analysis…"):
+                _pet_n = _load_today_picks()
+            if _pet_n > 0:
+                st.cache_data.clear()
+                st.toast(f"✅ {_pet_n} picks loaded for {_TODAY}", icon="✅")
+                st.rerun()
+            elif _pet_n == 0:
+                st.warning("0 picks returned — no props available or outside game window.")
+
+    st.divider()
 
     _pf = st.columns([2, 2, 2])
     _pick_date_str = str(_pf[0].date_input("Date", value=datetime.date.today(), key="picks_date_f"))

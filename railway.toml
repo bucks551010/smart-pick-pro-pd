@@ -9,6 +9,19 @@ restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 # redeploy trigger: 2026-04-28
 
+# ── EON CLEANUP CRON (Audit A-007) ──────────────────────────────────────────
+# Runs the end-of-night bet/pick resolution + cache reset at 3 AM ET (7 UTC)
+# every night. This fires *outside* the Streamlit process so a pod restart or
+# redeploy during the 2-8 AM ET window no longer skips the nightly cleanup.
+#
+# Railway cron services: in your Railway project add a Cron service pointing
+# at the same repo with start command:  python -m etl.eon_cleanup
+# and schedule: 0 7 * * *  (07:00 UTC = 03:00 AM ET)
+#
+# The script is idempotent — if re-run it checks kv_meta.last_eon_cleanup_date
+# and skips if the cleanup has already been done for today's sports date.
+# ─────────────────────────────────────────────────────────────────────────────
+
 # ──────────────────────────────────────────────────────────────
 # WORKER SERVICE
 # The slate_worker daemon runs the full picks pipeline every 30 min

@@ -24,6 +24,14 @@ import datetime
 import os
 import logging
 from pathlib import Path
+from datetime import timezone as _tz
+
+
+def _utcnow_iso() -> str:
+    """Return the current UTC datetime as an ISO-8601 string with Z suffix.
+    Replaces naive datetime.now().isoformat() calls throughout this module
+    so CLV timestamps are unambiguous regardless of server timezone. (A-022)"""
+    return datetime.datetime.now(_tz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 # ============================================================
@@ -71,7 +79,7 @@ def store_opening_line(
     Returns:
         str: Record ID (player_stat_timestamp) for use in update_closing_line()
     """
-    record_id = f"{player_name.lower().replace(' ', '_')}_{stat_type}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    record_id = f"{player_name.lower().replace(' ', '_')}_{stat_type}_{datetime.datetime.now(_tz.utc).strftime('%Y%m%d_%H%M%S')}"
 
     record = {
         "record_id":        record_id,
@@ -83,7 +91,7 @@ def store_opening_line(
         "confidence_score": confidence_score,
         "tier":             tier,
         "edge_percentage":  edge_percentage,
-        "opening_timestamp": datetime.datetime.now().isoformat(),
+        "opening_timestamp": _utcnow_iso(),
         "closing_line":     None,
         "closing_timestamp": None,
         "clv":              None,
@@ -132,7 +140,7 @@ def update_closing_line(record_id, closing_line):
         clv = opening - closing_line
 
     record["closing_line"] = closing_line
-    record["closing_timestamp"] = datetime.datetime.now().isoformat()
+    record["closing_timestamp"] = _utcnow_iso()
     record["clv"] = round(clv, 2)
     record["clv_direction"] = "positive" if clv > 0 else "negative" if clv < 0 else "neutral"
 
@@ -173,7 +181,7 @@ def get_clv_summary(days=90, min_records=5):
             }
 
         # Filter to recent records
-        cutoff = datetime.datetime.now() - datetime.timedelta(days=days)
+        cutoff = datetime.datetime.now(_tz.utc).replace(tzinfo=None) - datetime.timedelta(days=days)
         recent = [
             r for r in records.values()
             if r.get("closing_line") is not None
@@ -315,7 +323,7 @@ def validate_model_edge(days=90):
             return empty_result
 
         # Filter to recent records that have a closing line
-        cutoff = datetime.datetime.now() - datetime.timedelta(days=days)
+        cutoff = datetime.datetime.now(_tz.utc).replace(tzinfo=None) - datetime.timedelta(days=days)
         recent = [
             r for r in records.values()
             if r.get("closing_line") is not None
@@ -493,7 +501,7 @@ def get_tier_accuracy_report(days=90):
             return empty_result
 
         # Filter to recent records that have a closing line
-        cutoff = datetime.datetime.now() - datetime.timedelta(days=days)
+        cutoff = datetime.datetime.now(_tz.utc).replace(tzinfo=None) - datetime.timedelta(days=days)
         recent = [
             r for r in records.values()
             if r.get("closing_line") is not None

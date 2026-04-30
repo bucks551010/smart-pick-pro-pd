@@ -4155,8 +4155,9 @@ def load_latest_analysis_session():
                 continue
 
         # Today's sessions always win over prior-day sessions regardless of prop_count.
-        # This prevents a high-prop yesterday session from blocking today's picks.
-        _best_row = _best_today if _best_today is not None else _best_fallback
+        # Prior-day sessions are intentionally NOT returned as a fallback — callers
+        # should show an empty state rather than display yesterday's games/players.
+        _best_row = _best_today
 
         if _best_row is None:
             return None

@@ -304,18 +304,28 @@ if not st.session_state.get("_picks_seeded"):
     # the shared DB is the only cross-container-safe path.
     if not st.session_state.get("todays_games"):
         try:
-            from tracking.database import load_latest_analysis_session as _llas
+            from tracking.database import load_latest_analysis_session as _llas, _nba_today_iso as _llas_today
             _latest_sess = _llas()
-            if _latest_sess and _latest_sess.get("todays_games"):
-                st.session_state["todays_games"] = _latest_sess["todays_games"]
-            # Also seed analysis_results from the rich session blob if the
-            # flat-pick fallback left it empty.
-            if (
-                not st.session_state.get("analysis_results")
-                and _latest_sess
-                and _latest_sess.get("analysis_results")
-            ):
-                st.session_state["analysis_results"] = _latest_sess["analysis_results"]
+            _llas_today_str = _llas_today()
+            # Only use games/results from today's session — never from a prior-day session.
+            _llas_date = (_latest_sess.get("analysis_date") or "")[:10] if _latest_sess else ""
+            _llas_is_today = bool(_llas_date and _llas_date == _llas_today_str)
+            if not _llas_is_today and _latest_sess:
+                # Check pick_date inside the results as a secondary guard
+                _llas_ar = _latest_sess.get("analysis_results") or []
+                if _llas_ar and isinstance(_llas_ar, list):
+                    _llas_pick_date = str(_llas_ar[0].get("pick_date") or "")[:10]
+                    _llas_is_today = bool(_llas_pick_date and _llas_pick_date == _llas_today_str)
+            if _latest_sess and _llas_is_today:
+                if _latest_sess.get("todays_games"):
+                    st.session_state["todays_games"] = _latest_sess["todays_games"]
+                # Also seed analysis_results from the rich session blob if the
+                # flat-pick fallback left it empty.
+                if (
+                    not st.session_state.get("analysis_results")
+                    and _latest_sess.get("analysis_results")
+                ):
+                    st.session_state["analysis_results"] = _latest_sess["analysis_results"]
         except Exception:
             pass
     # Final safety net: if analysis_results is STILL empty (e.g. fresh

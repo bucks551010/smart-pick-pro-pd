@@ -22,13 +22,11 @@ except ImportError:
     import logging
     _logger = logging.getLogger(__name__)
 
-# ── Auth gate ─────────────────────────────────────────────────
+# ── Auth gate import (call deferred until after st.set_page_config) ──────────
 try:
     from utils.auth_gate import require_login as _require_login
-    if not _require_login():
-        st.stop()
 except ImportError:
-    pass
+    _require_login = None
 
 # Import our engine modules
 from engine.simulation import (
@@ -279,6 +277,10 @@ st.set_page_config(
     page_icon="⚡",
     layout="wide",
 )
+
+# ── Auth gate (must come after set_page_config) ──────────────────────
+if _require_login is not None and not _require_login():
+    st.stop()
 
 # Inject global CSS + QDS CSS
 st.markdown(get_global_css(), unsafe_allow_html=True)

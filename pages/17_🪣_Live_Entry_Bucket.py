@@ -170,12 +170,17 @@ with _act_c4:
 # ── "Lock as personal bets" handler ──────────────────────────────
 if _lock_now:
     try:
-        from tracking.database import insert_bet, insert_entry, link_bets_to_entry
+        from tracking.database import insert_bet, insert_entry, link_bets_to_entry, _nba_today_iso as _leb_today_fn
     except Exception as _imp_err:
         st.error(f"Database module unavailable: {_imp_err}")
         st.stop()
 
-    _today = _dt.date.today().isoformat()
+    # ET-anchored date so Railway UTC server doesn't tag 8 PM-midnight ET
+    # bet_lock writes as tomorrow.
+    try:
+        _today = _leb_today_fn()
+    except Exception:
+        _today = _dt.date.today().isoformat()
     _bet_ids: list[int] = []
     _failed = 0
 

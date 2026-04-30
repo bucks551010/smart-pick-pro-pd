@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # FILE: Smart_Picks_Pro_Home.py
 # PURPOSE: Main entry point for the SmartBetPro NBA Streamlit app.
 #          Professional dark-themed landing page that sells outcomes,
@@ -13,7 +13,7 @@ import os
 import base64
 import logging
 
-# ─── Load .env into os.environ early (before any env var reads) ───
+# â”€â”€â”€ Load .env into os.environ early (before any env var reads) â”€â”€â”€
 try:
     from dotenv import load_dotenv as _load_dotenv
     from pathlib import Path as _DotenvPath
@@ -47,17 +47,17 @@ st.set_page_config(
     initial_sidebar_state="auto",
 )
 
-# ─── Sidebar logo ──────────────────────────────────────────────────────────
+# â”€â”€â”€ Sidebar logo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 try:
     st.logo("assets/Smart_Pick_Pro_Logo.png", link="https://smartpickpro.ai")
 except Exception:
-    pass  # st.logo available in Streamlit ≥1.31; silently skip on older builds
+    pass  # st.logo available in Streamlit â‰¥1.31; silently skip on older builds
 
-# ─── Theme CSS — injected BEFORE login gate to prevent white flash ────────
+# â”€â”€â”€ Theme CSS â€” injected BEFORE login gate to prevent white flash â”€â”€â”€â”€â”€â”€â”€â”€
 from utils.page_bootstrap import inject_theme_css, init_session_state
 inject_theme_css()
 
-# ─── Global exception safety net ────────────────────────────────────────────
+# â”€â”€â”€ Global exception safety net â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Streamlit's script runner catches *most* exceptions and shows a native
 # traceback widget.  This hook fires for exceptions that leak past that layer
 # (e.g. during module-level imports, thread callbacks, etc.).  It:
@@ -80,7 +80,7 @@ def _smartai_excepthook(exc_type, exc_value, exc_tb):
         pass
     try:
         st.error(
-            "⚠️ **An unexpected error occurred.** Our team has been notified. "
+            "âš ï¸ **An unexpected error occurred.** Our team has been notified. "
             "Please refresh the page or navigate to another section."
         )
     except Exception:
@@ -88,7 +88,7 @@ def _smartai_excepthook(exc_type, exc_value, exc_tb):
 
 _sys.excepthook = _smartai_excepthook
 
-# ─── Verify DB volume is persistent (log once per session) ───
+# â”€â”€â”€ Verify DB volume is persistent (log once per session) â”€â”€â”€
 if not st.session_state.get("_db_volume_checked"):
     import logging as _logging, os as _os
     _db_logger = _logging.getLogger("smartai.startup")
@@ -102,40 +102,40 @@ if not st.session_state.get("_db_volume_checked"):
     )
     if _db_dir and not _os.path.ismount(_db_dir):
         _db_logger.warning(
-            "DB_DIR=%s is NOT a mount point — user data will be lost on container restart. "
+            "DB_DIR=%s is NOT a mount point â€” user data will be lost on container restart. "
             "Create a Railway volume named 'smartai_data' mounted at /data.",
             _db_dir,
         )
     st.session_state["_db_volume_checked"] = True
 
-# ─── Seed admin account from env vars (idempotent) ────────────
+# â”€â”€â”€ Seed admin account from env vars (idempotent) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 try:
     from utils.auth_gate import seed_admin_account as _seed_admin
     _seed_admin()
 except Exception:
     pass
 
-# ─── Login / Signup Gate — must be before ANY content ─────────
+# â”€â”€â”€ Login / Signup Gate â€” must be before ANY content â”€â”€â”€â”€â”€â”€â”€â”€â”€
 from utils.auth_gate import require_login as _require_login
 if not _require_login():
     st.stop()
 
-# ─── State hydration barrier — guarantee all shared keys exist ─
+# â”€â”€â”€ State hydration barrier â€” guarantee all shared keys exist â”€
 init_session_state()
 
-# ─── Analytics: GA4 injection + server-side page view ─────────
+# â”€â”€â”€ Analytics: GA4 injection + server-side page view â”€â”€â”€â”€â”€â”€â”€â”€â”€
 from utils.analytics import inject_ga4, track_page_view
 inject_ga4()
 track_page_view("Home")
 
-# ─── SEO: Meta tags, OG, JSON-LD, canonical ──────────────────
+# â”€â”€â”€ SEO: Meta tags, OG, JSON-LD, canonical â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 from utils.seo import inject_page_seo
 inject_page_seo("Home")
 
-# ─── Background ETL staleness guard (once per session) ────────
+# â”€â”€â”€ Background ETL staleness guard (once per session) â”€â”€â”€â”€â”€â”€â”€â”€
 # If the ETL database is more than 1 day stale, kick off an
 # incremental update in a background thread so users always
-# see fresh data — without blocking the UI.
+# see fresh data â€” without blocking the UI.
 if not st.session_state.get("_etl_staleness_checked"):
     st.session_state["_etl_staleness_checked"] = True
     try:
@@ -160,20 +160,20 @@ if not st.session_state.get("_etl_staleness_checked"):
                         pass  # non-critical background task
                 _thr.Thread(target=_bg_etl_refresh, daemon=True).start()
                 logging.getLogger(__name__).info(
-                    "ETL staleness guard: DB last_date=%s — background refresh started.", _last
+                    "ETL staleness guard: DB last_date=%s â€” background refresh started.", _last
                 )
     except Exception:
         pass  # never block the UI for a staleness check
 
-# ─── Recurring ETL scheduler (daemon thread, runs once per process) ───
+# â”€â”€â”€ Recurring ETL scheduler (daemon thread, runs once per process) â”€â”€â”€
 try:
     from etl.scheduler import start as _start_etl_scheduler
     _start_etl_scheduler()
 except Exception:
-    pass  # non-critical — staleness guard above is the safety net
+    pass  # non-critical â€” staleness guard above is the safety net
 
-# ─── Data-version check: clear stale session cache when new picks are ready ───
-# Reads the data_version from the DB (cross-container safe — works when GitHub
+# â”€â”€â”€ Data-version check: clear stale session cache when new picks are ready â”€â”€â”€
+# Reads the data_version from the DB (cross-container safe â€” works when GitHub
 # Actions CI writes picks to PostgreSQL from outside the Streamlit container).
 # Falls back to cache/data_version.json for local/in-process scheduler writes.
 try:
@@ -181,7 +181,7 @@ try:
     _new_ver = _get_data_version()
     _seen_ver = st.session_state.get("_data_version_seen", 0)
     if _new_ver > _seen_ver:
-        # New data detected — clear stale session state AND the shared
+        # New data detected â€” clear stale session state AND the shared
         # @st.cache_data cache so the DB is re-queried immediately.
         st.session_state["_data_version_seen"] = _new_ver
         st.session_state.pop("_picks_seeded", None)
@@ -198,28 +198,28 @@ try:
 except Exception:
     pass
 
-# ─── Auto-seed picks & props into session on first load ───────
+# â”€â”€â”€ Auto-seed picks & props into session on first load â”€â”€â”€â”€â”€â”€â”€
 # Reads ONLY from the database (pre-populated by slate_worker.py).
-# Never calls external APIs or runs analysis — instant for the user.
+# Never calls external APIs or runs analysis â€” instant for the user.
 @st.cache_data(ttl=300, show_spinner=False)
 def _load_cached_slate() -> tuple[list, list]:
     """Read today's pre-computed picks + props from DB (or warm file cache).
 
     Wrapped in @st.cache_data(ttl=300) so concurrent logins share a single
-    read for up to 5 minutes — eliminates redundant DB hits on every page load.
+    read for up to 5 minutes â€” eliminates redundant DB hits on every page load.
 
-    Phase 4 — Cache Warming: checks ``cache/slate_cache.json`` first.
+    Phase 4 â€” Cache Warming: checks ``cache/slate_cache.json`` first.
     ``slate_worker.py`` writes that file after each successful run so the
     first Streamlit user gets a sub-millisecond file read instead of a DB
     query, eliminating cold-start latency.
 
     NOTE: The get_todays_games() team-filter was deliberately removed from
-    this path — it fired a live NBA API call on every user login, adding
+    this path â€” it fired a live NBA API call on every user login, adding
     2-5 s of latency even when the cache was warm, and wiped all picks when
     the schedule API was slow.  Date-stamping in slate_worker is the guard.
 
     Returns:
-        (picks, props) — both may be empty lists if the worker hasn't run
+        (picks, props) â€” both may be empty lists if the worker hasn't run
         yet for today.
     """
     import json as _json
@@ -227,7 +227,7 @@ def _load_cached_slate() -> tuple[list, list]:
 
     picks: list = []
 
-    # ── Fast-path: slate_cache.json written by slate_worker ────────────────
+    # â”€â”€ Fast-path: slate_cache.json written by slate_worker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     _eon_cleared_today = False
     _cache_file = _Path(__file__).resolve().parent / "cache" / "slate_cache.json"
     if _cache_file.exists():
@@ -236,16 +236,16 @@ def _load_cached_slate() -> tuple[list, list]:
             from tracking.database import _nba_today_iso as _today
             _cache_date_matches = _blob.get("date") == _today()
             if _cache_date_matches and _blob.get("_eon_cleared"):
-                # EON cleanup has run for today — skip DB fallback too so
+                # EON cleanup has run for today â€” skip DB fallback too so
                 # yesterday's DB rows don't leak back to the home page
-                # during the 2–4 AM ET window (before the sports-day rolls over).
+                # during the 2â€“4 AM ET window (before the sports-day rolls over).
                 _eon_cleared_today = True
             elif _cache_date_matches and not _blob.get("_eon_cleared"):
                 picks = _blob.get("picks") or []
         except Exception:
             picks = []
 
-    # ── DB fallback — skipped when EON has already cleared today's slate ────
+    # â”€â”€ DB fallback â€” skipped when EON has already cleared today's slate â”€â”€â”€â”€
     if not picks and not _eon_cleared_today:
         from tracking.database import get_slate_picks_for_today
         picks = get_slate_picks_for_today()
@@ -257,7 +257,7 @@ def _load_cached_slate() -> tuple[list, list]:
         props = []
     return picks, props
 
-# ─── Sports-day boundary guard ───────────────────────────────────────────────
+# â”€â”€â”€ Sports-day boundary guard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # The _picks_seeded gate fires once per Streamlit session.  If the user keeps
 # their browser open overnight the session carries over to the next sports day
 # while _picks_seeded=True stays set, so yesterday's picks never clear even
@@ -265,7 +265,7 @@ def _load_cached_slate() -> tuple[list, list]:
 # the current ET sports day and wipes all prior-day state proactively.
 _today_iso = _nba_today_iso_fn()
 if st.session_state.get("_auto_init_date") != _today_iso:
-    # New sports day — clear everything so the seeding gate re-runs fresh.
+    # New sports day â€” clear everything so the seeding gate re-runs fresh.
     _was_prior_day_session = st.session_state.get("_auto_init_date") is not None
     for _k in (
         "_picks_seeded", "analysis_results", "current_props",
@@ -279,7 +279,7 @@ if st.session_state.get("_auto_init_date") != _today_iso:
     if _was_prior_day_session:
         # inject_joseph_floating() (called later at line ~501) runs
         # _auto_restore_page_state(), which would re-load stale page_state
-        # into analysis_results — undoing the clear above.  Setting this flag
+        # into analysis_results â€” undoing the clear above.  Setting this flag
         # makes that call a no-op so the boundary clear actually sticks.
         st.session_state["_page_state_restored"] = True
     try:
@@ -291,7 +291,7 @@ if not st.session_state.get("_picks_seeded"):
     st.session_state["_picks_seeded"] = True
     try:
         _cached_picks, _cached_props = _load_cached_slate()
-        # Filter game-total rows (empty team) — they belong in QAM, not home
+        # Filter game-total rows (empty team) â€” they belong in QAM, not home
         _cached_picks = [r for r in (_cached_picks or []) if str(r.get("team", "") or r.get("player_team", "")).strip()]
         if _cached_props:
             st.session_state.setdefault("current_props", _cached_props)
@@ -300,7 +300,7 @@ if not st.session_state.get("_picks_seeded"):
             st.session_state["analysis_results"] = _cached_picks
     except Exception:
         pass
-    # ── Load todays_games from the latest analysis session saved by the
+    # â”€â”€ Load todays_games from the latest analysis session saved by the
     # worker.  The worker and web containers have separate filesystems so
     # slate_cache.json is never found by the web container; reading from
     # the shared DB is the only cross-container-safe path.
@@ -309,7 +309,7 @@ if not st.session_state.get("_picks_seeded"):
             from tracking.database import load_latest_analysis_session as _llas, _nba_today_iso as _llas_today
             _latest_sess = _llas()
             _llas_today_str = _llas_today()
-            # Only use games/results from today's session — never from a prior-day session.
+            # Only use games/results from today's session â€” never from a prior-day session.
             _llas_date = (_latest_sess.get("analysis_date") or "")[:10] if _latest_sess else ""
             _llas_is_today = bool(_llas_date and _llas_date == _llas_today_str)
             if not _llas_is_today and _latest_sess:
@@ -350,7 +350,7 @@ if not st.session_state.get("_picks_seeded"):
     except Exception:
         pass
 
-# ─── Phase 3 — Real-Time Polling: silent 60-second data-version fragment ───
+# â”€â”€â”€ Phase 3 â€” Real-Time Polling: silent 60-second data-version fragment â”€â”€â”€
 # Streamlit re-runs this fragment every 60 s without touching the rest of the
 # page.  When slate_worker.py writes new picks and bumps data_version, the
 # fragment detects the change and triggers a full app rerun so the user sees
@@ -371,17 +371,17 @@ def _data_version_poller() -> None:  # noqa: ANN201
                 _load_cached_slate.clear()
             except Exception:
                 pass
-            st.rerun()  # full app rerun — user sees fresh picks instantly
+            st.rerun()  # full app rerun â€” user sees fresh picks instantly
     except Exception:
         pass  # never block the UI
 
-# ─── No picks yet — slate_worker hasn't run today ─────────────────────────
+# â”€â”€â”€ No picks yet â€” slate_worker hasn't run today â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Show a non-blocking info banner with a manual refresh button so users can
 # force-check the DB instead of waiting for the next auto-refresh cycle.
 if not st.session_state.get("analysis_results"):
     # Cache-bust read: clears the ttl=300 cache to catch picks written
     # between the seeding-gate call and now.  The render continues on THIS
-    # pass with the freshly-populated state — no st.rerun() needed.
+    # pass with the freshly-populated state â€” no st.rerun() needed.
     try:
         _load_cached_slate.clear()
         _retry_picks, _retry_props = _load_cached_slate()
@@ -397,13 +397,13 @@ if not st.session_state.get("analysis_results"):
     _no_picks_col1, _no_picks_col2 = st.columns([4, 1])
     with _no_picks_col1:
         st.info(
-            "📡 No picks available yet for today's slate — "
+            "ðŸ“¡ No picks available yet for today's slate â€” "
             "the worker runs every 30 minutes. "
             "Click **Refresh** to check now.",
-            icon="📡",
+            icon="ðŸ“¡",
         )
     with _no_picks_col2:
-        if st.button("🔄 Refresh", key="_home_refresh_no_picks"):
+        if st.button("ðŸ”„ Refresh", key="_home_refresh_no_picks"):
             _load_cached_slate.clear()
             st.session_state.pop("_picks_seeded", None)
             st.session_state.pop("analysis_results", None)
@@ -413,13 +413,13 @@ else:
     if st.session_state.get("_show_refresh_btn", True):
         _r_col = st.columns([6, 1])[1]
         with _r_col:
-            if st.button("🔄 Refresh", key="_home_refresh_top", help="Reload latest picks from DB"):
+            if st.button("ðŸ”„ Refresh", key="_home_refresh_top", help="Reload latest picks from DB"):
                 _load_cached_slate.clear()
                 st.session_state.pop("_picks_seeded", None)
                 st.session_state.pop("analysis_results", None)
                 st.rerun()
 
-# ─── Landing Page Theme CSS — page-level overrides ───────────
+# â”€â”€â”€ Landing Page Theme CSS â€” page-level overrides â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 from styles.theme import get_home_page_css as _get_home_page_css
 st.markdown(_get_home_page_css(), unsafe_allow_html=True)
 
@@ -433,7 +433,7 @@ st.markdown(_get_home_page_css(), unsafe_allow_html=True)
 
 initialize_database()
 
-# ── SQLite production warning ─────────────────────────────────
+# â”€â”€ SQLite production warning â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Warn if running in production mode with the default SQLite path.
 # SQLite is not ideal for multi-user cloud deployments.
 if os.environ.get("SMARTAI_PRODUCTION", "").lower() in ("true", "1", "yes"):
@@ -445,9 +445,9 @@ if os.environ.get("SMARTAI_PRODUCTION", "").lower() in ("true", "1", "yes"):
             "Consider PostgreSQL or persistent storage. See docs/database_migration.md",
             _db_path,
         )
-        # SQLite production warning removed — acceptable for single-instance Railway deploy.
+        # SQLite production warning removed â€” acceptable for single-instance Railway deploy.
 
-# ── Premium Status — Check and display in sidebar ─────────────
+# â”€â”€ Premium Status â€” Check and display in sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # This runs silently on app load.  is_premium_user() is cached in
 # session state so it won't make Stripe API calls on every rerun.
 try:
@@ -472,9 +472,9 @@ try:
     # Show onboarding tour for new signups (flag set by _render_signup_form)
     render_onboarding_tour()
 except Exception:
-    _user_is_premium = True  # Fail open — don't block the home page
+    _user_is_premium = True  # Fail open â€” don't block the home page
     _user_tier = "insider_circle"
-    _user_tier_label = "👑 Insider Circle"
+    _user_tier_label = "ðŸ‘‘ Insider Circle"
     _PREM_PATH = "/15_%F0%9F%92%8E_Subscription_Level"
     TIER_FREE = "free"
 
@@ -482,7 +482,7 @@ from utils.components import render_sidebar_auth as _render_sb_auth
 with st.sidebar:
     _render_sb_auth()
 
-# ── Restore user settings from database before applying defaults ───────
+# â”€â”€ Restore user settings from database before applying defaults â”€â”€â”€â”€â”€â”€â”€
 # On a fresh browser reload st.session_state is empty.  We read the
 # user's last-saved settings from SQLite so they don't have to
 # reconfigure everything.  Keys not in the DB fall through to the
@@ -494,7 +494,7 @@ if not st.session_state.get("_user_settings_loaded"):
         if _key not in st.session_state:
             st.session_state[_key] = _val
 
-# ── Restore page state from database ──────────────────────────────────
+# â”€â”€ Restore page state from database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Critical page data (analysis results, picks, games, props, etc.) is
 # persisted to SQLite so that an idle session timeout doesn't wipe
 # the user's work.  Restore once on a fresh session.
@@ -533,7 +533,7 @@ if "session_props" not in st.session_state:
 if "loaded_live_picks" not in st.session_state:
     st.session_state["loaded_live_picks"] = []
 
-# ═══ Joseph M. Smith Session State ═══
+# â•â•â• Joseph M. Smith Session State â•â•â•
 st.session_state.setdefault("joseph_enabled", True)
 st.session_state.setdefault("joseph_used_fragments", set())
 st.session_state.setdefault("joseph_bets_logged", False)
@@ -546,7 +546,7 @@ st.session_state.setdefault("joseph_ambient_context", "idle")
 st.session_state.setdefault("joseph_last_commentary", "")
 st.session_state.setdefault("joseph_entry_just_built", False)
 
-# ── Global Settings Popover (accessible from sidebar) ─────────
+# â”€â”€ Global Settings Popover (accessible from sidebar) â”€â”€â”€â”€â”€â”€â”€â”€â”€
 from utils.components import render_global_settings, inject_joseph_floating, render_joseph_hero_banner, render_notification_center, inject_mobile_responsive_css, inject_aria_enhancements
 with st.sidebar:
     render_global_settings()
@@ -561,19 +561,19 @@ inject_aria_enhancements()
 # ============================================================
 
 # ============================================================
-# SECTION 1: Cinematic Hero — Joseph Banner + Hero HUD + CTA
+# SECTION 1: Cinematic Hero â€” Joseph Banner + Hero HUD + CTA
 # ============================================================
 
-# Joseph M. Smith Hero Banner — full-width visual hook at absolute top
+# Joseph M. Smith Hero Banner â€” full-width visual hook at absolute top
 render_joseph_hero_banner()
 
 today_str = datetime.date.today().strftime("%A, %B %d, %Y")
 todays_games = st.session_state.get("todays_games", [])
 game_count = len(todays_games)
 game_count_text = (
-    f"🏟️ {game_count} game{'s' if game_count != 1 else ''} tonight"
+    f"ðŸŸï¸ {game_count} game{'s' if game_count != 1 else ''} tonight"
     if game_count
-    else "🏟️ No games loaded yet"
+    else "ðŸŸï¸ No games loaded yet"
 )
 
 
@@ -601,20 +601,20 @@ st.markdown(f"""
   <div class="hero-hud-inner-glow"></div>
   <div class="hero-hud-text">
     <div class="hero-badge-row">
-      <span class="hero-badge hero-badge-ai">🤖 Quantum AI</span>
-      <span class="hero-badge hero-badge-free">✅ Free Picks Daily</span>
-      <span class="hero-badge hero-badge-dfs">🏀 PrizePicks + Underdog</span>
+      <span class="hero-badge hero-badge-ai">ðŸ¤– Quantum AI</span>
+      <span class="hero-badge hero-badge-free">âœ… Free Picks Daily</span>
+      <span class="hero-badge hero-badge-dfs">ðŸ€ PrizePicks + Underdog</span>
     </div>
     <div class="hero-tagline">THE NBA PROP ENGINE THAT SHOWS ITS WORK</div>
     <div class="hero-subtext"><strong>5,000+ Live Props. 1,000 Simulations Each. Zero Black Boxes.</strong> Know the edge before you enter.</div>
-    <div class="hero-date">📅 {today_str} &nbsp;&bull;&nbsp; <span class="game-count-live">{game_count_text}</span></div>
+    <div class="hero-date">ðŸ“… {today_str} &nbsp;&bull;&nbsp; <span class="game-count-live">{game_count_text}</span></div>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ── ⚡ One-Click Setup CTA — Primary hero action ────────────────
+# â”€â”€ âš¡ One-Click Setup CTA â€” Primary hero action â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 _home_one_click = st.button(
-    "⚡ LOAD TONIGHT'S SLATE — ONE CLICK",
+    "âš¡ LOAD TONIGHT'S SLATE â€” ONE CLICK",
     key="home_one_click_btn",
     type="primary",
     use_container_width=True,
@@ -622,10 +622,10 @@ _home_one_click = st.button(
 )
 if _home_one_click:
     import time as _hoc_time
-    st.subheader("⚡ One-Click Setup")
-    st.markdown("Running **Auto-Load** + **Get Live Props** in one step…")
+    st.subheader("âš¡ One-Click Setup")
+    st.markdown("Running **Auto-Load** + **Get Live Props** in one stepâ€¦")
 
-    # ── Joseph Loading Screen — NBA fun facts while loading slate ──
+    # â”€â”€ Joseph Loading Screen â€” NBA fun facts while loading slate â”€â”€
     try:
         from utils.joseph_loading import joseph_loading_placeholder
         _hoc_joseph_loader = joseph_loading_placeholder("Loading tonight's slate")
@@ -636,8 +636,8 @@ if _home_one_click:
     _hoc_status = st.empty()
 
     try:
-        # ── Phase 1: Auto-Load Tonight's Games ────────────────────────
-        _hoc_status.text("⏳ Phase 1/3 — Auto-loading tonight's games, rosters & stats…")
+        # â”€â”€ Phase 1: Auto-Load Tonight's Games â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        _hoc_status.text("â³ Phase 1/3 â€” Auto-loading tonight's games, rosters & statsâ€¦")
         _hoc_bar.progress(5)
         from data.nba_data_service import (
             get_todays_games as _hoc_fg,
@@ -658,7 +658,7 @@ if _home_one_click:
             _hoc_games = st.session_state.get("todays_games", [])
 
         _hoc_bar.progress(25)
-        _hoc_status.text(f"⏳ Phase 1/3 — {len(_hoc_games)} game(s) loaded. Loading player data…")
+        _hoc_status.text(f"â³ Phase 1/3 â€” {len(_hoc_games)} game(s) loaded. Loading player dataâ€¦")
 
         _hoc_players_ok = _hoc_fp(_hoc_games) if _hoc_games else False
         _hoc_bar.progress(40)
@@ -671,8 +671,8 @@ if _home_one_click:
         except Exception:
             pass
 
-        # ── Phase 2: Load team stats & standings ─────────────────────
-        _hoc_status.text("⏳ Phase 2/3 — Loading team stats & standings…")
+        # â”€â”€ Phase 2: Load team stats & standings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        _hoc_status.text("â³ Phase 2/3 â€” Loading team stats & standingsâ€¦")
         _hoc_bar.progress(50)
 
         try:
@@ -689,8 +689,8 @@ if _home_one_click:
 
         _hoc_bar.progress(60)
 
-        # ── Phase 3: Get Live Platform Props ────────────────────────
-        _hoc_status.text("⏳ Phase 3/3 — Retrieving live prop lines from all platforms…")
+        # â”€â”€ Phase 3: Get Live Platform Props â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        _hoc_status.text("â³ Phase 3/3 â€” Retrieving live prop lines from all platformsâ€¦")
 
         try:
             from data.sportsbook_service import get_all_sportsbook_props as _hoc_fap
@@ -708,11 +708,11 @@ if _home_one_click:
                     _hoc_csv(_hoc_live)
                 except Exception:
                     pass
-                _hoc_platform_msg = f"✅ {len(_hoc_live)} live props retrieved"
+                _hoc_platform_msg = f"âœ… {len(_hoc_live)} live props retrieved"
             else:
-                _hoc_platform_msg = "⚠️ No live platform props returned (data may be unavailable)"
+                _hoc_platform_msg = "âš ï¸ No live platform props returned (data may be unavailable)"
         except Exception as _hoc_plat_err:
-            _hoc_platform_msg = f"⚠️ Platform retrieval failed: {_hoc_plat_err}"
+            _hoc_platform_msg = f"âš ï¸ Platform retrieval failed: {_hoc_plat_err}"
 
         _hoc_bar.progress(100)
         _hoc_status.empty()
@@ -724,12 +724,12 @@ if _home_one_click:
             except Exception:
                 pass
 
-        # ── Phase 4: Run Neural Analysis on all loaded props ─────────
+        # â”€â”€ Phase 4: Run Neural Analysis on all loaded props â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _hoc_analysis_msg = ""
         try:
             _hoc_status2 = st.empty()
             _hoc_bar2 = st.progress(0)
-            _hoc_status2.text("⏳ Phase 4/4 — Running Neural Analysis on all loaded props…")
+            _hoc_status2.text("â³ Phase 4/4 â€” Running Neural Analysis on all loaded propsâ€¦")
             _hoc_bar2.progress(10)
             from data.data_manager import (
                 load_props_from_session as _hoc_lps,
@@ -772,22 +772,22 @@ if _home_one_click:
                         _hoc_iap(_hoc_results)
                     except Exception:
                         pass
-                    _hoc_analysis_msg = f"✅ {len(_hoc_results)} picks analyzed"
+                    _hoc_analysis_msg = f"âœ… {len(_hoc_results)} picks analyzed"
                 else:
-                    _hoc_analysis_msg = "⚠️ Analysis returned no results"
+                    _hoc_analysis_msg = "âš ï¸ Analysis returned no results"
             else:
-                _hoc_analysis_msg = "⚠️ No props or player data to analyze"
+                _hoc_analysis_msg = "âš ï¸ No props or player data to analyze"
             _hoc_bar2.progress(100)
             _hoc_bar2.empty()
             _hoc_status2.empty()
         except Exception as _hoc_ae:
-            _hoc_analysis_msg = f"⚠️ Analysis failed: {_hoc_ae}"
+            _hoc_analysis_msg = f"âš ï¸ Analysis failed: {_hoc_ae}"
 
         _hoc_total = len(st.session_state.get("current_props", []))
         st.success(
-            f"✅ **One-Click Setup complete!** "
-            f"Games: {'✅ ' + str(len(_hoc_games)) if _hoc_games else '⚠️ none'} | "
-            f"Players: {'✅' if _hoc_players_ok else '⚠️ check data'} | "
+            f"âœ… **One-Click Setup complete!** "
+            f"Games: {'âœ… ' + str(len(_hoc_games)) if _hoc_games else 'âš ï¸ none'} | "
+            f"Players: {'âœ…' if _hoc_players_ok else 'âš ï¸ check data'} | "
             f"Props: {_hoc_platform_msg} | "
             f"Analysis: {_hoc_analysis_msg}"
         )
@@ -814,7 +814,7 @@ if _home_one_click:
 # END SECTION 1: Cinematic Hero
 # ============================================================
 
-# ── Social Proof Strip — credibility numbers under the CTA ────
+# â”€â”€ Social Proof Strip â€” credibility numbers under the CTA â”€â”€â”€â”€
 st.markdown("""
 <div class="spp-proof-strip lp-anim lp-anim-d2">
   <div class="spp-proof-item">
@@ -856,7 +856,7 @@ if not _has_analysis and not _onboard_dismissed:
     <div style="background:linear-gradient(135deg,rgba(0,213,89,0.06),rgba(249,198,43,0.06));
          border:1px solid rgba(0,213,89,0.2);border-radius:14px;padding:28px 24px;margin:18px 0 24px 0;">
       <div style="font-size:1.4rem;font-weight:800;color:#F9C62B;margin-bottom:6px;">
-        🚀 Welcome to Smart Pick Pro!
+        ðŸš€ Welcome to Smart Pick Pro!
       </div>
       <div style="color:#c8d6e5;font-size:0.92rem;margin-bottom:18px;">
         Get your first AI-powered picks in <strong>3 easy steps</strong>:
@@ -864,35 +864,35 @@ if not _has_analysis and not _onboard_dismissed:
       <div style="display:flex;flex-wrap:wrap;gap:14px;">
         <div style="flex:1;min-width:200px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
              border-radius:10px;padding:16px;">
-          <div style="font-size:1.6rem;margin-bottom:4px;">1️⃣</div>
+          <div style="font-size:1.6rem;margin-bottom:4px;">1ï¸âƒ£</div>
           <div style="color:#00D559;font-weight:700;font-size:0.9rem;">Load Tonight's Slate</div>
           <div style="color:#8b949e;font-size:0.8rem;margin-top:4px;">
-            Click the <strong>⚡ LOAD TONIGHT'S SLATE</strong> button above. This fetches games, rosters, injuries, and live prop lines automatically.
+            Click the <strong>âš¡ LOAD TONIGHT'S SLATE</strong> button above. This fetches games, rosters, injuries, and live prop lines automatically.
           </div>
         </div>
         <div style="flex:1;min-width:200px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
              border-radius:10px;padding:16px;">
-          <div style="font-size:1.6rem;margin-bottom:4px;">2️⃣</div>
+          <div style="font-size:1.6rem;margin-bottom:4px;">2ï¸âƒ£</div>
           <div style="color:#00D559;font-weight:700;font-size:0.9rem;">Run Neural Analysis</div>
           <div style="color:#8b949e;font-size:0.8rem;margin-top:4px;">
-            Go to the <strong>⚡ Neural Analysis</strong> page in the sidebar and click <strong>Run Analysis</strong>. The AI engine will score every prop.
+            Go to the <strong>âš¡ Neural Analysis</strong> page in the sidebar and click <strong>Run Analysis</strong>. The AI engine will score every prop.
           </div>
         </div>
         <div style="flex:1;min-width:200px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
              border-radius:10px;padding:16px;">
-          <div style="font-size:1.6rem;margin-bottom:4px;">3️⃣</div>
+          <div style="font-size:1.6rem;margin-bottom:4px;">3ï¸âƒ£</div>
           <div style="color:#00D559;font-weight:700;font-size:0.9rem;">Review Your Picks</div>
           <div style="color:#8b949e;font-size:0.8rem;margin-top:4px;">
-            Come back here to see your <strong>Top 3 Tonight</strong> hero cards, or visit <strong>📋 Smart Picks</strong> for the full ranked list.
+            Come back here to see your <strong>Top 3 Tonight</strong> hero cards, or visit <strong>ðŸ“‹ Smart Picks</strong> for the full ranked list.
           </div>
         </div>
       </div>
       <div style="color:#6b7280;font-size:0.75rem;margin-top:14px;text-align:center;">
-        💡 Tip: Visit <strong>⚙️ Settings</strong> to customize your edge threshold, simulation depth, and platform preferences.
+        ðŸ’¡ Tip: Visit <strong>âš™ï¸ Settings</strong> to customize your edge threshold, simulation depth, and platform preferences.
       </div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button("✕ Dismiss Guide", key="_dismiss_onboarding"):
+    if st.button("âœ• Dismiss Guide", key="_dismiss_onboarding"):
         st.session_state["_onboarding_dismissed"] = True
         st.rerun()
 
@@ -901,10 +901,10 @@ if not _has_analysis and not _onboard_dismissed:
 # ============================================================
 
 # ============================================================
-# SECTION 1A: Top 3 Tonight — Hero Cards
+# SECTION 1A: Top 3 Tonight â€” Hero Cards
 # ============================================================
 
-# QCM CSS — injected once here, shared by Section 1A (hero cards) and
+# QCM CSS â€” injected once here, shared by Section 1A (hero cards) and
 # Section 1B (edge-gap cards).  Duplicate calls inside each conditional
 # block were stamping redundant <style> nodes on every render pass.
 st.markdown(_get_qcm_css(), unsafe_allow_html=True)
@@ -916,7 +916,7 @@ if _user_tier == TIER_FREE:
         "<div style='text-align:center;padding:36px 20px;"
         "background:rgba(19,25,32,0.7);border:1px solid rgba(0,212,255,0.15);"
         "border-radius:16px;margin-bottom:24px;'>"
-        "<div style='font-size:2.4rem;margin-bottom:10px;'>🔒</div>"
+        "<div style='font-size:2.4rem;margin-bottom:10px;'>ðŸ”’</div>"
         "<p style='color:#00d4ff;font-size:1.2rem;font-weight:800;margin:0 0 8px;'>"
         "Tonight's Top Picks</p>"
         "<p style='color:#a0b4d0;font-size:0.92rem;margin:0 0 18px;'>"
@@ -924,7 +924,7 @@ if _user_tier == TIER_FREE:
         f"<a href='{_PREM_PATH}' style='display:inline-block;"
         "background:linear-gradient(135deg,#F9C62B,#FF8C00);color:#0a0e14;"
         "font-weight:800;font-size:0.95rem;padding:12px 32px;border-radius:10px;"
-        "text-decoration:none;'>⚡ Upgrade Now</a></div>"
+        "text-decoration:none;'>âš¡ Upgrade Now</a></div>"
     )
     st.markdown(_cta_html, unsafe_allow_html=True)
 
@@ -947,16 +947,23 @@ _hero_pool = sorted(
 )[:3]
 
 if _user_tier != TIER_FREE and _hero_pool:
-    # Staleness guard: clear cached joseph_results if they're from a prior day
+    # Staleness guard: clear cached joseph_results if they're from a prior day.
+    # Uses ET-anchored date (_nba_today_iso) so Railway UTC server doesn't
+    # mis-classify 8Â PMâ€“midnight ET results as tomorrow.
     _joseph_results = st.session_state.get("joseph_results", [])
     if _joseph_results:
         _first_date = _joseph_results[0].get("_result_date", "") if isinstance(_joseph_results[0], dict) else ""
-        import datetime as _dt_guard
-        if _first_date and _first_date != _dt_guard.date.today().isoformat():
+        try:
+            from tracking.database import _nba_today_iso as _jr_today_fn
+            _today_iso = _jr_today_fn()
+        except Exception:
+            import datetime as _dt_guard
+            _today_iso = _dt_guard.date.today().isoformat()
+        if _first_date and _first_date != _today_iso:
             st.session_state.pop("joseph_results", None)
             st.session_state.pop("joseph_bets_logged", None)
             _joseph_results = []
-    # Attach Joseph short takes if available
+# Attach Joseph short takes if available
     if _joseph_results:
         _joseph_lookup = {
             (jr.get("player_name", ""), (jr.get("stat_type", "") or "").lower()): jr
@@ -1013,7 +1020,7 @@ if _user_tier != TIER_FREE and _hero_pool:
     )
     st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 elif _user_tier != TIER_FREE and _home_analysis:
-    # Picks exist but all filtered out by tier/confidence — show best available
+    # Picks exist but all filtered out by tier/confidence â€” show best available
     _fallback_pool = sorted(
         [r for r in _home_analysis if not r.get("should_avoid") and not r.get("player_is_out")],
         key=lambda r: (float(r.get("confidence_score", 0) or 0), abs(r.get("edge_percentage", 0))),
@@ -1031,8 +1038,8 @@ elif _user_tier != TIER_FREE and _home_analysis:
 # ============================================================
 
 # ============================================================
-# SECTION 1B: Quantum Edge Gap — Extreme-edge standard-line picks
-#             (|edge| ≥ 20%, odds_type="standard" only, no goblins/demons)
+# SECTION 1B: Quantum Edge Gap â€” Extreme-edge standard-line picks
+#             (|edge| â‰¥ 20%, odds_type="standard" only, no goblins/demons)
 # ============================================================
 
 _qeg_tonight_teams = {
@@ -1068,7 +1075,7 @@ if _user_tier != TIER_FREE and _home_edge_gap_picks:
 # ============================================================
 
 # ============================================================
-# SECTION 2: Joseph's Welcome — The Personality Hook
+# SECTION 2: Joseph's Welcome â€” The Personality Hook
 # ============================================================
 
 # Load Joseph avatar for welcome card
@@ -1095,7 +1102,7 @@ def _load_joseph_avatar_b64() -> str:
 _joseph_avatar_b64 = _load_joseph_avatar_b64()
 _joseph_avatar_tag = (
     f'<img src="data:image/png;base64,{_joseph_avatar_b64}" class="joseph-welcome-avatar" alt="Joseph M. Smith" />'
-    if _joseph_avatar_b64 else '<div class="joseph-welcome-avatar" style="background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">🎙️</div>'
+    if _joseph_avatar_b64 else '<div class="joseph-welcome-avatar" style="background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">ðŸŽ™ï¸</div>'
 )
 
 # Dynamic message based on session state
@@ -1119,7 +1126,7 @@ elif _games_loaded:
     )
 else:
     _joseph_msg = (
-        "The board is dark. Hit that button and load tonight's slate — "
+        "The board is dark. Hit that button and load tonight's slate â€” "
         "I've been watching the lines all day and I already know where the books made mistakes. "
         "Let's run the engine and find your edge."
     )
@@ -1128,7 +1135,7 @@ st.markdown(f"""
 <div class="joseph-welcome-card lp-anim lp-anim-d1">
   {_joseph_avatar_tag}
   <div class="joseph-welcome-text">
-    <div class="joseph-welcome-name">🎙️ Joseph M. Smith <span class="badge-ai">AI ANALYST</span></div>
+    <div class="joseph-welcome-name">ðŸŽ™ï¸ Joseph M. Smith <span class="badge-ai">AI ANALYST</span></div>
     <div class="joseph-welcome-msg">"{_joseph_msg}"</div>
   </div>
 </div>
@@ -1139,16 +1146,16 @@ st.markdown(f"""
 # ============================================================
 
 # ============================================================
-# SECTION 3: The Competitive Kill Shot — "Why Smart Pick Pro Wins"
+# SECTION 3: The Competitive Kill Shot â€” "Why Smart Pick Pro Wins"
 # ============================================================
 
 st.markdown("""
 <div class="section-eyebrow lp-anim lp-anim-d1">The Unfair Advantage</div>
 <div class="section-header-xl lp-anim lp-anim-d2">Other Tools Guess. <span class="xl-accent">We Simulate.</span></div>
-<div class="section-subheader-center lp-anim lp-anim-d3">The only prop engine purpose-built for NBA DFS — live data from PrizePicks &amp; Underdog, Quantum simulation, and full transparent reasoning. No human bias. No black box.</div>
+<div class="section-subheader-center lp-anim lp-anim-d3">The only prop engine purpose-built for NBA DFS â€” live data from PrizePicks &amp; Underdog, Quantum simulation, and full transparent reasoning. No human bias. No black box.</div>
 """, unsafe_allow_html=True)
 
-# ── 3A: Three Pillars ───────────────────────────────────────────
+# â”€â”€ 3A: Three Pillars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 _p1, _p2, _p3 = st.columns(3)
 
 with _p1:
@@ -1156,25 +1163,25 @@ with _p1:
     <div class="pillar-card accent-cyan lp-anim lp-anim-d2">
       <div class="pillar-accent"></div>
       <div class="pillar-card-inner">
-        <div class="pillar-icon-halo"><span class="pillar-icon">🎲</span></div>
+        <div class="pillar-icon-halo"><span class="pillar-icon">ðŸŽ²</span></div>
         <div class="pillar-title">Quantum Simulation Engine</div>
-        <div class="pillar-subtitle">Up to 1,000 Simulated Games Per Prop — Tonight's Matchup, Not a Generic Average</div>
+        <div class="pillar-subtitle">Up to 1,000 Simulated Games Per Prop â€” Tonight's Matchup, Not a Generic Average</div>
         <div class="pillar-body">
-          Every prop runs through up to 1,000 simulated game scenarios —
+          Every prop runs through up to 1,000 simulated game scenarios â€”
           randomized minutes, real NBA pace data, matchup-specific defensive
           ratings, fatigue, and game-flow volatility.
           <br><br>
           The result: a <strong>probability distribution</strong> built for
-          YOUR player in TONIGHT'S specific context — not recycled season averages.
+          YOUR player in TONIGHT'S specific context â€” not recycled season averages.
           <br><br>
           <strong>Choose simulation depth:</strong>
           <ul>
-            <li>⚡ Fast — instant results</li>
-            <li>🎯 Standard — recommended balance</li>
-            <li>🔬 Deep Scan — maximum accuracy</li>
+            <li>âš¡ Fast â€” instant results</li>
+            <li>ðŸŽ¯ Standard â€” recommended balance</li>
+            <li>ðŸ”¬ Deep Scan â€” maximum accuracy</li>
           </ul>
           Every result includes percentile ranges, confidence intervals,
-          and visual histograms — so you see the full picture, not just a number.
+          and visual histograms â€” so you see the full picture, not just a number.
         </div>
         <div class="pillar-footer">Dimers, Action Network: editorial picks. No simulation depth.</div>
       </div>
@@ -1186,19 +1193,19 @@ with _p2:
     <div class="pillar-card accent-green lp-anim lp-anim-d3">
       <div class="pillar-accent"></div>
       <div class="pillar-card-inner">
-        <div class="pillar-icon-halo"><span class="pillar-icon">🔬</span></div>
+        <div class="pillar-icon-halo"><span class="pillar-icon">ðŸ”¬</span></div>
         <div class="pillar-title">Force Analysis</div>
         <div class="pillar-subtitle">16 NBA-Specific Signals. Every Pick Tells You Exactly WHY.</div>
         <div class="pillar-body">
-          Every prop shows the exact forces pushing performance UP or DOWN —
+          Every prop shows the exact forces pushing performance UP or DOWN â€”
           pulled from live NBA data no other prop tool integrates:
           <br><br>
-          ✅ Defensive matchup ratings &amp; hustle stats<br>
-          ✅ Clutch-time performance splits<br>
-          ✅ Pace, game environment &amp; blowout risk<br>
-          ✅ Rest, back-to-back fatigue &amp; load signals<br>
-          ✅ Injury impact on usage share<br>
-          ✅ Trap Line Detection — catches lines designed to bait the public
+          âœ… Defensive matchup ratings &amp; hustle stats<br>
+          âœ… Clutch-time performance splits<br>
+          âœ… Pace, game environment &amp; blowout risk<br>
+          âœ… Rest, back-to-back fatigue &amp; load signals<br>
+          âœ… Injury impact on usage share<br>
+          âœ… Trap Line Detection â€” catches lines designed to bait the public
           <br><br>
           You see OVER forces vs UNDER forces with strength ratings.
           No "trust us" scores. <strong>Full transparency on every single pick.</strong>
@@ -1213,33 +1220,33 @@ with _p3:
     <div class="pillar-card accent-gold lp-anim lp-anim-d4">
       <div class="pillar-accent"></div>
       <div class="pillar-card-inner">
-        <div class="pillar-icon-halo"><span class="pillar-icon">🏆</span></div>
-        <div class="pillar-title">SAFE Score™</div>
-        <div class="pillar-subtitle">Statistical Analysis of Force &amp; Edge — Not a Capper's Opinion</div>
+        <div class="pillar-icon-halo"><span class="pillar-icon">ðŸ†</span></div>
+        <div class="pillar-title">SAFE Scoreâ„¢</div>
+        <div class="pillar-subtitle">Statistical Analysis of Force &amp; Edge â€” Not a Capper's Opinion</div>
         <div class="pillar-body">
-          A proprietary 0–100 composite score that blends multiple independent
-          signals — simulation probability, edge magnitude, matchup quality,
-          consistency, momentum, and market consensus — into one actionable number.
+          A proprietary 0â€“100 composite score that blends multiple independent
+          signals â€” simulation probability, edge magnitude, matchup quality,
+          consistency, momentum, and market consensus â€” into one actionable number.
           <br><br>
           <strong>Built-in anti-overconfidence safeguards:</strong>
           <br><br>
-          🛡️ Automatic tier demotion triggers<br>
-          🛡️ Variance-aware scoring<br>
-          🛡️ Sample-size adjustments<br>
-          🛡️ Tier distribution enforcement<br>
-          🛡️ No picks inflated by narrative or recency bias
+          ðŸ›¡ï¸ Automatic tier demotion triggers<br>
+          ðŸ›¡ï¸ Variance-aware scoring<br>
+          ðŸ›¡ï¸ Sample-size adjustments<br>
+          ðŸ›¡ï¸ Tier distribution enforcement<br>
+          ðŸ›¡ï¸ No picks inflated by narrative or recency bias
           <br><br>
-          💎 Platinum · 🥇 Gold · 🥈 Silver · 🥉 Bronze · ⛔ Avoid
+          ðŸ’Ž Platinum Â· ðŸ¥‡ Gold Â· ðŸ¥ˆ Silver Â· ðŸ¥‰ Bronze Â· â›” Avoid
           <br><br>
           No pay-per-pick capper. No guru with a hot streak.
           Pure statistical rigor, automated every night.
         </div>
-        <div class="pillar-footer">StatSalt cappers charge $30–$89 per pick. This runs free.</div>
+        <div class="pillar-footer">StatSalt cappers charge $30â€“$89 per pick. This runs free.</div>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
-# ── 3B: Comparison Table ────────────────────────────────────────
+# â”€â”€ 3B: Comparison Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 st.markdown("""
 <div style="margin-top:28px;">
 <table class="comp-table">
@@ -1254,63 +1261,63 @@ st.markdown("""
   <tbody>
     <tr>
       <td>NBA-Specific Depth</td>
-      <td class="cross">✗ Multi-sport, spread thin</td>
-      <td class="cross">✗ Generic sports coverage</td>
-      <td class="check">✓ Hustle stats, clutch splits, defensive ratings, bio data</td>
+      <td class="cross">âœ— Multi-sport, spread thin</td>
+      <td class="cross">âœ— Generic sports coverage</td>
+      <td class="check">âœ“ Hustle stats, clutch splits, defensive ratings, bio data</td>
     </tr>
     <tr>
       <td>Simulation Engine</td>
-      <td class="cross">✗ Editorial picks, no simulation</td>
-      <td class="cross">✗ Human handicapper opinion</td>
-      <td class="check">✓ Quantum — up to 1,000 sims per prop</td>
+      <td class="cross">âœ— Editorial picks, no simulation</td>
+      <td class="cross">âœ— Human handicapper opinion</td>
+      <td class="check">âœ“ Quantum â€” up to 1,000 sims per prop</td>
     </tr>
     <tr>
       <td>PrizePicks + Underdog Integration</td>
-      <td class="cross">✗ Not integrated</td>
-      <td class="cross">✗ Not integrated</td>
-      <td class="check">✓ Live 5,000+ props pulled directly from both platforms</td>
+      <td class="cross">âœ— Not integrated</td>
+      <td class="cross">âœ— Not integrated</td>
+      <td class="check">âœ“ Live 5,000+ props pulled directly from both platforms</td>
     </tr>
     <tr>
       <td>Transparent Reasoning</td>
-      <td class="partial">⚠ Article with opinion</td>
-      <td class="cross">✗ "Trust my record"</td>
-      <td class="check">✓ Force breakdown — every factor shown with strength rating</td>
+      <td class="partial">âš  Article with opinion</td>
+      <td class="cross">âœ— "Trust my record"</td>
+      <td class="check">âœ“ Force breakdown â€” every factor shown with strength rating</td>
     </tr>
     <tr>
       <td>Automated Daily Pipeline</td>
-      <td class="cross">✗ Human writers, not automated</td>
-      <td class="cross">✗ Manual picks posted per game</td>
-      <td class="check">✓ Auto-runs ETL → simulation → picks every day at 5pm ET</td>
+      <td class="cross">âœ— Human writers, not automated</td>
+      <td class="cross">âœ— Manual picks posted per game</td>
+      <td class="check">âœ“ Auto-runs ETL â†’ simulation â†’ picks every day at 5pm ET</td>
     </tr>
     <tr>
       <td>Trap Line Detection</td>
-      <td class="cross">✗ None</td>
-      <td class="cross">✗ None</td>
-      <td class="check">✓ Proprietary multi-pattern trap detection system</td>
+      <td class="cross">âœ— None</td>
+      <td class="cross">âœ— None</td>
+      <td class="check">âœ“ Proprietary multi-pattern trap detection system</td>
     </tr>
     <tr>
       <td>Risk Shield + Avoid Flags</td>
-      <td class="cross">✗ No auto-avoidance</td>
-      <td class="cross">✗ No auto-avoidance</td>
-      <td class="check">✓ Auto-flags injured, DNP risk, trap, and garbage-time props</td>
+      <td class="cross">âœ— No auto-avoidance</td>
+      <td class="cross">âœ— No auto-avoidance</td>
+      <td class="check">âœ“ Auto-flags injured, DNP risk, trap, and garbage-time props</td>
     </tr>
     <tr>
       <td>Entry Builder (Parlay Optimizer)</td>
-      <td class="partial">⚠ Basic parlay picker</td>
-      <td class="cross">✗ None</td>
-      <td class="check">✓ EV-optimized builder for PrizePicks, Underdog, Pick6</td>
+      <td class="partial">âš  Basic parlay picker</td>
+      <td class="cross">âœ— None</td>
+      <td class="check">âœ“ EV-optimized builder for PrizePicks, Underdog, Pick6</td>
     </tr>
     <tr>
       <td>Live In-Game Sweat Tracking</td>
-      <td class="cross">✗ Box score only</td>
-      <td class="cross">✗ Box score only</td>
-      <td class="check">✓ Live Sweat Room — real-time pace and projection updates</td>
+      <td class="cross">âœ— Box score only</td>
+      <td class="cross">âœ— Box score only</td>
+      <td class="check">âœ“ Live Sweat Room â€” real-time pace and projection updates</td>
     </tr>
     <tr>
       <td>Cost Per Pick</td>
-      <td class="partial">⚠ $29.99/month (all sports)</td>
-      <td class="cross">✗ $15–$89 per pick</td>
-      <td class="check">✓ Free top picks daily. No per-pick fees.</td>
+      <td class="partial">âš  $29.99/month (all sports)</td>
+      <td class="cross">âœ— $15â€“$89 per pick</td>
+      <td class="check">âœ“ Free top picks daily. No per-pick fees.</td>
     </tr>
   </tbody>
 </table>
@@ -1319,7 +1326,7 @@ st.markdown("""
 
 st.markdown("""
 <div class="urgency-block lp-anim lp-anim-d3">
-  <div class="urgency-title">⚡ Tonight's Edge Window Closes at Tip-Off</div>
+  <div class="urgency-title">âš¡ Tonight's Edge Window Closes at Tip-Off</div>
   <div class="urgency-subtitle">
     Prop lines shift as lineups confirm and sharp money moves.
     <strong>Load tonight's slate now</strong> to lock in the best edges
@@ -1331,7 +1338,7 @@ st.markdown("""
 st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 
 # ============================================================
-# SECTION 4: The Proof Points — Animated Metric Cards
+# SECTION 4: The Proof Points â€” Animated Metric Cards
 # ============================================================
 
 st.markdown("""
@@ -1362,7 +1369,7 @@ for i, (_num, _label) in enumerate(_proof_data):
         </div>
         """, unsafe_allow_html=True)
 
-# 6th dynamic card — tracked performance if data exists
+# 6th dynamic card â€” tracked performance if data exists
 try:
     from utils.joseph_widget import joseph_get_track_record
     _track_record = joseph_get_track_record()
@@ -1406,13 +1413,13 @@ _s4_done = _sess_entries > 0
 
 _steps_data = [
     ("1", "Load Games", _s1_done,
-     f"✅ {_sess_games} game{'s' if _sess_games != 1 else ''}" if _s1_done else f"⏳ {_sess_games} game{'s' if _sess_games != 1 else ''}"),
+     f"âœ… {_sess_games} game{'s' if _sess_games != 1 else ''}" if _s1_done else f"â³ {_sess_games} game{'s' if _sess_games != 1 else ''}"),
     ("2", "Load Props", _s2_done,
-     f"✅ {_sess_props} prop{'s' if _sess_props != 1 else ''}" if _s2_done else f"⏳ {_sess_props} prop{'s' if _sess_props != 1 else ''}"),
+     f"âœ… {_sess_props} prop{'s' if _sess_props != 1 else ''}" if _s2_done else f"â³ {_sess_props} prop{'s' if _sess_props != 1 else ''}"),
     ("3", "Run Engine", _s3_done,
-     f"✅ {_sess_analysis}" if _s3_done else "⏳ Not run"),
+     f"âœ… {_sess_analysis}" if _s3_done else "â³ Not run"),
     ("4", "Build Entries", _s4_done,
-     f"✅ {_sess_entries}" if _s4_done else "⏳ —"),
+     f"âœ… {_sess_entries}" if _s4_done else "â³ â€”"),
 ]
 
 # Build an HTML-based connected pipeline for visual consistency
@@ -1436,7 +1443,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ── Consolidated warnings (stale data / validation) — single amber banner ──
+# â”€â”€ Consolidated warnings (stale data / validation) â€” single amber banner â”€â”€
 _consolidated_warnings = []
 try:
     from data.nba_data_service import load_last_updated as _load_lu
@@ -1449,7 +1456,7 @@ try:
         if _teams_age_days >= 7:
             _consolidated_warnings.append(
                 f"Team stats are **{_teams_age_days} days old**. "
-                f"Go to **📡 Smart NBA Data → Smart Update** to refresh."
+                f"Go to **ðŸ“¡ Smart NBA Data â†’ Smart Update** to refresh."
             )
         elif _teams_age_days >= 3:
             _consolidated_warnings.append(
@@ -1461,7 +1468,7 @@ try:
         _teams_data_check = _load_teams()
         if not _teams_data_check:
             _consolidated_warnings.append(
-                "No team stats found. Go to **📡 Smart NBA Data → Smart Update** "
+                "No team stats found. Go to **ðŸ“¡ Smart NBA Data â†’ Smart Update** "
                 "to load team data for accurate analysis."
             )
 except Exception as _exc:
@@ -1496,7 +1503,7 @@ except Exception as _exc:
     logging.getLogger(__name__).warning(f"[App] Setup step failed: {_exc}")
 
 if _consolidated_warnings:
-    with st.expander("⚠️ Data Warnings", expanded=False):
+    with st.expander("âš ï¸ Data Warnings", expanded=False):
         for _w in _consolidated_warnings:
             st.warning(_w)
 
@@ -1507,26 +1514,26 @@ st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 # ============================================================
 
 # ============================================================
-# SECTION 6: How It Works — High-Level 5-Stage Pipeline
+# SECTION 6: How It Works â€” High-Level 5-Stage Pipeline
 # ============================================================
 
 st.markdown("""
 <div class="section-eyebrow lp-anim lp-anim-d1">The Pipeline</div>
 <div class="section-header-xl lp-anim lp-anim-d2">From Raw Data to <span class="xl-accent">Ranked Picks</span></div>
-<div class="section-subheader-center lp-anim lp-anim-d3">From raw NBA data to ranked, explained picks — automated every night, no human bias involved.</div>
+<div class="section-subheader-center lp-anim lp-anim-d3">From raw NBA data to ranked, explained picks â€” automated every night, no human bias involved.</div>
 """, unsafe_allow_html=True)
 
 _hiw_stages = [
-    ("📡", "Live Data Pull",
+    ("ðŸ“¡", "Live Data Pull",
      "Real-time NBA data ingested: player stats, hustle metrics, clutch splits, defensive ratings, injuries, and 5,000+ live prop lines from PrizePicks and Underdog."),
-    ("📐", "Matchup Projection",
-     "Each player's baseline is adjusted for tonight's specific opponent, pace, game environment, rest days, and injury-impacted usage — no generic season averages."),
-    ("🎲", "Quantum Simulation",
-     "Up to 1,000 simulated games per prop. Every sim randomizes real NBA game chaos — minutes volatility, momentum swings, blowout risk — to build a true probability distribution."),
-    ("🔬", "Force Analysis",
+    ("ðŸ“", "Matchup Projection",
+     "Each player's baseline is adjusted for tonight's specific opponent, pace, game environment, rest days, and injury-impacted usage â€” no generic season averages."),
+    ("ðŸŽ²", "Quantum Simulation",
+     "Up to 1,000 simulated games per prop. Every sim randomizes real NBA game chaos â€” minutes volatility, momentum swings, blowout risk â€” to build a true probability distribution."),
+    ("ðŸ”¬", "Force Analysis",
      "16 NBA-specific signals are measured, strength-rated, and balanced. Trap lines are flagged. Coin-flip props are caught and filtered before they reach your picks list."),
-    ("🏆", "SAFE Score™ + Tier Assignment",
-     "A proprietary multi-signal composite with anti-overconfidence safeguards assigns every prop a ranked tier: Platinum, Gold, Silver, Bronze, or Avoid — with full reasoning attached."),
+    ("ðŸ†", "SAFE Scoreâ„¢ + Tier Assignment",
+     "A proprietary multi-signal composite with anti-overconfidence safeguards assigns every prop a ranked tier: Platinum, Gold, Silver, Bronze, or Avoid â€” with full reasoning attached."),
 ]
 
 _hiw_cols = st.columns(len(_hiw_stages) * 2 - 1)  # stages + arrows between them
@@ -1543,18 +1550,18 @@ for idx, (icon, title, desc) in enumerate(_hiw_stages):
         """, unsafe_allow_html=True)
     if idx < 4:
         with _hiw_cols[col_idx + 1]:
-            st.markdown('<div class="hiw-connector">→</div>', unsafe_allow_html=True)
+            st.markdown('<div class="hiw-connector">â†’</div>', unsafe_allow_html=True)
 
-with st.expander("📖 How to Use Smart Pick Pro — Getting Started in 60 Seconds", expanded=False):
+with st.expander("ðŸ“– How to Use Smart Pick Pro â€” Getting Started in 60 Seconds", expanded=False):
     st.markdown("""
     **The 3-Step Workflow**
-    1. **📡 Load Tonight's Slate** — Click "⚡ Load Tonight's Slate" above. Auto-fetches games, rosters, injuries, and 5,000+ live props from PrizePicks and Underdog.
-    2. **⚡ Run the Engine** — Go to **⚡ Quantum Analysis** in the sidebar and click **Run Analysis**. The engine simulates each prop up to 1,000 times and ranks every one.
-    3. **🏆 Review Your Edge** — Your top picks appear here with full Force Analysis reasoning — know exactly WHY each pick is rated, not just a score.
+    1. **ðŸ“¡ Load Tonight's Slate** â€” Click "âš¡ Load Tonight's Slate" above. Auto-fetches games, rosters, injuries, and 5,000+ live props from PrizePicks and Underdog.
+    2. **âš¡ Run the Engine** â€” Go to **âš¡ Quantum Analysis** in the sidebar and click **Run Analysis**. The engine simulates each prop up to 1,000 times and ranks every one.
+    3. **ðŸ† Review Your Edge** â€” Your top picks appear here with full Force Analysis reasoning â€” know exactly WHY each pick is rated, not just a score.
 
-    💡 **Pro Tip:** Use the one-click button above to load everything in a single action, then head to Quantum Analysis to run the engine.
+    ðŸ’¡ **Pro Tip:** Use the one-click button above to load everything in a single action, then head to Quantum Analysis to run the engine.
     
-    ⚙️ Visit **Settings** to tune simulation depth, edge threshold, and platform preferences for your betting style.
+    âš™ï¸ Visit **Settings** to tune simulation depth, edge threshold, and platform preferences for your betting style.
     """)
 
 st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
@@ -1564,23 +1571,23 @@ st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 # ============================================================
 
 # ============================================================
-# SECTION 7: App Map — Interactive Navigation Cards
+# SECTION 7: App Map â€” Interactive Navigation Cards
 # ============================================================
 
 st.markdown("""
 <div class="section-eyebrow lp-anim lp-anim-d1">Navigate the Platform</div>
 <div class="section-header-xl lp-anim lp-anim-d2">Your <span class="xl-accent">Command Center</span></div>
-<div class="section-subheader-center lp-anim lp-anim-d3">Every tool built to take you from raw lines to confident, edge-verified entries — all in one place.</div>
+<div class="section-subheader-center lp-anim lp-anim-d3">Every tool built to take you from raw lines to confident, edge-verified entries â€” all in one place.</div>
 """, unsafe_allow_html=True)
 
-# Row 1 — Tonight's Workflow
-st.markdown('<div class="nav-row-label workflow">⚡ Tonight\'s Workflow</div>', unsafe_allow_html=True)
+# Row 1 â€” Tonight's Workflow
+st.markdown('<div class="nav-row-label workflow">âš¡ Tonight\'s Workflow</div>', unsafe_allow_html=True)
 _nav_r1 = st.columns(4)
 _nav_row1 = [
-    ("📡", "Live Games", "Load tonight's slate in one click", "pages/1_📡_Live_Games.py"),
-    ("🔬", "Prop Scanner", "Enter props manually or pull live lines", "pages/2_🔬_Prop_Scanner.py"),
-    ("⚡", "Quantum Analysis", "Run the Quantum Matrix Engine", "pages/3_⚡_Quantum_Analysis_Matrix.py"),
-    ("🧬", "Entry Builder", "Build EV-optimized parlays", "pages/8_🧬_Entry_Builder.py"),
+    ("ðŸ“¡", "Live Games", "Load tonight's slate in one click", "pages/1_ðŸ“¡_Live_Games.py"),
+    ("ðŸ”¬", "Prop Scanner", "Enter props manually or pull live lines", "pages/2_ðŸ”¬_Prop_Scanner.py"),
+    ("âš¡", "Quantum Analysis", "Run the Quantum Matrix Engine", "pages/3_âš¡_Quantum_Analysis_Matrix.py"),
+    ("ðŸ§¬", "Entry Builder", "Build EV-optimized parlays", "pages/8_ðŸ§¬_Entry_Builder.py"),
 ]
 for i, (icon, name, desc, page) in enumerate(_nav_row1):
     with _nav_r1[i]:
@@ -1589,20 +1596,20 @@ for i, (icon, name, desc, page) in enumerate(_nav_row1):
           <div class="nav-card-icon">{icon}</div>
           <div class="nav-card-title">{name}</div>
           <div class="nav-card-desc">{desc}</div>
-          <div class="nav-card-cta">Open →</div>
+          <div class="nav-card-cta">Open â†’</div>
         </div>
         """, unsafe_allow_html=True)
         st.page_link(page, label=f"Open {name}", icon=icon)
 
-# Row 2 — Deep Analysis
-st.markdown('<div class="nav-row-label analysis">🔬 Deep Analysis</div>', unsafe_allow_html=True)
+# Row 2 â€” Deep Analysis
+st.markdown('<div class="nav-row-label analysis">ðŸ”¬ Deep Analysis</div>', unsafe_allow_html=True)
 _nav_r2 = st.columns(5)
 _nav_row2 = [
-    ("📋", "Game Report", "Full game breakdowns", "pages/6_📋_Game_Report.py"),
-    ("🔮", "Player Simulator", "What-if scenarios", "pages/7_🔮_Player_Simulator.py"),
-    ("🗺️", "Correlation Matrix", "Find correlated props", "pages/11_🗺️_Correlation_Matrix.py"),
-    ("🛡️", "Risk Shield", "See what to avoid + why", "pages/9_🛡️_Risk_Shield.py"),
-    ("🎙️", "The Studio", "Joseph's AI analysis room", "pages/5_🎙️_The_Studio.py"),
+    ("ðŸ“‹", "Game Report", "Full game breakdowns", "pages/6_ðŸ“‹_Game_Report.py"),
+    ("ðŸ”®", "Player Simulator", "What-if scenarios", "pages/7_ðŸ”®_Player_Simulator.py"),
+    ("ðŸ—ºï¸", "Correlation Matrix", "Find correlated props", "pages/11_ðŸ—ºï¸_Correlation_Matrix.py"),
+    ("ðŸ›¡ï¸", "Risk Shield", "See what to avoid + why", "pages/9_ðŸ›¡ï¸_Risk_Shield.py"),
+    ("ðŸŽ™ï¸", "The Studio", "Joseph's AI analysis room", "pages/5_ðŸŽ™ï¸_The_Studio.py"),
 ]
 for i, (icon, name, desc, page) in enumerate(_nav_row2):
     with _nav_r2[i]:
@@ -1611,21 +1618,21 @@ for i, (icon, name, desc, page) in enumerate(_nav_row2):
           <div class="nav-card-icon">{icon}</div>
           <div class="nav-card-title">{name}</div>
           <div class="nav-card-desc">{desc}</div>
-          <div class="nav-card-cta">Open →</div>
+          <div class="nav-card-cta">Open â†’</div>
         </div>
         """, unsafe_allow_html=True)
         st.page_link(page, label=f"Open {name}", icon=icon)
 
-# Row 3 — Track & Manage
-st.markdown('<div class="nav-row-label manage">📊 Track &amp; Manage</div>', unsafe_allow_html=True)
+# Row 3 â€” Track & Manage
+st.markdown('<div class="nav-row-label manage">ðŸ“Š Track &amp; Manage</div>', unsafe_allow_html=True)
 _nav_r3 = st.columns(6)
 _nav_row3 = [
-    ("💦", "Live Sweat", "Track bets in real-time", "pages/0_💦_Live_Sweat.py"),
-    ("📈", "Bet Tracker", "Log results, track ROI", "pages/12_📈_Bet_Tracker.py"),
-    ("📊", "Proving Grounds", "Validate model accuracy", "pages/13_📊_Proving_Grounds.py"),
-    ("📡", "Smart NBA Data", "Player stats, standings & more", "pages/10_📡_Smart_NBA_Data.py"),
-    ("⚙️", "Settings", "Tune engine parameters", "pages/14_⚙️_Settings.py"),
-    ("💎", "Premium", "Unlock everything", "pages/15_💎_Subscription_Level.py"),
+    ("ðŸ’¦", "Live Sweat", "Track bets in real-time", "pages/0_ðŸ’¦_Live_Sweat.py"),
+    ("ðŸ“ˆ", "Bet Tracker", "Log results, track ROI", "pages/12_ðŸ“ˆ_Bet_Tracker.py"),
+    ("ðŸ“Š", "Proving Grounds", "Validate model accuracy", "pages/13_ðŸ“Š_Proving_Grounds.py"),
+    ("ðŸ“¡", "Smart NBA Data", "Player stats, standings & more", "pages/10_ðŸ“¡_Smart_NBA_Data.py"),
+    ("âš™ï¸", "Settings", "Tune engine parameters", "pages/14_âš™ï¸_Settings.py"),
+    ("ðŸ’Ž", "Premium", "Unlock everything", "pages/15_ðŸ’Ž_Subscription_Level.py"),
 ]
 for i, (icon, name, desc, page) in enumerate(_nav_row3):
     with _nav_r3[i]:
@@ -1634,7 +1641,7 @@ for i, (icon, name, desc, page) in enumerate(_nav_row3):
           <div class="nav-card-icon">{icon}</div>
           <div class="nav-card-title">{name}</div>
           <div class="nav-card-desc">{desc}</div>
-          <div class="nav-card-cta">Open →</div>
+          <div class="nav-card-cta">Open â†’</div>
         </div>
         """, unsafe_allow_html=True)
         st.page_link(page, label=f"Open {name}", icon=icon)
@@ -1646,11 +1653,11 @@ st.markdown('<div class="lp-divider"></div>', unsafe_allow_html=True)
 # ============================================================
 
 # ============================================================
-# SECTION 8: Tonight's Slate — Enhanced Matchup Cards
+# SECTION 8: Tonight's Slate â€” Enhanced Matchup Cards
 # ============================================================
 
 if todays_games:
-    st.markdown('<div class="section-header lp-anim lp-anim-d2">🏟️ Tonight\'s Slate</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header lp-anim lp-anim-d2">ðŸŸï¸ Tonight\'s Slate</div>', unsafe_allow_html=True)
 
     chips_html = ""
     for game in todays_games:
@@ -1663,7 +1670,7 @@ if todays_games:
         rec_a = f" ({aw}-{al})" if aw or al else ""
         rec_h = f" ({hw}-{hl})" if hw or hl else ""
 
-        # Enhanced metadata line — spread, total, game time
+        # Enhanced metadata line â€” spread, total, game time
         _spread = _html.escape(str(game.get("spread", "") or ""))
         _total = _html.escape(str(game.get("total", "") or ""))
         _game_time = _html.escape(str(game.get("game_time", "") or ""))
@@ -1674,13 +1681,13 @@ if todays_games:
             _meta_parts.append(f"O/U: {_total}")
         if _game_time:
             _meta_parts.append(_game_time)
-        _meta_line = f'<div class="matchup-meta">{" · ".join(_meta_parts)}</div>' if _meta_parts else ""
+        _meta_line = f'<div class="matchup-meta">{" Â· ".join(_meta_parts)}</div>' if _meta_parts else ""
 
         chips_html += (
             f'<span class="matchup-chip">'
-            f'<span>🚌 <strong>{away}</strong>{rec_a}</span>'
+            f'<span>ðŸšŒ <strong>{away}</strong>{rec_a}</span>'
             f'<span style="color:#2D9EFF; font-weight:700; margin:0 6px;">vs</span>'
-            f'<span>🏠 <strong>{home}</strong>{rec_h}</span>'
+            f'<span>ðŸ  <strong>{home}</strong>{rec_h}</span>'
             f'{_meta_line}'
             f'</span> '
         )
@@ -1693,7 +1700,7 @@ if todays_games:
 # ============================================================
 
 # ============================================================
-# SECTION 9: Status Dashboard — Streamlined (for returning users)
+# SECTION 9: Status Dashboard â€” Streamlined (for returning users)
 # ============================================================
 
 players_data = load_players_data()
@@ -1713,16 +1720,16 @@ number_of_analysis_results = len(st.session_state.get("analysis_results", []))
 # Live data status
 live_data_timestamps = load_last_updated()
 is_using_live_data = live_data_timestamps.get("is_live", False)
-data_badge = '<span class="live-badge">LIVE</span>' if is_using_live_data else '<span class="sample-badge">📊 SAMPLE</span>'
+data_badge = '<span class="live-badge">LIVE</span>' if is_using_live_data else '<span class="sample-badge">ðŸ“Š SAMPLE</span>'
 
-with st.expander("📊 Status Dashboard", expanded=False):
+with st.expander("ðŸ“Š Status Dashboard", expanded=False):
     col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
         st.markdown(f"""
         <div class="status-card">
           <div class="status-card-value">{len(players_data)}</div>
-          <div class="status-card-label">👤 Players</div>
+          <div class="status-card-label">ðŸ‘¤ Players</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1730,25 +1737,25 @@ with st.expander("📊 Status Dashboard", expanded=False):
         st.markdown(f"""
         <div class="status-card">
           <div class="status-card-value">{number_of_current_props}</div>
-          <div class="status-card-label">🎯 Props</div>
+          <div class="status-card-label">ðŸŽ¯ Props</div>
         </div>
         """, unsafe_allow_html=True)
 
     with col3:
-        val3 = str(game_count) if game_count else "—"
+        val3 = str(game_count) if game_count else "â€”"
         st.markdown(f"""
         <div class="status-card">
           <div class="status-card-value">{val3}</div>
-          <div class="status-card-label">🏟️ Games Tonight</div>
+          <div class="status-card-label">ðŸŸï¸ Games Tonight</div>
         </div>
         """, unsafe_allow_html=True)
 
     with col4:
-        val4 = str(number_of_analysis_results) if number_of_analysis_results else "—"
+        val4 = str(number_of_analysis_results) if number_of_analysis_results else "â€”"
         st.markdown(f"""
         <div class="status-card">
           <div class="status-card-value">{val4}</div>
-          <div class="status-card-label">📈 Analyzed</div>
+          <div class="status-card-label">ðŸ“ˆ Analyzed</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1760,32 +1767,32 @@ with st.expander("📊 Status Dashboard", expanded=False):
         </div>
         """, unsafe_allow_html=True)
 
-    # ── System Health — consolidated into status ───────────────────
+    # â”€â”€ System Health â€” consolidated into status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     try:
         from data.data_manager import get_data_health_report
         _health = get_data_health_report()
 
         st.markdown("---")
         hc1, hc2, hc3, hc4 = st.columns(4)
-        hc1.metric("👥 Players", _health["players_count"])
-        hc2.metric("🏀 Teams", _health["teams_count"])
-        hc3.metric("📋 Props", _health["props_count"])
+        hc1.metric("ðŸ‘¥ Players", _health["players_count"])
+        hc2.metric("ðŸ€ Teams", _health["teams_count"])
+        hc3.metric("ðŸ“‹ Props", _health["props_count"])
         _freshness_label = f"{_health['days_old']}d old" if _health.get("last_updated") else "Never"
-        hc4.metric("🕐 Data Age", _freshness_label,
-                   delta="⚠️ Stale" if _health["is_stale"] else "✅ Fresh",
+        hc4.metric("ðŸ• Data Age", _freshness_label,
+                   delta="âš ï¸ Stale" if _health["is_stale"] else "âœ… Fresh",
                    delta_color="inverse" if _health["is_stale"] else "normal")
 
         if _health["warnings"]:
             for w in _health["warnings"]:
                 st.warning(w)
         else:
-            st.success("✅ All data files present and fresh.")
+            st.success("âœ… All data files present and fresh.")
 
-        st.caption("Go to **📡 Smart NBA Data** to refresh data.")
+        st.caption("Go to **ðŸ“¡ Smart NBA Data** to refresh data.")
     except Exception as _exc:
         logging.getLogger(__name__).warning(f"[App] Setup step failed: {_exc}")
 
-    # ── Live Data Status ────────────────────────────────────────────
+    # â”€â”€ Live Data Status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if is_using_live_data:
         player_ts = live_data_timestamps.get("players")
         team_ts = live_data_timestamps.get("teams")
@@ -1800,13 +1807,13 @@ with st.expander("📊 Status Dashboard", expanded=False):
                 return "unknown"
 
         st.success(
-            f"✅ **Using Live NBA Data** — "
+            f"âœ… **Using Live NBA Data** â€” "
             f"Players: {format_timestamp(player_ts)} | "
             f"Teams: {format_timestamp(team_ts)}"
         )
     else:
         st.info(
-            "📊 **No live data loaded yet** — Go to the **📡 Smart NBA Data** page to pull "
+            "ðŸ“Š **No live data loaded yet** â€” Go to the **ðŸ“¡ Smart NBA Data** page to pull "
             "real, up-to-date NBA stats for accurate predictions!"
         )
 
@@ -1818,35 +1825,35 @@ with st.expander("📊 Status Dashboard", expanded=False):
 # SECTION 10: Legal Disclaimer + Footer
 # ============================================================
 
-with st.expander("⚠️ Important Legal Disclaimer — Please Read", expanded=False):
+with st.expander("âš ï¸ Important Legal Disclaimer â€” Please Read", expanded=False):
     st.markdown("""
-    ## ⚠️ IMPORTANT DISCLAIMER
+    ## âš ï¸ IMPORTANT DISCLAIMER
     
     **SmartBetPro NBA ("Smart Pick Pro")** is an analytical tool for **entertainment and educational purposes only**. This application does NOT guarantee profits or winning outcomes.
     
-    - 📊 Past performance does not guarantee future results
-    - 🔢 All predictions are based on statistical models that have inherent limitations  
-    - 💰 Sports betting involves significant financial risk — **never bet more than you can afford to lose**
-    - 🔞 You must be **21+** (or legal age in your jurisdiction) to participate in sports betting
-    - ⚠️ This tool is **not affiliated** with the NBA or any sportsbook
-    - 🆘 Always gamble responsibly. If you or someone you know has a gambling problem, call **1-800-GAMBLER (1-800-426-2537)**
+    - ðŸ“Š Past performance does not guarantee future results
+    - ðŸ”¢ All predictions are based on statistical models that have inherent limitations  
+    - ðŸ’° Sports betting involves significant financial risk â€” **never bet more than you can afford to lose**
+    - ðŸ”ž You must be **21+** (or legal age in your jurisdiction) to participate in sports betting
+    - âš ï¸ This tool is **not affiliated** with the NBA or any sportsbook
+    - ðŸ†˜ Always gamble responsibly. If you or someone you know has a gambling problem, call **1-800-GAMBLER (1-800-426-2537)**
     
     **By using this application, you acknowledge that all betting decisions are your own responsibility.**
     
     ---
     
     **Responsible Gaming Resources:**
-    - 📞 **National Problem Gambling Helpline: 1-800-GAMBLER (1-800-426-2537)** — 24/7 confidential support
-    - 📞 National Council on Problem Gambling: **1-800-522-4700** — crisis counseling & referrals
-    - 🌐 [www.ncpgambling.org](https://www.ncpgambling.org)
-    - 🌐 [www.begambleaware.org](https://www.begambleaware.org)
+    - ðŸ“ž **National Problem Gambling Helpline: 1-800-GAMBLER (1-800-426-2537)** â€” 24/7 confidential support
+    - ðŸ“ž National Council on Problem Gambling: **1-800-522-4700** â€” crisis counseling & referrals
+    - ðŸŒ [www.ncpgambling.org](https://www.ncpgambling.org)
+    - ðŸŒ [www.begambleaware.org](https://www.begambleaware.org)
     """)
 
-# ── Full JMS attribution footer (replaces static lp-footer) ─
+# â”€â”€ Full JMS attribution footer (replaces static lp-footer) â”€
 from utils.components import render_attribution_footer as _render_home_footer
 _render_home_footer()
 
-# ─── Real-Time Polling fragment — placed LAST in the render tree ──────────
+# â”€â”€â”€ Real-Time Polling fragment â€” placed LAST in the render tree â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # The fragment emits no visible content; it only polls data_version and
 # calls st.rerun() when new picks arrive.  Placing it at the END of the
 # render tree means its 60-second interval fires never interrupt or

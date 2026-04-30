@@ -40,10 +40,13 @@ except ImportError:
         return (False, "log_new_bet unavailable")
 
 try:
-    from tracking.database import load_all_bets
+    from tracking.database import load_all_bets, _nba_today_iso
 except ImportError:
     def load_all_bets(**kwargs):
         return []
+    def _nba_today_iso():
+        import datetime as _d
+        return _d.date.today().isoformat()
 
 
 # ============================================================
@@ -73,8 +76,10 @@ def joseph_auto_log_bets(joseph_results: list) -> tuple:
         if not joseph_results:
             return (0, "Joseph logged 0 bets tonight")
 
-        # Build dedup set from today's existing bets
-        today_str = datetime.date.today().isoformat()
+        # Build dedup set from today's existing bets.
+        # IMPORTANT: use ET-anchored date (_nba_today_iso) so Railway's
+        # UTC server doesn't tag 8 PM-midnight ET picks as tomorrow.
+        today_str = _nba_today_iso()
         all_today = load_all_bets(exclude_linked=False)
         existing_keys: set = set()
         for b in all_today:

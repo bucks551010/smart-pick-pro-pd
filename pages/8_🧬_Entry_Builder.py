@@ -1276,7 +1276,13 @@ if _stored_entries:
                             _ue = _get_ue()
                         except Exception:
                             _ue = ""
-                        _today_str = _dt.date.today().isoformat()
+                        # ET-anchored date so Railway UTC server doesn't tag
+                        # 8 PM-midnight ET picks as tomorrow.
+                        try:
+                            from tracking.database import _nba_today_iso as _eb_today_now
+                            _today_str = _eb_today_now()
+                        except Exception:
+                            _today_str = _dt.date.today().isoformat()
                         _logged_count = 0
                         for _lp in picks:
                             _bet_data = {
@@ -1383,7 +1389,13 @@ if _stored_entries:
         except Exception:
             _ue_auto = ""
 
-        _today_str = _dt_eb.date.today().isoformat()
+        # ET-anchored date so Railway UTC server doesn't tag 8 PM-midnight ET
+        # picks as tomorrow.
+        try:
+            from tracking.database import _nba_today_iso as _eb_today_now2
+            _today_str = _eb_today_now2()
+        except Exception:
+            _today_str = _dt_eb.date.today().isoformat()
         _logged_count = 0
 
         for _entry in _show_entries:

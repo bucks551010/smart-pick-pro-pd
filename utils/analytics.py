@@ -96,6 +96,8 @@ def ga4_event(event_name: str, params: dict[str, Any] | None = None) -> None:
     """
     ga_id = GA_MEASUREMENT_ID
     if not ga_id:
+        return
+    params_json = json.dumps(params or {})
     try:
         st.html(f"""<script>
 (function() {{
@@ -104,9 +106,7 @@ def ga4_event(event_name: str, params: dict[str, Any] | None = None) -> None:
 }})();
 </script>""")
     except Exception as _ga4_evt_exc:
-        _logger.debug("GA4 ga4_event '%s' failed (non-fatal): %s", event_name, _ga4_evt_exc('event', '{event_name}', {params_json});
-}})();
-</script>""")
+        _logger.debug("GA4 ga4_event '%s' failed (non-fatal): %s", event_name, _ga4_evt_exc)
 
 
 # ══════════════════════════════════════════════════════════════

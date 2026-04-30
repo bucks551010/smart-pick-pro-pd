@@ -256,6 +256,21 @@ def load_defensive_ratings_data():
     return _load_csv_file(DEFENSIVE_RATINGS_CSV_PATH)
 
 
+def get_defensive_ratings_age_days() -> float | None:
+    """Return the age of defensive_ratings.csv in days, or None if not found.
+
+    Used by QAM to display a staleness warning when the file is older than
+    config.settings.DEF_RATINGS_MAX_AGE_DAYS days. (Audit A-013)
+    """
+    import datetime as _dt
+    try:
+        mtime = DEFENSIVE_RATINGS_CSV_PATH.stat().st_mtime
+        age = (_dt.datetime.now().timestamp() - mtime) / 86400.0
+        return round(age, 1)
+    except Exception:
+        return None
+
+
 @st.cache_data(ttl=900, show_spinner=False)
 def load_injury_status():
     """

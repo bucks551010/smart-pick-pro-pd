@@ -1235,7 +1235,7 @@ def analyze_props_batch(
     injury_map: dict,
     defensive_ratings_data: Any,
     teams_data: Any,
-    simulation_depth: int = 2000,
+    simulation_depth: int | None = None,
     prefetched_bios: dict | None = None,
     advanced_enrichment: dict | None = None,
     line_snapshots: dict | None = None,
@@ -1282,6 +1282,15 @@ def analyze_props_batch(
         advanced_enrichment = {}
     if line_snapshots is None:
         line_snapshots = {}
+
+    # Resolve simulation_depth: prefer caller-supplied value, then SIM_N env var,
+    # then the original hardcoded default of 2000. (Audit A-021)
+    if simulation_depth is None:
+        try:
+            from config.settings import settings as _cfg
+            simulation_depth = _cfg.SIM_N
+        except Exception:
+            simulation_depth = 2000
 
     results: list[dict] = []
     total = len(props)

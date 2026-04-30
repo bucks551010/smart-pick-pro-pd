@@ -85,6 +85,15 @@ class _Settings:
     PORT: int = int(os.environ.get("PORT", "8501"))
     WEBHOOK_PORT: int = int(os.environ.get("WEBHOOK_PORT", "5000"))
 
+    # ── Analysis Engine ───────────────────────────────────────
+    # Number of Monte Carlo simulation trials per prop analysis.
+    # Override via SIM_N env var (e.g. SIM_N=500 for faster dev runs,
+    # SIM_N=2000 for higher-accuracy prod runs). (Audit A-021)
+    SIM_N: int = int(os.environ.get("SIM_N", "1000"))
+    # Max days of staleness before defensive_ratings.csv triggers a
+    # QAM warning banner. Override via DEF_RATINGS_MAX_AGE_DAYS. (Audit A-013)
+    DEF_RATINGS_MAX_AGE_DAYS: int = int(os.environ.get("DEF_RATINGS_MAX_AGE_DAYS", "3"))
+
     # ── Paths ─────────────────────────────────────────────────
     DATA_DIR: Path = _PROJECT_ROOT / "data"
     CACHE_DIR: Path = _PROJECT_ROOT / "cache"

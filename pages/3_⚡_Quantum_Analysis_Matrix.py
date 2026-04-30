@@ -881,7 +881,13 @@ if current_props and not any(p.get("line_category") for p in current_props):
         current_props = parse_alt_lines_from_platform_props(current_props)
     except ImportError:
         _logger.warning("parse_alt_lines_from_platform_props unavailable — line categories may be missing")
-simulation_depth = st.session_state.get("simulation_depth", 2000)
+simulation_depth = st.session_state.get("simulation_depth") or None
+if simulation_depth is None:
+    try:
+        from config.settings import settings as _qam_sim_cfg
+        simulation_depth = _qam_sim_cfg.SIM_N
+    except Exception:
+        simulation_depth = 2000
 minimum_edge     = st.session_state.get("minimum_edge_threshold", 5.0)
 
 # ============================================================
@@ -962,6 +968,21 @@ try:
             )
 except Exception:
     pass  # Non-critical check
+
+# ── Defensive ratings freshness banner (Audit A-013) ──────────
+try:
+    from data.data_manager import get_defensive_ratings_age_days as _def_age_fn
+    from config.settings import settings as _qam_cfg
+    _def_age = _def_age_fn()
+    if _def_age is not None and _def_age > _qam_cfg.DEF_RATINGS_MAX_AGE_DAYS:
+        st.warning(
+            f"⚠️ **Defensive ratings are {_def_age:.0f} days old** "
+            f"(threshold: {_qam_cfg.DEF_RATINGS_MAX_AGE_DAYS} days). "
+            "Position-matchup adjustments may be stale — run a Smart Update "
+            "on the **📡 Smart NBA Data** page to refresh."
+        )
+except Exception:
+    pass  # Non-critical
 
 # ── Compact status line + Run Analysis ─────────────────────────
 _status_parts = []
@@ -1914,17 +1935,27 @@ def _render_results_fragment():
     st.divider()
 
     # ── Quick View / Full Analysis toggle ─────────────────────────
+    # Auto-enable Quick View for large slates (> 150 picks) to avoid
+    # rendering thousands of DOM nodes in a single st.markdown call which
+    # causes browser jank and Streamlit memory pressure. (Audit A-015)
+    _LARGE_SLATE_THRESHOLD = 150
+    _auto_quick_view = len(displayed_results) > _LARGE_SLATE_THRESHOLD
     _qv_col1, _qv_col2 = st.columns([1, 3])
     with _qv_col1:
         _quick_view = st.toggle(
             "⚡ Quick View",
-            value=st.session_state.get("qam_quick_view", False),
+            value=st.session_state.get("qam_quick_view", _auto_quick_view),
             key="_qam_quick_view_toggle",
             help="Compact one-line-per-pick table for fast scanning",
         )
         st.session_state["qam_quick_view"] = _quick_view
     with _qv_col2:
-        if _quick_view:
+        if _auto_quick_view and _quick_view:
+            st.caption(
+                f"⚡ Auto-enabled Quick View — {len(displayed_results)} picks "
+                f"(threshold: {_LARGE_SLATE_THRESHOLD}). Toggle off for full cards."
+            )
+        elif _quick_view:
             st.caption("Showing compact table — toggle off for full card analysis")
         else:
             st.caption("Showing full analysis cards — toggle on for quick scan")
